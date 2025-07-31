@@ -4,9 +4,15 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, MessageCircle, Quote, Calendar, User, Brain } from 'lucide-react';
+import { Home, BookOpen, MessageCircle, Quote, Calendar, User, Brain, Settings } from 'lucide-react';
 import { UserProfile } from '@/components/auth/UserProfile';
 import { useAuthContext } from '@/components/auth/AuthProvider';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 
 const navigationItems = [
   {
@@ -59,10 +65,23 @@ export function AppSidebar() {
           <div className="w-8 h-8 bg-cta rounded-lg flex items-center justify-center">
             <Brain className="w-5 h-5 text-white" />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-serif font-bold text-ink">The Stoic Way</h1>
             <p className="text-xs text-stone">Philosophy for daily life</p>
           </div>
+          {/* Profile Settings Popover */}
+          {isAuthenticated && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-hero/50">
+                  <Settings className="h-4 w-4 text-stone" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="start">
+                <UserProfile />
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
       </div>
       
@@ -92,9 +111,6 @@ export function AppSidebar() {
           );
         })}
       </nav>
-      
-      {/* User Profile Section - Moved to bottom */}
-      {isAuthenticated && <UserProfile />}
     </div>
   );
 }

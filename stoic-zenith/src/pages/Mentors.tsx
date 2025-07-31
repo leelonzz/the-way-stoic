@@ -1,10 +1,12 @@
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { MentorCard } from '@/components/mentors/MentorCard';
 
 const mentors = [
   {
     name: 'Seneca',
+    key: 'seneca',
     title: 'Roman Stoic Philosopher & Statesman',
     description: 'Former advisor to emperors, Seneca brings practical wisdom from navigating political power and personal challenges. His letters offer profound insights on wealth, time, and virtue.',
     expertise: ['Letters & Essays', 'Political Wisdom', 'Practical Ethics', 'Time Management'],
@@ -12,6 +14,7 @@ const mentors = [
   },
   {
     name: 'Epictetus',
+    key: 'epictetus',
     title: 'Former Slave Turned Stoic Teacher',
     description: 'Having overcome slavery to become a renowned teacher, Epictetus embodies resilience and the power of inner freedom. His teachings focus on what we can and cannot control.',
     expertise: ['Dichotomy of Control', 'Personal Freedom', 'Resilience', 'Practical Teachings'],
@@ -19,6 +22,7 @@ const mentors = [
   },
   {
     name: 'Marcus Aurelius',
+    key: 'marcus-aurelius',
     title: 'The Philosopher Emperor',
     description: 'The only philosopher-king in history, Marcus Aurelius balanced the demands of ruling an empire with deep philosophical reflection. His Meditations remain timeless.',
     expertise: ['Leadership', 'Duty & Virtue', 'Applied Philosophy', 'Self-Reflection'],
@@ -27,9 +31,13 @@ const mentors = [
 ];
 
 export default function Mentors() {
+  const router = useRouter();
+  
   const handleStartChat = (mentorName: string) => {
-    console.log(`Starting chat with ${mentorName}`);
-    // TODO: Navigate to chat interface
+    const mentor = mentors.find(m => m.name === mentorName);
+    if (mentor) {
+      router.push(`/mentors/${mentor.key}/chat`);
+    }
   };
 
   return (

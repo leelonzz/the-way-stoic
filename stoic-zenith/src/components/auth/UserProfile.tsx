@@ -50,7 +50,7 @@ export function UserProfile() {
   };
 
   return (
-    <div className="border-b border-stone/10 p-4">
+    <div className="p-0">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -90,7 +90,7 @@ export function UserProfile() {
         
         <DropdownMenuContent 
           align="start" 
-          className="w-64 bg-white/95 backdrop-blur-sm border-stone/20"
+          className="w-full bg-white/95 backdrop-blur-sm border-stone/20"
           sideOffset={5}
         >
           <div className="px-3 py-2 border-b border-stone/10">

@@ -10,7 +10,8 @@ const compat = new FlatCompat({
 });
 
 export default [
-  ...compat.extends(['next/core-web-vitals', 'next/typescript']),
+  ...compat.extends('next/core-web-vitals'),
+  ...compat.extends('next/typescript'),
   {
     rules: {
       'prefer-const': 'error',
