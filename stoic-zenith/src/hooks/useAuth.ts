@@ -96,12 +96,15 @@ export const useAuth = () => {
 
     const initializeAuth = async () => {
       try {
+        console.log('🔄 Initializing authentication...');
         const session = await authHelpers.getCurrentSession();
+        console.log('📋 Current session:', session ? 'Found' : 'None', session?.user?.email);
+        
         if (mounted) {
           await updateAuthState(session?.user ?? null, session);
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error('❌ Auth initialization error:', error);
         if (mounted) {
           setError(error instanceof Error ? error.message : 'Failed to initialize authentication');
         }
@@ -111,7 +114,13 @@ export const useAuth = () => {
     initializeAuth();
 
     const { data: { subscription } } = authHelpers.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
+      console.log('🔄 Auth state changed:', event, session?.user?.email || 'No user');
+      console.log('📋 Session details:', {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        email: session?.user?.email,
+        event
+      });
       
       if (mounted) {
         await updateAuthState(session?.user ?? null, session);

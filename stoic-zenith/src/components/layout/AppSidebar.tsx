@@ -65,9 +65,6 @@ export function AppSidebar() {
           </div>
         </div>
       </div>
-
-      {/* User Profile Section */}
-      {isAuthenticated && <UserProfile />}
       
       <nav className="flex-1 p-4 space-y-2">
         {navigationItems.map((item) => {
@@ -96,13 +93,8 @@ export function AppSidebar() {
         })}
       </nav>
       
-      <div className="p-4 border-t border-stone/10">
-        <div className="text-center text-xs text-stone">
-          <p className="italic">"You have power over your mind—</p>
-          <p className="italic">not outside events."</p>
-          <p className="font-medium mt-1">— Marcus Aurelius</p>
-        </div>
-      </div>
+      {/* User Profile Section - Moved to bottom */}
+      {isAuthenticated && <UserProfile />}
     </div>
   );
 }

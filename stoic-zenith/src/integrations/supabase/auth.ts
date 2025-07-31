@@ -20,23 +20,37 @@ export interface AuthState {
 
 export const authHelpers = {
   async signInWithGoogle() {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google' as Provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
+    try {
+      console.log('🔐 Starting Google OAuth sign-in...');
+      console.log('Redirect URL:', `${window.location.origin}/auth/callback`);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google' as Provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
-      },
-    });
-    
-    if (error) {
-      console.error('Google sign-in error:', error);
+      });
+      
+      if (error) {
+        console.error('❌ Google sign-in error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.status,
+          details: error
+        });
+        throw error;
+      }
+      
+      console.log('✅ Google OAuth initiated successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Unexpected error during Google sign-in:', error);
       throw error;
     }
-    
-    return data;
   },
 
   async signOut() {
