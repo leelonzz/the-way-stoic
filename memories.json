@@ -1,0 +1,132 @@
+{
+  "memories": [
+    {
+      "id": "mem_1753944652595_nhmddbmw3",
+      "content": "User asking about removing Vite and running only on Next.js. Need to check current project setup to understand what's currently configured.",
+      "type": "config",
+      "tags": [
+        "config",
+        "nextjs",
+        "vite",
+        "build-tools",
+        "project-setup"
+      ],
+      "timestamp": "2025-07-31T06:50:52.592Z",
+      "context": "Project analysis for build tool optimization",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T06:50:52.592Z",
+      "lastVerified": "2025-07-31T06:50:52.592Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753944668068_gm449zvkr",
+      "content": "Project uses Next.js for main app with Vite only for testing via Vitest. Vite dependencies: vitest, @vitejs/plugin-react used only for test runner. Next.js handles all production builds. Safe to keep current setup as Vite serves different purpose (testing vs production).",
+      "type": "config",
+      "tags": [
+        "config",
+        "react",
+        "testing",
+        "nextjs",
+        "vite",
+        "vitest",
+        "build-analysis"
+      ],
+      "timestamp": "2025-07-31T06:51:08.068Z",
+      "context": "Analysis of current build tool configuration",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T06:51:08.068Z",
+      "lastVerified": "2025-07-31T06:51:08.068Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753944835907_swpf92y9s",
+      "content": "User has a stoic-zenith subdirectory with separate Vite project that's failing. They're in wrong directory - should be in main project root, not stoic-zenith subfolder.",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "navigation",
+        "vite",
+        "directory-error",
+        "stoic-zenith"
+      ],
+      "timestamp": "2025-07-31T06:53:55.907Z",
+      "context": "User navigation error - running Vite project instead of Next.js",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T06:53:55.907Z",
+      "lastVerified": "2025-07-31T06:53:55.907Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753944876920_jyhk2qyip",
+      "content": "Converting stoic-zenith Vite project to Next.js to match main project structure. Need to analyze current setup first.",
+      "type": "config",
+      "tags": [
+        "config",
+        "migration",
+        "vite-to-nextjs",
+        "stoic-zenith"
+      ],
+      "timestamp": "2025-07-31T06:54:36.920Z",
+      "context": "Project migration task",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T06:54:36.920Z",
+      "lastVerified": "2025-07-31T06:54:36.920Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753945076431_yaicuwomh",
+      "content": "Successfully converted stoic-zenith from Vite to Next.js. Created Next.js pages structure, removed Vite configs, updated package.json. Server starts successfully on localhost:3000. Migration complete.",
+      "type": "general",
+      "tags": [
+        "general",
+        "migration-complete",
+        "nextjs",
+        "success",
+        "stoic-zenith"
+      ],
+      "timestamp": "2025-07-31T06:57:56.431Z",
+      "context": "Successful Vite to Next.js migration completion",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T06:57:56.431Z",
+      "lastVerified": "2025-07-31T06:57:56.431Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753945130335_dnurzdh8w",
+      "content": "Need to replace react-router-dom with Next.js Link components. Found usage in AppSidebar.tsx that needs conversion to Next.js navigation.",
+      "type": "general",
+      "tags": [
+        "general",
+        "react",
+        "react-router",
+        "nextjs-link",
+        "migration-cleanup"
+      ],
+      "timestamp": "2025-07-31T06:58:50.335Z",
+      "context": "Post-migration cleanup - removing React Router dependencies",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T06:58:50.335Z",
+      "lastVerified": "2025-07-31T06:58:50.335Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1753945189089_7wmns8l3z",
+      "content": "Fixed react-router-dom imports by converting NavLink to Next.js Link and useLocation to usePathname. Created Next.js not-found.tsx page. Migration cleanup complete.",
+      "type": "solution",
+      "tags": [
+        "solution",
+        "react",
+        "migration-complete",
+        "react-router-cleanup",
+        "nextjs-navigation"
+      ],
+      "timestamp": "2025-07-31T06:59:49.089Z",
+      "context": "Completed react-router-dom to Next.js navigation migration",
+      "accessCount": 0,
+      "lastAccessed": "2025-07-31T06:59:49.089Z",
+      "lastVerified": "2025-07-31T06:59:49.089Z",
+      "status": "fresh"
+    }
+  ],
+  "lastUpdated": "2025-07-31T06:59:49.089Z"
+}

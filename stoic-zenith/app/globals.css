@@ -1,0 +1,134 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 47 44 26%;
+    --foreground: 0 0% 18%;
+    
+    --card: 47 44 26%;
+    --card-foreground: 0 0% 18%;
+    
+    --popover: 47 44 26%;
+    --popover-foreground: 0 0% 18%;
+    
+    --primary: 20 65% 44%;
+    --primary-foreground: 47 44 26%;
+    
+    --secondary: 258 30% 52%;
+    --secondary-foreground: 47 44 26%;
+    
+    --muted: 33 14% 54%;
+    --muted-foreground: 0 0% 40%;
+    
+    --accent: 258 30% 52%;
+    --accent-foreground: 47 44 26%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 47 44 26%;
+    
+    --border: 33 14% 80%;
+    --input: 33 14% 90%;
+    --ring: 20 65% 44%;
+    
+    --radius: 0.75rem;
+    
+    /* Custom Stoic Colors */
+    --cta: 20 65% 44%;
+    --hero: 47 44 96%;
+    --sage: 96 22% 69%;
+    --stone: 33 14% 54%;
+    --parchment: 44 44 95%;
+    --ink: 0 0% 18%;
+  }
+  
+  .dark {
+    --background: 0 0% 18%;
+    --foreground: 47 44 96%;
+    
+    --card: 0 0% 18%;
+    --card-foreground: 47 44 96%;
+    
+    --popover: 0 0% 18%;
+    --popover-foreground: 47 44 96%;
+    
+    --primary: 20 65% 44%;
+    --primary-foreground: 0 0% 18%;
+    
+    --secondary: 258 30% 52%;
+    --secondary-foreground: 0 0% 18%;
+    
+    --muted: 33 14% 25%;
+    --muted-foreground: 0 0% 60%;
+    
+    --accent: 258 30% 52%;
+    --accent-foreground: 0 0% 18%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 18%;
+    
+    --border: 33 14% 25%;
+    --input: 33 14% 20%;
+    --ring: 20 65% 44%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background-color: hsl(var(--hero));
+    color: hsl(var(--ink));
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+@layer utilities {
+  .text-cta {
+    color: hsl(var(--cta));
+  }
+  
+  .bg-cta {
+    background-color: hsl(var(--cta));
+  }
+  
+  .text-sage {
+    color: hsl(var(--sage));
+  }
+  
+  .bg-sage {
+    background-color: hsl(var(--sage));
+  }
+  
+  .text-stone {
+    color: hsl(var(--stone));
+  }
+  
+  .bg-stone {
+    background-color: hsl(var(--stone));
+  }
+  
+  .bg-hero {
+    background-color: hsl(var(--hero));
+  }
+  
+  .bg-parchment {
+    background-color: hsl(var(--parchment));
+  }
+  
+  .text-ink {
+    color: hsl(var(--ink));
+  }
+}
