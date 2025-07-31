@@ -5,6 +5,8 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, BookOpen, MessageCircle, Quote, Calendar, User, Brain } from 'lucide-react';
+import { UserProfile } from '@/components/auth/UserProfile';
+import { useAuthContext } from '@/components/auth/AuthProvider';
 
 const navigationItems = [
   {
@@ -47,9 +49,11 @@ const navigationItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { isAuthenticated } = useAuthContext();
   
   return (
     <div className="w-64 bg-parchment border-r border-stone/20 min-h-screen flex flex-col">
+      {/* Header */}
       <div className="p-6 border-b border-stone/10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-cta rounded-lg flex items-center justify-center">
@@ -61,6 +65,9 @@ export function AppSidebar() {
           </div>
         </div>
       </div>
+
+      {/* User Profile Section */}
+      {isAuthenticated && <UserProfile />}
       
       <nav className="flex-1 p-4 space-y-2">
         {navigationItems.map((item) => {
