@@ -195,8 +195,12 @@ export const useAuth = () => {
         const wasAuthenticated = localStorage.getItem('was-authenticated') === 'true';
         console.log('👤 Was previously authenticated:', wasAuthenticated);
         
-        // Only set timeout for new users, not returning users
-        if (!wasAuthenticated) {
+        // For returning users, set auth state immediately and load session in background
+        if (wasAuthenticated) {
+          // Set optimistic auth state for returning users
+          setAuthState(prev => ({ ...prev, loading: false }));
+        } else {
+          // Only set timeout for new users
           timeoutId = setTimeout(() => {
             console.warn('⏰ Auth initialization timeout for new user - setting as unauthenticated');
             if (mounted && mountedRef.current) {
@@ -208,7 +212,7 @@ export const useAuth = () => {
                 error: null,
               });
             }
-          }, 5000); // Reduced timeout to 5 seconds for new users
+          }, 3000); // Reduced timeout to 3 seconds for new users
         }
         
         // Fetch session - no timeout for returning users

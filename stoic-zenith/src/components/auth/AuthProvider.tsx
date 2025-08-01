@@ -37,13 +37,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   if (!isClient) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-hero via-parchment to-accent/10 flex items-center justify-center">
-        <div className="text-center space-y-6">
-          <div className="w-16 h-16 bg-cta rounded-2xl flex items-center justify-center shadow-xl animate-pulse mx-auto">
-            <div className="w-8 h-8 bg-white rounded-lg"></div>
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 bg-cta rounded-2xl flex items-center justify-center shadow-xl animate-pulse mx-auto">
+            <div className="w-6 h-6 bg-white rounded-lg"></div>
           </div>
-          <div className="space-y-3">
-            <div className="h-8 w-48 bg-white/20 rounded mx-auto"></div>
-            <div className="h-4 w-32 bg-white/20 rounded mx-auto"></div>
+          <div className="space-y-2">
+            <div className="h-6 w-32 bg-white/20 rounded mx-auto"></div>
+            <div className="h-4 w-24 bg-white/20 rounded mx-auto"></div>
           </div>
         </div>
       </div>

@@ -42,7 +42,7 @@ function LoadingFallback() {
       const timeoutId = setTimeout(() => {
         console.warn('⏰ Loading screen timeout (new user) - showing fallback');
         setHasTimedOut(true);
-      }, 8000); // 8s timeout only for new users
+      }, 5000); // Reduced timeout to 5 seconds for new users
 
       return () => clearTimeout(timeoutId);
     }
@@ -53,24 +53,13 @@ function LoadingFallback() {
   if (wasAuthenticated && !hasTimedOut) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-hero via-parchment to-accent/10 flex items-center justify-center">
-        <div className="text-center space-y-6">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 bg-cta rounded-2xl flex items-center justify-center shadow-xl animate-pulse">
-              <Brain className="w-8 h-8 text-white" />
-            </div>
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 bg-cta rounded-2xl flex items-center justify-center shadow-xl animate-pulse mx-auto">
+            <div className="w-6 h-6 bg-white rounded-lg"></div>
           </div>
-          
-          <div className="space-y-3">
-            <Skeleton className="h-8 w-48 mx-auto bg-white/20" />
-            <Skeleton className="h-4 w-32 mx-auto bg-white/20" />
-          </div>
-          
-          <div className="space-y-2">
-            <div className="w-6 h-6 border-2 border-cta border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-stone text-sm">
-              Restoring your session...
-            </p>
-          </div>
+          <p className="text-stone text-sm">
+            Restoring your session...
+          </p>
         </div>
       </div>
     );

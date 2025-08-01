@@ -36,9 +36,9 @@ export function useLifeCalendar(user: User | null) {
       setError(null);
       console.log('🔄 Fetching life calendar preferences for user:', user.id);
       
-      // Add timeout to prevent infinite loading
+      // Reduced timeout to prevent long loading
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 10000)
+        setTimeout(() => reject(new Error('Request timeout')), 5000)
       );
       
       const fetchPromise = supabase
@@ -58,7 +58,13 @@ export function useLifeCalendar(user: User | null) {
       setPreferences(data);
     } catch (err) {
       console.error('❌ Failed to fetch preferences:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch preferences');
+      // Don't show timeout errors to user, just set empty preferences
+      if (err instanceof Error && err.message === 'Request timeout') {
+        console.log('⚠️ Timeout - using default preferences');
+        setPreferences(null);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to fetch preferences');
+      }
     } finally {
       setLoading(false);
     }
