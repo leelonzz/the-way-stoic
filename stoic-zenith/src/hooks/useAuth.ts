@@ -135,8 +135,20 @@ export const useAuth = () => {
     
     try {
       console.log('🚪 Signing out user...');
+      // Clear authentication marker immediately
+      localStorage.removeItem('was-authenticated');
+      
       await authHelpers.signOut();
       console.log('✅ Sign out successful');
+      
+      // Clear auth state
+      setAuthState({
+        user: null,
+        session: null,
+        profile: null,
+        loading: false,
+        error: null,
+      });
     } catch (error) {
       console.error('❌ Sign out error:', error);
       setError(error instanceof Error ? error.message : 'Failed to sign out');
@@ -264,10 +276,20 @@ export const useAuth = () => {
         try {
           if (session?.user) {
             localStorage.setItem('was-authenticated', 'true');
+            await updateAuthState(session.user, session);
           } else {
-            localStorage.removeItem('was-authenticated');
+            // Only clear auth state if it's a sign out event
+            if (event === 'SIGNED_OUT') {
+              localStorage.removeItem('was-authenticated');
+              setAuthState({
+                user: null,
+                session: null,
+                profile: null,
+                loading: false,
+                error: null,
+              });
+            }
           }
-          await updateAuthState(session?.user ?? null, session);
         } catch (error) {
           console.error('Auth state change error:', error);
         }

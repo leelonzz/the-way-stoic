@@ -45,7 +45,7 @@ const navigationItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { isAuthenticated, user, profile } = useAuthContext();
+  const { isAuthenticated, user, profile, signOut } = useAuthContext();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   
   return (
@@ -91,7 +91,7 @@ export function AppSidebar() {
       </nav>
       
       {/* Bottom Profile Section */}
-      {isAuthenticated && user && profile && (
+      {isAuthenticated && user && (
         <div className="p-4 border-t border-sage/20">
           <Button
             variant="ghost"
@@ -101,20 +101,20 @@ export function AppSidebar() {
             <div className="flex items-center gap-3 w-full">
               <Avatar className="w-10 h-10 border-2 border-sage/20">
                 <AvatarImage 
-                  src={profile.avatar_url || undefined} 
-                  alt={profile.full_name || profile.email}
+                  src={profile?.avatar_url || undefined} 
+                  alt={profile?.full_name || user.email || 'User'}
                 />
                 <AvatarFallback className="bg-primary text-white font-medium">
-                  {profile.full_name 
+                  {profile?.full_name 
                     ? profile.full_name.split(' ').map(name => name.charAt(0)).join('').toUpperCase().slice(0, 2)
-                    : profile.email.charAt(0).toUpperCase()
+                    : user.email?.charAt(0).toUpperCase() || 'U'
                   }
                 </AvatarFallback>
               </Avatar>
               
               <div className="flex-1 text-left min-w-0">
                 <p className="font-medium text-stone text-sm truncate">
-                  {profile.full_name || profile.email.split('@')[0]}
+                  {profile?.full_name || user.email?.split('@')[0] || 'User'}
                 </p>
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -122,6 +122,16 @@ export function AppSidebar() {
                 </div>
               </div>
             </div>
+          </Button>
+          
+          {/* Logout Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full mt-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={signOut}
+          >
+            Sign Out
           </Button>
         </div>
       )}
