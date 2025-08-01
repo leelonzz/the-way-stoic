@@ -90,9 +90,13 @@ export const useAuth = () => {
     setError(null);
     
     try {
+      console.log('🚪 Signing out user...');
       await authHelpers.signOut();
+      // Clear localStorage session cache on signout
+      localStorage.removeItem('supabase-session');
+      console.log('✅ Sign out successful');
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('❌ Sign out error:', error);
       setError(error instanceof Error ? error.message : 'Failed to sign out');
     }
   }, [setLoading, setError]);
@@ -132,8 +136,29 @@ export const useAuth = () => {
       try {
         console.log('🔄 Initializing authentication...');
         
-        // Get session directly without timeout to ensure we don't miss it
-        const session = await authHelpers.getCurrentSession();
+        // Check localStorage for session persistence first
+        const persistedSession = localStorage.getItem('supabase-session');
+        if (persistedSession) {
+          console.log('📦 Found persisted session in localStorage');
+        }
+        
+        // Get session with retry logic for better reliability
+        let session = null;
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        while (retryCount < maxRetries && !session) {
+          try {
+            session = await authHelpers.getCurrentSession();
+            if (session) break;
+          } catch (error) {
+            console.warn(`Session fetch attempt ${retryCount + 1} failed:`, error);
+            retryCount++;
+            if (retryCount < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms before retry
+            }
+          }
+        }
         
         console.log('📋 Current session:', session ? 'Found' : 'None', session?.user?.email);
         console.log('📋 Session details:', {
@@ -141,16 +166,24 @@ export const useAuth = () => {
           hasUser: !!session?.user,
           accessToken: session?.access_token ? 'Present' : 'Missing',
           expiresAt: session?.expires_at,
-          refreshToken: session?.refresh_token ? 'Present' : 'Missing'
+          refreshToken: session?.refresh_token ? 'Present' : 'Missing',
+          retriesUsed: retryCount
         });
         
         if (mounted && mountedRef.current) {
           // If we have a session, update auth state immediately
           if (session?.user) {
             console.log('✅ Found valid session, updating auth state');
+            // Cache session in localStorage for faster future loads
+            localStorage.setItem('supabase-session', JSON.stringify({
+              user: session.user,
+              timestamp: Date.now()
+            }));
             await updateAuthState(session.user, session);
           } else {
             console.log('❌ No valid session found, user not authenticated');
+            // Clear any stale session data
+            localStorage.removeItem('supabase-session');
             setAuthState({
               user: null,
               session: null,
@@ -163,6 +196,8 @@ export const useAuth = () => {
       } catch (error) {
         console.error('❌ Auth initialization error:', error);
         if (mounted && mountedRef.current) {
+          // Clear any stale session data on error
+          localStorage.removeItem('supabase-session');
           setAuthState({
             user: null,
             session: null,

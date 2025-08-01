@@ -71,12 +71,36 @@ export const authHelpers = {
   },
 
   async getCurrentSession() {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) {
-      console.error('Get session error:', error);
+    try {
+      console.log('🔍 Fetching current session...');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('❌ Get session error:', error);
+        console.error('Session error details:', {
+          message: error.message,
+          status: error.status,
+          code: error.code || 'unknown'
+        });
+        throw error;
+      }
+      
+      if (session) {
+        console.log('✅ Session retrieved successfully:', {
+          userId: session.user?.id,
+          email: session.user?.email,
+          expiresAt: new Date(session.expires_at * 1000).toLocaleString(),
+          hasRefreshToken: !!session.refresh_token
+        });
+      } else {
+        console.log('ℹ️ No active session found');
+      }
+      
+      return session;
+    } catch (error) {
+      console.error('❌ Unexpected error getting session:', error);
       throw error;
     }
-    return session;
   },
 
   async getUserProfile(userId: string): Promise<UserProfile | null> {

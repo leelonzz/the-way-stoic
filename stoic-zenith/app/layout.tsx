@@ -4,6 +4,7 @@ import { GeistMono } from 'geist/font/mono'
 import { Inknut_Antiqua } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/auth/AuthProvider'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 const inknutAntiqua = Inknut_Antiqua({
   subsets: ['latin'],
@@ -39,9 +40,11 @@ html {
         `}</style>
       </head>
       <body className={`${GeistSans.variable} ${GeistMono.variable} ${inknutAntiqua.variable}`}>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )

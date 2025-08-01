@@ -17,29 +17,36 @@ function AppContent() {
   const { isAuthenticated, isLoading, user } = useAuthContext();
   const [showAuth, setShowAuth] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
+  // Check for persisted session state to determine initial showAuth value
+  useEffect(() => {
+    const persistedSession = localStorage.getItem('supabase-session');
+    if (persistedSession) {
+      try {
+        const sessionData = JSON.parse(persistedSession);
+        // If we have a recent session (less than 1 hour old), don't show landing page
+        const sessionAge = Date.now() - sessionData.timestamp;
+        if (sessionAge < 3600000) { // 1 hour
+          console.log('Found recent persisted session, skipping landing page');
+          return; // Don't set showAuth, let auth system handle it
+        }
+      } catch (error) {
+        console.warn('Failed to parse persisted session:', error);
+        localStorage.removeItem('supabase-session');
+      }
+    }
+  }, []);
   // Prevent hydration mismatch by only rendering client-specific content after mount
   useEffect(() => {
     setMounted(true);
-    
-    // Set a longer timeout to allow auth to initialize properly
-    const timeout = setTimeout(() => {
-      if (isLoading) {
-        console.warn('Auth loading timeout reached');
-        setLoadingTimeout(true);
-      }
-    }, 3000); // Reduced to 3 seconds
-    
-    return () => clearTimeout(timeout);
-  }, [isLoading]);
+  }, []);
 
   // Debug logging
   useEffect(() => {
-    console.log('Auth state:', { isAuthenticated, isLoading, hasUser: !!user, mounted, loadingTimeout });
-  }, [isAuthenticated, isLoading, user, mounted, loadingTimeout]);
+    console.log('Auth state:', { isAuthenticated, isLoading, hasUser: !!user, mounted });
+  }, [isAuthenticated, isLoading, user, mounted]);
 
-  // Show loading state during SSR and while auth is loading (with timeout)
+  // Show loading state during SSR and while auth is loading
   if (!mounted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-hero via-parchment to-accent/10 flex items-center justify-center">
@@ -51,8 +58,8 @@ function AppContent() {
     );
   }
   
-  // Show loading state while auth is still loading (no timeout fallback for now)
-  if (isLoading && !loadingTimeout) {
+  // Show loading state while auth is initializing - no timeout interruption
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-hero via-parchment to-accent/10 flex items-center justify-center">
         <div className="text-center space-y-6">
@@ -62,25 +69,20 @@ function AppContent() {
       </div>
     );
   }
-  
-  // Handle loading timeout - but still check if user is actually authenticated
-  if (isLoading && loadingTimeout) {
-    console.warn('Auth loading timeout reached');
-    // If we have a user but loading is stuck, show the dashboard anyway
-    if (user) {
-      console.log('User found despite loading timeout, showing dashboard');
-      return (
-        <AppLayout>
-          <Dashboard />
-        </AppLayout>
-      );
-    }
-    // Otherwise show landing page
-    return <LandingPage onGetStarted={() => setShowAuth(true)} />;
+
+  // If authenticated, show the main app - bypass landing page entirely
+  if (isAuthenticated) {
+    console.log('✅ User authenticated, showing dashboard');
+    return (
+      <AppLayout>
+        <Dashboard />
+      </AppLayout>
+    );
   }
 
-  // If authenticated, show the main app
-  if (isAuthenticated) {
+  // If we have a user but isAuthenticated is false, still show dashboard
+  if (user && !isLoading) {
+    console.log('✅ User found but not marked as authenticated, showing dashboard anyway');
     return (
       <AppLayout>
         <Dashboard />
@@ -93,7 +95,8 @@ function AppContent() {
     return <LoginScreen onBack={() => setShowAuth(false)} />;
   }
 
-  // Default: show landing page
+  // Default: show landing page only if definitely not authenticated
+  console.log('Showing landing page - no authentication detected');
   return <LandingPage onGetStarted={() => setShowAuth(true)} />;
 }
 
