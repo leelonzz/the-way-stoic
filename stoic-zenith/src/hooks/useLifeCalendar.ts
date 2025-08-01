@@ -33,18 +33,31 @@ export function useLifeCalendar(user: User | null) {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      setError(null);
+      console.log('🔄 Fetching life calendar preferences for user:', user.id);
+      
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+      
+      const fetchPromise = supabase
         .from('user_preferences')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+
       if (error && error.code !== 'PGRST116') {
+        console.error('❌ Error fetching preferences:', error);
         throw error;
       }
 
+      console.log('✅ Preferences fetched:', data);
       setPreferences(data);
     } catch (err) {
+      console.error('❌ Failed to fetch preferences:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch preferences');
     } finally {
       setLoading(false);

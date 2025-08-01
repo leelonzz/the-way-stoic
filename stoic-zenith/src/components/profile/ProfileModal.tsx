@@ -29,7 +29,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { user, profile, signOut } = useAuthContext();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  if (!user || !profile) {
+  if (!user) {
     return null;
   }
 
@@ -46,7 +46,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   };
 
   const getUserInitials = () => {
-    if (profile.full_name) {
+    if (profile?.full_name) {
       return profile.full_name
         .split(' ')
         .map(name => name.charAt(0))
@@ -54,15 +54,15 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         .toUpperCase()
         .slice(0, 2);
     }
-    return profile.email.charAt(0).toUpperCase();
+    return user.email?.charAt(0).toUpperCase() || 'U';
   };
 
   const getDisplayName = () => {
-    return profile.full_name || profile.email.split('@')[0];
+    return profile?.full_name || user.email?.split('@')[0] || 'User';
   };
 
   const getJoinDate = () => {
-    if (profile.created_at) {
+    if (profile?.created_at) {
       return new Date(profile.created_at).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -152,7 +152,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           <div className="flex items-center gap-6">
             <Avatar className="w-20 h-20 border-4 border-white/20">
               <AvatarImage 
-                src={profile.avatar_url || undefined} 
+                src={profile?.avatar_url || undefined} 
                 alt={getDisplayName()}
               />
               <AvatarFallback className="bg-white/20 text-white text-2xl font-bold">
@@ -164,7 +164,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               <h2 className="text-2xl font-serif font-bold">{getDisplayName()}</h2>
               <div className="flex items-center gap-2 text-white/80 mb-2">
                 <Mail className="w-4 h-4" />
-                <span className="text-sm">{profile.email}</span>
+                <span className="text-sm">{profile?.email || user.email}</span>
               </div>
               <div className="flex items-center gap-2 text-white/80">
                 <Calendar className="w-4 h-4" />
@@ -306,7 +306,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-stone">Email</label>
-                  <p className="text-ink">{profile.email}</p>
+                  <p className="text-ink">{profile?.email || user.email}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-stone">Member Since</label>
