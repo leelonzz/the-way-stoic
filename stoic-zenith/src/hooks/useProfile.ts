@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuthContext } from '@/components/auth/AuthProvider';
+import type { User } from '@supabase/supabase-js';
 
 export interface UserProfile {
   id: string;
@@ -19,20 +19,17 @@ export interface UserStats {
   currentStreak: number;
 }
 
-export function useProfile() {
+export function useProfile(user: User | null) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuthContext();
 
-  const fetchProfile = async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+  const fetchProfile = useCallback(async () => {
+    if (!user) return;
 
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -43,45 +40,35 @@ export function useProfile() {
       setProfile(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch profile');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [user]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     if (!user) return;
 
     try {
-      // Get saved quotes count
-      const { count: savedQuotesCount } = await supabase
-        .from('saved_quotes')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-
-      // Get completed goals count
-      const { count: completedGoalsCount } = await supabase
-        .from('user_goals')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('is_completed', true);
-
       // Calculate days since joined
-      const daysSinceJoined = profile 
-        ? Math.floor((new Date().getTime() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24))
-        : 0;
+      const joinedDate = new Date(user.created_at);
+      const now = new Date();
+      const daysSinceJoined = Math.floor((now.getTime() - joinedDate.getTime()) / (1000 * 60 * 60 * 24));
 
+      // For now, set placeholder values (in a real app, you'd calculate these from database)
       setStats({
-        journalEntries: 0, // TODO: Implement when journal is ready
-        savedQuotes: savedQuotesCount || 0,
-        goalsCompleted: completedGoalsCount || 0,
+        journalEntries: 0,
+        savedQuotes: 0,
+        goalsCompleted: 0,
         daysSinceJoined,
-        currentStreak: 0 // TODO: Implement streak tracking
+        currentStreak: 0
       });
     } catch (err) {
-      console.error('Error fetching stats:', err);
+      console.error('Failed to fetch stats:', err);
     }
-  };
+  }, [user]);
 
   const updateProfile = async (updates: Partial<Pick<UserProfile, 'full_name' | 'avatar_url'>>) => {
-    if (!user || !profile) return false;
+    if (!user) return false;
 
     try {
       const { error } = await supabase
@@ -165,13 +152,13 @@ export function useProfile() {
     };
 
     loadData();
-  }, [user]);
+  }, [fetchProfile]);
 
   useEffect(() => {
     if (profile) {
       fetchStats();
     }
-  }, [profile]);
+  }, [profile, fetchStats]);
 
   return {
     profile,

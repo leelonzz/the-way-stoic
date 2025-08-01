@@ -1,6 +1,15 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuthContext } from '@/components/auth/AuthProvider';
+import type { User } from '@supabase/supabase-js';
+
+export interface LifeCalendarPreferences {
+  id: string;
+  user_id: string;
+  birth_date: string;
+  life_expectancy: number;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface LifeCalendarData {
   birthDate: Date | null;
@@ -14,39 +23,33 @@ export interface LifeCalendarData {
   daysRemaining: number;
 }
 
-export function useLifeCalendar() {
-  const [preferences, setPreferences] = useState<{
-    birth_date: string | null;
-    life_expectancy: number;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
+export function useLifeCalendar(user: User | null) {
+  const [preferences, setPreferences] = useState<LifeCalendarPreferences | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuthContext();
 
-  const fetchPreferences = async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+  const fetchPreferences = useCallback(async () => {
+    if (!user) return;
 
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('user_preferences')
-        .select('birth_date, life_expectancy')
+        .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
-      setPreferences(data || { birth_date: null, life_expectancy: 80 });
+      setPreferences(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch preferences');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const updatePreferences = async (birthDate: Date, lifeExpectancy: number) => {
     if (!user) return false;
@@ -58,16 +61,7 @@ export function useLifeCalendar() {
           user_id: user.id,
           birth_date: birthDate.toISOString().split('T')[0],
           life_expectancy: lifeExpectancy
-        }, {
-          onConflict: 'user_id'
         });
-
-      if (error) throw error;
-      
-      setPreferences({
-        birth_date: birthDate.toISOString().split('T')[0],
-        life_expectancy: lifeExpectancy
-      });
       
       return true;
     } catch (err) {
@@ -152,7 +146,7 @@ export function useLifeCalendar() {
 
   useEffect(() => {
     fetchPreferences();
-  }, [user]);
+  }, [fetchPreferences]);
 
   return {
     preferences,

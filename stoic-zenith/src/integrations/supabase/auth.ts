@@ -92,12 +92,41 @@ export const authHelpers = {
           // Profile doesn't exist, create one
           return await this.createUserProfile(userId);
         }
-        throw error;
+        console.warn('Profile fetch error, using fallback:', error);
+        // Return a fallback profile instead of throwing
+        const user = await this.getCurrentUser();
+        if (user) {
+          return {
+            id: userId,
+            email: user.email!,
+            full_name: user.user_metadata?.full_name || null,
+            avatar_url: user.user_metadata?.avatar_url || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+        }
+        return null;
       }
 
       return data;
     } catch (error) {
       console.error('Get user profile error:', error);
+      // Return a basic profile as fallback
+      try {
+        const user = await this.getCurrentUser();
+        if (user) {
+          return {
+            id: userId,
+            email: user.email!,
+            full_name: user.user_metadata?.full_name || null,
+            avatar_url: user.user_metadata?.avatar_url || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+        }
+      } catch (fallbackError) {
+        console.error('Fallback profile creation failed:', fallbackError);
+      }
       return null;
     }
   },

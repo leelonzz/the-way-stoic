@@ -17,6 +17,7 @@ import { useAuthContext } from '@/components/auth/AuthProvider';
 const queryClient = new QueryClient();
 
 function ProfileContent() {
+  const { user } = useAuthContext();
   const { 
     profile, 
     stats, 
@@ -26,7 +27,7 @@ function ProfileContent() {
     updateEmail, 
     updatePassword, 
     deleteAccount 
-  } = useProfile();
+  } = useProfile(user);
   
   const { isAuthenticated } = useAuthContext();
 

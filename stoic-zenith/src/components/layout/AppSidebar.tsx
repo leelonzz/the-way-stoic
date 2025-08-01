@@ -1,18 +1,14 @@
 
 'use client'
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, MessageCircle, Quote, Calendar, User, Brain, Settings } from 'lucide-react';
-import { UserProfile } from '@/components/auth/UserProfile';
+import { Home, BookOpen, MessageCircle, Quote, Calendar, User, Brain, FileText } from 'lucide-react';
 import { useAuthContext } from '@/components/auth/AuthProvider';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { ProfileModal } from '@/components/profile/ProfileModal';
 
 const navigationItems = [
   {
@@ -45,20 +41,15 @@ const navigationItems = [
     icon: Calendar,
     description: 'Memento Mori'
   },
-  {
-    name: 'Profile',
-    href: '/profile',
-    icon: User,
-    description: 'Settings'
-  }
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { isAuthenticated } = useAuthContext();
+  const { isAuthenticated, user, profile } = useAuthContext();
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   
   return (
-    <div className="w-64 bg-parchment border-r border-stone/20 min-h-screen flex flex-col">
+    <div className="w-64 bg-parchment border-r border-stone/20 h-screen flex flex-col fixed left-0 top-0 z-40">
       {/* Header */}
       <div className="p-6 border-b border-stone/10">
         <div className="flex items-center gap-3">
@@ -69,23 +60,10 @@ export function AppSidebar() {
             <h1 className="text-xl font-serif font-bold text-ink">The Stoic Way</h1>
             <p className="text-xs text-stone">Philosophy for daily life</p>
           </div>
-          {/* Profile Settings Popover */}
-          {isAuthenticated && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-hero/50">
-                  <Settings className="h-4 w-4 text-stone" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="start">
-                <UserProfile />
-              </PopoverContent>
-            </Popover>
-          )}
         </div>
       </div>
       
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {navigationItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -111,6 +89,48 @@ export function AppSidebar() {
           );
         })}
       </nav>
+      
+      {/* Bottom Profile Section */}
+      {isAuthenticated && user && profile && (
+        <div className="p-4 border-t border-stone/20">
+          <Button
+            variant="ghost"
+            className="w-full p-3 h-auto hover:bg-hero/50 transition-colors"
+            onClick={() => setIsProfileModalOpen(true)}
+          >
+            <div className="flex items-center gap-3 w-full">
+              <Avatar className="w-10 h-10 border-2 border-stone/20">
+                <AvatarImage 
+                  src={profile.avatar_url || undefined} 
+                  alt={profile.full_name || profile.email}
+                />
+                <AvatarFallback className="bg-cta text-white font-medium">
+                  {profile.full_name 
+                    ? profile.full_name.split(' ').map(name => name.charAt(0)).join('').toUpperCase().slice(0, 2)
+                    : profile.email.charAt(0).toUpperCase()
+                  }
+                </AvatarFallback>
+              </Avatar>
+              
+              <div className="flex-1 text-left min-w-0">
+                <p className="font-medium text-ink text-sm truncate">
+                  {profile.full_name || profile.email.split('@')[0]}
+                </p>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-xs text-stone">Online</span>
+                </div>
+              </div>
+            </div>
+          </Button>
+        </div>
+      )}
+      
+      {/* Profile Modal */}
+      <ProfileModal 
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
     </div>
   );
 }

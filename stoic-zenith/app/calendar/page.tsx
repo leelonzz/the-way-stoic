@@ -17,6 +17,7 @@ import { useAuthContext } from '@/components/auth/AuthProvider';
 const queryClient = new QueryClient();
 
 function CalendarContent() {
+  const { user } = useAuthContext();
   const { 
     lifeCalendarData, 
     loading, 
@@ -24,7 +25,7 @@ function CalendarContent() {
     updatePreferences, 
     getWeekData, 
     getMotivationalMessage 
-  } = useLifeCalendar();
+  } = useLifeCalendar(user);
   
   const { isAuthenticated } = useAuthContext();
 

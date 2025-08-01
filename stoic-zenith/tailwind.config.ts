@@ -22,6 +22,7 @@ export default {
 			fontFamily: {
 				'sans': ['Inter', 'system-ui', 'sans-serif'],
 				'serif': ['Crimson Text', 'Georgia', 'serif'],
+				'inknut': ['var(--font-inknut-antiqua)', 'serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',

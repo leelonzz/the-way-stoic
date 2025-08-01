@@ -9,27 +9,34 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Sparkles, BookOpen, Heart } from 'lucide-react';
+import { Sparkles, BookOpen, Heart, User, Smile } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
 import { QuoteCard } from '@/components/quotes/QuoteCard';
 import { QuoteSearch } from '@/components/quotes/QuoteSearch';
+import { MyOwnQuotes } from '@/components/quotes/MyOwnQuotes';
+import { MoodBasedQuotes } from '@/components/quotes/MoodBasedQuotes';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 
 const queryClient = new QueryClient();
 
 function QuotesContent() {
+    const { user } = useAuthContext();
   const { 
     quotes, 
     savedQuotes, 
+    userQuotes, 
     loading, 
     error, 
     getDailyQuote, 
     saveQuote, 
     unsaveQuote, 
-    isQuoteSaved,
-    getQuotesByCategory,
-    searchQuotes
-  } = useQuotes();
+    isQuoteSaved, 
+    getQuotesByCategory, 
+    searchQuotes, 
+    createUserQuote, 
+    updateUserQuote, 
+    deleteUserQuote 
+  } = useQuotes(user);
   
   const { isAuthenticated } = useAuthContext();
   const [searchTerm, setSearchTerm] = useState('');
@@ -103,23 +110,27 @@ function QuotesContent() {
         </Card>
       )}
 
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-white/50">
-          <TabsTrigger value="all" className="flex items-center gap-2">
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 bg-white/50">
+          <TabsTrigger value="general" className="flex items-center gap-2">
             <BookOpen className="w-4 h-4" />
-            All Quotes
+            General
           </TabsTrigger>
-          <TabsTrigger value="saved" className="flex items-center gap-2" disabled={!isAuthenticated}>
+          <TabsTrigger value="my-own" className="flex items-center gap-2" disabled={!isAuthenticated}>
+            <User className="w-4 h-4" />
+            My own quotes
+          </TabsTrigger>
+          <TabsTrigger value="favorites" className="flex items-center gap-2" disabled={!isAuthenticated}>
             <Heart className="w-4 h-4" />
-            Saved ({savedQuotes.length})
+            My Favorites
           </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4" />
-            Categories
+          <TabsTrigger value="mood" className="flex items-center gap-2">
+            <Smile className="w-4 h-4" />
+            Based on my mood
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="space-y-6">
+        <TabsContent value="general" className="space-y-6">
           <QuoteSearch
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
@@ -151,7 +162,23 @@ function QuotesContent() {
           )}
         </TabsContent>
 
-        <TabsContent value="saved" className="space-y-6">
+        <TabsContent value="my-own" className="space-y-6">
+          {isAuthenticated ? (
+            <MyOwnQuotes
+              userQuotes={userQuotes}
+              loading={loading}
+              onCreateQuote={createUserQuote}
+              onUpdateQuote={updateUserQuote}
+              onDeleteQuote={deleteUserQuote}
+            />
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-stone">Please sign in to create your own quotes.</p>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="favorites" className="space-y-6">
           {isAuthenticated ? (
             <>
               {savedQuotes.length > 0 ? (
@@ -175,37 +202,18 @@ function QuotesContent() {
             </>
           ) : (
             <div className="text-center py-12">
-              <p className="text-stone">Please sign in to view saved quotes.</p>
+              <p className="text-stone">Please sign in to view your favorite quotes.</p>
             </div>
           )}
         </TabsContent>
 
-        <TabsContent value="categories" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories.map((category) => {
-              const categoryQuotes = getQuotesByCategory(category);
-              return (
-                <Card key={category} className="bg-white/50 hover:bg-white/70 transition-colors cursor-pointer"
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        // Switch to all quotes tab to show filtered results
-                        document.querySelector('[value="all"]')?.click();
-                      }}>
-                  <CardHeader>
-                    <CardTitle className="text-lg capitalize text-ink">{category}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-stone/70 text-sm mb-2">{categoryQuotes.length} quotes</p>
-                    {categoryQuotes[0] && (
-                      <blockquote className="text-sm italic text-stone line-clamp-3">
-                        "{categoryQuotes[0].text}"
-                      </blockquote>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+        <TabsContent value="mood" className="space-y-6">
+          <MoodBasedQuotes
+            onSaveQuote={isAuthenticated ? saveQuote : undefined}
+            onUnsaveQuote={isAuthenticated ? unsaveQuote : undefined}
+            isQuoteSaved={isAuthenticated ? isQuoteSaved : undefined}
+            isAuthenticated={isAuthenticated}
+          />
         </TabsContent>
       </Tabs>
     </div>

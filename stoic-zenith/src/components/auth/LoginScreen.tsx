@@ -1,12 +1,16 @@
 'use client';
 
 import React from 'react';
-import { Brain, Quote } from 'lucide-react';
+import { Brain, Quote, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuthContext } from './AuthProvider';
 
-export function LoginScreen() {
+interface LoginScreenProps {
+  onBack?: () => void;
+}
+
+export function LoginScreen({ onBack }: LoginScreenProps) {
   const { signInWithGoogle, isLoading, error } = useAuthContext();
 
   const handleGoogleSignIn = async () => {
@@ -18,8 +22,25 @@ export function LoginScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-hero via-parchment to-accent/10 flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-hero via-parchment to-accent/10 flex">
+      {/* Back Button */}
+      {onBack && (
+        <div className="absolute top-6 left-6 z-50">
+          <Button
+            onClick={onBack}
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-2 text-stone hover:text-ink hover:bg-white/20"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to landing
+          </Button>
+        </div>
+      )}
+
+      {/* Left Side - Login Content */}
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-8">
         {/* Header Section */}
         <div className="text-center space-y-4">
           <div className="flex justify-center">
@@ -115,10 +136,33 @@ export function LoginScreen() {
           </CardContent>
         </Card>
 
-        {/* Footer Quote */}
-        <div className="text-center text-stone/80 text-sm italic">
-          <p>"The happiness of your life depends upon the quality of your thoughts."</p>
-          <p className="font-medium mt-1">— Marcus Aurelius</p>
+
+        </div>
+      </div>
+
+      {/* Right Side - Artistic Background */}
+      <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 relative">
+        <div 
+          className="w-full h-full bg-cover bg-center bg-no-repeat relative"
+          style={{
+            backgroundImage: 'url(/Side.png)',
+            backgroundPosition: 'center 20%'
+          }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+          <div className="absolute bottom-12 left-12 right-12 text-white">
+            <div className="space-y-4">
+              <Quote className="w-10 h-10 text-white/80" />
+              <blockquote className="space-y-3">
+                <p className="text-xl font-serif italic leading-relaxed">
+                  "The path of wisdom is steep and winding, but each step brings us closer to inner peace."
+                </p>
+                <footer className="text-white/80 font-medium">
+                  — Ancient Stoic Wisdom
+                </footer>
+              </blockquote>
+            </div>
+          </div>
         </div>
       </div>
     </div>
