@@ -8,13 +8,15 @@ import { useAuthContext } from './AuthProvider';
 
 interface LoginScreenProps {
   onBack?: () => void;
+  onAuthAttempt?: () => void;
 }
 
-export function LoginScreen({ onBack }: LoginScreenProps) {
+export function LoginScreen({ onBack, onAuthAttempt }: LoginScreenProps) {
   const { signInWithGoogle, isLoading, error } = useAuthContext();
 
   const handleGoogleSignIn = async () => {
     try {
+      onAuthAttempt?.();
       await signInWithGoogle();
     } catch (error) {
       console.error('Login error:', error);
@@ -140,12 +142,12 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
       </div>
 
       {/* Right Side - Artistic Background */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 relative">
+      <div className="hidden lg:flex lg:w-1/2 relative">
         <div 
           className="w-full h-full bg-cover bg-center bg-no-repeat relative"
           style={{
             backgroundImage: 'url(/Side.png)',
-            backgroundPosition: 'center 20%'
+            backgroundPosition: 'center center'
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>

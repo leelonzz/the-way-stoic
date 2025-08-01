@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "A modern web application created with kens-webapps",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",

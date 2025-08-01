@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,22 +12,36 @@ import Dashboard from "@/pages/Dashboard";
 import LandingPage from "@/components/LandingPage";
 import LoginScreen from "@/components/auth/LoginScreen";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    },
+  },
+});
 
 function AppContent() {
   const [showAuth, setShowAuth] = useState(false);
+  const { isAuthenticated, isLoading } = useAuthContext();
 
-  // For authenticated users, show the dashboard
+  // Memoize the fallback to prevent unnecessary re-renders
+  const fallback = useMemo(() => {
+    if (isLoading) return null; // Let ProtectedRoute handle loading
+    
+    return showAuth ? (
+      <LoginScreen 
+        onBack={() => setShowAuth(false)}
+      />
+    ) : (
+      <LandingPage onGetStarted={() => setShowAuth(true)} />
+    );
+  }, [showAuth, isLoading]);
+
+  // For authenticated users, show the dashboard directly
+  // For unauthenticated users, show landing page first time, login after
   return (
-    <ProtectedRoute
-      fallback={
-        showAuth ? (
-          <LoginScreen onBack={() => setShowAuth(false)} />
-        ) : (
-          <LandingPage onGetStarted={() => setShowAuth(true)} />
-        )
-      }
-    >
+    <ProtectedRoute fallback={fallback}>
       <AppLayout>
         <Dashboard />
       </AppLayout>

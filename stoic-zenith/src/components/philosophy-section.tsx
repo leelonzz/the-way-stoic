@@ -124,17 +124,6 @@ export function PhilosophySection() {
                     </Badge>
                   </div>
 
-                  {/* Expertise */}
-                  <div className="space-y-2">
-                    <span className="text-xs font-medium text-stone">Expertise:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {philosopher.expertise.map((skill, skillIndex) => (
-                        <span key={skillIndex} className="text-xs px-2 py-1 bg-stone/10 text-stone rounded-md">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>

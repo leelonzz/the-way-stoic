@@ -73,6 +73,10 @@ export const authHelpers = {
   async getCurrentSession() {
     try {
       console.log('🔍 Fetching current session...');
+      
+      // For returning users, we can be more optimistic
+      const wasAuthenticated = typeof window !== 'undefined' && localStorage.getItem('was-authenticated') === 'true';
+      
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
@@ -94,11 +98,19 @@ export const authHelpers = {
         });
       } else {
         console.log('ℹ️ No active session found');
+        // Clear authentication marker if no session found
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('was-authenticated');
+        }
       }
       
       return session;
     } catch (error) {
       console.error('❌ Unexpected error getting session:', error);
+      // Clear authentication marker on error
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('was-authenticated');
+      }
       throw error;
     }
   },

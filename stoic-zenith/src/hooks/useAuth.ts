@@ -39,31 +39,75 @@ export const useAuth = () => {
       let profile: UserProfile | null = null;
       
       if (user) {
-        // Only fetch profile if we don't have database connectivity issues
-        try {
-          profile = await authHelpers.getUserProfile(user.id);
-        } catch (profileError) {
-          console.warn('Profile fetch failed, using basic profile from user metadata:', profileError);
-          // Create a basic profile from user metadata as fallback
-          profile = {
-            id: user.id,
-            email: user.email!,
-            full_name: user.user_metadata?.full_name || null,
-            avatar_url: user.user_metadata?.avatar_url || null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
+        // For returning users, we can load profile asynchronously to speed up initial render
+        const wasAuthenticated = localStorage.getItem('was-authenticated') === 'true';
+        
+        if (wasAuthenticated) {
+          // For returning users, set auth state immediately and load profile in background
+          setAuthState({
+            user,
+            session,
+            profile: null, // Will be loaded asynchronously
+            loading: false,
+            error: null,
+          });
+          
+          // Load profile in background
+          try {
+            profile = await authHelpers.getUserProfile(user.id);
+            if (mountedRef.current) {
+              setAuthState(prev => ({ ...prev, profile }));
+            }
+          } catch (profileError) {
+            console.warn('Profile fetch failed, using basic profile from user metadata:', profileError);
+            profile = {
+              id: user.id,
+              email: user.email!,
+              full_name: user.user_metadata?.full_name || null,
+              avatar_url: user.user_metadata?.avatar_url || null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+            if (mountedRef.current) {
+              setAuthState(prev => ({ ...prev, profile }));
+            }
+          }
+        } else {
+          // For new users, load profile synchronously
+          try {
+            profile = await authHelpers.getUserProfile(user.id);
+          } catch (profileError) {
+            console.warn('Profile fetch failed, using basic profile from user metadata:', profileError);
+            profile = {
+              id: user.id,
+              email: user.email!,
+              full_name: user.user_metadata?.full_name || null,
+              avatar_url: user.user_metadata?.avatar_url || null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+          }
+          
+          if (mountedRef.current) {
+            setAuthState({
+              user,
+              session,
+              profile,
+              loading: false,
+              error: null,
+            });
+          }
         }
-      }
-
-      if (mountedRef.current) {
-        setAuthState({
-          user,
-          session,
-          profile,
-          loading: false,
-          error: null,
-        });
+      } else {
+        if (mountedRef.current) {
+          setAuthState({
+            user: null,
+            session: null,
+            profile: null,
+            loading: false,
+            error: null,
+          });
+        }
       }
     } catch (error) {
       console.error('Auth state update error:', error);
@@ -92,8 +136,6 @@ export const useAuth = () => {
     try {
       console.log('🚪 Signing out user...');
       await authHelpers.signOut();
-      // Clear localStorage session cache on signout
-      localStorage.removeItem('supabase-session');
       console.log('✅ Sign out successful');
     } catch (error) {
       console.error('❌ Sign out error:', error);
@@ -131,57 +173,59 @@ export const useAuth = () => {
     
     initializingRef.current = true;
     let mounted = true;
+    let timeoutId: NodeJS.Timeout | null = null;
 
     const initializeAuth = async () => {
       try {
         console.log('🔄 Initializing authentication...');
         
-        // Set a timeout to prevent endless loading
-        const authTimeout = setTimeout(() => {
-          if (mounted && mountedRef.current) {
-            console.warn('⏰ Auth initialization timeout, setting loading to false');
-            setAuthState(prev => ({ ...prev, loading: false }));
-          }
-        }, 5000); // 5 second timeout
+        // Check if user was previously authenticated
+        const wasAuthenticated = localStorage.getItem('was-authenticated') === 'true';
+        console.log('👤 Was previously authenticated:', wasAuthenticated);
         
-        // Check localStorage for session persistence first
-        const persistedSession = localStorage.getItem('supabase-session');
-        if (persistedSession) {
-          console.log('📦 Found persisted session in localStorage');
+        // Only set timeout for new users, not returning users
+        if (!wasAuthenticated) {
+          timeoutId = setTimeout(() => {
+            console.warn('⏰ Auth initialization timeout for new user - setting as unauthenticated');
+            if (mounted && mountedRef.current) {
+              setAuthState({
+                user: null,
+                session: null,
+                profile: null,
+                loading: false,
+                error: null,
+              });
+            }
+          }, 5000); // Reduced timeout to 5 seconds for new users
         }
         
-        // Get session with single attempt and timeout
+        // Fetch session - no timeout for returning users
         let session = null;
         try {
-          const sessionPromise = authHelpers.getCurrentSession();
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Session fetch timeout')), 3000)
-          );
-          
-          session = await Promise.race([sessionPromise, timeoutPromise]);
+          session = await authHelpers.getCurrentSession();
         } catch (error) {
           console.warn('Session fetch failed:', error);
           session = null;
         }
         
+        // Clear timeout if we got here in time
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        
         console.log('📋 Current session:', session ? 'Found' : 'None', session?.user?.email);
         
         if (mounted && mountedRef.current) {
-          clearTimeout(authTimeout);
-          
-          // If we have a session, update auth state immediately
           if (session?.user) {
             console.log('✅ Found valid session, updating auth state');
-            // Cache session in localStorage for faster future loads
-            localStorage.setItem('supabase-session', JSON.stringify({
-              user: session.user,
-              timestamp: Date.now()
-            }));
+            // Mark user as authenticated for future page loads
+            localStorage.setItem('was-authenticated', 'true');
             await updateAuthState(session.user, session);
           } else {
             console.log('❌ No valid session found, user not authenticated');
-            // Clear any stale session data
-            localStorage.removeItem('supabase-session');
+            // Clear authentication marker
+            localStorage.removeItem('was-authenticated');
             setAuthState({
               user: null,
               session: null,
@@ -193,9 +237,11 @@ export const useAuth = () => {
         }
       } catch (error) {
         console.error('❌ Auth initialization error:', error);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
         if (mounted && mountedRef.current) {
-          // Clear any stale session data on error
-          localStorage.removeItem('supabase-session');
+          localStorage.removeItem('was-authenticated');
           setAuthState({
             user: null,
             session: null,
@@ -216,6 +262,11 @@ export const useAuth = () => {
       
       if (mounted && mountedRef.current) {
         try {
+          if (session?.user) {
+            localStorage.setItem('was-authenticated', 'true');
+          } else {
+            localStorage.removeItem('was-authenticated');
+          }
           await updateAuthState(session?.user ?? null, session);
         } catch (error) {
           console.error('Auth state change error:', error);
@@ -226,6 +277,9 @@ export const useAuth = () => {
     return () => {
       mounted = false;
       initializingRef.current = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       subscription.unsubscribe();
     };
   }, [updateAuthState, setError, isClient]);
