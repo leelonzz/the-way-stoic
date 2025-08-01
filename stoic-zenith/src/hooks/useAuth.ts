@@ -136,41 +136,39 @@ export const useAuth = () => {
       try {
         console.log('🔄 Initializing authentication...');
         
+        // Set a timeout to prevent endless loading
+        const authTimeout = setTimeout(() => {
+          if (mounted && mountedRef.current) {
+            console.warn('⏰ Auth initialization timeout, setting loading to false');
+            setAuthState(prev => ({ ...prev, loading: false }));
+          }
+        }, 5000); // 5 second timeout
+        
         // Check localStorage for session persistence first
         const persistedSession = localStorage.getItem('supabase-session');
         if (persistedSession) {
           console.log('📦 Found persisted session in localStorage');
         }
         
-        // Get session with retry logic for better reliability
+        // Get session with single attempt and timeout
         let session = null;
-        let retryCount = 0;
-        const maxRetries = 3;
-        
-        while (retryCount < maxRetries && !session) {
-          try {
-            session = await authHelpers.getCurrentSession();
-            if (session) break;
-          } catch (error) {
-            console.warn(`Session fetch attempt ${retryCount + 1} failed:`, error);
-            retryCount++;
-            if (retryCount < maxRetries) {
-              await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms before retry
-            }
-          }
+        try {
+          const sessionPromise = authHelpers.getCurrentSession();
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Session fetch timeout')), 3000)
+          );
+          
+          session = await Promise.race([sessionPromise, timeoutPromise]);
+        } catch (error) {
+          console.warn('Session fetch failed:', error);
+          session = null;
         }
         
         console.log('📋 Current session:', session ? 'Found' : 'None', session?.user?.email);
-        console.log('📋 Session details:', {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          accessToken: session?.access_token ? 'Present' : 'Missing',
-          expiresAt: session?.expires_at,
-          refreshToken: session?.refresh_token ? 'Present' : 'Missing',
-          retriesUsed: retryCount
-        });
         
         if (mounted && mountedRef.current) {
+          clearTimeout(authTimeout);
+          
           // If we have a session, update auth state immediately
           if (session?.user) {
             console.log('✅ Found valid session, updating auth state');

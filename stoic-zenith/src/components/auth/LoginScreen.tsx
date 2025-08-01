@@ -30,16 +30,15 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
             onClick={onBack}
             variant="ghost"
             size="sm"
-            className="flex items-center gap-2 text-stone hover:text-ink hover:bg-white/20"
+            className="flex items-center text-stone hover:text-ink hover:bg-white/20 p-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to landing
           </Button>
         </div>
       )}
 
       {/* Left Side - Login Content */}
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-8">
         {/* Header Section */}
         <div className="text-center space-y-4">
@@ -150,19 +149,6 @@ export function LoginScreen({ onBack }: LoginScreenProps) {
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-          <div className="absolute bottom-12 left-12 right-12 text-white">
-            <div className="space-y-4">
-              <Quote className="w-10 h-10 text-white/80" />
-              <blockquote className="space-y-3">
-                <p className="text-xl font-serif italic leading-relaxed">
-                  "The path of wisdom is steep and winding, but each step brings us closer to inner peace."
-                </p>
-                <footer className="text-white/80 font-medium">
-                  — Ancient Stoic Wisdom
-                </footer>
-              </blockquote>
-            </div>
-          </div>
         </div>
       </div>
     </div>

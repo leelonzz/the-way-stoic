@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar as CalendarIcon, BarChart3, Settings } from 'lucide-react';
 import { useLifeCalendar } from '@/hooks/useLifeCalendar';
@@ -137,9 +138,11 @@ export default function CalendarPage() {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <AppLayout>
-          <CalendarContent />
-        </AppLayout>
+        <ProtectedRoute>
+          <AppLayout>
+            <CalendarContent />
+          </AppLayout>
+        </ProtectedRoute>
       </TooltipProvider>
     </QueryClientProvider>
   );

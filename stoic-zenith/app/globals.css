@@ -9,83 +9,86 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Landing Page Theme - Modern Dark */
-    --background: 210 11% 7%; /* #0f1211 */
-    --foreground: 160 14% 93%; /* #e7eceb */
+    /* Terra Cotta Theme - Warm Stoic Palette */
+    --background: 39 46% 95%; /* #F4F3EE - Pampas background (60%) */
+    --foreground: 30 20% 24%; /* #3D3929 - Main typography color */
 
-    --muted: 240 2% 16%; /* #27272a */
-    --muted-foreground: 160 14% 93% / 0.7; /* rgba(231, 236, 235, 0.7) */
-    --muted-foreground-light: 160 14% 93% / 0.5; /* rgba(231, 236, 235, 0.5) */
-    --muted-foreground-dark: 160 14% 93% / 0.6; /* rgba(231, 236, 235, 0.6) */
+    --muted: 32 7% 69%; /* #B1ADA1 - Cloudy neutral */
+    --muted-foreground: 30 20% 24% / 0.7; /* Typography with opacity */
+    --muted-foreground-light: 30 20% 24% / 0.5;
+    --muted-foreground-dark: 30 20% 24% / 0.6;
 
-    --card: 220 17% 98% / 0.01;
-    --card-foreground: 160 14% 93%;
+    --card: 0 0% 100% / 0.9; /* White cards with slight transparency */
+    --card-foreground: 30 20% 24%; /* #3D3929 */
 
-    --popover: 210 11% 7%;
-    --popover-foreground: 160 14% 93%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 30 20% 24%;
 
-    /* Primary Accent Colors */
-    --primary: 165 96% 71%; /* #78fcd6 */
-    --primary-foreground: 160 8% 6%; /* #0d0f0e */
-    --primary-dark: 160 100% 50%; /* #00ffb6 */
-    --primary-light: 160 48% 87%; /* New variable for lighter teal/green shades */
+    /* Primary Accent Colors - Terra Cotta */
+    --primary: 15 46% 60%; /* #DA7756 - Terra Cotta primary */
+    --primary-foreground: 0 0% 100%; /* White text on terra cotta */
+    --primary-dark: 15 52% 49%; /* #BD5D3A - Chat/Button accent */
+    --primary-light: 15 46% 75%; /* Lighter terra cotta shade */
 
-    /* Secondary Accent Colors (for buttons, etc.) */
-    --secondary: 160 14% 93%; /* #e7eceb */
-    --secondary-foreground: 165 14% 8%; /* #141a18 */
+    /* Secondary Accent Colors */
+    --secondary: 39 33% 93%; /* #EEECE2 - Website light background (30%) */
+    --secondary-foreground: 30 20% 24%;
 
-    --accent: 240 2% 25%; /* #3f3f42 */
-    --accent-foreground: 240 2% 96%; /* #f4f4f5 */
+    --accent: 15 52% 49%; /* #BD5D3A - Chat/Button accent */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 160 14% 93%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 100% 100% / 0.08; /* rgba(255, 255, 255, 0.08) */
-    --border-light: 210 17% 6% / 0.1; /* rgba(16,24,40,0.1) */
-    --border-dark: 210 17% 6% / 0.05; /* rgba(16,24,40,0.05) */
-    --input: 240 2% 16%;
+    --border: 32 7% 69% / 0.3; /* Cloudy with opacity */
+    --border-light: 32 7% 69% / 0.2;
+    --border-dark: 32 7% 69% / 0.4;
+    --input: 39 33% 93%; /* Light background */
 
-    --ring: 165 96% 71%;
+    --ring: 15 46% 60%; /* Terra cotta focus ring */
     
     --radius: 0.5rem;
     
-    /* Custom Stoic Colors - Preserved for compatibility */
-    --cta: 20 65% 44%;
-    --hero: 47 44 96%;
-    --sage: 96 22% 69%;
-    --stone: 33 14% 54%;
-    --parchment: 44 44 95%;
-    --ink: 0 0% 18%;
+    /* Custom Stoic Colors - Updated to Terra Cotta palette */
+    --cta: 15 52% 49%; /* #BD5D3A - Chat/Button accent */
+    --hero: 39 46% 95%; /* #F4F3EE - Pampas background */
+    --sage: 32 7% 69%; /* #B1ADA1 - Cloudy neutral */
+    --stone: 30 20% 24%; /* #3D3929 - Main typography */
+    --parchment: 39 33% 93%; /* #EEECE2 - Website light background */
+    --ink: 0 0% 0%; /* #000000 - Pure black accent */
+    --crail: 18 55% 49%; /* #C15F3C - Craíl neutral */
+    --peach: 16 58% 60%; /* #DE7356 - Peach alternative brand accent */
   }
   
   .dark {
-    --background: 0 0% 18%;
-    --foreground: 47 44 96%;
+    /* Dark mode using deeper terra cotta tones */
+    --background: 30 20% 12%; /* Dark background */
+    --foreground: 39 46% 95%; /* Light text */
     
-    --card: 0 0% 18%;
-    --card-foreground: 47 44 96%;
+    --card: 30 20% 15%;
+    --card-foreground: 39 46% 95%;
     
-    --popover: 0 0% 18%;
-    --popover-foreground: 47 44 96%;
+    --popover: 30 20% 12%;
+    --popover-foreground: 39 46% 95%;
     
-    --primary: 20 65% 44%;
-    --primary-foreground: 0 0% 18%;
+    --primary: 15 46% 60%; /* Terra cotta */
+    --primary-foreground: 0 0% 100%;
     
-    --secondary: 258 30% 52%;
-    --secondary-foreground: 0 0% 18%;
+    --secondary: 30 20% 18%;
+    --secondary-foreground: 39 46% 95%;
     
-    --muted: 33 14% 25%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 30 20% 20%;
+    --muted-foreground: 32 7% 69%;
     
-    --accent: 258 30% 52%;
-    --accent-foreground: 0 0% 18%;
+    --accent: 15 52% 49%; /* Chat/Button accent */
+    --accent-foreground: 0 0% 100%;
     
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 18%;
+    --destructive-foreground: 0 0% 100%;
     
-    --border: 33 14% 25%;
-    --input: 33 14% 20%;
-    --ring: 20 65% 44%;
+    --border: 30 20% 25%;
+    --input: 30 20% 18%;
+    --ring: 15 46% 60%;
   }
 }
 
@@ -97,11 +100,15 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground font-sans antialiased;
     background-color: hsl(var(--hero));
-    color: hsl(var(--ink));
+    color: hsl(var(--stone));
   }
   
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif;
+  }
+  
+  .font-inknut {
+    font-family: var(--font-inknut-antiqua), serif;
   }
 }
 
@@ -140,5 +147,29 @@ All colors MUST be HSL.
   
   .text-ink {
     color: hsl(var(--ink));
+  }
+  
+  .text-crail {
+    color: hsl(var(--crail));
+  }
+  
+  .bg-crail {
+    background-color: hsl(var(--crail));
+  }
+  
+  .text-peach {
+    color: hsl(var(--peach));
+  }
+  
+  .bg-peach {
+    background-color: hsl(var(--peach));
+  }
+  
+  .text-terra-cotta {
+    color: hsl(var(--primary));
+  }
+  
+  .bg-terra-cotta {
+    background-color: hsl(var(--primary));
   }
 }

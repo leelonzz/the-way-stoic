@@ -16,6 +16,7 @@ import { QuoteSearch } from '@/components/quotes/QuoteSearch';
 import { MyOwnQuotes } from '@/components/quotes/MyOwnQuotes';
 import { MoodBasedQuotes } from '@/components/quotes/MoodBasedQuotes';
 import { useAuthContext } from '@/components/auth/AuthProvider';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 const queryClient = new QueryClient();
 
@@ -226,9 +227,11 @@ export default function QuotesPage() {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <AppLayout>
-          <QuotesContent />
-        </AppLayout>
+        <ProtectedRoute>
+          <AppLayout>
+            <QuotesContent />
+          </AppLayout>
+        </ProtectedRoute>
       </TooltipProvider>
     </QueryClientProvider>
   );

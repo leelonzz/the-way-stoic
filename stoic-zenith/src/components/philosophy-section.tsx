@@ -44,7 +44,7 @@ export function PhilosophySection() {
       <div className="container px-4">
         <div className="mx-auto max-w-2xl text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tight text-ink md:text-4xl lg:text-5xl mb-4">
-            Learn from the <span className="text-secondary">Greatest Minds</span>
+            Learn from the <span className="text-cta">Greatest Minds</span>
           </h2>
           <p className="text-lg text-stone leading-relaxed">
             Engage with three legendary stoic philosophers through AI-powered conversations that bring their wisdom to
@@ -65,7 +65,7 @@ export function PhilosophySection() {
                     philosopher.color === "cta"
                       ? "from-cta/10 to-cta/5"
                       : philosopher.color === "secondary"
-                        ? "from-secondary/10 to-secondary/5"
+                        ? "from-cta/10 to-cta/5"
                         : "from-accent/10 to-accent/5"
                   }`}
                 >
@@ -78,7 +78,7 @@ export function PhilosophySection() {
                         philosopher.color === "cta"
                           ? "bg-cta/20"
                           : philosopher.color === "secondary"
-                            ? "bg-secondary/20"
+                            ? "bg-cta/20"
                             : "bg-accent/20"
                       }`}
                     >
@@ -87,7 +87,7 @@ export function PhilosophySection() {
                           philosopher.color === "cta"
                             ? "text-cta"
                             : philosopher.color === "secondary"
-                              ? "text-secondary"
+                              ? "text-cta"
                               : "text-accent"
                         }`}
                       />
@@ -99,7 +99,7 @@ export function PhilosophySection() {
                       philosopher.color === "cta"
                         ? "text-cta"
                         : philosopher.color === "secondary"
-                          ? "text-secondary"
+                          ? "text-cta"
                           : "text-accent"
                     }`}
                   >
@@ -141,14 +141,6 @@ export function PhilosophySection() {
           ))}
         </div>
 
-        {/* Call to Action */}
-        <div className="text-center mt-12">
-          <p className="text-stone mb-4">Ready to start conversations with these timeless mentors?</p>
-          <div className="inline-flex items-center space-x-2 text-cta font-medium">
-            <MessageCircle className="h-4 w-4" />
-            <span>Begin your philosophical journey today</span>
-          </div>
-        </div>
       </div>
     </section>
   )

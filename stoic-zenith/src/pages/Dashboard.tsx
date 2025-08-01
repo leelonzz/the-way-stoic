@@ -19,31 +19,31 @@ export default function Dashboard() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-serif font-bold text-ink">
+        <h1 className="text-4xl font-serif font-bold text-stone">
           {currentHour < 12 ? 'Good Morning' : currentHour < 17 ? 'Good Afternoon' : 'Good Evening'}
         </h1>
-        <p className="text-stone text-lg">
+        <p className="text-sage text-lg">
           "Every new beginning comes from some other beginning's end."
         </p>
       </div>
 
       {/* Daily Quote */}
-      <Card className="bg-gradient-to-br from-hero/20 to-cta/10 border-cta/20">
+      <Card className="bg-gradient-to-br from-parchment/60 to-terra-cotta/10 border-primary/20">
         <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2 text-2xl font-serif text-ink">
-            <Sparkles className="w-6 h-6 text-cta" />
+          <CardTitle className="flex items-center justify-center gap-2 text-2xl font-serif text-stone">
+            <Sparkles className="w-6 h-6 text-primary" />
             Today's Quote
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center space-y-4">
-            <blockquote className="text-xl font-serif italic text-ink leading-relaxed">
+            <blockquote className="text-xl font-serif italic text-stone leading-relaxed">
               "{sampleQuote.quote}"
             </blockquote>
             <div>
-              <p className="font-semibold text-stone">— {sampleQuote.author}</p>
+              <p className="font-semibold text-crail">— {sampleQuote.author}</p>
               {sampleQuote.source && (
-                <p className="text-sm text-stone/70">{sampleQuote.source}</p>
+                <p className="text-sm text-sage">{sampleQuote.source}</p>
               )}
             </div>
           </div>
@@ -55,10 +55,10 @@ export default function Dashboard() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
-              <BookOpen className="w-8 h-8 text-cta" />
+              <BookOpen className="w-8 h-8 text-primary" />
               <div>
-                <p className="text-2xl font-bold text-ink">7</p>
-                <p className="text-sm text-stone">Journal Streak</p>
+                <p className="text-2xl font-bold text-stone">7</p>
+                <p className="text-sm text-sage">Journal Streak</p>
               </div>
             </div>
           </CardContent>
@@ -66,10 +66,10 @@ export default function Dashboard() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
-              <Brain className="w-8 h-8 text-cta" />
+              <Brain className="w-8 h-8 text-primary" />
               <div>
-                <p className="text-2xl font-bold text-ink">3</p>
-                <p className="text-sm text-stone">Mentor Chats</p>
+                <p className="text-2xl font-bold text-stone">3</p>
+                <p className="text-sm text-sage">Mentor Chats</p>
               </div>
             </div>
           </CardContent>
@@ -77,10 +77,10 @@ export default function Dashboard() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
-              <Quote className="w-8 h-8 text-cta" />
+              <Quote className="w-8 h-8 text-primary" />
               <div>
-                <p className="text-2xl font-bold text-ink">15</p>
-                <p className="text-sm text-stone">Daily Quotes</p>
+                <p className="text-2xl font-bold text-stone">15</p>
+                <p className="text-sm text-sage">Daily Quotes</p>
               </div>
             </div>
           </CardContent>
@@ -88,10 +88,10 @@ export default function Dashboard() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
-              <Calendar className="w-8 h-8 text-cta" />
+              <Calendar className="w-8 h-8 text-primary" />
               <div>
-                <p className="text-2xl font-bold text-ink">5</p>
-                <p className="text-sm text-stone">Calendar Views</p>
+                <p className="text-2xl font-bold text-stone">5</p>
+                <p className="text-sm text-sage">Calendar Views</p>
               </div>
             </div>
           </CardContent>
@@ -103,15 +103,15 @@ export default function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-cta" />
+              <BookOpen className="w-5 h-5 text-primary" />
               Daily Reflection
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <p className="text-stone">Take a moment to reflect on your day and practice Stoic principles.</p>
+              <p className="text-sage">Take a moment to reflect on your day and practice Stoic principles.</p>
               <Link href="/journal">
-                <Button className="w-full bg-cta hover:bg-cta/90">
+                <Button className="w-full bg-primary hover:bg-primary/90">
                   Start Journaling
                 </Button>
               </Link>
@@ -120,12 +120,12 @@ export default function Dashboard() {
         </Card>
         
         <div className="space-y-6">
-          <div className="bg-white/90 backdrop-blur-sm border border-stone/20 rounded-lg p-8">
-            <h3 className="text-xl font-serif font-semibold text-ink mb-4">Today's Focus</h3>
+          <div className="bg-white/90 backdrop-blur-sm border border-sage/20 rounded-lg p-8">
+            <h3 className="text-xl font-serif font-semibold text-stone mb-4">Today's Focus</h3>
             <div className="space-y-4">
-              <div className="p-4 bg-hero/50 rounded-lg">
-                <h4 className="font-medium text-ink mb-2">Stoic Practice</h4>
-                <p className="text-stone text-sm">
+              <div className="p-4 bg-parchment/80 rounded-lg">
+                <h4 className="font-medium text-stone mb-2">Stoic Practice</h4>
+                <p className="text-sage text-sm">
                   Focus on the dichotomy of control. What is within your influence today, 
                   and what lies beyond it?
                 </p>
@@ -133,7 +133,7 @@ export default function Dashboard() {
               
               <div className="flex gap-3">
                 <Button 
-                  className="flex-1 bg-accent hover:bg-accent/90 text-white"
+                  className="flex-1 bg-primary hover:bg-primary/90 text-white"
                   onClick={() => window.location.href = '/mentors'}
                 >
                   <Brain className="w-4 h-4 mr-2" />
@@ -141,7 +141,7 @@ export default function Dashboard() {
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="flex-1 border-stone/30 hover:bg-hero/50"
+                  className="flex-1 border-sage/30 hover:bg-parchment/50"
                   onClick={() => window.location.href = '/calendar'}
                 >
                   <Calendar className="w-4 h-4 mr-2" />
