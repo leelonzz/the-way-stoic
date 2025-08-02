@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+
 import { Sparkles, BookOpen, Heart, User, Smile } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
 import { QuoteCard } from '@/components/quotes/QuoteCard';
@@ -20,7 +20,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 const queryClient = new QueryClient();
 
-function QuotesContent() {
+function QuotesContent(): JSX.Element {
     const { user } = useAuthContext();
   const { 
     quotes, 
@@ -32,7 +32,6 @@ function QuotesContent() {
     saveQuote, 
     unsaveQuote, 
     isQuoteSaved, 
-    getQuotesByCategory, 
     searchQuotes, 
     createUserQuote, 
     updateUserQuote, 
@@ -96,7 +95,7 @@ function QuotesContent() {
           <CardHeader className="text-center">
             <CardTitle className="flex items-center justify-center gap-2 text-2xl font-serif text-ink">
               <Sparkles className="w-6 h-6 text-cta" />
-              Today's Quote
+              Today&apos;s Quote
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -112,22 +111,36 @@ function QuotesContent() {
       )}
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-white/50">
-          <TabsTrigger value="general" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-hero/20 via-sage/10 to-stone/20 backdrop-blur-sm border border-stone/20 shadow-lg rounded-xl p-2 h-auto">
+          <TabsTrigger 
+            value="general" 
+            className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-ink data-[state=active]:border data-[state=active]:border-cta/20 hover:bg-white/60 text-stone/80 hover:text-ink"
+          >
             <BookOpen className="w-4 h-4" />
-            General
+            <span className="hidden sm:inline">General</span>
           </TabsTrigger>
-          <TabsTrigger value="my-own" className="flex items-center gap-2" disabled={!isAuthenticated}>
+          <TabsTrigger 
+            value="my-own" 
+            className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-ink data-[state=active]:border data-[state=active]:border-cta/20 hover:bg-white/60 text-stone/80 hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent" 
+            disabled={!isAuthenticated}
+          >
             <User className="w-4 h-4" />
-            My own quotes
+            <span className="hidden sm:inline">My Quotes</span>
           </TabsTrigger>
-          <TabsTrigger value="favorites" className="flex items-center gap-2" disabled={!isAuthenticated}>
+          <TabsTrigger 
+            value="favorites" 
+            className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-ink data-[state=active]:border data-[state=active]:border-cta/20 hover:bg-white/60 text-stone/80 hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent" 
+            disabled={!isAuthenticated}
+          >
             <Heart className="w-4 h-4" />
-            My Favorites
+            <span className="hidden sm:inline">Favorites</span>
           </TabsTrigger>
-          <TabsTrigger value="mood" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="mood" 
+            className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-ink data-[state=active]:border data-[state=active]:border-cta/20 hover:bg-white/60 text-stone/80 hover:text-ink"
+          >
             <Smile className="w-4 h-4" />
-            Based on my mood
+            <span className="hidden sm:inline">Mood</span>
           </TabsTrigger>
         </TabsList>
 
@@ -221,7 +234,7 @@ function QuotesContent() {
   );
 }
 
-export default function QuotesPage() {
+export default function QuotesPage(): JSX.Element {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

@@ -126,7 +126,7 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
       suppressContentEditableWarning: true,
       onInput: (e: React.FormEvent<HTMLDivElement>) => handleInput(e, block.id),
       onKeyDown: (e: React.KeyboardEvent) => handleKeyDown(e, block.id),
-      className: "outline-none focus:ring-2 focus:ring-cta/20 rounded px-2 py-2 min-h-[2rem] leading-relaxed",
+      className: "outline-none focus:ring-0 rounded px-1 py-1 min-h-[1.5rem] leading-relaxed",
       children: block.text
     };
 
@@ -134,9 +134,9 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
       case 'heading':
         const HeadingTag = `h${block.level}` as 'h1' | 'h2' | 'h3';
         const headingClasses = {
-          1: 'text-4xl font-bold text-ink mb-4 leading-tight font-serif',
-          2: 'text-3xl font-semibold text-ink mb-3 leading-tight font-serif',
-          3: 'text-2xl font-medium text-ink mb-2 leading-tight font-serif'
+          1: 'text-3xl font-bold text-stone-800 mb-6 leading-tight font-serif',
+          2: 'text-2xl font-semibold text-stone-800 mb-4 leading-tight font-serif',
+          3: 'text-xl font-medium text-stone-800 mb-3 leading-tight font-serif'
         };
         return React.createElement(HeadingTag, {
           ...commonProps,
@@ -145,23 +145,23 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
 
       case 'bullet-list':
         return (
-          <div className="flex items-start gap-3 mb-2">
-            <span className="text-ink mt-2 select-none text-lg">•</span>
-            <div {...commonProps} className={`${commonProps.className} flex-1 text-lg text-ink leading-relaxed`} />
+          <div className="flex items-start gap-3 mb-3">
+            <span className="text-stone-600 mt-1 select-none text-lg">•</span>
+            <div {...commonProps} className={`${commonProps.className} flex-1 text-base text-stone-700 leading-relaxed`} />
           </div>
         );
 
       case 'numbered-list':
         const index = blocks.filter(b => b.type === 'numbered-list').indexOf(block) + 1;
         return (
-          <div className="flex items-start gap-3 mb-2">
-            <span className="text-ink mt-2 select-none min-w-[24px] text-lg font-medium">{index}.</span>
-            <div {...commonProps} className={`${commonProps.className} flex-1 text-lg text-ink leading-relaxed`} />
+          <div className="flex items-start gap-3 mb-3">
+            <span className="text-stone-600 mt-1 select-none min-w-[24px] text-base font-medium">{index}.</span>
+            <div {...commonProps} className={`${commonProps.className} flex-1 text-base text-stone-700 leading-relaxed`} />
           </div>
         );
 
       default:
-        return <div {...commonProps} className={`${commonProps.className} mb-3 text-lg text-ink leading-relaxed`} />;
+        return <div {...commonProps} className={`${commonProps.className} mb-4 text-base text-stone-700 leading-relaxed`} />;
     }
   };
 
@@ -172,13 +172,13 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
   }, [blocks.length, onChange]);
 
   return (
-    <div className="relative">
+    <div className="relative h-full flex flex-col">
       <div 
         ref={editorRef}
-        className="min-h-[500px] p-8 bg-white/70 rounded-xl border border-stone/20 focus-within:border-cta/30 shadow-sm"
+        className="flex-1 p-6 bg-white focus-within:ring-0 overflow-y-auto"
       >
         {blocks.length === 0 && (
-          <div className="text-stone/60 italic text-lg leading-relaxed">{placeholder}</div>
+          <div className="text-stone-400 italic text-base leading-relaxed">{placeholder}</div>
         )}
         {blocks.map(renderBlock)}
       </div>

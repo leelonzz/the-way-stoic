@@ -10,14 +10,14 @@ import Journal from "@/pages/Journal";
 
 const queryClient = new QueryClient();
 
-export default function JournalPage() {
+export default function JournalPage(): JSX.Element {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <ProtectedRoute>
-          <AppLayout>
+          <AppLayout fullWidth>
             <Journal />
           </AppLayout>
         </ProtectedRoute>

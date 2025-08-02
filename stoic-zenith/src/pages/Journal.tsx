@@ -1,17 +1,13 @@
 
-import React, { useState } from 'react';
-import { MorningJournal } from '@/components/journal/MorningJournal';
-import { EveningJournal } from '@/components/journal/EveningJournal';
+import React from 'react';
 import { JournalNavigation } from '@/components/journal/JournalNavigation';
-import { Sun, Moon, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 export default function Journal() {
-  const [activeView, setActiveView] = useState('navigation');
-
   return (
     <div className="h-full flex bg-stone-50">
-      {/* Left Panel - Navigation */}
-      <div className="w-80 bg-white border-r border-stone-200 flex flex-col">
+      {/* Left Panel - Navigation (Fixed width, but responsive) */}
+      <div className="w-80 min-w-80 bg-white border-r border-stone-200 flex flex-col flex-shrink-0 hidden lg:flex">
         {/* Today Header */}
         <div className="p-6 border-b border-stone-100">
           <h1 className="text-2xl font-serif font-bold text-stone-800 mb-2">Today</h1>
@@ -41,14 +37,14 @@ export default function Journal() {
             
             <div className="flex flex-col items-center gap-2 min-w-0">
               <div className="w-16 h-16 rounded-full border-2 border-orange-200 bg-gradient-to-br from-orange-100 to-yellow-100 flex items-center justify-center">
-                <Sun className="w-6 h-6 text-orange-600" />
+                <div className="w-6 h-6 bg-orange-600 rounded-full"></div>
               </div>
               <span className="text-xs text-stone-600 text-center">Morning Meditation</span>
             </div>
             
             <div className="flex flex-col items-center gap-2 min-w-0">
               <div className="w-16 h-16 rounded-full border-2 border-orange-200 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                <Moon className="w-6 h-6 text-blue-600" />
+                <div className="w-6 h-6 bg-blue-600 rounded-full"></div>
               </div>
               <span className="text-xs text-stone-600 text-center">Evening Meditation</span>
             </div>
@@ -75,65 +71,20 @@ export default function Journal() {
           </div>
         </div>
 
-        {/* Navigation Tabs */}
+        {/* Navigation Tab */}
         <div className="flex-1 flex flex-col justify-end">
           <div className="flex border-t border-stone-100">
-            <button
-              onClick={() => setActiveView('navigation')}
-              className={`flex-1 flex flex-col items-center py-4 text-xs transition-colors ${
-                activeView === 'navigation' 
-                  ? 'text-orange-600 border-b-2 border-orange-600' 
-                  : 'text-stone-500 hover:text-stone-700'
-              }`}
-            >
+            <div className="flex-1 flex flex-col items-center py-4 text-xs text-orange-600 border-b-2 border-orange-600">
               <Calendar className="w-5 h-5 mb-1" />
               <span>Journal</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveView('morning')}
-              className={`flex-1 flex flex-col items-center py-4 text-xs transition-colors ${
-                activeView === 'morning' 
-                  ? 'text-orange-600 border-b-2 border-orange-600' 
-                  : 'text-stone-500 hover:text-stone-700'
-              }`}
-            >
-              <Sun className="w-5 h-5 mb-1" />
-              <span>Morning</span>
-            </button>
-            
-            <button
-              onClick={() => setActiveView('evening')}
-              className={`flex-1 flex flex-col items-center py-4 text-xs transition-colors ${
-                activeView === 'evening' 
-                  ? 'text-orange-600 border-b-2 border-orange-600' 
-                  : 'text-stone-500 hover:text-stone-700'
-              }`}
-            >
-              <Moon className="w-5 h-5 mb-1" />
-              <span>Evening</span>
-            </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Right Panel - Content */}
-      <div className="flex-1 bg-stone-50">
-        {activeView === 'navigation' && (
-          <JournalNavigation className="h-full" />
-        )}
-        
-        {activeView === 'morning' && (
-          <div className="h-full p-6">
-            <MorningJournal />
-          </div>
-        )}
-        
-        {activeView === 'evening' && (
-          <div className="h-full p-6">
-            <EveningJournal />
-          </div>
-        )}
+      {/* Right Panel - Content (Full remaining width/height) */}
+      <div className="flex-1 min-w-0 bg-white flex flex-col">
+        <JournalNavigation className="flex-1" />
       </div>
     </div>
   );
