@@ -1,67 +1,67 @@
 'use client'
 
-import React, { useState, useMemo } from 'react';
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useMemo } from 'react'
+import { Toaster } from '@/components/ui/toaster'
+import { Toaster as Sonner } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AppLayout } from '@/components/layout/AppLayout'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-import { Sparkles, BookOpen, Heart, User, Smile } from 'lucide-react';
-import { useQuotes } from '@/hooks/useQuotes';
-import { QuoteCard } from '@/components/quotes/QuoteCard';
-import { QuoteSearch } from '@/components/quotes/QuoteSearch';
-import { MyOwnQuotes } from '@/components/quotes/MyOwnQuotes';
-import { MoodBasedQuotes } from '@/components/quotes/MoodBasedQuotes';
-import { useAuthContext } from '@/components/auth/AuthProvider';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { Sparkles, BookOpen, Heart, User, Smile } from 'lucide-react'
+import { useQuotes } from '@/hooks/useQuotes'
+import { QuoteCard } from '@/components/quotes/QuoteCard'
+import { QuoteSearch } from '@/components/quotes/QuoteSearch'
+import { MyOwnQuotes } from '@/components/quotes/MyOwnQuotes'
+import { MoodBasedQuotes } from '@/components/quotes/MoodBasedQuotes'
+import { useAuthContext } from '@/components/auth/AuthProvider'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient()
 
 function QuotesContent(): JSX.Element {
-    const { user } = useAuthContext();
-  const { 
-    quotes, 
-    savedQuotes, 
-    userQuotes, 
-    loading, 
-    error, 
-    getDailyQuote, 
-    saveQuote, 
-    unsaveQuote, 
-    isQuoteSaved, 
-    searchQuotes, 
-    createUserQuote, 
-    updateUserQuote, 
-    deleteUserQuote 
-  } = useQuotes(user);
-  
-  const { isAuthenticated } = useAuthContext();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { user } = useAuthContext()
+  const {
+    quotes,
+    savedQuotes,
+    userQuotes,
+    loading,
+    error,
+    getDailyQuote,
+    saveQuote,
+    unsaveQuote,
+    isQuoteSaved,
+    searchQuotes,
+    createUserQuote,
+    updateUserQuote,
+    deleteUserQuote,
+  } = useQuotes(user)
 
-  const dailyQuote = getDailyQuote();
-  
+  const { isAuthenticated } = useAuthContext()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+
+  const dailyQuote = getDailyQuote()
+
   const categories = useMemo(() => {
-    const uniqueCategories = [...new Set(quotes.map(q => q.category))];
-    return uniqueCategories.sort();
-  }, [quotes]);
+    const uniqueCategories = [...new Set(quotes.map(q => q.category))]
+    return uniqueCategories.sort()
+  }, [quotes])
 
   const filteredQuotes = useMemo(() => {
-    let filtered = quotes;
-    
+    let filtered = quotes
+
     if (searchTerm) {
-      filtered = searchQuotes(searchTerm);
+      filtered = searchQuotes(searchTerm)
     }
-    
+
     if (selectedCategory) {
-      filtered = filtered.filter(q => q.category === selectedCategory);
+      filtered = filtered.filter(q => q.category === selectedCategory)
     }
-    
-    return filtered;
-  }, [quotes, searchTerm, selectedCategory, searchQuotes]);
+
+    return filtered
+  }, [quotes, searchTerm, selectedCategory, searchQuotes])
 
   if (loading) {
     return (
@@ -71,7 +71,7 @@ function QuotesContent(): JSX.Element {
           <p className="text-stone">Loading wisdom...</p>
         </div>
       </div>
-    );
+    )
   }
 
   if (error) {
@@ -80,7 +80,7 @@ function QuotesContent(): JSX.Element {
         <h1 className="text-3xl font-serif text-ink">Daily Quotes</h1>
         <p className="text-red-600 mt-4">Error: {error}</p>
       </div>
-    );
+    )
   }
 
   return (
@@ -111,33 +111,33 @@ function QuotesContent(): JSX.Element {
       )}
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-hero/20 via-sage/10 to-stone/20 backdrop-blur-sm border border-stone/20 shadow-lg rounded-xl p-2 h-auto">
-          <TabsTrigger 
-            value="general" 
-            className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-ink data-[state=active]:border data-[state=active]:border-cta/20 hover:bg-white/60 text-stone/80 hover:text-ink"
+        <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-stone/10 via-hero/15 to-sage/10 backdrop-blur-md border border-stone/30 shadow-2xl rounded-2xl p-3">
+          <TabsTrigger
+            value="general"
+            className="flex items-center gap-2.5 px-5 py-3.5 text-stone/70 hover:text-ink font-medium"
           >
             <BookOpen className="w-4 h-4" />
             <span className="hidden sm:inline">General</span>
           </TabsTrigger>
-          <TabsTrigger 
-            value="my-own" 
-            className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-ink data-[state=active]:border data-[state=active]:border-cta/20 hover:bg-white/60 text-stone/80 hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent" 
+          <TabsTrigger
+            value="my-own"
+            className="flex items-center gap-2.5 px-5 py-3.5 text-stone/70 hover:text-ink font-medium disabled:opacity-30"
             disabled={!isAuthenticated}
           >
             <User className="w-4 h-4" />
             <span className="hidden sm:inline">My Quotes</span>
           </TabsTrigger>
-          <TabsTrigger 
-            value="favorites" 
-            className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-ink data-[state=active]:border data-[state=active]:border-cta/20 hover:bg-white/60 text-stone/80 hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent" 
+          <TabsTrigger
+            value="favorites"
+            className="flex items-center gap-2.5 px-5 py-3.5 text-stone/70 hover:text-ink font-medium disabled:opacity-30"
             disabled={!isAuthenticated}
           >
             <Heart className="w-4 h-4" />
             <span className="hidden sm:inline">Favorites</span>
           </TabsTrigger>
-          <TabsTrigger 
-            value="mood" 
-            className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-ink data-[state=active]:border data-[state=active]:border-cta/20 hover:bg-white/60 text-stone/80 hover:text-ink"
+          <TabsTrigger
+            value="mood"
+            className="flex items-center gap-2.5 px-5 py-3.5 text-stone/70 hover:text-ink font-medium"
           >
             <Smile className="w-4 h-4" />
             <span className="hidden sm:inline">Mood</span>
@@ -152,13 +152,13 @@ function QuotesContent(): JSX.Element {
             onCategoryChange={setSelectedCategory}
             categories={categories}
           />
-          
+
           <div className="text-sm text-stone/70 mb-4">
             Showing {filteredQuotes.length} of {quotes.length} quotes
           </div>
-          
+
           <div className="grid gap-6">
-            {filteredQuotes.map((quote) => (
+            {filteredQuotes.map(quote => (
               <QuoteCard
                 key={quote.id}
                 quote={quote}
@@ -168,10 +168,12 @@ function QuotesContent(): JSX.Element {
               />
             ))}
           </div>
-          
+
           {filteredQuotes.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-stone">No quotes found matching your criteria.</p>
+              <p className="text-stone">
+                No quotes found matching your criteria.
+              </p>
             </div>
           )}
         </TabsContent>
@@ -187,7 +189,9 @@ function QuotesContent(): JSX.Element {
             />
           ) : (
             <div className="text-center py-12">
-              <p className="text-stone">Please sign in to create your own quotes.</p>
+              <p className="text-stone">
+                Please sign in to create your own quotes.
+              </p>
             </div>
           )}
         </TabsContent>
@@ -197,7 +201,7 @@ function QuotesContent(): JSX.Element {
             <>
               {savedQuotes.length > 0 ? (
                 <div className="grid gap-6">
-                  {savedQuotes.map((savedQuote) => (
+                  {savedQuotes.map(savedQuote => (
                     <QuoteCard
                       key={savedQuote.id}
                       quote={savedQuote.quote}
@@ -210,13 +214,17 @@ function QuotesContent(): JSX.Element {
                 <div className="text-center py-12">
                   <Heart className="w-16 h-16 text-stone/30 mx-auto mb-4" />
                   <p className="text-stone">No saved quotes yet.</p>
-                  <p className="text-stone/70 text-sm">Save quotes you love by clicking the bookmark icon.</p>
+                  <p className="text-stone/70 text-sm">
+                    Save quotes you love by clicking the bookmark icon.
+                  </p>
                 </div>
               )}
             </>
           ) : (
             <div className="text-center py-12">
-              <p className="text-stone">Please sign in to view your favorite quotes.</p>
+              <p className="text-stone">
+                Please sign in to view your favorite quotes.
+              </p>
             </div>
           )}
         </TabsContent>
@@ -231,7 +239,7 @@ function QuotesContent(): JSX.Element {
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }
 
 export default function QuotesPage(): JSX.Element {
@@ -247,5 +255,5 @@ export default function QuotesPage(): JSX.Element {
         </ProtectedRoute>
       </TooltipProvider>
     </QueryClientProvider>
-  );
+  )
 }
