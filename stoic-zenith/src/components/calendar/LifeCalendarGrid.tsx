@@ -128,11 +128,11 @@ export const LifeCalendarGrid = memo(({ data, getWeekData }: LifeCalendarGridPro
     { value: data.weeksLived, label: 'Weeks Lived', color: 'text-cta' },
     { value: totalWeeks - weeksLived, label: 'Weeks Remaining', color: 'text-stone' },
     { value: data.yearsLived, label: 'Years Old', color: 'text-ink' },
-    { value: `${data.percentageLived}%`, label: 'Life Lived', color: 'text-hero' }
+    { value: `${data.percentageLived}%`, label: 'Life Lived', color: 'text-stone' }
   ], [data.weeksLived, data.yearsLived, data.percentageLived, totalWeeks, weeksLived]);
 
   return (
-    <Card className="bg-white/90 backdrop-blur-sm">
+    <Card className="bg-white/90 backdrop-blur-sm animate-fade-in">
       <CardHeader className="space-y-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-serif text-ink">Your Life in Weeks</CardTitle>

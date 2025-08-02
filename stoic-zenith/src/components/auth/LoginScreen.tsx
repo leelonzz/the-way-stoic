@@ -5,17 +5,17 @@ import { Brain, Quote, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuthContext } from './AuthProvider';
-import { Hourglass } from '@/components/ui/Hourglass';
+import { SimpleSpinner } from '@/components/ui/SimpleSpinner';
 
 interface LoginScreenProps {
   onBack?: () => void;
   onAuthAttempt?: () => void;
 }
 
-export function LoginScreen({ onBack, onAuthAttempt }: LoginScreenProps) {
+export function LoginScreen({ onBack, onAuthAttempt }: LoginScreenProps): JSX.Element {
   const { signInWithGoogle, isLoading, error } = useAuthContext();
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = async (): Promise<void> => {
     try {
       onAuthAttempt?.();
       await signInWithGoogle();
@@ -66,7 +66,7 @@ export function LoginScreen({ onBack, onAuthAttempt }: LoginScreenProps) {
             <Quote className="w-8 h-8 text-accent mx-auto mb-4" />
             <blockquote className="space-y-3">
               <p className="text-ink font-serif italic text-lg leading-relaxed">
-                "You have power over your mind—not outside events. Realize this, and you will find strength."
+                &ldquo;You have power over your mind—not outside events. Realize this, and you will find strength.&rdquo;
               </p>
               <footer className="text-stone font-medium">
                 — Marcus Aurelius
@@ -102,7 +102,7 @@ export function LoginScreen({ onBack, onAuthAttempt }: LoginScreenProps) {
             >
               {isLoading ? (
                 <div className="flex items-center gap-3">
-                  <Hourglass size="sm" />
+                  <SimpleSpinner size="sm" />
                   <span>Signing in...</span>
                 </div>
               ) : (

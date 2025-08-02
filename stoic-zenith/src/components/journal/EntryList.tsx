@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { Search, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,10 @@ interface EntryListProps {
   onSelectEntry: (entry: JournalEntry) => void;
   onCreateEntry: () => void;
   className?: string;
+  isParentLoading?: boolean;
+  onLoadingStateChange?: (loading: boolean) => void;
+  entries?: JournalEntry[];
+  onEntriesChange?: (entries: JournalEntry[]) => void;
 }
 
 interface EntryListItem {
@@ -17,14 +21,19 @@ interface EntryListItem {
   dateKey: string;
 }
 
-export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCreateEntry, className = '' }: EntryListProps): JSX.Element {
+export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCreateEntry, className = '', isParentLoading = false, onLoadingStateChange, entries: _parentEntries, onEntriesChange }: EntryListProps): JSX.Element {
   const [entries, setEntries] = useState<EntryListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredEntries, setFilteredEntries] = useState<EntryListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const loadEntries = async () => {
-    setIsLoading(true);
+  const loadEntries = useCallback(async () => {
+    if (!onLoadingStateChange) {
+      setIsLoading(true);
+    } else {
+      onLoadingStateChange(true);
+    }
+    
     try {
       const journalEntries = await getJournalEntries(50);
       const entryItems: EntryListItem[] = journalEntries.map(entry => {
@@ -51,12 +60,32 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
       
       setEntries(entryItems);
       setFilteredEntries(entryItems);
+      
+      // Convert to JournalEntry format for parent
+      const journalEntryFormat = entryItems.map(item => ({
+        id: item.entry.id,
+        date: item.entry.entry_date,
+        blocks: [{
+          id: `block-${Date.now()}`,
+          type: 'paragraph' as const,
+          text: item.entry.preview || '',
+          createdAt: new Date(item.entry.created_at)
+        }],
+        createdAt: new Date(item.entry.created_at),
+        updatedAt: new Date(item.entry.updated_at)
+      }));
+      
+      onEntriesChange?.(journalEntryFormat);
     } catch (error) {
       console.error('Failed to load journal entries:', error);
     } finally {
-      setIsLoading(false);
+      if (!onLoadingStateChange) {
+        setIsLoading(false);
+      } else {
+        onLoadingStateChange(false);
+      }
     }
-  };
+  }, [onLoadingStateChange, onEntriesChange]);
 
   const formatEntryDate = (dateStr: string): string => {
     try {
@@ -69,7 +98,7 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
     }
   };
 
-  const handleSearch = (query: string) => {
+  const handleSearch = (query: string): void => {
     setSearchQuery(query);
     if (!query.trim()) {
       setFilteredEntries(entries);
@@ -90,15 +119,15 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
 
   useEffect(() => {
     loadEntries();
-  }, []);
+  }, [loadEntries]);
 
   // Function to refresh entries (can be called from parent components)
-  const refreshEntries = () => {
+  const refreshEntries = useCallback((): void => {
     loadEntries();
-  };
+  }, [loadEntries]);
 
   // Expose refresh function via ref or callback
-  useEffect(() => {
+  useEffect((): (() => void) => {
     if (typeof window !== 'undefined') {
       window.refreshJournalEntries = refreshEntries;
     }
@@ -107,7 +136,7 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
         delete window.refreshJournalEntries;
       }
     };
-  }, []);
+  }, [refreshEntries]);
 
   // const hasEntryContent = selectedEntry?.blocks?.some(block => block.text?.trim() !== '') || false;
 
@@ -129,9 +158,12 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
 
       {/* Entries List */}
       <div className="flex-1 overflow-y-auto">
-        {isLoading ? (
+        {(isLoading || isParentLoading) ? (
           <div className="p-6 text-center font-inknut text-stone-500">
-            Loading entries...
+            <div className="animate-pulse">
+              <div className="h-4 bg-stone-200 rounded w-24 mx-auto mb-2"></div>
+              <div className="h-3 bg-stone-100 rounded w-32 mx-auto"></div>
+            </div>
           </div>
         ) : filteredEntries.length === 0 ? (
           <div className="p-6 text-center font-inknut text-stone-500">

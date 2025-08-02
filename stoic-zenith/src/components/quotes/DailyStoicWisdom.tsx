@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useQuotes } from '@/hooks/useQuotes'
 import { useAuthContext } from '@/components/auth/AuthProvider'
 import type { Quote as QuoteType } from '@/hooks/useQuotes'
-import { Hourglass } from '@/components/ui/Hourglass'
+import { MinimalLoadingScreen } from '@/components/ui/loading-spinner'
 
 interface DailyStoicQuoteCardProps {
   quote: QuoteType
@@ -29,7 +29,7 @@ function DailyStoicQuoteCard({
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
-  const handleSaveToggle = async () => {
+  const handleSaveToggle = async (): Promise<void> => {
     if (!onSave || !onUnsave) return
     
     setIsLoading(true)
@@ -49,7 +49,7 @@ function DailyStoicQuoteCard({
     }
   }
 
-  const handleShare = async () => {
+  const handleShare = async (): Promise<void> => {
     const text = `"${quote.text}" - ${quote.author}${quote.source ? ` (${quote.source})` : ''}`
     
     if (navigator.share) {
@@ -58,9 +58,9 @@ function DailyStoicQuoteCard({
           title: 'Stoic Quote',
           text: text,
         })
-      } catch (_err) {
-        // User cancelled or error occurred
-      }
+              } catch {
+          // User cancelled or error occurred
+        }
     } else {
       try {
         await navigator.clipboard.writeText(text)
@@ -68,7 +68,7 @@ function DailyStoicQuoteCard({
           title: "Quote copied",
           description: "Quote copied to clipboard",
         })
-      } catch (_err) {
+      } catch {
         toast({
           title: "Failed to copy",
           description: "Unable to copy quote to clipboard",
@@ -79,7 +79,7 @@ function DailyStoicQuoteCard({
   }
 
   return (
-    <Card className="bg-white border-stone/20 shadow-lg">
+    <Card className="bg-white border-stone/20 shadow-lg animate-fade-in">
       <CardContent className="p-16 relative">
         {/* Action buttons in top right */}
         <div className="absolute top-4 right-6 flex items-center gap-2">
@@ -151,11 +151,11 @@ function SimplifiedQuoteCard({
   isSaved = false, 
   onSave, 
   onUnsave 
-}: SimplifiedQuoteCardProps) {
+}: SimplifiedQuoteCardProps): JSX.Element {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
-  const handleSaveToggle = async () => {
+  const handleSaveToggle = async (): Promise<void> => {
     if (!onSave || !onUnsave) return
     
     setIsLoading(true)
@@ -175,7 +175,7 @@ function SimplifiedQuoteCard({
     }
   }
 
-  const handleShare = async () => {
+  const handleShare = async (): Promise<void> => {
     const text = `"${quote.text}" - ${quote.author}${quote.source ? ` (${quote.source})` : ''}`
     
     if (navigator.share) {
@@ -184,7 +184,7 @@ function SimplifiedQuoteCard({
           title: 'Stoic Quote',
           text: text,
         })
-      } catch (err) {
+      } catch {
         // User cancelled or error occurred
       }
     } else {
@@ -194,7 +194,7 @@ function SimplifiedQuoteCard({
           title: "Quote copied",
           description: "Quote copied to clipboard",
         })
-      } catch (err) {
+      } catch {
         toast({
           title: "Failed to copy",
           description: "Unable to copy quote to clipboard",
@@ -205,7 +205,7 @@ function SimplifiedQuoteCard({
   }
 
   return (
-    <Card className="bg-white border-stone/20 shadow-sm hover:shadow-md transition-shadow">
+    <Card className="bg-white border-stone/20 shadow-sm hover:shadow-md transition-shadow animate-fade-in">
       <CardContent className="p-8">
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1 space-y-3">
@@ -257,7 +257,7 @@ function SimplifiedQuoteCard({
   )
 }
 
-export function DailyStoicWisdom() {
+export function DailyStoicWisdom(): JSX.Element {
   const { user } = useAuthContext()
   const { isAuthenticated } = useAuthContext()
   const [searchTerm, setSearchTerm] = useState('')
@@ -274,9 +274,9 @@ export function DailyStoicWisdom() {
     unsaveQuote, 
     isQuoteSaved, 
     searchQuotes,
-    createUserQuote, 
-    updateUserQuote, 
-    deleteUserQuote,
+    createUserQuote: _createUserQuote, 
+    updateUserQuote: _updateUserQuote, 
+    deleteUserQuote: _deleteUserQuote,
     refreshDailyQuote
   } = useQuotes(user)
 
@@ -292,7 +292,7 @@ export function DailyStoicWisdom() {
     return filtered
   }, [quotes, searchTerm, searchQuotes])
 
-  const handleRefreshDailyQuote = () => {
+  const handleRefreshDailyQuote = (): void => {
     // Use the refresh function from the hook instead of reloading the page
     refreshDailyQuote()
     // Force component re-render by updating a state
@@ -300,14 +300,7 @@ export function DailyStoicWisdom() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f2e5d4' }}>
-        <div className="text-center space-y-4">
-          <Hourglass size="md" className="mx-auto" />
-          <p className="text-stone">Loading wisdom...</p>
-        </div>
-      </div>
-    )
+    return <MinimalLoadingScreen />
   }
 
   if (error) {
@@ -322,17 +315,17 @@ export function DailyStoicWisdom() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f2e5d4' }}>
+    <div className="min-h-screen animate-fade-in" style={{ backgroundColor: '#f2e5d4' }}>
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         {/* Header */}
-        <div className="text-center">
+        <div className="text-center animate-fade-in">
           <h1 className="text-4xl md:text-5xl font-bold text-ink font-inknut leading-normal">
             Daily Stoic Wisdom
           </h1>
         </div>
 
         {/* Today Quote Section */}
-        <div className="space-y-4">
+        <div className="space-y-4 animate-fade-in">
           <h2 className="text-2xl md:text-3xl font-medium text-ink font-inika">
             Today Quote
           </h2>
@@ -349,7 +342,7 @@ export function DailyStoicWisdom() {
         </div>
 
         {/* Search Bar */}
-        <div className="relative max-w-4xl mx-auto">
+        <div className="relative max-w-4xl mx-auto animate-fade-in">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-stone w-5 h-5" />
           <Input
             type="text"
@@ -361,7 +354,7 @@ export function DailyStoicWisdom() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex justify-center">
+        <div className="flex justify-center animate-fade-in">
           <div className="flex bg-white rounded-full p-1 shadow-lg border border-stone/20">
             <button
               onClick={() => setActiveTab('library')}
@@ -399,7 +392,7 @@ export function DailyStoicWisdom() {
         </div>
 
         {/* Tab Content */}
-        <div className="space-y-4">
+        <div className="space-y-4 animate-fade-in">
           {activeTab === 'library' && (
             <div className="space-y-4">
               {filteredQuotes.length > 0 ? (

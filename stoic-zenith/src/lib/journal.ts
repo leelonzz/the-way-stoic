@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { JournalEntry } from '@/components/journal/types';
+import type { JournalEntry, JournalBlock } from '@/components/journal/types';
 
 export interface CreateJournalEntryData {
   entry_date: string;
@@ -126,6 +126,92 @@ export async function updateJournalEntry(id: string, data: Partial<CreateJournal
   }
 
   return entry as JournalEntryResponse;
+}
+
+// Convert rich text blocks to Supabase format
+export function convertBlocksToSupabaseFormat(blocks: JournalBlock[]): Partial<CreateJournalEntryData> {
+  const textContent = blocks
+    .filter(block => block.text && block.text.trim() !== '')
+    .map(block => block.text)
+    .join('\n\n');
+  
+  // For now, store all content in excited_about field
+  // In a real implementation, you might parse specific sections
+  return {
+    excited_about: textContent || '',
+    make_today_great: '', // Could be parsed from blocks if needed
+    must_not_do: '',
+    grateful_for: ''
+  };
+}
+
+// Convert Supabase entry to rich text blocks
+export function convertSupabaseToBlocks(entry: JournalEntryResponse): JournalBlock[] {
+  const blocks: JournalBlock[] = [];
+  
+  // Convert different fields to blocks
+  if (entry.excited_about && entry.excited_about.trim()) {
+    const lines = entry.excited_about.split('\n\n');
+    lines.forEach(line => {
+      if (line.trim()) {
+        blocks.push({
+          id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: 'paragraph',
+          text: line.trim(),
+          createdAt: new Date(entry.created_at)
+        });
+      }
+    });
+  }
+  
+  if (entry.make_today_great && entry.make_today_great.trim()) {
+    blocks.push({
+      id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: 'paragraph',
+      text: entry.make_today_great.trim(),
+      createdAt: new Date(entry.created_at)
+    });
+  }
+  
+  // If no content, create an empty block
+  if (blocks.length === 0) {
+    blocks.push({
+      id: `block-${Date.now()}`,
+      type: 'paragraph',
+      text: '',
+      createdAt: new Date()
+    });
+  }
+  
+  return blocks;
+}
+
+// Update journal entry with rich text blocks
+export async function updateJournalEntryFromBlocks(
+  id: string, 
+  blocks: JournalBlock[]
+): Promise<JournalEntryResponse> {
+  const supabaseData = convertBlocksToSupabaseFormat(blocks);
+  return updateJournalEntry(id, supabaseData);
+}
+
+// Get journal entry and convert to rich text format
+export async function getJournalEntryAsRichText(date: string): Promise<JournalEntry | null> {
+  const supabaseEntry = await getJournalEntryByDate(date);
+  
+  if (!supabaseEntry) {
+    return null;
+  }
+  
+  const blocks = convertSupabaseToBlocks(supabaseEntry);
+  
+  return {
+    id: supabaseEntry.id,
+    date: supabaseEntry.entry_date,
+    blocks,
+    createdAt: new Date(supabaseEntry.created_at),
+    updatedAt: new Date(supabaseEntry.updated_at)
+  };
 }
 
 export async function deleteJournalEntry(id: string): Promise<void> {

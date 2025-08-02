@@ -76,7 +76,7 @@ export function LifeCalendarSetup({
   };
 
   return (
-    <Card className="bg-gradient-to-br from-hero/10 to-cta/5 border-hero/20">
+    <Card className="bg-gradient-to-br from-hero/10 to-cta/5 border-hero/20 animate-fade-in">
       <CardHeader className="text-center">
         <CardTitle className="flex items-center justify-center gap-2 text-2xl font-serif text-ink">
           <CalendarIcon className="w-6 h-6 text-cta" />

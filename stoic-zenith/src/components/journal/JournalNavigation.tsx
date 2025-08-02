@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Save, BookOpen, MoreHorizontal, Plus } from 'lucide-react';
+import { MoreHorizontal, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import { RichTextEditor } from './RichTextEditor';
-import { ExportButton } from './ExportButton';
 import { JournalEntry, JournalBlock } from './types';
 
 interface JournalNavigationProps {
@@ -15,14 +14,14 @@ interface JournalNavigationProps {
   isCreatingEntry?: boolean;
 }
 
-export function JournalNavigation({ className = '', entry, onEntryUpdate, onCreateEntry, isCreatingEntry = false }: JournalNavigationProps): JSX.Element {
+export function JournalNavigation({ className = '', entry, onEntryUpdate, onCreateEntry, isCreatingEntry: _isCreatingEntry = false }: JournalNavigationProps): JSX.Element {
   const [currentEntry, setCurrentEntry] = useState<JournalEntry>(entry);
-  const [isSaving, setIsSaving] = useState(false);
+  const [_isSaving, setIsSaving] = useState(false);
 
 
   const selectedDate = new Date(currentEntry.date);
 
-  const saveEntry = async () => {
+  const saveEntry = async (): Promise<void> => {
     if (!currentEntry) return;
     
     setIsSaving(true);
@@ -32,7 +31,13 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
         updatedAt: new Date()
       };
       
+      // Save to localStorage as fallback
       localStorage.setItem(`journal-${currentEntry.date}`, JSON.stringify(updatedEntry));
+      
+      // TODO: Integrate with Supabase to save rich text content
+      // This would involve converting blocks to a format that can be stored in the database
+      // and then updating the journal entry via updateJournalEntry from @/lib/journal
+      
       setCurrentEntry(updatedEntry);
       onEntryUpdate(updatedEntry);
     } catch (error) {
@@ -43,7 +48,7 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
   };
 
 
-  const handleBlocksChange = (blocks: JournalBlock[]) => {
+  const handleBlocksChange = (blocks: JournalBlock[]): void => {
     if (!currentEntry) return;
     const updatedEntry = {
       ...currentEntry,
@@ -57,7 +62,7 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
     setCurrentEntry(entry);
   }, [entry]);
 
-  useEffect(() => {
+  useEffect((): (() => void) => {
     const interval = setInterval(() => {
       if (currentEntry && currentEntry.blocks.some(block => block.text.trim() !== '')) {
         saveEntry();
@@ -65,7 +70,7 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [currentEntry]);
+  }, [currentEntry, saveEntry]);
 
   return (
     <div className={`flex flex-col h-full ${className}`}>

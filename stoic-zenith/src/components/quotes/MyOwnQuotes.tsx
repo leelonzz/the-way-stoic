@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Edit, Trash2, User } from 'lucide-react';
 import { QuoteCard } from './QuoteCard';
-import { Hourglass } from '@/components/ui/Hourglass';
+import { SimpleSpinner } from '@/components/ui/SimpleSpinner';
 
 export interface UserQuote {
   id: string;
@@ -49,7 +49,7 @@ export function MyOwnQuotes({
   onCreateQuote, 
   onUpdateQuote, 
   onDeleteQuote 
-}: MyOwnQuotesProps) {
+}: MyOwnQuotesProps): JSX.Element {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingQuote, setEditingQuote] = useState<UserQuote | null>(null);
   const [formData, setFormData] = useState({
@@ -61,7 +61,7 @@ export function MyOwnQuotes({
     is_private: false
   });
 
-  const resetForm = () => {
+  const resetForm = (): void => {
     setFormData({
       text: '',
       author: 'Me',
@@ -72,7 +72,7 @@ export function MyOwnQuotes({
     });
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (): Promise<void> => {
     if (!formData.text.trim()) return;
     
     const success = await onCreateQuote(formData);
@@ -82,7 +82,7 @@ export function MyOwnQuotes({
     }
   };
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (): Promise<void> => {
     if (!editingQuote || !formData.text.trim()) return;
     
     const success = await onUpdateQuote(editingQuote.id, formData);
@@ -92,7 +92,7 @@ export function MyOwnQuotes({
     }
   };
 
-  const handleEdit = (quote: UserQuote) => {
+  const handleEdit = (quote: UserQuote): void => {
     setEditingQuote(quote);
     setFormData({
       text: quote.text,
@@ -104,7 +104,7 @@ export function MyOwnQuotes({
     });
   };
 
-  const handleMoodToggle = (mood: string) => {
+  const handleMoodToggle = (mood: string): void => {
     setFormData(prev => ({
       ...prev,
       mood_tags: prev.mood_tags.includes(mood)
@@ -113,7 +113,7 @@ export function MyOwnQuotes({
     }));
   };
 
-  const QuoteForm = () => (
+  const QuoteForm = (): JSX.Element => (
     <div className="space-y-4">
       <div>
         <Label htmlFor="quote-text">Quote Text *</Label>
@@ -216,7 +216,7 @@ export function MyOwnQuotes({
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-4">
-          <Hourglass size="md" className="mx-auto" />
+          <SimpleSpinner size="md" className="mx-auto" />
           <p className="text-stone">Loading your quotes...</p>
         </div>
       </div>

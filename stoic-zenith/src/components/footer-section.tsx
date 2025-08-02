@@ -1,8 +1,8 @@
 "use client"
 
-import { Twitter, Github, Linkedin } from "lucide-react"
+import { X, Linkedin } from "lucide-react"
 
-export function FooterSection() {
+export function FooterSection(): JSX.Element {
   return (
     <footer className="w-full max-w-[1320px] mx-auto px-5 flex flex-col md:flex-row justify-between items-start gap-8 md:gap-0 py-10 md:py-[70px]">
       {/* Left Section: Logo, Description, Social Links */}
@@ -12,11 +12,8 @@ export function FooterSection() {
         </div>
         <p className="text-foreground/90 text-sm font-medium leading-[18px] text-left">Coding made effortless</p>
         <div className="flex justify-start items-start gap-3">
-          <a href="#" aria-label="Twitter" className="w-4 h-4 flex items-center justify-center">
-            <Twitter className="w-full h-full text-muted-foreground" />
-          </a>
-          <a href="#" aria-label="GitHub" className="w-4 h-4 flex items-center justify-center">
-            <Github className="w-full h-full text-muted-foreground" />
+          <a href="https://x.com/thewaystoic" aria-label="X" className="w-4 h-4 flex items-center justify-center">
+            <X className="w-full h-full text-muted-foreground" />
           </a>
           <a href="#" aria-label="LinkedIn" className="w-4 h-4 flex items-center justify-center">
             <Linkedin className="w-full h-full text-muted-foreground" />
@@ -68,7 +65,7 @@ export function FooterSection() {
         <div className="flex flex-col justify-start items-start gap-3">
           <h3 className="text-muted-foreground text-sm font-medium leading-5">Resources</h3>
           <div className="flex flex-col justify-center items-start gap-2">
-            <a href="#" className="text-foreground text-sm font-normal leading-5 hover:underline">
+            <a href="/terms" className="text-foreground text-sm font-normal leading-5 hover:underline">
               Terms of use
             </a>
             <a href="#" className="text-foreground text-sm font-normal leading-5 hover:underline">

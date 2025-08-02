@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { BookOpen, Mail, Twitter, Github } from "lucide-react"
+import { BookOpen, Mail, X } from "lucide-react"
 
-export function Footer() {
+export function Footer(): JSX.Element {
   const footerLinks = {
     product: [
       { name: "Features", href: "#features" },
@@ -19,7 +19,7 @@ export function Footer() {
     company: [
       { name: "About", href: "#about" },
       { name: "Privacy", href: "#" },
-      { name: "Terms", href: "#" },
+      { name: "Terms", href: "/terms" },
       { name: "Contact", href: "#" },
     ],
   }
@@ -42,10 +42,7 @@ export function Footer() {
             </p>
             <div className="flex space-x-2">
               <Button size="icon" variant="ghost" className="text-stone hover:text-ink">
-                <Twitter className="h-4 w-4" />
-              </Button>
-              <Button size="icon" variant="ghost" className="text-stone hover:text-ink">
-                <Github className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </Button>
               <Button size="icon" variant="ghost" className="text-stone hover:text-ink">
                 <Mail className="h-4 w-4" />

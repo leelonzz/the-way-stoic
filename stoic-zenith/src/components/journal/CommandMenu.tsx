@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Hash, Type, List, ListOrdered, MinusCircle, Image } from 'lucide-react';
 import { CommandOption } from './types';
 
@@ -72,7 +72,7 @@ const COMMANDS: CommandOption[] = [
   }
 ];
 
-const getIcon = (iconType: string) => {
+const getIcon = (iconType: string): JSX.Element => {
   switch (iconType) {
     case 'H1':
       return <Hash className="w-4 h-4" />;
@@ -93,13 +93,51 @@ const getIcon = (iconType: string) => {
   }
 };
 
-export function CommandMenu({ isOpen, position, searchQuery, onSelectCommand, onClose }: CommandMenuProps) {
-  if (!isOpen) return null;
-
+export function CommandMenu({ isOpen, position, searchQuery, onSelectCommand, onClose }: CommandMenuProps): JSX.Element | null {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  
   const filteredCommands = COMMANDS.filter(command =>
     command.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
     command.shortcut.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+  // Reset selection when commands change
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [searchQuery]);
+  
+  // Handle keyboard navigation
+  useEffect((): (() => void) => {
+    if (!isOpen) return;
+    
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setSelectedIndex(prev => (prev + 1) % filteredCommands.length);
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setSelectedIndex(prev => prev === 0 ? filteredCommands.length - 1 : prev - 1);
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (filteredCommands[selectedIndex]) {
+            onSelectCommand(filteredCommands[selectedIndex]);
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          onClose();
+          break;
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, filteredCommands, selectedIndex, onSelectCommand, onClose]);
+  
+  if (!isOpen) return null;
 
   return (
     <>
@@ -108,14 +146,14 @@ export function CommandMenu({ isOpen, position, searchQuery, onSelectCommand, on
         onClick={onClose}
       />
       <div
-        className="fixed z-50 bg-white rounded-lg shadow-lg border border-stone/20 py-2 min-w-[240px]"
+        className="fixed z-50 bg-white rounded-lg shadow-lg border border-stone-200 py-2 min-w-[240px]"
         style={{
           left: position.x,
           top: position.y,
         }}
       >
         {filteredCommands.length === 0 ? (
-          <div className="px-3 py-2 text-sm text-stone">
+          <div className="px-3 py-2 text-sm text-stone-500">
             No commands found
           </div>
         ) : (
@@ -123,23 +161,24 @@ export function CommandMenu({ isOpen, position, searchQuery, onSelectCommand, on
             <button
               key={command.id}
               onClick={() => onSelectCommand(command)}
+              onMouseEnter={() => setSelectedIndex(index)}
               className={`
-                w-full px-3 py-2 text-left hover:bg-sage/20 flex items-center gap-3
-                ${index === 0 ? 'bg-sage/10' : ''}
+                w-full px-3 py-2 text-left hover:bg-orange-50 flex items-center gap-3 transition-colors
+                ${index === selectedIndex ? 'bg-orange-50 border-l-2 border-orange-400' : ''}
               `}
             >
-              <div className="text-stone">
+              <div className="text-stone-600" aria-hidden="true" role="img" aria-label={command.label}>
                 {getIcon(command.icon)}
               </div>
               <div className="flex-1">
-                <div className="text-sm font-medium text-ink">
+                <div className="text-sm font-medium text-stone-800 font-inknut">
                   {command.label}
                 </div>
-                <div className="text-xs text-stone">
+                <div className="text-xs text-stone-600 font-inknut">
                   {command.description}
                 </div>
               </div>
-              <div className="text-xs text-stone/60 font-mono">
+              <div className="text-xs text-stone-400 font-mono">
                 {command.shortcut}
               </div>
             </button>

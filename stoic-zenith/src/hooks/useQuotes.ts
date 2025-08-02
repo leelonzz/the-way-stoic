@@ -32,7 +32,73 @@ export interface UserQuote {
   updated_at: string;
 }
 
-export function useQuotes(user: User | null) {
+// Fallback quotes in case database is unavailable
+const FALLBACK_QUOTES: Quote[] = [
+  {
+    id: 'fallback-1',
+    text: "It's not what happens to you, but how you react to it that matters.",
+    author: "Epictetus",
+    source: "Discourses",
+    category: "perspective",
+    created_at: new Date().toISOString(),
+    mood_tags: []
+  },
+  {
+    id: 'fallback-2',
+    text: "You have power over your mind—not outside events. Realize this, and you will find strength.",
+    author: "Marcus Aurelius",
+    source: "Meditations",
+    category: "mindset",
+    created_at: new Date().toISOString(),
+    mood_tags: []
+  },
+  {
+    id: 'fallback-3',
+    text: "Wealth consists in not having great possessions, but in having few wants.",
+    author: "Epictetus",
+    source: "Discourses",
+    category: "wealth",
+    created_at: new Date().toISOString(),
+    mood_tags: []
+  },
+  {
+    id: 'fallback-4',
+    text: "We suffer more often in imagination than in reality.",
+    author: "Seneca",
+    source: "Letters from a Stoic",
+    category: "suffering",
+    created_at: new Date().toISOString(),
+    mood_tags: []
+  },
+  {
+    id: 'fallback-5',
+    text: "The best revenge is not to be like your enemy.",
+    author: "Marcus Aurelius",
+    source: "Meditations",
+    category: "virtue",
+    created_at: new Date().toISOString(),
+    mood_tags: []
+  }
+];
+
+export function useQuotes(user: User | null): {
+  quotes: Quote[];
+  savedQuotes: SavedQuote[];
+  userQuotes: UserQuote[];
+  loading: boolean;
+  error: string | null;
+  getDailyQuote: () => Quote | null;
+  saveQuote: (quoteId: string, notes?: string) => Promise<boolean>;
+  unsaveQuote: (quoteId: string) => Promise<boolean>;
+  isQuoteSaved: (quoteId: string) => boolean;
+  getQuotesByCategory: (category: string) => Quote[];
+  searchQuotes: (searchTerm: string) => Quote[];
+  createUserQuote: (quote: Omit<UserQuote, 'id' | 'created_at' | 'updated_at'>) => Promise<boolean>;
+  updateUserQuote: (id: string, updates: Partial<UserQuote>) => Promise<boolean>;
+  deleteUserQuote: (id: string) => Promise<boolean>;
+  refetch: () => void;
+  refreshDailyQuote: () => Quote | null;
+} {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
   const [userQuotes, setUserQuotes] = useState<UserQuote[]>([]);
@@ -42,18 +108,33 @@ export function useQuotes(user: User | null) {
   const fetchQuotes = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('Fetching quotes from Supabase...');
       
       const { data, error } = await supabase
         .from('quotes')
         .select('*')
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
       
-      setQuotes(data || []);
+      console.log('Quotes fetched successfully:', data?.length || 0, 'quotes');
+      
+      // If no quotes from database, use fallback quotes
+      if (!data || data.length === 0) {
+        console.log('No quotes from database, using fallback quotes');
+        setQuotes(FALLBACK_QUOTES);
+      } else {
+        setQuotes(data);
+      }
+      
       setError(null); // Clear any previous errors on successful fetch
     } catch (err) {
       console.error('Failed to fetch quotes:', err);
+      console.log('Using fallback quotes due to error');
+      setQuotes(FALLBACK_QUOTES);
       setError(err instanceof Error ? err.message : 'Failed to fetch quotes');
     } finally {
       setLoading(false);
@@ -128,7 +209,11 @@ export function useQuotes(user: User | null) {
   }, [user]);
 
   const getDailyQuote = (): Quote | null => {
-    if (quotes.length === 0) return null;
+    // If no quotes available, return the first fallback quote
+    if (quotes.length === 0) {
+      console.log('No quotes available for daily quote, using fallback');
+      return FALLBACK_QUOTES[0];
+    }
     
     // Get today's date in YYYY-MM-DD format
     const today = new Date();
@@ -137,10 +222,19 @@ export function useQuotes(user: User | null) {
     // Try to get a specific daily quote for today first
     // For now, use the day-based algorithm as fallback
     const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
-    return quotes[dayOfYear % quotes.length];
+    const selectedQuote = quotes[dayOfYear % quotes.length];
+    
+    console.log('Daily quote selected:', {
+      dayOfYear,
+      totalQuotes: quotes.length,
+      selectedQuoteIndex: dayOfYear % quotes.length,
+      quote: selectedQuote
+    });
+    
+    return selectedQuote;
   };
 
-  const saveQuote = async (quoteId: string, notes?: string) => {
+  const saveQuote = async (quoteId: string, notes?: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -182,7 +276,7 @@ export function useQuotes(user: User | null) {
     }
   };
 
-  const unsaveQuote = async (quoteId: string) => {
+  const unsaveQuote = async (quoteId: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -227,7 +321,7 @@ export function useQuotes(user: User | null) {
     );
   };
 
-  const createUserQuote = async (quote: Omit<UserQuote, 'id' | 'created_at' | 'updated_at'>) => {
+  const createUserQuote = async (quote: Omit<UserQuote, 'id' | 'created_at' | 'updated_at'>): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -247,7 +341,7 @@ export function useQuotes(user: User | null) {
     }
   };
 
-  const updateUserQuote = async (id: string, updates: Partial<UserQuote>) => {
+  const updateUserQuote = async (id: string, updates: Partial<UserQuote>): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -266,7 +360,7 @@ export function useQuotes(user: User | null) {
     }
   };
 
-  const deleteUserQuote = async (id: string) => {
+  const deleteUserQuote = async (id: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -285,9 +379,13 @@ export function useQuotes(user: User | null) {
     }
   };
 
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
+  useEffect((): void => {
+    const loadData = async (): Promise<void> => {
+      // Only show loading if we don't have any quotes yet
+      if (quotes.length === 0) {
+        setLoading(true);
+      }
+      
       await fetchQuotes();
       if (user) {
         await fetchSavedQuotes();
@@ -314,14 +412,14 @@ export function useQuotes(user: User | null) {
     createUserQuote,
     updateUserQuote,
     deleteUserQuote,
-    refetch: () => {
+    refetch: (): void => {
       fetchQuotes();
       if (user) {
         fetchSavedQuotes();
         fetchUserQuotes();
       }
     },
-    refreshDailyQuote: () => {
+    refreshDailyQuote: (): Quote | null => {
       // Force a refresh of the daily quote by clearing cache or using different logic
       const newQuote = getDailyQuote();
       return newQuote;

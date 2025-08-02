@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
 import { JournalNavigation } from '@/components/journal/JournalNavigation';
@@ -8,10 +8,12 @@ import { JournalEntry, JournalBlock } from '@/components/journal/types';
 // Rich text journal imports removed - using regular journal entries instead
 import { createJournalEntry, getJournalEntryByDate } from '@/lib/journal';
 
-export default function Journal() {
+export default function Journal(): JSX.Element {
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [entryListLoading, setEntryListLoading] = useState(false);
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
 
   const createNewEntry = (): JournalEntry => {
     const now = new Date();
@@ -29,32 +31,53 @@ export default function Journal() {
     };
   };
 
-  const handleCreateEntry = async () => {
+  const handleCreateEntry = async (): Promise<void> => {
     try {
-      setIsLoading(true);
-      
       // Create a new journal entry in Supabase
       const today = format(new Date(), 'yyyy-MM-dd');
-      const newSupabaseEntry = await createJournalEntry({
-        entry_date: today,
-        entry_type: 'morning',
-        excited_about: '',
-        make_today_great: '',
-      });
+      
+      // Check if an entry already exists for today
+      const existingEntry = await getJournalEntryByDate(today);
+      let supabaseEntry;
+      
+      if (existingEntry) {
+        supabaseEntry = existingEntry;
+      } else {
+        supabaseEntry = await createJournalEntry({
+          entry_date: today,
+          entry_type: 'morning',
+          excited_about: '',
+          make_today_great: '',
+        });
+      }
 
       // Create a new rich-text entry for the local interface
-      const newEntry = createNewEntry();
-      newEntry.id = newSupabaseEntry.id;
+      const newEntry: JournalEntry = {
+        id: supabaseEntry.id,
+        date: supabaseEntry.entry_date,
+        blocks: [{
+          id: `block-${Date.now()}`,
+          type: 'paragraph',
+          text: '',
+          createdAt: new Date()
+        }],
+        createdAt: new Date(supabaseEntry.created_at),
+        updatedAt: new Date(supabaseEntry.updated_at)
+      };
       
       setSelectedEntry(newEntry);
+      
+      // Immediate refresh of entry list - no delay
       setRefreshKey(prev => prev + 1);
       
-      toast({
-        title: "New journal entry created",
-        description: "You can now start writing your thoughts.",
-      });
+      if (!existingEntry) {
+        toast({
+          title: "New journal entry created",
+          description: "You can now start writing your thoughts.",
+        });
+      }
       
-      // Also refresh the entry list to show any new entries from Morning/Evening journals
+      // Force immediate refresh of entry list
       if (typeof window !== 'undefined' && window.refreshJournalEntries) {
         window.refreshJournalEntries();
       }
@@ -67,25 +90,32 @@ export default function Journal() {
       });
       
       // Fallback to local entry if Supabase fails
-      const newEntry = createNewEntry();
-      setSelectedEntry(newEntry);
+      const fallbackEntry = createNewEntry();
+      setSelectedEntry(fallbackEntry);
       setRefreshKey(prev => prev + 1);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleSelectEntry = (entry: JournalEntry) => {
+  const handleSelectEntry = (entry: JournalEntry): void => {
     setSelectedEntry(entry);
   };
 
-  const handleEntryUpdate = (updatedEntry: JournalEntry) => {
+  const handleEntryUpdate = async (updatedEntry: JournalEntry): Promise<void> => {
     setSelectedEntry(updatedEntry);
-    // Don't refresh the entry list on every update - this causes loading to show
-    // setRefreshKey(prev => prev + 1);
+    
+    // Save to localStorage as backup
+    const entryKey = `journal-${updatedEntry.date}`;
+    try {
+      localStorage.setItem(entryKey, JSON.stringify(updatedEntry));
+    } catch (error) {
+      console.error('Failed to save entry to localStorage:', error);
+    }
+    
+    // Debounced save to Supabase would go here in a real implementation
+    // For now, we'll just update localStorage
   };
 
-  const loadTodaysEntry = async () => {
+  const loadTodaysEntry = useCallback(async () => {
     try {
       setIsLoading(true);
       const today = format(new Date(), 'yyyy-MM-dd');
@@ -159,14 +189,14 @@ export default function Journal() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadTodaysEntry();
-  }, []);
+  }, [loadTodaysEntry]);
 
   return (
-    <div className="h-full flex bg-stone-50">
+    <div className="h-full flex bg-stone-50 animate-fade-in">
       {/* Left Panel - Entry List (Fixed width, responsive) */}
       <div className="w-80 min-w-80 bg-white border-r border-stone-200 flex-shrink-0 hidden lg:flex">
         <EntryList
@@ -175,14 +205,21 @@ export default function Journal() {
           onSelectEntry={handleSelectEntry}
           onCreateEntry={handleCreateEntry}
           className="flex-1"
+          isParentLoading={isLoading}
+          onLoadingStateChange={setEntryListLoading}
+          entries={entries}
+          onEntriesChange={setEntries}
         />
       </div>
 
       {/* Right Panel - Content (Full remaining width/height) */}
       <div className="flex-1 min-w-0 bg-white flex flex-col">
-        {isLoading ? (
+        {(isLoading || entryListLoading) ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-stone-500 font-inknut">Loading...</div>
+            <div className="animate-pulse text-stone-500 font-inknut">
+              <div className="h-6 bg-stone-200 rounded w-32 mx-auto mb-2"></div>
+              <div className="h-4 bg-stone-100 rounded w-48 mx-auto"></div>
+            </div>
           </div>
         ) : selectedEntry ? (
           <JournalNavigation 

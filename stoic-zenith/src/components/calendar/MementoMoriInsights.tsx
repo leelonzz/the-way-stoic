@@ -9,24 +9,24 @@ interface MementoMoriInsightsProps {
   motivationalMessage: string;
 }
 
-export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriInsightsProps) {
+export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriInsightsProps): JSX.Element {
   const insights = [
     {
       icon: Clock,
       title: "Time Perspective",
-      content: `You have approximately ${data.daysRemaining.toLocaleString()} days remaining. That's ${Math.floor(data.daysRemaining / 365)} years of potential experiences, growth, and impact.`,
+      content: `You have approximately ${data.daysRemaining.toLocaleString()} days remaining. That&apos;s ${Math.floor(data.daysRemaining / 365)} years of potential experiences, growth, and impact.`,
       color: "text-cta"
     },
     {
       icon: Heart,
       title: "Life's Seasons",
       content: data.percentageLived < 25 
-        ? "You're in life's spring - time for growth, learning, and planting seeds for the future."
+        ? "You&apos;re in life&apos;s spring - time for growth, learning, and planting seeds for the future."
         : data.percentageLived < 50
-        ? "You're in life's summer - peak time for achievement, building, and making your mark."
+        ? "You&apos;re in life&apos;s summer - peak time for achievement, building, and making your mark."
         : data.percentageLived < 75
-        ? "You're in life's autumn - time for wisdom sharing, mentoring, and harvesting what you've sown."
-        : "You're in life's winter - time for reflection, legacy building, and savoring life's essence.",
+        ? "You&apos;re in life&apos;s autumn - time for wisdom sharing, mentoring, and harvesting what you&apos;ve sown."
+        : "You&apos;re in life&apos;s winter - time for reflection, legacy building, and savoring life&apos;s essence.",
       color: "text-hero"
     },
     {
@@ -38,7 +38,7 @@ export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriIn
     {
       icon: Lightbulb,
       title: "Stoic Wisdom",
-      content: "Marcus Aurelius reminded us: 'It is not death that a man should fear, but never beginning to live.' Use this awareness to live more fully.",
+      content: "Marcus Aurelius reminded us: &apos;It is not death that a man should fear, but never beginning to live.&apos; Use this awareness to live more fully.",
       color: "text-ink"
     }
   ];
@@ -54,7 +54,7 @@ export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriIn
   return (
     <div className="space-y-6">
       {/* Motivational Message */}
-      <Card className="bg-gradient-to-r from-cta/10 to-hero/10 border-cta/20">
+      <Card className="bg-gradient-to-r from-cta/10 to-hero/10 border-cta/20 animate-fade-in">
         <CardContent className="p-6 text-center">
           <h3 className="text-xl font-serif text-ink mb-3">Today's Reflection</h3>
           <p className="text-stone italic">{motivationalMessage}</p>
@@ -63,7 +63,7 @@ export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriIn
 
       {/* Life Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-white/80">
+        <Card className="bg-white/80 animate-fade-in">
           <CardContent className="p-4 text-center">
             <div className="text-3xl font-bold text-cta mb-1">
               {data.daysLived.toLocaleString()}
@@ -75,7 +75,7 @@ export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriIn
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80">
+        <Card className="bg-white/80 animate-fade-in">
           <CardContent className="p-4 text-center">
             <div className="text-3xl font-bold text-hero mb-1">
               {data.daysRemaining.toLocaleString()}
@@ -87,7 +87,7 @@ export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriIn
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80">
+        <Card className="bg-white/80 animate-fade-in">
           <CardContent className="p-4 text-center">
             <div className="text-3xl font-bold text-stone mb-1">
               {Math.floor(data.daysRemaining / 7).toLocaleString()}
@@ -99,7 +99,7 @@ export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriIn
           </CardContent>
         </Card>
 
-        <Card className="bg-white/80">
+        <Card className="bg-white/80 animate-fade-in">
           <CardContent className="p-4 text-center">
             <div className="text-3xl font-bold text-ink mb-1">
               {data.percentageLived}%
@@ -115,7 +115,7 @@ export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriIn
       {/* Insights */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {insights.map((insight, index) => (
-          <Card key={index} className="bg-white/90">
+          <Card key={index} className="bg-white/90 animate-fade-in">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <insight.icon className={`w-5 h-5 ${insight.color}`} />
@@ -130,7 +130,7 @@ export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriIn
       </div>
 
       {/* Weekly Reflection Questions */}
-      <Card className="bg-white/90">
+      <Card className="bg-white/90 animate-fade-in">
         <CardHeader>
           <CardTitle className="text-xl font-serif text-ink">Weekly Reflection Questions</CardTitle>
           <p className="text-stone/70 text-sm">

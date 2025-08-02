@@ -4,16 +4,17 @@ import { BookOpen, Brain, Quote, Calendar, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useQuotes } from '@/hooks/useQuotes';
+import { useAuthContext } from '@/components/auth/AuthProvider';
 
-const sampleQuote = {
-  quote: "You have power over your mind—not outside events. Realize this, and you will find strength.",
-  author: "Marcus Aurelius",
-  source: "Meditations, Book 2"
-};
-
-export default function Dashboard() {
+export default function Dashboard(): JSX.Element {
+  const { user } = useAuthContext();
+  const { getDailyQuote, loading } = useQuotes(user);
+  
   const currentHour = new Date().getHours();
-  const isEvening = currentHour >= 17;
+  const _isEvening = currentHour >= 17;
+  
+  const dailyQuote = getDailyQuote();
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -23,7 +24,7 @@ export default function Dashboard() {
           {currentHour < 12 ? 'Good Morning' : currentHour < 17 ? 'Good Afternoon' : 'Good Evening'}
         </h1>
         <p className="text-sage text-base">
-          "Every new beginning comes from some other beginning's end."
+          &ldquo;Every new beginning comes from some other beginning&apos;s end.&rdquo;
         </p>
       </div>
 
@@ -32,21 +33,30 @@ export default function Dashboard() {
         <CardHeader className="text-center pb-3">
           <CardTitle className="flex items-center justify-center gap-2 text-xl font-serif text-stone">
             <Sparkles className="w-5 h-5 text-primary" />
-            Today's Quote
+            Today&apos;s Quote
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="text-center space-y-3">
-            <blockquote className="text-lg font-serif italic text-stone leading-relaxed">
-              "{sampleQuote.quote}"
-            </blockquote>
-            <div>
-              <p className="font-semibold text-crail text-sm">— {sampleQuote.author}</p>
-              {sampleQuote.source && (
-                <p className="text-xs text-sage">{sampleQuote.source}</p>
-              )}
+          {loading ? (
+            <div className="text-center space-y-3">
+              <div className="animate-pulse">
+                <div className="h-6 bg-stone/20 rounded mb-2"></div>
+                <div className="h-4 bg-stone/20 rounded w-1/3 mx-auto"></div>
+              </div>
             </div>
-          </div>
+          ) : dailyQuote ? (
+            <div className="text-center space-y-3">
+              <blockquote className="text-lg font-serif italic text-stone leading-relaxed">
+                &ldquo;{dailyQuote.text}&rdquo;
+              </blockquote>
+              <div>
+                <p className="font-semibold text-crail text-sm">— {dailyQuote.author}</p>
+                {dailyQuote.source && (
+                  <p className="text-xs text-sage">{dailyQuote.source}</p>
+                )}
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -121,7 +131,7 @@ export default function Dashboard() {
         
         <div className="space-y-4">
           <div className="bg-white/90 backdrop-blur-sm border border-sage/20 rounded-lg p-6">
-            <h3 className="text-lg font-serif font-semibold text-stone mb-3">Today's Focus</h3>
+            <h3 className="text-lg font-serif font-semibold text-stone mb-3">Today&apos;s Focus</h3>
             <div className="space-y-3">
               <div className="p-3 bg-parchment/80 rounded-lg">
                 <h4 className="font-medium text-stone mb-1 text-sm">Stoic Practice</h4>
