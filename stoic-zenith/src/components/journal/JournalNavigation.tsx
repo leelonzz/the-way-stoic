@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Save, BookOpen } from 'lucide-react';
+import { Save, BookOpen, MoreHorizontal, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import { RichTextEditor } from './RichTextEditor';
@@ -67,34 +67,38 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate }: Jour
 
   return (
     <div className={`flex flex-col h-full ${className}`}>
-      {/* Header with Timeline and Save */}
-      <div className="bg-white border-b border-stone-200 p-6 flex-shrink-0">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <BookOpen className="w-6 h-6 text-stone-600" />
-            <div>
-              <h1 className="text-2xl font-inknut font-bold text-stone-800">
-                {format(selectedDate, 'EEEE, MMMM d')}
-              </h1>
-              <p className="text-sm font-inknut text-stone-500">
-                {format(selectedDate, 'yyyy')}
-              </p>
+      {/* Header */}
+      <div className="bg-white border-b border-stone-200 p-4 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          {/* Left side - Three dot menu */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 hover:bg-stone-100 rounded-lg"
+            >
+              <MoreHorizontal className="h-4 w-4 text-stone-600" />
+            </Button>
+          </div>
+
+          {/* Center - Date and Time */}
+          <div className="text-center">
+            <div className="text-base font-medium text-stone-800">
+              {format(selectedDate, 'MMM d, yyyy, h:mm a')}
             </div>
           </div>
-          
+
+          {/* Right side - Plus button */}
           <div className="flex gap-3">
-            <ExportButton entry={currentEntry} />
             <Button
-              onClick={saveEntry}
-              disabled={isSaving || !currentEntry}
-              className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-medium"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 hover:bg-stone-100 rounded-lg"
             >
-              <Save className="w-4 h-4 mr-2" />
-              {isSaving ? 'Saving...' : 'Save'}
+              <Plus className="h-4 w-4 text-stone-600" />
             </Button>
           </div>
         </div>
-
       </div>
 
       {/* Journal Entry Area - Full remaining height */}

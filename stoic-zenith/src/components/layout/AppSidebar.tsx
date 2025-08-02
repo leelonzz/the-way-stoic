@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, MessageCircle, Quote, Calendar, User, Brain, FileText, Settings } from 'lucide-react';
+import { Home, BookOpen, Quote, Calendar, Brain } from 'lucide-react';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -38,9 +38,9 @@ const navigationItems = [
   },
 ];
 
-export function AppSidebar() {
+export function AppSidebar(): JSX.Element {
   const pathname = usePathname();
-  const { isAuthenticated, user, profile, signOut } = useAuthContext();
+  const { isAuthenticated, user, profile } = useAuthContext();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   
   return (

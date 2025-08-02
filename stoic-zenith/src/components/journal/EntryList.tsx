@@ -106,43 +106,8 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry, classNa
 
   return (
     <div className={`flex flex-col h-full bg-white ${className}`}>
-      {/* Header */}
+      {/* Search Only */}
       <div className="p-4 border-b border-stone-200">
-        <div className="flex items-center justify-between mb-4">
-          {/* Left side - Three dot menu and Plus button */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 hover:bg-stone-100 rounded-lg"
-            >
-              <MoreHorizontal className="h-4 w-4 text-stone-600" />
-            </Button>
-            <Button
-              onClick={onCreateEntry}
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 hover:bg-stone-100 rounded-lg"
-            >
-              <Plus className="h-4 w-4 text-stone-600" />
-            </Button>
-          </div>
-
-          {/* Center - Date and Time */}
-          <div className="text-center">
-            <div className="text-lg font-inknut font-medium text-stone-800">
-              {format(new Date(), 'EEEE, MMMM d')}
-            </div>
-            <div className="text-sm font-inknut text-stone-500">
-              {format(new Date(), 'h:mm a')}
-            </div>
-          </div>
-
-          {/* Right side - Empty for balance */}
-          <div className="w-16"></div>
-        </div>
-        
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-stone-400" />
           <Input

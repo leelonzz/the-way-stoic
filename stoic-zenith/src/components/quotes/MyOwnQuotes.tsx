@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Edit, Trash2, User } from 'lucide-react';
 import { QuoteCard } from './QuoteCard';
+import { Hourglass } from '@/components/ui/Hourglass';
 
 export interface UserQuote {
   id: string;
@@ -215,7 +216,7 @@ export function MyOwnQuotes({
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-cta border-t-transparent mx-auto"></div>
+          <Hourglass size="md" className="mx-auto" />
           <p className="text-stone">Loading your quotes...</p>
         </div>
       </div>

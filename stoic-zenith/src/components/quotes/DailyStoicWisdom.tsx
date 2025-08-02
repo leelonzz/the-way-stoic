@@ -25,7 +25,7 @@ function DailyStoicQuoteCard({
   onSave, 
   onUnsave,
   onRefresh
-}: DailyStoicQuoteCardProps) {
+}: DailyStoicQuoteCardProps): JSX.Element {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
@@ -80,7 +80,7 @@ function DailyStoicQuoteCard({
 
   return (
     <Card className="bg-white border-stone/20 shadow-lg">
-      <CardContent className="p-12 relative">
+      <CardContent className="p-16 relative">
         {/* Action buttons in top right */}
         <div className="absolute top-4 right-6 flex items-center gap-2">
           {onRefresh && (
@@ -125,7 +125,7 @@ function DailyStoicQuoteCard({
         </div>
 
         {/* Quote content */}
-        <div className="text-center space-y-8 max-w-4xl mx-auto pt-4">
+        <div className="text-center space-y-8 max-w-6xl mx-auto pt-4">
           <blockquote className="text-lg md:text-xl font-bold leading-relaxed text-ink font-inknut">
             "{quote.text}"
           </blockquote>
@@ -206,7 +206,7 @@ function SimplifiedQuoteCard({
 
   return (
     <Card className="bg-white border-stone/20 shadow-sm hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
+      <CardContent className="p-8">
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1 space-y-3">
             <blockquote className="text-lg font-medium italic text-ink leading-relaxed">
@@ -320,7 +320,7 @@ export function DailyStoicWisdom() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f2e5d4' }}>
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         {/* Header */}
         <div className="text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-ink font-inknut leading-normal">
@@ -346,7 +346,7 @@ export function DailyStoicWisdom() {
         </div>
 
         {/* Search Bar */}
-        <div className="relative max-w-2xl mx-auto">
+        <div className="relative max-w-4xl mx-auto">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-stone w-5 h-5" />
           <Input
             type="text"
