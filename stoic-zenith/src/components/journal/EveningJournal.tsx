@@ -4,7 +4,7 @@ import { Heart, Trophy, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { createJournalEntry, getJournalEntryByDate, updateJournalEntry } from '@/lib/journal';
+import { createJournalEntry, getJournalEntryByDate, updateJournalEntry, JournalEntryResponse } from '@/lib/journal';
 import { useToast } from '@/hooks/use-toast';
 
 const eveningPrompts = [
@@ -40,7 +40,7 @@ export function EveningJournal() {
     biggest_wins: '',
     tensions: ''
   });
-  const [existingEntry, setExistingEntry] = useState<any>(null);
+  const [existingEntry, setExistingEntry] = useState<JournalEntryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -90,24 +90,17 @@ export function EveningJournal() {
         tensions: entries.tensions ? entries.tensions.split('\n').filter(t => t.trim()) : null
       };
 
-      if (existingEntry) {
-        await updateJournalEntry(existingEntry.id, entryData);
-        toast({
-          title: "Evening journal updated!",
-          description: "Your evening reflections have been saved.",
-        });
-      } else {
-        const newEntry = await createJournalEntry(entryData);
-        setExistingEntry(newEntry);
-        toast({
-          title: "Evening journal saved!",
-          description: "Your evening reflections have been saved.",
-        });
-      }
+      const savedEntry = await createJournalEntry(entryData);
+      setExistingEntry(savedEntry);
+      
+      toast({
+        title: "Evening journal saved!",
+        description: "Your evening reflections have been saved.",
+      });
 
       // Refresh the entry list if the function exists
-      if (typeof window !== 'undefined' && (window as any).refreshJournalEntries) {
-        (window as any).refreshJournalEntries();
+      if (typeof window !== 'undefined' && window.refreshJournalEntries) {
+        window.refreshJournalEntries();
       }
     } catch (error) {
       console.error('Failed to save journal entry:', error);
@@ -153,7 +146,7 @@ export function EveningJournal() {
             disabled={isSaving || isLoading}
             className="bg-cta hover:bg-cta/90 text-white px-8"
           >
-            {isSaving ? 'Saving...' : existingEntry ? 'Update Evening Reflection' : 'Save Evening Reflection'}
+            {isSaving ? 'Saving...' : 'Save Evening Reflection'}
           </Button>
         </div>
       </CardContent>

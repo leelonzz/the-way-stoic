@@ -43,9 +43,10 @@ export function ExportButton({ entry, className = '' }: ExportButtonProps): JSX.
     const markdownContent = entry.blocks
       .map(block => {
         switch (block.type) {
-          case 'heading':
+          case 'heading': {
             const hashes = '#'.repeat(block.level || 1);
             return `${hashes} ${block.text}`;
+          }
           case 'bullet-list':
             return `- ${block.text}`;
           case 'numbered-list':

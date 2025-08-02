@@ -40,9 +40,11 @@ export async function createJournalEntry(data: CreateJournalEntryData): Promise<
 
   const { data: entry, error } = await supabase
     .from('journal_entries')
-    .insert({
+    .upsert({
       user_id: user.id,
       ...data
+    }, {
+      onConflict: 'user_id,entry_date,entry_type'
     })
     .select()
     .single();
@@ -51,7 +53,7 @@ export async function createJournalEntry(data: CreateJournalEntryData): Promise<
     throw new Error(`Failed to create journal entry: ${error.message}`);
   }
 
-  return entry;
+  return entry as JournalEntryResponse;
 }
 
 export async function getJournalEntries(limit: number = 10): Promise<JournalEntryResponse[]> {
@@ -72,7 +74,7 @@ export async function getJournalEntries(limit: number = 10): Promise<JournalEntr
     throw new Error(`Failed to fetch journal entries: ${error.message}`);
   }
 
-  return entries || [];
+  return (entries || []) as JournalEntryResponse[];
 }
 
 export async function getJournalEntryByDate(date: string, type?: 'morning' | 'evening'): Promise<JournalEntryResponse | null> {
@@ -98,7 +100,7 @@ export async function getJournalEntryByDate(date: string, type?: 'morning' | 'ev
     throw new Error(`Failed to fetch journal entry: ${error.message}`);
   }
 
-  return entry;
+  return entry as JournalEntryResponse;
 }
 
 export async function updateJournalEntry(id: string, data: Partial<CreateJournalEntryData>): Promise<JournalEntryResponse> {
@@ -123,7 +125,7 @@ export async function updateJournalEntry(id: string, data: Partial<CreateJournal
     throw new Error(`Failed to update journal entry: ${error.message}`);
   }
 
-  return entry;
+  return entry as JournalEntryResponse;
 }
 
 export async function deleteJournalEntry(id: string): Promise<void> {

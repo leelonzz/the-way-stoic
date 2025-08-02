@@ -14,7 +14,7 @@ interface EntryListProps {
 }
 
 interface EntryListItem {
-  entry: JournalEntryResponse;
+  entry: JournalEntryResponse & { preview?: string };
   dateKey: string;
 }
 
@@ -101,11 +101,11 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry, classNa
   // Expose refresh function via ref or callback
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as any).refreshJournalEntries = refreshEntries;
+      window.refreshJournalEntries = refreshEntries;
     }
     return () => {
       if (typeof window !== 'undefined') {
-        delete (window as any).refreshJournalEntries;
+        delete window.refreshJournalEntries;
       }
     };
   }, []);
@@ -143,7 +143,22 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry, classNa
             {filteredEntries.map(({ entry, dateKey }) => (
               <button
                 key={entry.id}
-                onClick={() => onSelectEntry(entry as any)}
+                onClick={() => {
+                  // Convert Supabase entry to local JournalEntry format
+                  const localEntry: JournalEntry = {
+                    id: entry.id,
+                    date: entry.entry_date,
+                    blocks: [{
+                      id: `block-${Date.now()}`,
+                      type: 'paragraph',
+                      text: entry.preview || entry.excited_about || '',
+                      createdAt: new Date(entry.created_at)
+                    }],
+                    createdAt: new Date(entry.created_at),
+                    updatedAt: new Date(entry.updated_at)
+                  };
+                  onSelectEntry(localEntry);
+                }}
                 className={`
                   w-full p-3 mb-2 text-left rounded-lg transition-all duration-200
                   hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-orange-400

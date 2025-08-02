@@ -25,10 +25,26 @@ function AppContent() {
   const [showAuth, setShowAuth] = useState(false);
   const { isAuthenticated, isLoading } = useAuthContext();
 
+  // Check if user was previously authenticated to prevent showing login on reload
+  const wasAuthenticated = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('was-authenticated') === 'true';
+    }
+    return false;
+  }, []);
+
   // Memoize the fallback to prevent unnecessary re-renders
   const fallback = useMemo(() => {
-    if (isLoading) return null; // Let ProtectedRoute handle loading
+    // If loading, let ProtectedRoute handle it
+    if (isLoading) return null;
     
+    // If user was previously authenticated but not currently authenticated,
+    // show loading instead of login to prevent flashing
+    if (wasAuthenticated && !isAuthenticated) {
+      return null; // Let ProtectedRoute show loading
+    }
+    
+    // If not loading and not authenticated, show appropriate screen
     return showAuth ? (
       <LoginScreen 
         onBack={() => setShowAuth(false)}
@@ -36,7 +52,7 @@ function AppContent() {
     ) : (
       <LandingPage onGetStarted={() => setShowAuth(true)} />
     );
-  }, [showAuth, isLoading]);
+  }, [showAuth, isLoading, isAuthenticated, wasAuthenticated]);
 
   // For authenticated users, show the dashboard directly
   // For unauthenticated users, show landing page first time, login after

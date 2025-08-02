@@ -158,7 +158,7 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
     };
 
     switch (block.type) {
-      case 'heading':
+      case 'heading': {
         const HeadingTag = `h${block.level}` as 'h1' | 'h2' | 'h3';
         const headingClasses = {
           1: 'text-3xl font-bold text-stone-800 mb-6 leading-tight font-inknut',
@@ -169,6 +169,7 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
           ...commonProps,
           className: `${commonProps.className} ${headingClasses[block.level!]}`
         });
+      }
 
       case 'bullet-list':
         return (
@@ -178,7 +179,7 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
           </div>
         );
 
-      case 'numbered-list':
+      case 'numbered-list': {
         const index = blocks.filter(b => b.type === 'numbered-list').indexOf(block) + 1;
         return (
           <div className="flex items-start gap-3 mb-3">
@@ -186,10 +187,11 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
             <div {...commonProps} className={`${commonProps.className} flex-1 text-base text-stone-700 leading-relaxed font-inknut`} />
           </div>
         );
+      }
 
       case 'image':
         return (
-          <div key={block.id} className="mb-4">
+          <div className="mb-4">
             {block.imageUrl ? (
               <img
                 src={block.imageUrl}

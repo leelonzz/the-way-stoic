@@ -14,12 +14,26 @@ export const useAuth = (): AuthState & {
   isAuthenticated: boolean
   isLoading: boolean
 } => {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    session: null,
-    profile: null,
-    loading: true,
-    error: null,
+  // Initialize with better default loading state
+  const [authState, setAuthState] = useState<AuthState>(() => {
+    // Always start with loading true to prevent flashing
+    if (typeof window !== 'undefined') {
+      const wasAuthenticated = localStorage.getItem('was-authenticated') === 'true'
+      return {
+        user: null,
+        session: null,
+        profile: null,
+        loading: true, // Always start loading to prevent login screen flash
+        error: null,
+      }
+    }
+    return {
+      user: null,
+      session: null,
+      profile: null,
+      loading: true,
+      error: null,
+    }
   })
   const [isClient, setIsClient] = useState(false)
   const initializingRef = useRef(false)
@@ -255,7 +269,6 @@ export const useAuth = (): AuthState & {
 
     initializingRef.current = true
     let mounted = true
-    let timeoutId: NodeJS.Timeout | null = null
 
     const initializeAuth = async (): Promise<void> => {
       try {
@@ -266,41 +279,16 @@ export const useAuth = (): AuthState & {
           localStorage.getItem('was-authenticated') === 'true'
         console.log('👤 Was previously authenticated:', wasAuthenticated)
 
-        // For returning users, set auth state immediately and load session in background
-        if (wasAuthenticated) {
-          // Set optimistic auth state for returning users
-          setAuthState(prev => ({ ...prev, loading: false }))
-        } else {
-          // Only set timeout for new users
-          timeoutId = setTimeout(() => {
-            console.warn(
-              '⏰ Auth initialization timeout for new user - setting as unauthenticated'
-            )
-            if (mounted && mountedRef.current) {
-              setAuthState({
-                user: null,
-                session: null,
-                profile: null,
-                loading: false,
-                error: null,
-              })
-            }
-          }, 3000) // Reduced timeout to 3 seconds for new users
-        }
+        // Always start with loading true to prevent login screen flash
+        setAuthState(prev => ({ ...prev, loading: true }))
 
-        // Fetch session - no timeout for returning users
+        // Fetch session
         let session = null
         try {
           session = await authHelpers.getCurrentSession()
         } catch (error) {
           console.warn('Session fetch failed:', error)
           session = null
-        }
-
-        // Clear timeout if we got here in time
-        if (timeoutId) {
-          clearTimeout(timeoutId)
-          timeoutId = null
         }
 
         console.log(
@@ -330,9 +318,6 @@ export const useAuth = (): AuthState & {
         }
       } catch (error) {
         console.error('❌ Auth initialization error:', error)
-        if (timeoutId) {
-          clearTimeout(timeoutId)
-        }
         if (mounted && mountedRef.current) {
           localStorage.removeItem('was-authenticated')
           setAuthState({
@@ -389,9 +374,6 @@ export const useAuth = (): AuthState & {
     return (): void => {
       mounted = false
       initializingRef.current = false
-      if (timeoutId) {
-        clearTimeout(timeoutId)
-      }
       subscription.unsubscribe()
     }
   }, [updateAuthState, setError, isClient])

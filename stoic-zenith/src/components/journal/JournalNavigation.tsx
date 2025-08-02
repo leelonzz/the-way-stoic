@@ -12,9 +12,10 @@ interface JournalNavigationProps {
   entry: JournalEntry;
   onEntryUpdate: (entry: JournalEntry) => void;
   onCreateEntry?: () => void;
+  isCreatingEntry?: boolean;
 }
 
-export function JournalNavigation({ className = '', entry, onEntryUpdate, onCreateEntry }: JournalNavigationProps): JSX.Element {
+export function JournalNavigation({ className = '', entry, onEntryUpdate, onCreateEntry, isCreatingEntry = false }: JournalNavigationProps): JSX.Element {
   const [currentEntry, setCurrentEntry] = useState<JournalEntry>(entry);
   const [isSaving, setIsSaving] = useState(false);
 
