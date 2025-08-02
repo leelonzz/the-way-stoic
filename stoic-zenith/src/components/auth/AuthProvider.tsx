@@ -40,12 +40,7 @@ export function AuthProvider({
 
   useEffect(() => {
     setIsClient(true)
-    // Give auth a moment to initialize to prevent flickers
-    const timer = setTimeout(() => {
-      setIsHydrating(false)
-    }, 100)
-
-    return (): void => clearTimeout(timer)
+    setIsHydrating(false)
   }, [])
 
   // Prevent hydration mismatch by not rendering until client-side

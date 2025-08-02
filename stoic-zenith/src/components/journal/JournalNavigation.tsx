@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Save, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DaySelector } from './DaySelector';
 import { RichTextEditor } from './RichTextEditor';
 import { JournalEntry, JournalBlock } from './types';
@@ -147,25 +146,33 @@ export function JournalNavigation({ className = '' }: JournalNavigationProps) {
   }, [currentEntry]);
 
   return (
-    <div className={`h-full flex gap-4 ${className}`}>
-      <div className="w-64 flex-shrink-0">
-        <DaySelector
-          selectedDate={selectedDate}
-          onDateSelect={handleDateSelect}
-          entriesMap={entriesMap}
-        />
+    <div className={`h-full flex ${className}`}>
+      {/* Left Panel - Timeline */}
+      <div className="w-64 bg-white border-r border-stone-200 flex flex-col">
+        <div className="p-4 border-b border-stone-100">
+          <h2 className="text-lg font-serif font-medium text-stone-800 text-center">Timeline</h2>
+        </div>
+        
+        <div className="flex-1 overflow-hidden">
+          <DaySelector
+            selectedDate={selectedDate}
+            onDateSelect={handleDateSelect}
+            entriesMap={entriesMap}
+          />
+        </div>
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <Card className="flex-1 bg-white/80 backdrop-blur-sm border-stone/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6 px-8 pt-6">
-            <div className="flex items-center gap-4 min-w-0 flex-1">
-              <BookOpen className="w-7 h-7 text-cta flex-shrink-0" />
-              <div className="min-w-0">
-                <CardTitle className="text-3xl font-serif text-ink leading-tight">
+      {/* Right Panel - Journal Entry */}
+      <div className="flex-1 bg-white flex flex-col">
+        <div className="p-6 border-b border-stone-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <BookOpen className="w-6 h-6 text-stone-600" />
+              <div>
+                <h1 className="text-2xl font-serif font-bold text-stone-800">
                   {format(selectedDate, 'EEEE, MMMM d')}
-                </CardTitle>
-                <p className="text-stone text-base mt-2">
+                </h1>
+                <p className="text-sm text-stone-500">
                   {format(selectedDate, 'yyyy')}
                 </p>
               </div>
@@ -174,33 +181,33 @@ export function JournalNavigation({ className = '' }: JournalNavigationProps) {
             <Button
               onClick={saveEntry}
               disabled={isSaving || !currentEntry}
-              className="bg-cta hover:bg-cta/90 text-white px-6 py-2 flex-shrink-0"
+              className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg"
             >
               <Save className="w-4 h-4 mr-2" />
               {isSaving ? 'Saving...' : 'Save'}
             </Button>
-          </CardHeader>
+          </div>
+        </div>
 
-          <CardContent className="flex-1 flex flex-col px-8 pb-8">
-            {isLoading ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-stone">Loading...</div>
-              </div>
-            ) : currentEntry ? (
-              <div className="flex-1">
-                <RichTextEditor
-                  blocks={currentEntry.blocks}
-                  onChange={handleBlocksChange}
-                  placeholder={`What's on your mind for ${format(selectedDate, 'MMMM d')}?`}
-                />
-              </div>
-            ) : (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-stone">Failed to load entry</div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <div className="flex-1 p-6">
+          {isLoading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-stone-500">Loading...</div>
+            </div>
+          ) : currentEntry ? (
+            <div className="h-full">
+              <RichTextEditor
+                blocks={currentEntry.blocks}
+                onChange={handleBlocksChange}
+                placeholder={`What's on your mind for ${format(selectedDate, 'MMMM d')}?`}
+              />
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-stone-500">Failed to load entry</div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

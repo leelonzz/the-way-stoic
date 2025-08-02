@@ -67,10 +67,10 @@ export default function Mentors(): JSX.Element {
     >
       {/* Header Section */}
       <div className="text-center space-y-6 pt-16 pb-12 px-4">
-        <h1 className="font-inknut text-6xl md:text-7xl lg:text-8xl font-normal text-ink leading-tight">
+        <h1 className="font-inknut text-4xl md:text-5xl lg:text-6xl font-normal text-ink leading-tight">
           Stoic Mentors
         </h1>
-        <p className="font-inknut text-xl md:text-2xl lg:text-3xl font-light text-ink max-w-4xl mx-auto leading-relaxed">
+        <p className="font-inknut text-lg md:text-xl lg:text-2xl font-light text-ink max-w-4xl mx-auto leading-relaxed">
           Seek wisdom from great stoic philosophers
         </p>
       </div>
@@ -96,7 +96,7 @@ export default function Mentors(): JSX.Element {
                 </div>
 
                 {/* Name */}
-                <h2 className="font-inknut text-4xl md:text-5xl font-normal text-ink">
+                <h2 className="font-inknut text-3xl md:text-4xl font-normal text-ink">
                   {mentor.name}
                 </h2>
 
@@ -121,7 +121,7 @@ export default function Mentors(): JSX.Element {
       {/* How It Works Section */}
       <div className="px-4 pb-16">
         <div className="max-w-6xl mx-auto bg-white rounded-3xl p-12 shadow-lg">
-          <h3 className="font-inknut text-6xl md:text-7xl lg:text-8xl font-normal text-ink text-center mb-12">
+          <h3 className="font-inknut text-2xl md:text-3xl lg:text-4xl font-normal text-ink text-center mb-12">
             How it work
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">

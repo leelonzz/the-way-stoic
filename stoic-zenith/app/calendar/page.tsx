@@ -17,19 +17,17 @@ import { useAuthContext } from '@/components/auth/AuthProvider';
 
 const queryClient = new QueryClient();
 
-function CalendarContent() {
-  const { user } = useAuthContext();
+function CalendarContent(): JSX.Element {
+  const { user, isAuthenticated } = useAuthContext();
   const { 
     lifeCalendarData, 
-    loading, 
+    loading: calendarLoading, 
     error, 
     updatePreferences, 
     getWeekData, 
     getMotivationalMessage,
     refetch 
   } = useLifeCalendar(user);
-  
-  const { isAuthenticated } = useAuthContext();
 
   if (!isAuthenticated) {
     return (
@@ -43,7 +41,7 @@ function CalendarContent() {
     );
   }
 
-  if (loading) {
+  if (calendarLoading && !lifeCalendarData.birthDate) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-4">
@@ -148,7 +146,7 @@ function CalendarContent() {
   );
 }
 
-export default function CalendarPage() {
+export default function CalendarPage(): JSX.Element {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

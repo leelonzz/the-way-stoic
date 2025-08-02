@@ -1,8 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Quote, MessageCircle } from "lucide-react"
+import { Quote } from "lucide-react"
 
-export function PhilosophySection() {
+export function PhilosophySection(): JSX.Element {
   const philosophers = [
     {
       name: "Seneca",
@@ -93,7 +93,7 @@ export function PhilosophySection() {
                       />
                     </div>
                   </div>
-                  <h3 className="text-xl font-bold text-ink mb-1">{philosopher.name}</h3>
+                  <h3 className="text-lg font-bold text-ink mb-1">{philosopher.name}</h3>
                   <p
                     className={`text-sm font-medium ${
                       philosopher.color === "cta"
@@ -113,7 +113,7 @@ export function PhilosophySection() {
 
                   {/* Quote */}
                   <blockquote className="border-l-4 border-stone/30 pl-4 italic text-ink text-sm">
-                    "{philosopher.quote}"
+                    &ldquo;{philosopher.quote}&rdquo;
                   </blockquote>
 
                   {/* Focus */}

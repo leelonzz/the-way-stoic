@@ -34,17 +34,17 @@ const circuitBreaker = {
   lastFailureTime: 0,
   maxFailures: 3,
   cooldownPeriod: 30000, // 30 seconds
-  isOpen() {
+  isOpen(): boolean {
     if (this.failureCount >= this.maxFailures) {
       const timeSinceLastFailure = Date.now() - this.lastFailureTime;
       return timeSinceLastFailure < this.cooldownPeriod;
     }
     return false;
   },
-  recordSuccess() {
+  recordSuccess(): void {
     this.failureCount = 0;
   },
-  recordFailure() {
+  recordFailure(): void {
     this.failureCount++;
     this.lastFailureTime = Date.now();
   }
@@ -61,7 +61,7 @@ const getStoredPreferences = (userId: string): LifeCalendarPreferences | null =>
   }
 };
 
-const setStoredPreferences = (userId: string, prefs: LifeCalendarPreferences) => {
+const setStoredPreferences = (userId: string, prefs: LifeCalendarPreferences): void => {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(`life_calendar_prefs_${userId}`, JSON.stringify(prefs));
@@ -87,6 +87,7 @@ export function useLifeCalendar(user: User | null) {
     if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_DURATION) {
       console.log('📦 Using cached preferences');
       setPreferences(cached.data);
+      setLoading(false);
       return;
     }
 
@@ -96,12 +97,13 @@ export function useLifeCalendar(user: User | null) {
       if (stored) {
         console.log('💾 Using stored preferences from localStorage');
         setPreferences(stored);
-        // Don't return, still try to fetch fresh data
+        setLoading(false);
+        // Continue to fetch fresh data in background
       }
     }
 
     try {
-      if (!isRetry) {
+      if (!isRetry && !preferences) {
         setLoading(true);
         setError(null);
       }
@@ -114,10 +116,10 @@ export function useLifeCalendar(user: User | null) {
         const stored = getStoredPreferences(user.id);
         if (stored) {
           setPreferences(stored);
-          return;
+        } else {
+          setPreferences(null);
         }
-        // If no stored preferences, set null and let UI handle setup
-        setPreferences(null);
+        setLoading(false);
         return;
       }
       
@@ -167,6 +169,7 @@ export function useLifeCalendar(user: User | null) {
       if (stored) {
         console.log('💾 Using stored preferences as fallback');
         setPreferences(stored);
+        setLoading(false);
         return;
       }
       
@@ -178,7 +181,7 @@ export function useLifeCalendar(user: User | null) {
         setError(err instanceof Error ? err.message : 'Failed to fetch preferences');
       }
     } finally {
-      if (!isRetry) {
+      if (!isRetry && !preferences) {
         setLoading(false);
       }
     }
@@ -256,7 +259,7 @@ export function useLifeCalendar(user: User | null) {
     };
   }, [preferences]);
 
-  const getWeekData = (weekIndex: number) => {
+  const getWeekData = (weekIndex: number): { isLived: boolean; yearNumber: number; weekInYear: number; isCurrentWeek: boolean } => {
     const isLived = weekIndex < lifeCalendarData.weeksLived;
     const yearNumber = Math.floor(weekIndex / 52);
     const weekInYear = weekIndex % 52;
@@ -270,7 +273,7 @@ export function useLifeCalendar(user: User | null) {
   };
 
   const getMotivationalMessage = (): string => {
-    const { percentageLived, daysRemaining, yearsRemaining } = lifeCalendarData;
+    const { percentageLived } = lifeCalendarData;
     
     if (percentageLived < 25) {
       return "Your life is just beginning. Make every day count.";
