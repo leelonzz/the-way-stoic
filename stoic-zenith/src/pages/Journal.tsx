@@ -26,9 +26,15 @@ export default function Journal() {
   };
 
   const handleCreateEntry = () => {
+    // Create a new rich-text entry for the journal
     const newEntry = createNewEntry();
     setSelectedEntry(newEntry);
     setRefreshKey(prev => prev + 1);
+    
+    // Also refresh the entry list to show any new entries from Morning/Evening journals
+    if (typeof window !== 'undefined' && (window as any).refreshJournalEntries) {
+      (window as any).refreshJournalEntries();
+    }
   };
 
   const handleSelectEntry = (entry: JournalEntry) => {
@@ -85,6 +91,7 @@ export default function Journal() {
             className="flex-1"
             entry={selectedEntry}
             onEntryUpdate={handleEntryUpdate}
+            onCreateEntry={handleCreateEntry}
           />
         )}
       </div>

@@ -1,9 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, Smile, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { createJournalEntry, getJournalEntryByDate, updateJournalEntry } from '@/lib/journal';
+import { useToast } from '@/hooks/use-toast';
 
 const morningPrompts = [
   {
@@ -38,6 +40,35 @@ export function MorningJournal() {
     make_today_great: '',
     must_not_do: ''
   });
+  const [existingEntry, setExistingEntry] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadExistingEntry();
+  }, []);
+
+  const loadExistingEntry = async () => {
+    setIsLoading(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const entry = await getJournalEntryByDate(today, 'morning');
+      
+      if (entry) {
+        setExistingEntry(entry);
+        setEntries({
+          excited_about: entry.excited_about || '',
+          make_today_great: entry.make_today_great || '',
+          must_not_do: entry.must_not_do || ''
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load existing entry:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleChange = (key: string, value: string) => {
     setEntries(prev => ({
@@ -46,9 +77,48 @@ export function MorningJournal() {
     }));
   };
 
-  const handleSave = () => {
-    console.log('Saving morning journal:', entries);
-    // TODO: Implement save to database
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const entryData = {
+        entry_date: today,
+        entry_type: 'morning' as const,
+        excited_about: entries.excited_about || null,
+        make_today_great: entries.make_today_great || null,
+        must_not_do: entries.must_not_do || null
+      };
+
+      if (existingEntry) {
+        await updateJournalEntry(existingEntry.id, entryData);
+        toast({
+          title: "Morning journal updated!",
+          description: "Your morning reflections have been saved.",
+        });
+      } else {
+        const newEntry = await createJournalEntry(entryData);
+        setExistingEntry(newEntry);
+        toast({
+          title: "Morning journal saved!",
+          description: "Your morning reflections have been saved.",
+        });
+      }
+
+      // Refresh the entry list if the function exists
+      if (typeof window !== 'undefined' && (window as any).refreshJournalEntries) {
+        (window as any).refreshJournalEntries();
+      }
+    } catch (error) {
+      console.error('Failed to save journal entry:', error);
+      toast({
+        title: "Error saving journal",
+        description: "There was an error saving your journal entry. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -80,9 +150,10 @@ export function MorningJournal() {
         <div className="flex justify-end pt-4">
           <Button 
             onClick={handleSave}
+            disabled={isSaving || isLoading}
             className="bg-cta hover:bg-cta/90 text-white px-8"
           >
-            Save Morning Reflection
+            {isSaving ? 'Saving...' : existingEntry ? 'Update Morning Reflection' : 'Save Morning Reflection'}
           </Button>
         </div>
       </CardContent>

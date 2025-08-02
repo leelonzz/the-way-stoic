@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar as CalendarIcon, Save } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarIcon, Save, ChevronDownIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface LifeCalendarSetupProps {
@@ -16,15 +18,14 @@ export function LifeCalendarSetup({
   onSetup, 
   initialBirthDate = null, 
   initialLifeExpectancy = 80 
-}: LifeCalendarSetupProps) {
-  const [birthDate, setBirthDate] = useState(
-    initialBirthDate ? initialBirthDate.toISOString().split('T')[0] : ''
-  );
+}: LifeCalendarSetupProps): React.JSX.Element {
+  const [birthDate, setBirthDate] = useState<Date | undefined>(initialBirthDate || undefined);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [lifeExpectancy, setLifeExpectancy] = useState(initialLifeExpectancy.toString());
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     
     if (!birthDate) {
@@ -36,10 +37,9 @@ export function LifeCalendarSetup({
       return;
     }
 
-    const birthDateObj = new Date(birthDate);
     const lifeExpectancyNum = parseInt(lifeExpectancy);
     
-    if (birthDateObj > new Date()) {
+    if (birthDate > new Date()) {
       toast({
         title: "Invalid birth date",
         description: "Birth date cannot be in the future.",
@@ -59,7 +59,7 @@ export function LifeCalendarSetup({
 
     setIsLoading(true);
     try {
-      const success = await onSetup(birthDateObj, lifeExpectancyNum);
+      const success = await onSetup(birthDate, lifeExpectancyNum);
       if (success) {
         toast({
           title: "Settings saved",
@@ -70,8 +70,6 @@ export function LifeCalendarSetup({
       setIsLoading(false);
     }
   };
-
-  const currentYear = new Date().getFullYear();
 
   return (
     <Card className="bg-gradient-to-br from-hero/10 to-cta/5 border-hero/20">
@@ -91,17 +89,32 @@ export function LifeCalendarSetup({
             <Label htmlFor="birthDate" className="text-ink font-medium">
               Birth Date
             </Label>
-            <Input
-              id="birthDate"
-              type="date"
-              value={birthDate}
-              onChange={(e) => setBirthDate(e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
-              className="bg-white/70 border-stone/20 focus:border-cta"
-              required
-            />
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  id="birthDate"
+                  className="w-full justify-between font-normal bg-white/70 border-stone/20 focus:border-cta"
+                >
+                  {birthDate ? birthDate.toLocaleDateString() : "Select date"}
+                  <ChevronDownIcon className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={birthDate}
+                  onSelect={(date) => {
+                    setBirthDate(date);
+                    setCalendarOpen(false);
+                  }}
+                  captionLayout="dropdown"
+                  disabled={(date) => date > new Date()}
+                />
+              </PopoverContent>
+            </Popover>
             <p className="text-xs text-stone/60">
-              This helps calculate how many weeks you've lived
+              This helps calculate how many weeks you&apos;ve lived
             </p>
           </div>
 
@@ -127,9 +140,9 @@ export function LifeCalendarSetup({
           <div className="bg-white/50 rounded-lg p-4 space-y-2">
             <h4 className="font-medium text-ink">About Memento Mori</h4>
             <p className="text-sm text-stone/70">
-              "Memento Mori" is Latin for "remember you must die." This Stoic practice 
-              isn't morbid—it's motivational. By visualizing the finite nature of life, 
-              we're reminded to focus on what truly matters and live with intention.
+              &quot;Memento Mori&quot; is Latin for &quot;remember you must die.&quot; This Stoic practice 
+              isn&apos;t morbid—it&apos;s motivational. By visualizing the finite nature of life, 
+              we&apos;re reminded to focus on what truly matters and live with intention.
             </p>
           </div>
 

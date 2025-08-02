@@ -11,9 +11,10 @@ interface JournalNavigationProps {
   className?: string;
   entry: JournalEntry;
   onEntryUpdate: (entry: JournalEntry) => void;
+  onCreateEntry?: () => void;
 }
 
-export function JournalNavigation({ className = '', entry, onEntryUpdate }: JournalNavigationProps): JSX.Element {
+export function JournalNavigation({ className = '', entry, onEntryUpdate, onCreateEntry }: JournalNavigationProps): JSX.Element {
   const [currentEntry, setCurrentEntry] = useState<JournalEntry>(entry);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -93,6 +94,7 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate }: Jour
             <Button
               variant="ghost"
               size="sm"
+              onClick={onCreateEntry}
               className="h-8 w-8 p-0 hover:bg-stone-100 rounded-lg"
             >
               <Plus className="h-4 w-4 text-stone-600" />

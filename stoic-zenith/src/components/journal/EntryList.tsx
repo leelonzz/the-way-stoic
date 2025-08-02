@@ -4,6 +4,7 @@ import { Search, Plus, Calendar, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { JournalEntry } from './types';
+import { getJournalEntries, JournalEntryResponse } from '@/lib/journal';
 
 interface EntryListProps {
   selectedEntry: JournalEntry | null;
@@ -13,7 +14,7 @@ interface EntryListProps {
 }
 
 interface EntryListItem {
-  entry: JournalEntry;
+  entry: JournalEntryResponse;
   dateKey: string;
 }
 
@@ -21,47 +22,41 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry, classNa
   const [entries, setEntries] = useState<EntryListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredEntries, setFilteredEntries] = useState<EntryListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const loadEntries = () => {
-    const entryItems: EntryListItem[] = [];
-    
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith('journal-')) {
-        const dateKey = key.replace('journal-', '');
-        try {
-          const entryData = localStorage.getItem(key);
-          if (entryData) {
-            const entry: JournalEntry = JSON.parse(entryData);
-            entry.blocks = entry.blocks.map(block => ({
-              ...block,
-              createdAt: new Date(block.createdAt)
-            }));
-            entry.createdAt = new Date(entry.createdAt);
-            entry.updatedAt = new Date(entry.updatedAt);
-            
-            // Generate preview and thumbnail
-            const hasContent = entry.blocks.some(block => block.text?.trim() !== '');
-            if (hasContent) {
-              const firstTextBlock = entry.blocks.find(block => block.text?.trim() !== '');
-              const firstImageBlock = entry.blocks.find(block => block.type === 'image' && block.imageUrl);
-              
-              entry.preview = firstTextBlock?.text?.slice(0, 80) || '';
-              entry.thumbnail = firstImageBlock?.imageUrl;
-              
-              entryItems.push({ entry, dateKey });
-            }
-          }
-        } catch (error) {
-          console.error('Error loading entry:', key, error);
-        }
-      }
+  const loadEntries = async () => {
+    setIsLoading(true);
+    try {
+      const journalEntries = await getJournalEntries(50);
+      const entryItems: EntryListItem[] = journalEntries.map(entry => {
+        // Generate preview from journal entry content
+        const contentParts = [
+          entry.excited_about,
+          entry.make_today_great,
+          entry.must_not_do,
+          entry.grateful_for,
+          ...(Array.isArray(entry.biggest_wins) ? entry.biggest_wins : []),
+          ...(Array.isArray(entry.tensions) ? entry.tensions : [])
+        ].filter(Boolean);
+        
+        const preview = contentParts.join(' ').slice(0, 80);
+        
+        return {
+          entry: {
+            ...entry,
+            preview
+          },
+          dateKey: entry.entry_date
+        };
+      });
+      
+      setEntries(entryItems);
+      setFilteredEntries(entryItems);
+    } catch (error) {
+      console.error('Failed to load journal entries:', error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    // Sort by date descending
-    entryItems.sort((a, b) => new Date(b.entry.updatedAt).getTime() - new Date(a.entry.updatedAt).getTime());
-    setEntries(entryItems);
-    setFilteredEntries(entryItems);
   };
 
   const formatEntryDate = (dateStr: string): string => {
@@ -82,8 +77,13 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry, classNa
     } else {
       const filtered = entries.filter(({ entry }) =>
         entry.preview?.toLowerCase().includes(query.toLowerCase()) ||
-        entry.date.includes(query) ||
-        entry.blocks.some(block => block.text?.toLowerCase().includes(query.toLowerCase()))
+        entry.entry_date.includes(query) ||
+        entry.excited_about?.toLowerCase().includes(query.toLowerCase()) ||
+        entry.make_today_great?.toLowerCase().includes(query.toLowerCase()) ||
+        entry.must_not_do?.toLowerCase().includes(query.toLowerCase()) ||
+        entry.grateful_for?.toLowerCase().includes(query.toLowerCase()) ||
+        (Array.isArray(entry.biggest_wins) && entry.biggest_wins.some(win => win.toLowerCase().includes(query.toLowerCase()))) ||
+        (Array.isArray(entry.tensions) && entry.tensions.some(tension => tension.toLowerCase().includes(query.toLowerCase())))
       );
       setFilteredEntries(filtered);
     }
@@ -93,13 +93,21 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry, classNa
     loadEntries();
   }, []);
 
+  // Function to refresh entries (can be called from parent components)
+  const refreshEntries = () => {
+    loadEntries();
+  };
+
+  // Expose refresh function via ref or callback
   useEffect(() => {
-    const handleStorageChange = () => {
-      loadEntries();
+    if (typeof window !== 'undefined') {
+      (window as any).refreshJournalEntries = refreshEntries;
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).refreshJournalEntries;
+      }
     };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const hasEntryContent = selectedEntry?.blocks?.some(block => block.text?.trim() !== '') || false;
@@ -122,7 +130,11 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry, classNa
 
       {/* Entries List */}
       <div className="flex-1 overflow-y-auto">
-        {filteredEntries.length === 0 ? (
+        {isLoading ? (
+          <div className="p-6 text-center font-inknut text-stone-500">
+            Loading entries...
+          </div>
+        ) : filteredEntries.length === 0 ? (
           <div className="p-6 text-center font-inknut text-stone-500">
             {searchQuery ? 'No entries match your search' : 'No journal entries yet'}
           </div>
@@ -131,7 +143,7 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry, classNa
             {filteredEntries.map(({ entry, dateKey }) => (
               <button
                 key={entry.id}
-                onClick={() => onSelectEntry(entry)}
+                onClick={() => onSelectEntry(entry as any)}
                 className={`
                   w-full p-3 mb-2 text-left rounded-lg transition-all duration-200
                   hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-orange-400
@@ -141,28 +153,25 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry, classNa
                 <div className="flex gap-3">
                   {/* Thumbnail */}
                   <div className="flex-shrink-0">
-                    {entry.thumbnail ? (
-                      <img
-                        src={entry.thumbnail}
-                        alt="Entry thumbnail"
-                        className="w-12 h-12 rounded-lg object-cover bg-stone-100"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-lg bg-stone-100 flex items-center justify-center">
-                        <Calendar className="w-5 h-5 text-stone-400" />
-                      </div>
-                    )}
+                    <div className="w-12 h-12 rounded-lg bg-stone-100 flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-stone-400" />
+                    </div>
                   </div>
                   
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-inknut font-medium text-stone-800">
-                        {formatEntryDate(entry.date)}
+                        {formatEntryDate(entry.entry_date)}
                       </span>
-                      <span className="text-xs font-inknut text-stone-500">
-                        {format(entry.updatedAt, 'h:mm a')}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-inknut text-stone-500 capitalize">
+                          {entry.entry_type}
+                        </span>
+                        <span className="text-xs font-inknut text-stone-500">
+                          {format(new Date(entry.updated_at), 'h:mm a')}
+                        </span>
+                      </div>
                     </div>
                     
                     {entry.preview && (
