@@ -1,0 +1,166 @@
+import React from 'react';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+
+export default function HomePage() {
+  const currentHour = new Date().getHours();
+  const greeting = currentHour < 12 ? 'Good Morning' : currentHour < 17 ? 'Good Afternoon' : 'Good Evening';
+
+  return (
+    <div className="min-h-screen p-6" style={{ background: 'transparent' }}>
+      {/* Main Container - Removed background */}
+      <div className="max-w-6xl mx-auto space-y-6">
+        
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-6xl font-inknut font-normal" style={{color: '#100804'}}>
+            {greeting}
+          </h1>
+        </div>
+
+        {/* Quote Section - Warped */}
+        <Card 
+          className="rounded-[36px] shadow-lg transition-all duration-300 hover:shadow-2xl" 
+          style={{
+            backgroundColor: '#f4eee6',
+            transform: 'perspective(1000px) rotateX(5deg) rotateY(-2deg)',
+            transformStyle: 'preserve-3d'
+          }}
+        >
+          <CardContent className="py-8 px-12 text-center">
+            <blockquote className="text-2xl font-inknut font-extrabold leading-[1.4] mb-4" style={{color: '#100804'}}>
+              "You have power over your mind—not outside events. Realize this, and you will find strength."
+            </blockquote>
+            <p className="text-lg font-inknut font-normal" style={{color: '#100804'}}>
+              — Marcus Aurelius
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Main Cards Grid - 3 cards layout with warping */}
+        <div className="grid grid-cols-2 gap-6 h-[520px]">
+          
+          {/* Journal Card - Top Left - Warped */}
+          <Card 
+            className="rounded-[27px] shadow-lg cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105" 
+            style={{
+              backgroundColor: '#8FB069',
+              transform: 'perspective(1000px) rotateX(-8deg) rotateY(10deg)',
+              transformStyle: 'preserve-3d'
+            }}
+            onClick={() => window.location.href = '/journal'}
+          >
+            <CardContent className="p-8 h-full flex flex-col justify-center items-center text-center">
+              <div className="text-8xl font-inknut font-normal mb-2" style={{color: '#100804'}}>
+                7
+              </div>
+              <div className="text-3xl font-inknut font-normal" style={{color: '#100804'}}>
+                Journal
+              </div>
+              <div className="text-lg font-sans font-normal" style={{color: '#000000'}}>
+                daily
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Seek Wisdom Card - Spans right side (2 rows) - Warped */}
+          <Card 
+            className="rounded-3xl shadow-lg row-span-2 relative overflow-hidden transition-all duration-300 hover:shadow-2xl" 
+            style={{
+              backgroundColor: '#f4eee6',
+              transform: 'perspective(1000px) rotateX(5deg) rotateY(-8deg)',
+              transformStyle: 'preserve-3d'
+            }}
+          >
+            <CardContent className="p-8 h-full flex flex-col">
+              <div className="text-center mb-6">
+                <h2 className="text-6xl font-inknut font-medium leading-tight" style={{color: '#100804'}}>
+                  Seek<br />Wisdom
+                </h2>
+              </div>
+              
+              {/* Philosopher Image */}
+              <div className="flex-1 flex justify-center items-center mb-6">
+                <div 
+                  className="w-48 h-56 relative transition-transform duration-300 hover:scale-110"
+                  style={{
+                    transform: 'perspective(800px) rotateY(-5deg)'
+                  }}
+                >
+                  <Image
+                    src="/images/philosopher-image.png"
+                    alt="Ancient philosopher"
+                    fill
+                    className="object-cover rounded-2xl"
+                  />
+                </div>
+              </div>
+              
+              {/* Chat Button */}
+              <div className="text-center">
+                <Button 
+                  className="text-white font-inknut font-medium text-2xl px-12 py-5 rounded-full shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl"
+                  style={{
+                    backgroundColor: '#887d4e',
+                    transform: 'perspective(500px) rotateX(-3deg)'
+                  }}
+                  onClick={() => window.location.href = '/mentors'}
+                >
+                  Chat
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Start Your Day Card - Bottom Left - Warped */}
+          <Card 
+            className="rounded-[27px] shadow-lg cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105" 
+            style={{
+              backgroundColor: '#f4eee6',
+              transform: 'perspective(1000px) rotateX(8deg) rotateY(6deg)',
+              transformStyle: 'preserve-3d'
+            }}
+            onClick={() => window.location.href = '/journal'}
+          >
+            <CardContent className="p-8 h-full flex flex-col justify-between items-center">
+              {/* Feather Icon */}
+              <div 
+                className="w-16 h-16 flex items-center justify-center mb-4 transition-transform duration-300 hover:rotate-12"
+                style={{
+                  transform: 'perspective(400px) rotateY(15deg)'
+                }}
+              >
+                <Image
+                  src="/images/feather-icon.svg"
+                  alt="Feather icon"
+                  width={64}
+                  height={64}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              
+              {/* Start Your Day Button */}
+              <div>
+                <Button 
+                  className="text-white font-inknut font-black text-lg px-8 py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl"
+                  style={{
+                    backgroundColor: '#887d4e',
+                    transform: 'perspective(500px) rotateX(-5deg)'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.href = '/journal';
+                  }}
+                >
+                  Start your day
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+        </div>
+      </div>
+    </div>
+  );
+}

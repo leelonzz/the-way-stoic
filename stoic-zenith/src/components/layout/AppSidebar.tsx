@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, MessageCircle, Quote, Calendar, User, Brain, FileText } from 'lucide-react';
+import { Home, BookOpen, MessageCircle, Quote, Calendar, User, Brain, FileText, Settings } from 'lucide-react';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -14,32 +14,27 @@ const navigationItems = [
   {
     name: 'Home',
     href: '/',
-    icon: Home,
-    description: 'Dashboard'
+    icon: Home
   },
   {
     name: 'Journal',
     href: '/journal',
-    icon: BookOpen,
-    description: 'Daily reflections'
+    icon: BookOpen
   },
   {
     name: 'Mentors',
     href: '/mentors',
-    icon: Brain,
-    description: 'Stoic wisdom'
+    icon: Brain
   },
   {
     name: 'Quotes',
     href: '/quotes',
-    icon: Quote,
-    description: 'Daily teachings'
+    icon: Quote
   },
   {
     name: 'Calendar',
     href: '/calendar',
-    icon: Calendar,
-    description: 'Memento Mori'
+    icon: Calendar
   },
 ];
 
@@ -63,7 +58,7 @@ export function AppSidebar() {
         </div>
       </div>
       
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {navigationItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -71,20 +66,15 @@ export function AppSidebar() {
               key={item.name}
               href={item.href}
               className={`
-                flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200
+                flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200
                 ${isActive 
                   ? 'bg-primary text-white shadow-lg' 
                   : 'text-sage hover:bg-parchment/50 hover:text-stone'
                 }
               `}
             >
-              <item.icon size={20} className={isActive ? 'text-white' : 'text-sage'} />
-              <div className="flex-1">
-                <span className="font-medium">{item.name}</span>
-                <p className={`text-xs ${isActive ? 'text-white/80' : 'text-sage/70'}`}>
-                  {item.description}
-                </p>
-              </div>
+              <item.icon size={18} className={isActive ? 'text-white' : 'text-sage'} />
+              <span className="font-medium text-sm">{item.name}</span>
             </Link>
           );
         })}

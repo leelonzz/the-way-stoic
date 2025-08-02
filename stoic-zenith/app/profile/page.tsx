@@ -7,7 +7,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Settings, BarChart3 } from 'lucide-react';
+import { User, Settings, BarChart3, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 import { useProfile } from '@/hooks/useProfile';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { ProfileSettings } from '@/components/profile/ProfileSettings';
@@ -99,13 +100,22 @@ function ProfileContent() {
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
-          <ProfileSettings
-            profile={profile}
-            onUpdateProfile={updateProfile}
-            onUpdateEmail={updateEmail}
-            onUpdatePassword={updatePassword}
-            onDeleteAccount={deleteAccount}
-          />
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto space-y-4">
+              <Settings className="w-16 h-16 text-stone/30 mx-auto" />
+              <h3 className="text-xl font-serif text-ink">Account Settings</h3>
+              <p className="text-stone/70">
+                Manage your account settings, preferences, and security options in the dedicated settings page.
+              </p>
+              <Link href="/settings">
+                <button className="inline-flex items-center gap-2 px-4 py-2 bg-cta hover:bg-cta/90 text-white rounded-lg transition-colors">
+                  <Settings className="w-4 h-4" />
+                  Go to Settings
+                  <ExternalLink className="w-4 h-4" />
+                </button>
+              </Link>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="preferences" className="space-y-6">

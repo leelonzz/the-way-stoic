@@ -25,7 +25,8 @@ function CalendarContent() {
     error, 
     updatePreferences, 
     getWeekData, 
-    getMotivationalMessage 
+    getMotivationalMessage,
+    refetch 
   } = useLifeCalendar(user);
   
   const { isAuthenticated } = useAuthContext();
@@ -48,6 +49,12 @@ function CalendarContent() {
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-cta border-t-transparent mx-auto"></div>
           <p className="text-stone">Loading your life calendar...</p>
+          <button 
+            onClick={() => refetch()}
+            className="px-4 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -55,9 +62,18 @@ function CalendarContent() {
 
   if (error) {
     return (
-      <div className="text-center py-20">
+      <div className="text-center py-20 space-y-4">
         <h1 className="text-3xl font-serif text-ink">Memento Mori Calendar</h1>
-        <p className="text-red-600 mt-4">Error: {error}</p>
+        <p className="text-red-600 mt-4">Connection issue: {error}</p>
+        <div className="space-y-2">
+          <p className="text-stone/70 text-sm">Unable to load your calendar preferences</p>
+          <button 
+            onClick={() => refetch()}
+            className="px-6 py-2 bg-cta hover:bg-cta/90 text-white rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import type { Tables } from '@/integrations/supabase/types';
 
 export interface UserProfile {
   id: string;
@@ -19,31 +20,81 @@ export interface UserStats {
   currentStreak: number;
 }
 
+// Simple cache for profiles
+const profileCache = new Map<string, { data: UserProfile; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 export function useProfile(user: User | null) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(async (isRetry = false, forceRefresh = false) => {
     if (!user) return;
 
+    // Check cache first
+    const cacheKey = `profile_${user.id}`;
+    const cached = profileCache.get(cacheKey);
+    const now = Date.now();
+    
+    if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_DURATION) {
+      console.log('📦 Using cached profile');
+      setProfile(cached.data);
+      return;
+    }
+
     try {
-      setLoading(true);
-      const { data, error } = await supabase
+      if (!isRetry) {
+        setLoading(true);
+        setError(null);
+      }
+      
+      console.log('🔄 Fetching profile for user:', user.id);
+      
+      // Add timeout and retry logic
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+      
+      const fetchPromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as { data: Tables<'profiles'> | null; error: { message?: string } | null };
+
       if (error) throw error;
+      
+      console.log('✅ Profile fetched:', data);
       setProfile(data);
+      setRetryCount(0); // Reset retry count on success
+      
+      // Cache the result
+      if (data) {
+        profileCache.set(cacheKey, { data, timestamp: now });
+      }
     } catch (err) {
+      console.error('❌ Failed to fetch profile:', err);
+      
+      // Retry logic for network issues
+      if (!isRetry && retryCount < 2 && (err instanceof Error && 
+          (err.message.includes('timeout') || err.message.includes('network') || err.message.includes('fetch')))) {
+        console.log(`🔄 Retrying profile fetch... Attempt ${retryCount + 1}/2`);
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => fetchProfile(true), 1000 * (retryCount + 1)); // Exponential backoff
+        return;
+      }
+      
       setError(err instanceof Error ? err.message : 'Failed to fetch profile');
     } finally {
-      setLoading(false);
+      if (!isRetry) {
+        setLoading(false);
+      }
     }
-  }, [user]);
+  }, [user, retryCount]);
 
   const fetchStats = useCallback(async () => {
     if (!user) return;
@@ -81,7 +132,10 @@ export function useProfile(user: User | null) {
 
       if (error) throw error;
 
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      // Clear cache and refresh profile
+      const cacheKey = `profile_${user.id}`;
+      profileCache.delete(cacheKey);
+      await fetchProfile(false, true);
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile');

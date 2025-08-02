@@ -1,0 +1,14 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Feather main body -->
+  <path d="M20 85 Q35 25, 85 45 Q80 50, 75 55 L70 60 L65 65 L60 70 L55 75 L50 80 Q45 82, 40 80 Q38 78, 36 76 L20 85 Z" fill="#B87333"/>
+  
+  <!-- Feather texture lines -->
+  <path d="M35 75 Q50 60, 65 50" stroke="#8B4513" stroke-width="1.5" fill="none" opacity="0.7"/>
+  <path d="M40 78 Q52 65, 68 55" stroke="#8B4513" stroke-width="1.5" fill="none" opacity="0.7"/>
+  <path d="M45 81 Q55 70, 72 60" stroke="#8B4513" stroke-width="1.5" fill="none" opacity="0.7"/>
+  <path d="M28 82 Q40 70, 55 60" stroke="#8B4513" stroke-width="1.5" fill="none" opacity="0.7"/>
+  
+  <!-- Quill handle -->
+  <ellipse cx="25" cy="88" rx="12" ry="4" fill="#654321" transform="rotate(-25 25 88)"/>
+  <path d="M18 90 Q25 88, 32 86" stroke="#4A2C17" stroke-width="2" fill="none"/>
+</svg>

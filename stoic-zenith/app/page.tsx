@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import Dashboard from "@/pages/Dashboard";
+import HomePage from "@/components/HomePage";
 import LandingPage from "@/components/LandingPage";
 import LoginScreen from "@/components/auth/LoginScreen";
 
@@ -43,13 +43,13 @@ function AppContent() {
   return (
     <ProtectedRoute fallback={fallback}>
       <AppLayout>
-        <Dashboard />
+        <HomePage />
       </AppLayout>
     </ProtectedRoute>
   );
 }
 
-export default function HomePage() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

@@ -18,6 +18,41 @@ export interface AuthState {
   error: string | null;
 }
 
+// Utility function for retrying operations
+async function retryOperation<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      if (attempt === maxRetries) {
+        throw lastError;
+      }
+      
+      // Don't retry on certain errors
+      if (lastError.message.includes('PGRST116') || // Not found
+          lastError.message.includes('invalid') ||
+          lastError.message.includes('unauthorized')) {
+        throw lastError;
+      }
+      
+      // Exponential backoff
+      const delay = baseDelay * Math.pow(2, attempt);
+      console.log(`🔄 Retrying operation (attempt ${attempt + 1}/${maxRetries + 1}) in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError!;
+}
+
 export const authHelpers = {
   async signInWithGoogle() {
     try {
@@ -62,12 +97,14 @@ export const authHelpers = {
   },
 
   async getCurrentUser() {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) {
-      console.error('Get user error:', error);
-      throw error;
-    }
-    return user;
+    return retryOperation(async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error('Get user error:', error);
+        throw error;
+      }
+      return user;
+    });
   },
 
   async getCurrentSession() {
@@ -116,111 +153,123 @@ export const authHelpers = {
   },
 
   async getUserProfile(userId: string): Promise<UserProfile | null> {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+    return retryOperation(async () => {
+      try {
+        console.log('🔄 Fetching user profile for:', userId);
+        
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // Profile doesn't exist, create one
-          return await this.createUserProfile(userId);
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // Profile doesn't exist, create one
+            console.log('📝 Profile not found, creating new profile...');
+            return await this.createUserProfile(userId);
+          }
+          console.warn('Profile fetch error, using fallback:', error);
+          // Return a fallback profile instead of throwing
+          const user = await this.getCurrentUser();
+          if (user) {
+            return {
+              id: userId,
+              email: user.email!,
+              full_name: user.user_metadata?.full_name || null,
+              avatar_url: user.user_metadata?.avatar_url || null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+          }
+          return null;
         }
-        console.warn('Profile fetch error, using fallback:', error);
-        // Return a fallback profile instead of throwing
-        const user = await this.getCurrentUser();
-        if (user) {
-          return {
-            id: userId,
-            email: user.email!,
-            full_name: user.user_metadata?.full_name || null,
-            avatar_url: user.user_metadata?.avatar_url || null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
+
+        console.log('✅ Profile fetched successfully:', data);
+        return data;
+      } catch (error) {
+        console.error('Get user profile error:', error);
+        // Return a basic profile as fallback
+        try {
+          const user = await this.getCurrentUser();
+          if (user) {
+            return {
+              id: userId,
+              email: user.email!,
+              full_name: user.user_metadata?.full_name || null,
+              avatar_url: user.user_metadata?.avatar_url || null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+          }
+        } catch (fallbackError) {
+          console.error('Fallback profile creation failed:', fallbackError);
         }
         return null;
       }
-
-      return data;
-    } catch (error) {
-      console.error('Get user profile error:', error);
-      // Return a basic profile as fallback
-      try {
-        const user = await this.getCurrentUser();
-        if (user) {
-          return {
-            id: userId,
-            email: user.email!,
-            full_name: user.user_metadata?.full_name || null,
-            avatar_url: user.user_metadata?.avatar_url || null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-        }
-      } catch (fallbackError) {
-        console.error('Fallback profile creation failed:', fallbackError);
-      }
-      return null;
-    }
+    });
   },
 
   async createUserProfile(userId: string): Promise<UserProfile | null> {
-    try {
-      const user = await this.getCurrentUser();
-      if (!user) return null;
+    return retryOperation(async () => {
+      try {
+        const user = await this.getCurrentUser();
+        if (!user) return null;
 
-      const profileData = {
-        id: userId,
-        email: user.email!,
-        full_name: user.user_metadata?.full_name || null,
-        avatar_url: user.user_metadata?.avatar_url || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+        const profileData = {
+          id: userId,
+          email: user.email!,
+          full_name: user.user_metadata?.full_name || null,
+          avatar_url: user.user_metadata?.avatar_url || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert([profileData])
-        .select()
-        .single();
+        const { data, error } = await supabase
+          .from('profiles')
+          .insert([profileData])
+          .select()
+          .single();
 
-      if (error) {
+        if (error) {
+          console.error('Create user profile error:', error);
+          return null;
+        }
+
+        console.log('✅ User profile created successfully:', data);
+        return data;
+      } catch (error) {
         console.error('Create user profile error:', error);
         return null;
       }
-
-      return data;
-    } catch (error) {
-      console.error('Create user profile error:', error);
-      return null;
-    }
+    });
   },
 
   async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile | null> {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId)
-        .select()
-        .single();
+    return retryOperation(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .update({
+            ...updates,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', userId)
+          .select()
+          .single();
 
-      if (error) {
+        if (error) {
+          console.error('Update user profile error:', error);
+          return null;
+        }
+
+        console.log('✅ User profile updated successfully:', data);
+        return data;
+      } catch (error) {
         console.error('Update user profile error:', error);
         return null;
       }
-
-      return data;
-    } catch (error) {
-      console.error('Update user profile error:', error);
-      return null;
-    }
+    });
   },
 
   onAuthStateChange(callback: (event: string, session: Session | null) => void) {
