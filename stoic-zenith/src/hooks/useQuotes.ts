@@ -43,57 +43,17 @@ export function useQuotes(user: User | null) {
     try {
       setLoading(true);
       
-      // Use static quotes data instead of database query
-      const staticQuotes: Quote[] = [
-        {
-          id: '1',
-          text: 'You have power over your mind—not outside events. Realize this, and you will find strength.',
-          author: 'Marcus Aurelius',
-          source: 'Meditations',
-          category: 'Control',
-          created_at: new Date().toISOString(),
-          mood_tags: ['strength', 'control']
-        },
-        {
-          id: '2',
-          text: 'The best revenge is not to be like your enemy.',
-          author: 'Marcus Aurelius',
-          source: 'Meditations',
-          category: 'Character',
-          created_at: new Date().toISOString(),
-          mood_tags: ['character', 'virtue']
-        },
-        {
-          id: '3',
-          text: 'It is not what happens to you, but how you react to it that matters.',
-          author: 'Epictetus',
-          source: 'Discourses',
-          category: 'Resilience',
-          created_at: new Date().toISOString(),
-          mood_tags: ['resilience', 'perspective']
-        },
-        {
-          id: '4',
-          text: 'The happiness of your life depends upon the quality of your thoughts.',
-          author: 'Marcus Aurelius',
-          source: 'Meditations',
-          category: 'Happiness',
-          created_at: new Date().toISOString(),
-          mood_tags: ['happiness', 'thoughts']
-        },
-        {
-          id: '5',
-          text: 'You are an actor in a play, which is as the author wants it to be.',
-          author: 'Epictetus',
-          source: 'Enchiridion',
-          category: 'Acceptance',
-          created_at: new Date().toISOString(),
-          mood_tags: ['acceptance', 'role']
-        }
-      ];
+      const { data, error } = await supabase
+        .from('quotes')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
       
-      setQuotes(staticQuotes);
+      setQuotes(data || []);
+      setError(null); // Clear any previous errors on successful fetch
     } catch (err) {
+      console.error('Failed to fetch quotes:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch quotes');
     } finally {
       setLoading(false);
@@ -104,10 +64,48 @@ export function useQuotes(user: User | null) {
     if (!user) return;
 
     try {
-      // For now, set empty array to avoid type issues
-      setSavedQuotes([]);
+      const { data, error } = await supabase
+        .from('saved_quotes')
+        .select(`
+          id,
+          quote_text,
+          author,
+          source,
+          tags,
+          saved_at,
+          personal_note,
+          collection_name,
+          is_favorite,
+          date_saved,
+          created_at,
+          updated_at
+        `)
+        .eq('user_id', user.id)
+        .order('saved_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform to match SavedQuote interface
+      const transformedData = (data || []).map(item => ({
+        id: item.id,
+        quote_id: item.id, // Using same id for quote_id since we're storing quote data directly
+        notes: item.personal_note,
+        created_at: item.created_at,
+        quote: {
+          id: item.id,
+          text: item.quote_text,
+          author: item.author,
+          source: item.source,
+          category: 'general', // Default category
+          created_at: item.created_at,
+          mood_tags: item.tags || []
+        }
+      }));
+
+      setSavedQuotes(transformedData);
     } catch (err) {
       console.error('Failed to fetch saved quotes:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch saved quotes');
     }
   }, [user]);
 
@@ -125,12 +123,19 @@ export function useQuotes(user: User | null) {
       setUserQuotes(data || []);
     } catch (err) {
       console.error('Failed to fetch user quotes:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch user quotes');
     }
   }, [user]);
 
   const getDailyQuote = (): Quote | null => {
     if (quotes.length === 0) return null;
+    
+    // Get today's date in YYYY-MM-DD format
     const today = new Date();
+    const _todayString = today.toISOString().split('T')[0];
+    
+    // Try to get a specific daily quote for today first
+    // For now, use the day-based algorithm as fallback
     const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
     return quotes[dayOfYear % quotes.length];
   };
@@ -139,29 +144,67 @@ export function useQuotes(user: User | null) {
     if (!user) return false;
 
     try {
-      // For now, just return true to avoid database schema issues
-      console.log('Quote saved:', quoteId, notes);
+      // First, find the quote by ID
+      const quote = quotes.find(q => q.id === quoteId);
+      if (!quote) {
+        setError('Quote not found');
+        return false;
+      }
+
+      // Check if already saved
+      const alreadySaved = savedQuotes.some(saved => saved.quote_id === quoteId);
+      if (alreadySaved) {
+        setError('Quote already saved');
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('saved_quotes')
+        .insert({
+          user_id: user.id,
+          quote_text: quote.text,
+          author: quote.author,
+          source: quote.source,
+          tags: quote.mood_tags || [],
+          personal_note: notes,
+          is_favorite: false
+        });
+
+      if (error) throw error;
+      
+      await fetchSavedQuotes();
+      setError(null); // Clear any previous errors on successful save
       return true;
     } catch (err) {
+      console.error('Failed to save quote:', err);
       setError(err instanceof Error ? err.message : 'Failed to save quote');
       return false;
     }
   };
 
-  const unsaveQuote = async (savedQuoteId: string) => {
+  const unsaveQuote = async (quoteId: string) => {
     if (!user) return false;
 
     try {
+      // Find the saved quote by quote_id (which is the original quote's ID)
+      const savedQuote = savedQuotes.find(saved => saved.quote_id === quoteId);
+      if (!savedQuote) {
+        setError('Saved quote not found');
+        return false;
+      }
+
       const { error } = await supabase
         .from('saved_quotes')
         .delete()
-        .eq('id', savedQuoteId)
+        .eq('id', savedQuote.id)
         .eq('user_id', user.id);
 
       if (error) throw error;
       await fetchSavedQuotes();
+      setError(null); // Clear any previous errors on successful unsave
       return true;
     } catch (err) {
+      console.error('Failed to unsave quote:', err);
       setError(err instanceof Error ? err.message : 'Failed to unsave quote');
       return false;
     }
@@ -277,6 +320,11 @@ export function useQuotes(user: User | null) {
         fetchSavedQuotes();
         fetchUserQuotes();
       }
+    },
+    refreshDailyQuote: () => {
+      // Force a refresh of the daily quote by clearing cache or using different logic
+      const newQuote = getDailyQuote();
+      return newQuote;
     }
   };
 }

@@ -103,10 +103,10 @@ export const useAuth = (): AuthState & {
         if (user) {
           // Try to get cached profile first
           const cachedProfile = getCachedProfile(user.id)
-          const wasAuthenticated =
+          const _wasAuthenticated =
             localStorage.getItem('was-authenticated') === 'true'
 
-          if (wasAuthenticated && cachedProfile) {
+          if (_wasAuthenticated && cachedProfile) {
             // For returning users with cached profile, set immediately
             setAuthState({
               user,
@@ -281,6 +281,11 @@ export const useAuth = (): AuthState & {
 
         // Always start with loading true to prevent login screen flash
         setAuthState(prev => ({ ...prev, loading: true }))
+
+        // Add a small delay for returning users to ensure smooth transition
+        if (wasAuthenticated) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
 
         // Fetch session
         let session = null

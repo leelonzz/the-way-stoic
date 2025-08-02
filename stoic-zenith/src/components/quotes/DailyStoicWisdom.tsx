@@ -58,7 +58,7 @@ function DailyStoicQuoteCard({
           title: 'Stoic Quote',
           text: text,
         })
-      } catch (err) {
+      } catch (_err) {
         // User cancelled or error occurred
       }
     } else {
@@ -68,7 +68,7 @@ function DailyStoicQuoteCard({
           title: "Quote copied",
           description: "Quote copied to clipboard",
         })
-      } catch (err) {
+      } catch (_err) {
         toast({
           title: "Failed to copy",
           description: "Unable to copy quote to clipboard",
@@ -127,7 +127,7 @@ function DailyStoicQuoteCard({
         {/* Quote content */}
         <div className="text-center space-y-8 max-w-6xl mx-auto pt-4">
           <blockquote className="text-lg md:text-xl font-bold leading-relaxed text-ink font-inknut">
-            "{quote.text}"
+            &ldquo;{quote.text}&rdquo;
           </blockquote>
           
           <div className="text-base md:text-lg font-medium text-ink font-inknut">
@@ -209,9 +209,9 @@ function SimplifiedQuoteCard({
       <CardContent className="p-8">
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1 space-y-3">
-            <blockquote className="text-lg font-medium italic text-ink leading-relaxed">
-              "{quote.text}"
-            </blockquote>
+                          <blockquote className="text-lg font-medium italic text-ink leading-relaxed">
+                &ldquo;{quote.text}&rdquo;
+              </blockquote>
             
             <div className="text-base font-medium text-stone">
               — {quote.author}
@@ -276,7 +276,8 @@ export function DailyStoicWisdom() {
     searchQuotes,
     createUserQuote, 
     updateUserQuote, 
-    deleteUserQuote 
+    deleteUserQuote,
+    refreshDailyQuote
   } = useQuotes(user)
 
   const dailyQuote = getDailyQuote()
@@ -291,9 +292,11 @@ export function DailyStoicWisdom() {
     return filtered
   }, [quotes, searchTerm, searchQuotes])
 
-  const refreshDailyQuote = () => {
-    // This would typically fetch a new random quote or refresh the daily quote
-    window.location.reload()
+  const handleRefreshDailyQuote = () => {
+    // Use the refresh function from the hook instead of reloading the page
+    refreshDailyQuote()
+    // Force component re-render by updating a state
+    setSearchTerm(prev => prev) // Trigger a re-render
   }
 
   if (loading) {
@@ -340,7 +343,7 @@ export function DailyStoicWisdom() {
               isSaved={isAuthenticated ? isQuoteSaved(dailyQuote.id) : false}
               onSave={isAuthenticated ? saveQuote : undefined}
               onUnsave={isAuthenticated ? unsaveQuote : undefined}
-              onRefresh={refreshDailyQuote}
+              onRefresh={handleRefreshDailyQuote}
             />
           )}
         </div>

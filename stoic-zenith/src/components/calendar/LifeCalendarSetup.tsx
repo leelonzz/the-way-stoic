@@ -12,18 +12,22 @@ interface LifeCalendarSetupProps {
   onSetup: (birthDate: Date, lifeExpectancy: number) => Promise<boolean>;
   initialBirthDate?: Date | null;
   initialLifeExpectancy?: number;
+  isLoading?: boolean;
 }
 
 export function LifeCalendarSetup({ 
   onSetup, 
   initialBirthDate = null, 
-  initialLifeExpectancy = 80 
+  initialLifeExpectancy = 80,
+  isLoading: externalLoading = false
 }: LifeCalendarSetupProps): React.JSX.Element {
   const [birthDate, setBirthDate] = useState<Date | undefined>(initialBirthDate || undefined);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [lifeExpectancy, setLifeExpectancy] = useState(initialLifeExpectancy.toString());
-  const [isLoading, setIsLoading] = useState(false);
+  const [internalLoading, setInternalLoading] = useState(false);
   const { toast } = useToast();
+  
+  const isLoading = externalLoading || internalLoading;
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -57,7 +61,7 @@ export function LifeCalendarSetup({
       return;
     }
 
-    setIsLoading(true);
+    setInternalLoading(true);
     try {
       const success = await onSetup(birthDate, lifeExpectancyNum);
       if (success) {
@@ -67,7 +71,7 @@ export function LifeCalendarSetup({
         });
       }
     } finally {
-      setIsLoading(false);
+      setInternalLoading(false);
     }
   };
 

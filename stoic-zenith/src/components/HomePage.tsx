@@ -2,8 +2,14 @@ import React from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { useQuotes } from '@/hooks/useQuotes'
+import { useAuthContext } from '@/components/auth/AuthProvider'
+import { SimpleSpinner } from '@/components/ui/SimpleSpinner'
 
 export default function HomePage(): JSX.Element {
+  const { user } = useAuthContext()
+  const { getDailyQuote, loading } = useQuotes(user)
+  
   const currentHour = new Date().getHours()
   const greeting =
     currentHour < 12
@@ -11,6 +17,8 @@ export default function HomePage(): JSX.Element {
       : currentHour < 17
         ? 'Good Afternoon'
         : 'Good Evening'
+
+  const dailyQuote = getDailyQuote()
 
   return (
     <div className="min-h-screen p-6" style={{ background: 'transparent' }}>
@@ -34,19 +42,37 @@ export default function HomePage(): JSX.Element {
           }}
         >
           <CardContent className="py-8 px-12 text-center">
-            <blockquote
-              className="text-2xl font-inknut font-extrabold leading-[1.4] mb-4"
-              style={{ color: '#100804' }}
-            >
-              &ldquo;You have power over your mind—not outside events. Realize
-              this, and you will find strength.&rdquo;
-            </blockquote>
-            <p
-              className="text-lg font-inknut font-normal"
-              style={{ color: '#100804' }}
-            >
-              — Marcus Aurelius
-            </p>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#100804]"></div>
+              </div>
+            ) : dailyQuote ? (
+              <>
+                <blockquote
+                  className="text-2xl font-inknut font-extrabold leading-[1.4] mb-4"
+                  style={{ color: '#100804' }}
+                >
+                  &ldquo;{dailyQuote.text}&rdquo;
+                </blockquote>
+                <p
+                  className="text-lg font-inknut font-normal"
+                  style={{ color: '#100804' }}
+                >
+                  — {dailyQuote.author}
+                  {dailyQuote.source && (
+                    <span className="text-base opacity-75 ml-2">({dailyQuote.source})</span>
+                  )}
+                </p>
+              </>
+            ) : (
+              <blockquote
+                className="text-2xl font-inknut font-extrabold leading-[1.4] mb-4"
+                style={{ color: '#100804' }}
+              >
+                &ldquo;You have power over your mind—not outside events. Realize
+                this, and you will find strength.&rdquo;
+              </blockquote>
+            )}
           </CardContent>
         </Card>
 

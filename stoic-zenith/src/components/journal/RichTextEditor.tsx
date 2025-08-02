@@ -8,7 +8,7 @@ interface RichTextEditorProps {
   placeholder?: string;
 }
 
-export function RichTextEditor({ blocks, onChange, placeholder = "Start writing or type '/' for commands..." }: RichTextEditorProps) {
+export function RichTextEditor({ blocks, onChange, placeholder: _placeholder = "Start writing or type '/' for commands..." }: RichTextEditorProps) {
   const [showCommandMenu, setShowCommandMenu] = useState(false);
   const [commandMenuPosition, setCommandMenuPosition] = useState({ x: 0, y: 0 });
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,20 +60,38 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
         return;
       }
       const newBlockId = addBlock(blockId);
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         const newBlockElement = document.querySelector(`[data-block-id="${newBlockId}"]`) as HTMLElement;
-        newBlockElement?.focus();
-      }, 10);
+        if (newBlockElement) {
+          newBlockElement.focus();
+          // Place cursor at the beginning
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.setStart(newBlockElement, 0);
+          range.setEnd(newBlockElement, 0);
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+        }
+      });
     } else if (e.key === 'Backspace' && block.text === '') {
       e.preventDefault();
       deleteBlock(blockId);
       const currentIndex = blocks.findIndex(b => b.id === blockId);
       if (currentIndex > 0) {
         const prevBlock = blocks[currentIndex - 1];
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           const prevBlockElement = document.querySelector(`[data-block-id="${prevBlock.id}"]`) as HTMLElement;
-          prevBlockElement?.focus();
-        }, 10);
+          if (prevBlockElement) {
+            prevBlockElement.focus();
+            // Place cursor at the end
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(prevBlockElement);
+            range.collapse(false);
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+          }
+        });
       }
     } else if (e.key === 'Escape') {
       setShowCommandMenu(false);
@@ -104,6 +122,7 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
     if (!activeBlockId) return;
 
     if (command.type === 'image') {
+      updateBlock(activeBlockId, { text: '' });
       handleImageUpload(activeBlockId);
     } else {
       updateBlock(activeBlockId, {
@@ -114,12 +133,23 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
     }
 
     setShowCommandMenu(false);
+    const currentActiveBlockId = activeBlockId;
     setActiveBlockId(null);
 
-    setTimeout(() => {
-      const blockElement = document.querySelector(`[data-block-id="${activeBlockId}"]`) as HTMLElement;
-      blockElement?.focus();
-    }, 10);
+    // Focus the block after React re-renders
+    requestAnimationFrame(() => {
+      const blockElement = document.querySelector(`[data-block-id="${currentActiveBlockId}"]`) as HTMLElement;
+      if (blockElement) {
+        blockElement.focus();
+        // Place cursor at the end
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(blockElement);
+        range.collapse(false);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
+    });
   };
 
   const handleImageUpload = (blockId: string) => {
@@ -154,7 +184,7 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
       onInput: (e: React.FormEvent<HTMLDivElement>) => handleInput(e, block.id),
       onKeyDown: (e: React.KeyboardEvent) => handleKeyDown(e, block.id),
       className: "outline-none focus:ring-0 rounded px-1 py-1 min-h-[1.5rem] leading-relaxed",
-      children: block.text
+      children: block.text || ''
     };
 
     switch (block.type) {
@@ -227,7 +257,12 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
         className="flex-1 p-6 bg-white focus-within:ring-0 overflow-y-auto"
       >
         {blocks.length === 0 && (
-          <div className="text-stone-400 italic text-base leading-relaxed font-inknut">{placeholder}</div>
+          <div className="text-stone-400 italic text-base leading-relaxed font-inknut">Write something...</div>
+        )}
+        {blocks.length === 1 && blocks[0].text === '' && (
+          <div className="absolute top-6 left-6 text-stone-400 italic text-base leading-relaxed font-inknut pointer-events-none">
+            Write something...
+          </div>
         )}
         {blocks.map(renderBlock)}
       </div>

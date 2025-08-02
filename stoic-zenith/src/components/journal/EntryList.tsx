@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
-import { Search, Plus, Calendar, MoreHorizontal } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Search, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { JournalEntry } from './types';
 import { getJournalEntries, JournalEntryResponse } from '@/lib/journal';
@@ -18,7 +17,7 @@ interface EntryListItem {
   dateKey: string;
 }
 
-export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry, className = '' }: EntryListProps): JSX.Element {
+export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCreateEntry, className = '' }: EntryListProps): JSX.Element {
   const [entries, setEntries] = useState<EntryListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredEntries, setFilteredEntries] = useState<EntryListItem[]>([]);
@@ -110,7 +109,7 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry, classNa
     };
   }, []);
 
-  const hasEntryContent = selectedEntry?.blocks?.some(block => block.text?.trim() !== '') || false;
+  // const hasEntryContent = selectedEntry?.blocks?.some(block => block.text?.trim() !== '') || false;
 
   return (
     <div className={`flex flex-col h-full bg-white ${className}`}>
@@ -140,7 +139,7 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry, classNa
           </div>
         ) : (
           <div className="p-2">
-            {filteredEntries.map(({ entry, dateKey }) => (
+            {filteredEntries.map(({ entry }) => (
               <button
                 key={entry.id}
                 onClick={() => {
@@ -180,9 +179,6 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry, classNa
                         {formatEntryDate(entry.entry_date)}
                       </span>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-inknut text-stone-500 capitalize">
-                          {entry.entry_type}
-                        </span>
                         <span className="text-xs font-inknut text-stone-500">
                           {format(new Date(entry.updated_at), 'h:mm a')}
                         </span>

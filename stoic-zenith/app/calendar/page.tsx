@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,9 +14,52 @@ import { LifeCalendarGrid } from '@/components/calendar/LifeCalendarGrid';
 import { LifeCalendarSetup } from '@/components/calendar/LifeCalendarSetup';
 import { MementoMoriInsights } from '@/components/calendar/MementoMoriInsights';
 import { useAuthContext } from '@/components/auth/AuthProvider';
-import { Hourglass } from '@/components/ui/Hourglass';
+// import { Hourglass } from '@/components/ui/Hourglass';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: 2,
+    },
+  },
+});
+
+// Loading skeleton component
+function CalendarSkeleton(): JSX.Element {
+  return (
+    <div className="max-w-7xl mx-auto p-6 space-y-8">
+      <div className="text-center space-y-2">
+        <Skeleton className="h-12 w-64 mx-auto" />
+        <Skeleton className="h-4 w-48 mx-auto" />
+      </div>
+      <div className="max-w-2xl mx-auto">
+        <Skeleton className="h-96 w-full rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+// Error component
+function CalendarError({ error, onRetry }: { error: string; onRetry: () => void }): JSX.Element {
+  return (
+    <div className="text-center py-20 space-y-4">
+      <h1 className="text-3xl font-serif text-ink">Memento Mori Calendar</h1>
+      <p className="text-red-600 mt-4">Connection issue: {error}</p>
+      <div className="space-y-2">
+        <p className="text-stone/70 text-sm">Unable to load your calendar preferences</p>
+        <button 
+          onClick={onRetry}
+          className="px-6 py-2 bg-cta hover:bg-cta/90 text-white rounded-lg transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function CalendarContent(): JSX.Element {
   const { user, isAuthenticated } = useAuthContext();
@@ -27,7 +70,8 @@ function CalendarContent(): JSX.Element {
     updatePreferences, 
     getWeekData, 
     getMotivationalMessage,
-    refetch 
+    refetch,
+    isUpdating
   } = useLifeCalendar(user);
 
   if (!isAuthenticated) {
@@ -42,39 +86,12 @@ function CalendarContent(): JSX.Element {
     );
   }
 
-  if (calendarLoading && !lifeCalendarData.birthDate) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center space-y-4">
-          <Hourglass size="md" className="mx-auto" />
-          <p className="text-stone">Loading your life calendar...</p>
-          <button 
-            onClick={() => refetch()}
-            className="px-4 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
+  if (calendarLoading) {
+    return <CalendarSkeleton />;
   }
 
   if (error) {
-    return (
-      <div className="text-center py-20 space-y-4">
-        <h1 className="text-3xl font-serif text-ink">Memento Mori Calendar</h1>
-        <p className="text-red-600 mt-4">Connection issue: {error}</p>
-        <div className="space-y-2">
-          <p className="text-stone/70 text-sm">Unable to load your calendar preferences</p>
-          <button 
-            onClick={() => refetch()}
-            className="px-6 py-2 bg-cta hover:bg-cta/90 text-white rounded-lg transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
+    return <CalendarError error={error} onRetry={refetch} />;
   }
 
   const hasSetupData = lifeCalendarData.birthDate !== null;
@@ -92,6 +109,7 @@ function CalendarContent(): JSX.Element {
             onSetup={updatePreferences}
             initialBirthDate={lifeCalendarData.birthDate}
             initialLifeExpectancy={lifeCalendarData.lifeExpectancy}
+            isLoading={isUpdating}
           />
         </div>
       ) : (
@@ -119,10 +137,12 @@ function CalendarContent(): JSX.Element {
               </p>
             </div>
             
-            <LifeCalendarGrid 
-              data={lifeCalendarData} 
-              getWeekData={getWeekData} 
-            />
+            <Suspense fallback={<CalendarSkeleton />}>
+              <LifeCalendarGrid 
+                data={lifeCalendarData} 
+                getWeekData={getWeekData} 
+              />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-6">
@@ -138,6 +158,7 @@ function CalendarContent(): JSX.Element {
                 onSetup={updatePreferences}
                 initialBirthDate={lifeCalendarData.birthDate}
                 initialLifeExpectancy={lifeCalendarData.lifeExpectancy}
+                isLoading={isUpdating}
               />
             </div>
           </TabsContent>
@@ -155,7 +176,9 @@ export default function CalendarPage(): JSX.Element {
         <Sonner />
         <ProtectedRoute>
           <AppLayout>
-            <CalendarContent />
+            <Suspense fallback={<CalendarSkeleton />}>
+              <CalendarContent />
+            </Suspense>
           </AppLayout>
         </ProtectedRoute>
       </TooltipProvider>

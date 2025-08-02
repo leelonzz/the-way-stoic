@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
-import type { Tables } from '@/integrations/supabase/types';
+// import type { Tables } from '@/integrations/supabase/types';
 
 export interface LifeCalendarPreferences {
   id: string;
@@ -24,31 +25,11 @@ export interface LifeCalendarData {
   daysRemaining: number;
 }
 
-// Enhanced cache for preferences with circuit breaker
-const preferencesCache = new Map<string, { data: LifeCalendarPreferences; timestamp: number }>();
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
-
-// Circuit breaker for database calls
-const circuitBreaker = {
-  failureCount: 0,
-  lastFailureTime: 0,
-  maxFailures: 3,
-  cooldownPeriod: 30000, // 30 seconds
-  isOpen(): boolean {
-    if (this.failureCount >= this.maxFailures) {
-      const timeSinceLastFailure = Date.now() - this.lastFailureTime;
-      return timeSinceLastFailure < this.cooldownPeriod;
-    }
-    return false;
-  },
-  recordSuccess(): void {
-    this.failureCount = 0;
-  },
-  recordFailure(): void {
-    this.failureCount++;
-    this.lastFailureTime = Date.now();
-  }
-};
+// Query keys for React Query
+const QUERY_KEYS = {
+  preferences: (userId: string) => ['life-calendar', 'preferences', userId],
+  all: (userId: string) => ['life-calendar', userId],
+} as const;
 
 // Local storage backup
 const getStoredPreferences = (userId: string): LifeCalendarPreferences | null => {
@@ -70,148 +51,139 @@ const setStoredPreferences = (userId: string, prefs: LifeCalendarPreferences): v
   }
 };
 
-export function useLifeCalendar(user: User | null) {
-  const [preferences, setPreferences] = useState<LifeCalendarPreferences | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
+// Fetch preferences function
+const fetchPreferences = async (userId: string): Promise<LifeCalendarPreferences | null> => {
+  console.log('🔄 Fetching life calendar preferences for user:', userId);
+  
+  try {
+    const { data, error } = await supabase
+      .from('user_preferences')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
 
-  const fetchPreferences = useCallback(async (isRetry = false, forceRefresh = false) => {
-    if (!user) return;
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No data found - this is normal for new users
+        console.log('📝 No preferences found for user, will create on first setup');
+        return null;
+      }
+      throw error;
+    }
 
-    // Check cache first
-    const cacheKey = `preferences_${user.id}`;
-    const cached = preferencesCache.get(cacheKey);
-    const now = Date.now();
+    console.log('✅ Preferences fetched successfully:', data);
+    return data;
+  } catch (err) {
+    console.error('❌ Error fetching preferences:', err);
     
-    if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_DURATION) {
-      console.log('📦 Using cached preferences');
-      setPreferences(cached.data);
-      setLoading(false);
-      return;
+    // Try to get from localStorage as fallback
+    const stored = getStoredPreferences(userId);
+    if (stored) {
+      console.log('💾 Using stored preferences as fallback');
+      return stored;
     }
+    
+    throw err;
+  }
+};
 
-    // Check localStorage backup if no cache
-    if (!forceRefresh && !cached) {
-      const stored = getStoredPreferences(user.id);
-      if (stored) {
-        console.log('💾 Using stored preferences from localStorage');
-        setPreferences(stored);
-        setLoading(false);
-        // Continue to fetch fresh data in background
+// Update preferences function using regular upsert
+const updatePreferencesMutation = async ({ 
+  userId, 
+  birthDate, 
+  lifeExpectancy 
+}: { 
+  userId: string; 
+  birthDate: Date; 
+  lifeExpectancy: number; 
+}): Promise<LifeCalendarPreferences> => {
+  console.log('🔄 Updating preferences for user:', userId);
+  
+  try {
+    // Use regular upsert to avoid 409 conflicts
+    const { data, error } = await supabase
+      .from('user_preferences')
+      .upsert({
+        user_id: userId,
+        birth_date: birthDate.toISOString().split('T')[0],
+        life_expectancy: lifeExpectancy
+      }, {
+        onConflict: 'user_id'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log('✅ Preferences updated successfully:', data);
+    return data as LifeCalendarPreferences;
+  } catch (err) {
+    console.error('❌ Failed to update preferences:', err);
+    throw err;
+  }
+};
+
+export function useLifeCalendar(user: User | null) {
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+
+  // Query for fetching preferences
+  const {
+    data: preferences,
+    isLoading: loading,
+    error: queryError,
+    refetch
+  } = useQuery({
+    queryKey: QUERY_KEYS.preferences(user?.id || ''),
+    queryFn: () => fetchPreferences(user!.id),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: (failureCount, error) => {
+      // Don't retry on 404 (no preferences found)
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'PGRST116') {
+        return false;
       }
+      return failureCount < 2;
     }
+  });
 
-    try {
-      if (!isRetry && !preferences) {
-        setLoading(true);
-        setError(null);
-      }
-      
-      console.log('🔄 Fetching life calendar preferences for user:', user.id);
-      
-      // Check circuit breaker before making request
-      if (circuitBreaker.isOpen()) {
-        console.log('🚫 Circuit breaker is open, using fallback');
-        const stored = getStoredPreferences(user.id);
-        if (stored) {
-          setPreferences(stored);
-        } else {
-          setPreferences(null);
-        }
-        setLoading(false);
-        return;
-      }
-      
-      // Reduced timeout for faster feedback
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 5000) // Reduced to 5 seconds
-      );
-      
-      const fetchPromise = supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+  // Handle query errors and success
+  useEffect(() => {
+    if (queryError) {
+      console.error('❌ Query error:', queryError);
+      setError(queryError instanceof Error ? queryError.message : 'Failed to fetch preferences');
+    } else if (preferences && user) {
+      setError(null);
+      setStoredPreferences(user.id, preferences);
+    }
+  }, [queryError, preferences, user]);
 
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as { data: Tables<'user_preferences'> | null; error: { code?: string; message?: string } | null };
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('❌ Error fetching preferences:', error);
-        throw error;
-      }
-
-      console.log('✅ Preferences fetched:', data);
-      setPreferences(data);
-      setRetryCount(0); // Reset retry count on success
-      circuitBreaker.recordSuccess(); // Reset circuit breaker on success
+  // Mutation for updating preferences
+  const updateMutation = useMutation({
+    mutationFn: updatePreferencesMutation,
+    onSuccess: (data) => {
+      // Update cache
+      queryClient.setQueryData(QUERY_KEYS.preferences(user?.id || ''), data);
       
-      // Cache the result and store in localStorage
-      if (data) {
-        preferencesCache.set(cacheKey, { data, timestamp: now });
+      // Store in localStorage
+      if (user) {
         setStoredPreferences(user.id, data);
       }
-    } catch (err) {
-      console.error('❌ Failed to fetch preferences:', err);
-      circuitBreaker.recordFailure(); // Record failure for circuit breaker
       
-      // Retry logic for network issues
-      if (!isRetry && retryCount < 2 && (err instanceof Error && 
-          (err.message.includes('timeout') || err.message.includes('network') || err.message.includes('fetch')))) {
-        console.log(`🔄 Retrying... Attempt ${retryCount + 1}/2`);
-        setRetryCount(prev => prev + 1);
-        setTimeout(() => fetchPreferences(true), 1000 * (retryCount + 1)); // Exponential backoff
-        return;
-      }
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all(user?.id || '') });
       
-      // Better fallback handling - try localStorage first
-      const stored = getStoredPreferences(user.id);
-      if (stored) {
-        console.log('💾 Using stored preferences as fallback');
-        setPreferences(stored);
-        setLoading(false);
-        return;
-      }
-      
-      // If no fallback available, set null for setup flow
-      if (err instanceof Error && (err.message === 'Request timeout' || err.message.includes('network'))) {
-        console.log('⚠️ Network issue - setting up for default flow');
-        setPreferences(null);
-      } else {
-        setError(err instanceof Error ? err.message : 'Failed to fetch preferences');
-      }
-    } finally {
-      if (!isRetry && !preferences) {
-        setLoading(false);
-      }
-    }
-  }, [user, retryCount]);
-
-  const updatePreferences = async (birthDate: Date, lifeExpectancy: number) => {
-    if (!user) return false;
-
-    try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: user.id,
-          birth_date: birthDate.toISOString().split('T')[0],
-          life_expectancy: lifeExpectancy
-        });
-      
-      if (error) throw error;
-      
-      // Clear cache and refresh preferences after update
-      const cacheKey = `preferences_${user.id}`;
-      preferencesCache.delete(cacheKey);
-      await fetchPreferences(false, true);
-      return true;
-    } catch (err) {
+      setError(null);
+      console.log('✅ Preferences updated and cache refreshed');
+    },
+    onError: (err) => {
+      console.error('❌ Update mutation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to update preferences');
-      return false;
     }
-  };
+  });
 
+  // Calculate life calendar data
   const lifeCalendarData: LifeCalendarData = useMemo(() => {
     const now = new Date();
     const birthDate = preferences?.birth_date ? new Date(preferences.birth_date) : null;
@@ -259,7 +231,30 @@ export function useLifeCalendar(user: User | null) {
     };
   }, [preferences]);
 
-  const getWeekData = (weekIndex: number): { isLived: boolean; yearNumber: number; weekInYear: number; isCurrentWeek: boolean } => {
+  // Update preferences function
+  const updatePreferences = useCallback(async (birthDate: Date, lifeExpectancy: number): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      await updateMutation.mutateAsync({
+        userId: user.id,
+        birthDate,
+        lifeExpectancy
+      });
+      return true;
+    } catch (err) {
+      console.error('❌ Failed to update preferences:', err);
+      return false;
+    }
+  }, [user, updateMutation]);
+
+  // Helper functions
+  const getWeekData = useCallback((weekIndex: number): { 
+    isLived: boolean; 
+    yearNumber: number; 
+    weekInYear: number; 
+    isCurrentWeek: boolean; 
+  } => {
     const isLived = weekIndex < lifeCalendarData.weeksLived;
     const yearNumber = Math.floor(weekIndex / 52);
     const weekInYear = weekIndex % 52;
@@ -270,9 +265,9 @@ export function useLifeCalendar(user: User | null) {
       weekInYear,
       isCurrentWeek: weekIndex === lifeCalendarData.weeksLived
     };
-  };
+  }, [lifeCalendarData.weeksLived]);
 
-  const getMotivationalMessage = (): string => {
+  const getMotivationalMessage = useCallback((): string => {
     const { percentageLived } = lifeCalendarData;
     
     if (percentageLived < 25) {
@@ -284,20 +279,30 @@ export function useLifeCalendar(user: User | null) {
     } else {
       return "Every moment is precious. Cherish the time you have.";
     }
-  };
+  }, [lifeCalendarData.percentageLived]);
 
+  // Preload calendar data when user is authenticated
   useEffect(() => {
-    fetchPreferences();
-  }, [fetchPreferences]);
+    if (user && !loading && !preferences) {
+      // Preload the calendar data
+      queryClient.prefetchQuery({
+        queryKey: QUERY_KEYS.preferences(user.id),
+        queryFn: () => fetchPreferences(user.id),
+        staleTime: 5 * 60 * 1000,
+        gcTime: 10 * 60 * 1000
+      });
+    }
+  }, [user, loading, preferences, queryClient]);
 
   return {
     preferences,
     lifeCalendarData,
-    loading,
-    error,
+    loading: loading || updateMutation.isPending,
+    error: error || (queryError instanceof Error ? queryError.message : null),
     updatePreferences,
     getWeekData,
     getMotivationalMessage,
-    refetch: fetchPreferences
+    refetch,
+    isUpdating: updateMutation.isPending
   };
 }

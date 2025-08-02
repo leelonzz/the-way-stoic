@@ -11,7 +11,7 @@ import { createJournalEntry, getJournalEntryByDate } from '@/lib/journal';
 export default function Journal() {
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const createNewEntry = (): JournalEntry => {
     const now = new Date();
@@ -81,7 +81,8 @@ export default function Journal() {
 
   const handleEntryUpdate = (updatedEntry: JournalEntry) => {
     setSelectedEntry(updatedEntry);
-    setRefreshKey(prev => prev + 1);
+    // Don't refresh the entry list on every update - this causes loading to show
+    // setRefreshKey(prev => prev + 1);
   };
 
   const loadTodaysEntry = async () => {
@@ -179,13 +180,21 @@ export default function Journal() {
 
       {/* Right Panel - Content (Full remaining width/height) */}
       <div className="flex-1 min-w-0 bg-white flex flex-col">
-        {selectedEntry && (
+        {isLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-stone-500 font-inknut">Loading...</div>
+          </div>
+        ) : selectedEntry ? (
           <JournalNavigation 
             className="flex-1"
             entry={selectedEntry}
             onEntryUpdate={handleEntryUpdate}
             onCreateEntry={handleCreateEntry}
           />
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-stone-500 font-inknut">No entry selected</div>
+          </div>
         )}
       </div>
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Mail, Calendar, Trophy, BookOpen, Target, Star, Medal, Award, Crown, Gem } from 'lucide-react';
+import { Mail, Calendar, Trophy, BookOpen, Target, Star, Medal, Award, Crown } from 'lucide-react';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -134,15 +134,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-parchment">
-        <DialogHeader className="relative">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute right-0 top-0 h-8 w-8 p-0"
-            onClick={onClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+        <DialogHeader>
           <DialogTitle className="text-2xl font-serif text-ink">Your Profile</DialogTitle>
           <p className="text-stone">Manage your account and track your progress</p>
         </DialogHeader>
