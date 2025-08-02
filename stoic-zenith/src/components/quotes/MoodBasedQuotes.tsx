@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Smile, RefreshCw, Zap, Leaf, Brain, Heart, Mountain, BookOpen, Shield } from 'lucide-react';
 import { QuoteCard } from './QuoteCard';
 import { zenQuotesService } from '@/lib/zenquotes';
+import { Hourglass } from '@/components/ui/Hourglass';
 
 export interface MoodCategory {
   id: string;
@@ -211,9 +212,9 @@ export function MoodBasedQuotes({
 
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <div className="text-center space-y-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-cta border-t-transparent mx-auto"></div>
-            <p className="text-stone">Finding quotes for your mood...</p>
+                  <div className="text-center space-y-4">
+          <Hourglass size="md" className="mx-auto" />
+          <p className="text-stone">Finding quotes for your mood...</p>
           </div>
         </div>
       )}

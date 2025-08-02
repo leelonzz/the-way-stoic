@@ -23,6 +23,7 @@ export default {
 				'sans': ['Inter', 'system-ui', 'sans-serif'],
 				'serif': ['Crimson Text', 'Georgia', 'serif'],
 				'inknut': ['var(--font-inknut-antiqua)', 'serif'],
+				'inika': ['var(--font-inika)', 'serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Hash, Type, List, ListOrdered, MinusCircle } from 'lucide-react';
+import { Hash, Type, List, ListOrdered, MinusCircle, Image } from 'lucide-react';
 import { CommandOption } from './types';
 
 interface CommandMenuProps {
@@ -61,6 +61,14 @@ const COMMANDS: CommandOption[] = [
     shortcut: '/p',
     type: 'paragraph',
     icon: 'paragraph'
+  },
+  {
+    id: 'image',
+    label: 'Image',
+    description: 'Upload an image',
+    shortcut: '/image',
+    type: 'image',
+    icon: 'image'
   }
 ];
 
@@ -78,6 +86,8 @@ const getIcon = (iconType: string) => {
       return <ListOrdered className="w-4 h-4" />;
     case 'paragraph':
       return <Type className="w-4 h-4" />;
+    case 'image':
+      return <Image className="w-4 h-4" />;
     default:
       return <MinusCircle className="w-4 h-4" />;
   }

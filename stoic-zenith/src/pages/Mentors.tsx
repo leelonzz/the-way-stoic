@@ -150,7 +150,7 @@ export default function Mentors(): JSX.Element {
               </p>
             </div>
             <div className="space-y-4">
-              <div className="w-12 h-12 bg-sage text-white rounded-full flex items-center justify-center mx-auto font-bold text-lg">
+              <div className="w-12 h-12 bg-cta text-white rounded-full flex items-center justify-center mx-auto font-bold text-lg">
                 3
               </div>
               <h4 className="font-inknut text-xl font-medium text-ink">

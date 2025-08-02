@@ -14,6 +14,7 @@ import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { ProfileSettings } from '@/components/profile/ProfileSettings';
 import { ProfileStats } from '@/components/profile/ProfileStats';
 import { useAuthContext } from '@/components/auth/AuthProvider';
+import { Hourglass } from '@/components/ui/Hourglass';
 
 const queryClient = new QueryClient();
 
@@ -48,7 +49,7 @@ function ProfileContent() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-cta border-t-transparent mx-auto"></div>
+          <Hourglass size="md" className="mx-auto" />
           <p className="text-stone">Loading your profile...</p>
         </div>
       </div>

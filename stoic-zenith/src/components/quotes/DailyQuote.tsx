@@ -21,7 +21,7 @@ export function DailyQuote({ quote, author, source, onSave }: DailyQuoteProps) {
           </div>
           
           <div className="flex-1 space-y-4">
-            <blockquote className="text-xl font-serif italic text-ink leading-relaxed">
+            <blockquote className="text-lg font-serif italic text-ink leading-relaxed">
               "{quote}"
             </blockquote>
             

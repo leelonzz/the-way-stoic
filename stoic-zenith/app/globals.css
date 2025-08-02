@@ -110,6 +110,18 @@ All colors MUST be HSL.
   .font-inknut {
     font-family: var(--font-inknut-antiqua), serif;
   }
+  
+  /* Remove all input outlines */
+  input:focus,
+  input:focus-visible,
+  input:active {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+  
+  input {
+    outline: none !important;
+  }
 }
 
 @layer utilities {

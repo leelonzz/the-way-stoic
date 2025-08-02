@@ -11,6 +11,7 @@ import { AccountSettings } from "@/components/settings/AccountSettings";
 import { PreferencesSettings } from "@/components/settings/PreferencesSettings";
 import { useProfile } from '@/hooks/useProfile';
 import { useAuthContext } from '@/components/auth/AuthProvider';
+import { Hourglass } from '@/components/ui/Hourglass';
 import { User } from 'lucide-react';
 
 const queryClient = new QueryClient();
@@ -48,7 +49,7 @@ function SettingsContent() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-cta border-t-transparent mx-auto"></div>
+          <Hourglass size="md" className="mx-auto" />
           <p className="text-stone">Loading settings...</p>
         </div>
       </div>

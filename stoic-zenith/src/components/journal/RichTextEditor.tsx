@@ -103,11 +103,15 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
   const handleCommandSelect = (command: CommandOption) => {
     if (!activeBlockId) return;
 
-    updateBlock(activeBlockId, {
-      type: command.type,
-      level: command.level as 1 | 2 | 3,
-      text: ''
-    });
+    if (command.type === 'image') {
+      handleImageUpload(activeBlockId);
+    } else {
+      updateBlock(activeBlockId, {
+        type: command.type,
+        level: command.level as 1 | 2 | 3,
+        text: ''
+      });
+    }
 
     setShowCommandMenu(false);
     setActiveBlockId(null);
@@ -116,6 +120,29 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
       const blockElement = document.querySelector(`[data-block-id="${activeBlockId}"]`) as HTMLElement;
       blockElement?.focus();
     }, 10);
+  };
+
+  const handleImageUpload = (blockId: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target?.result as string;
+          updateBlock(blockId, {
+            type: 'image',
+            imageUrl,
+            imageAlt: file.name,
+            text: file.name
+          });
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
   };
 
   const renderBlock = (block: JournalBlock) => {
@@ -134,9 +161,9 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
       case 'heading':
         const HeadingTag = `h${block.level}` as 'h1' | 'h2' | 'h3';
         const headingClasses = {
-          1: 'text-3xl font-bold text-stone-800 mb-6 leading-tight font-serif',
-          2: 'text-2xl font-semibold text-stone-800 mb-4 leading-tight font-serif',
-          3: 'text-xl font-medium text-stone-800 mb-3 leading-tight font-serif'
+          1: 'text-3xl font-bold text-stone-800 mb-6 leading-tight font-inknut',
+          2: 'text-2xl font-semibold text-stone-800 mb-4 leading-tight font-inknut',
+          3: 'text-xl font-medium text-stone-800 mb-3 leading-tight font-inknut'
         };
         return React.createElement(HeadingTag, {
           ...commonProps,
@@ -147,7 +174,7 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
         return (
           <div className="flex items-start gap-3 mb-3">
             <span className="text-stone-600 mt-1 select-none text-lg">•</span>
-            <div {...commonProps} className={`${commonProps.className} flex-1 text-base text-stone-700 leading-relaxed`} />
+            <div {...commonProps} className={`${commonProps.className} flex-1 text-base text-stone-700 leading-relaxed font-inknut`} />
           </div>
         );
 
@@ -156,12 +183,32 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
         return (
           <div className="flex items-start gap-3 mb-3">
             <span className="text-stone-600 mt-1 select-none min-w-[24px] text-base font-medium">{index}.</span>
-            <div {...commonProps} className={`${commonProps.className} flex-1 text-base text-stone-700 leading-relaxed`} />
+            <div {...commonProps} className={`${commonProps.className} flex-1 text-base text-stone-700 leading-relaxed font-inknut`} />
+          </div>
+        );
+
+      case 'image':
+        return (
+          <div key={block.id} className="mb-4">
+            {block.imageUrl ? (
+              <img
+                src={block.imageUrl}
+                alt={block.imageAlt || 'Uploaded image'}
+                className="max-w-full h-auto rounded-lg shadow-sm"
+              />
+            ) : (
+              <div
+                className="border-2 border-dashed border-stone-300 rounded-lg p-8 text-center cursor-pointer hover:border-stone-400 transition-colors"
+                onClick={() => handleImageUpload(block.id)}
+              >
+                <p className="text-stone-500">Click to upload an image</p>
+              </div>
+            )}
           </div>
         );
 
       default:
-        return <div {...commonProps} className={`${commonProps.className} mb-4 text-base text-stone-700 leading-relaxed`} />;
+        return <div {...commonProps} className={`${commonProps.className} mb-4 text-base text-stone-700 leading-relaxed font-inknut`} />;
     }
   };
 
@@ -178,7 +225,7 @@ export function RichTextEditor({ blocks, onChange, placeholder = "Start writing 
         className="flex-1 p-6 bg-white focus-within:ring-0 overflow-y-auto"
       >
         {blocks.length === 0 && (
-          <div className="text-stone-400 italic text-base leading-relaxed">{placeholder}</div>
+          <div className="text-stone-400 italic text-base leading-relaxed font-inknut">{placeholder}</div>
         )}
         {blocks.map(renderBlock)}
       </div>

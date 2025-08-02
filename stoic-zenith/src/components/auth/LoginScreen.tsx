@@ -5,6 +5,7 @@ import { Brain, Quote, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuthContext } from './AuthProvider';
+import { Hourglass } from '@/components/ui/Hourglass';
 
 interface LoginScreenProps {
   onBack?: () => void;
@@ -101,7 +102,7 @@ export function LoginScreen({ onBack, onAuthAttempt }: LoginScreenProps) {
             >
               {isLoading ? (
                 <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  <Hourglass size="sm" />
                   <span>Signing in...</span>
                 </div>
               ) : (

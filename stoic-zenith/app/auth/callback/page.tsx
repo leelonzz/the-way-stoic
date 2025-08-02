@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/integrations/supabase/client';
 import { Brain } from 'lucide-react';
+import { Hourglass } from '@/components/ui/Hourglass';
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -75,7 +76,7 @@ export default function AuthCallback() {
           </p>
         </div>
         
-        <div className="w-6 h-6 border-2 border-cta border-t-transparent rounded-full animate-spin mx-auto" />
+        <Hourglass size="sm" className="mx-auto" />
       </div>
     </div>
   );

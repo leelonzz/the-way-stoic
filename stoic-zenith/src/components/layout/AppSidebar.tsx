@@ -114,15 +114,7 @@ export function AppSidebar() {
             </div>
           </Button>
           
-          {/* Logout Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full mt-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-            onClick={signOut}
-          >
-            Sign Out
-          </Button>
+
         </div>
       )}
       

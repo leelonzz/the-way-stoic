@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
-import { Inknut_Antiqua } from 'next/font/google'
+import { Inknut_Antiqua, Inika } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -10,6 +10,12 @@ const inknutAntiqua = Inknut_Antiqua({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
   variable: '--font-inknut-antiqua',
+})
+
+const inika = Inika({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-inika',
 })
 
 export const metadata: Metadata = {
@@ -36,10 +42,11 @@ html {
   --font-sans: ${GeistSans.variable};
   --font-mono: ${GeistMono.variable};
   --font-inknut-antiqua: ${inknutAntiqua.style.fontFamily};
+  --font-inika: ${inika.style.fontFamily};
 }
         `}</style>
       </head>
-      <body className={`${GeistSans.variable} ${GeistMono.variable} ${inknutAntiqua.variable}`}>
+      <body className={`${GeistSans.variable} ${GeistMono.variable} ${inknutAntiqua.variable} ${inika.variable}`}>
         <ErrorBoundary>
           <AuthProvider>
             {children}

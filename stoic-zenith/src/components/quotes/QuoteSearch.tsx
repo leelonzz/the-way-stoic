@@ -47,7 +47,7 @@ export function QuoteSearch({
           onChange={(e) => onSearchChange(e.target.value)}
           onFocus={() => setIsSearchFocused(true)}
           onBlur={() => setIsSearchFocused(false)}
-          className="pl-10 pr-4 py-3 bg-white/50 border-stone/20 focus:border-cta focus:ring-cta/20"
+          className="pl-10 pr-4 py-3 bg-white/50 border-stone/20 focus:border-cta focus:ring-cta/20 outline-none focus:outline-none"
         />
       </div>
 
