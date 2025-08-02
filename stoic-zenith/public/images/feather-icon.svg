@@ -1,14 +1,30 @@
-<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Feather main body -->
-  <path d="M20 85 Q35 25, 85 45 Q80 50, 75 55 L70 60 L65 65 L60 70 L55 75 L50 80 Q45 82, 40 80 Q38 78, 36 76 L20 85 Z" fill="#B87333"/>
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main feather shaft -->
+  <path d="M8 56 L32 8 L56 32 L32 48 Z" fill="#B05730" opacity="0.9"/>
   
-  <!-- Feather texture lines -->
-  <path d="M35 75 Q50 60, 65 50" stroke="#8B4513" stroke-width="1.5" fill="none" opacity="0.7"/>
-  <path d="M40 78 Q52 65, 68 55" stroke="#8B4513" stroke-width="1.5" fill="none" opacity="0.7"/>
-  <path d="M45 81 Q55 70, 72 60" stroke="#8B4513" stroke-width="1.5" fill="none" opacity="0.7"/>
-  <path d="M28 82 Q40 70, 55 60" stroke="#8B4513" stroke-width="1.5" fill="none" opacity="0.7"/>
+  <!-- Feather vane (left side) -->
+  <path d="M32 8 Q20 16, 16 28 Q18 36, 24 42 L32 48 L32 8 Z" fill="#B05730"/>
   
-  <!-- Quill handle -->
-  <ellipse cx="25" cy="88" rx="12" ry="4" fill="#654321" transform="rotate(-25 25 88)"/>
-  <path d="M18 90 Q25 88, 32 86" stroke="#4A2C17" stroke-width="2" fill="none"/>
+  <!-- Feather vane (right side) -->
+  <path d="M32 8 Q44 16, 48 28 Q46 36, 40 42 L32 48 L32 8 Z" fill="#B05730" opacity="0.8"/>
+  
+  <!-- Feather barbs (texture lines) -->
+  <path d="M32 12 Q26 16, 22 22" stroke="#8B4513" stroke-width="1" fill="none" opacity="0.6"/>
+  <path d="M32 16 Q28 20, 24 26" stroke="#8B4513" stroke-width="1" fill="none" opacity="0.6"/>
+  <path d="M32 20 Q30 24, 26 30" stroke="#8B4513" stroke-width="1" fill="none" opacity="0.6"/>
+  <path d="M32 24 Q32 28, 28 34" stroke="#8B4513" stroke-width="1" fill="none" opacity="0.6"/>
+  <path d="M32 28 Q34 32, 30 38" stroke="#8B4513" stroke-width="1" fill="none" opacity="0.6"/>
+  
+  <path d="M32 12 Q38 16, 42 22" stroke="#8B4513" stroke-width="1" fill="none" opacity="0.5"/>
+  <path d="M32 16 Q36 20, 40 26" stroke="#8B4513" stroke-width="1" fill="none" opacity="0.5"/>
+  <path d="M32 20 Q34 24, 38 30" stroke="#8B4513" stroke-width="1" fill="none" opacity="0.5"/>
+  <path d="M32 24 Q32 28, 36 34" stroke="#8B4513" stroke-width="1" fill="none" opacity="0.5"/>
+  <path d="M32 28 Q30 32, 34 38" stroke="#8B4513" stroke-width="1" fill="none" opacity="0.5"/>
+  
+  <!-- Quill tip -->
+  <circle cx="32" cy="8" r="2" fill="#8B4513"/>
+  
+  <!-- Quill base/stem -->
+  <path d="M30 48 L34 48 L32 56 Z" fill="#8B4513"/>
+  <ellipse cx="32" cy="52" rx="3" ry="1.5" fill="#6B3410"/>
 </svg>
