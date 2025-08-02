@@ -1,62 +1,70 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Clock, Heart, Target, Lightbulb } from 'lucide-react';
-import type { LifeCalendarData } from '@/hooks/useLifeCalendar';
+import React from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Clock, Heart, Target, Lightbulb } from 'lucide-react'
+import type { LifeCalendarData } from '@/hooks/useLifeCalendar'
 
 interface MementoMoriInsightsProps {
-  data: LifeCalendarData;
-  motivationalMessage: string;
+  data: LifeCalendarData
+  motivationalMessage: string
 }
 
-export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriInsightsProps): JSX.Element {
+export function MementoMoriInsights({
+  data,
+  motivationalMessage,
+}: MementoMoriInsightsProps): JSX.Element {
   const insights = [
     {
       icon: Clock,
-      title: "Time Perspective",
+      title: 'Time Perspective',
       content: `You have approximately ${data.daysRemaining.toLocaleString()} days remaining. That&apos;s ${Math.floor(data.daysRemaining / 365)} years of potential experiences, growth, and impact.`,
-      color: "text-cta"
+      color: 'text-cta',
     },
     {
       icon: Heart,
       title: "Life's Seasons",
-      content: data.percentageLived < 25 
-        ? "You&apos;re in life&apos;s spring - time for growth, learning, and planting seeds for the future."
-        : data.percentageLived < 50
-        ? "You&apos;re in life&apos;s summer - peak time for achievement, building, and making your mark."
-        : data.percentageLived < 75
-        ? "You&apos;re in life&apos;s autumn - time for wisdom sharing, mentoring, and harvesting what you&apos;ve sown."
-        : "You&apos;re in life&apos;s winter - time for reflection, legacy building, and savoring life&apos;s essence.",
-      color: "text-hero"
+      content:
+        data.percentageLived < 25
+          ? 'You&apos;re in life&apos;s spring - time for growth, learning, and planting seeds for the future.'
+          : data.percentageLived < 50
+            ? 'You&apos;re in life&apos;s summer - peak time for achievement, building, and making your mark.'
+            : data.percentageLived < 75
+              ? 'You&apos;re in life&apos;s autumn - time for wisdom sharing, mentoring, and harvesting what you&apos;ve sown.'
+              : 'You&apos;re in life&apos;s winter - time for reflection, legacy building, and savoring life&apos;s essence.',
+      color: 'text-hero',
     },
     {
       icon: Target,
-      title: "Focus Reminder",
-      content: "With finite time, choose your priorities wisely. Focus on relationships, meaningful work, and personal growth rather than trivial distractions.",
-      color: "text-stone"
+      title: 'Focus Reminder',
+      content:
+        'With finite time, choose your priorities wisely. Focus on relationships, meaningful work, and personal growth rather than trivial distractions.',
+      color: 'text-stone',
     },
     {
       icon: Lightbulb,
-      title: "Stoic Wisdom",
-      content: "Marcus Aurelius reminded us: &apos;It is not death that a man should fear, but never beginning to live.&apos; Use this awareness to live more fully.",
-      color: "text-ink"
-    }
-  ];
+      title: 'Stoic Wisdom',
+      content:
+        'Marcus Aurelius reminded us: &apos;It is not death that a man should fear, but never beginning to live.&apos; Use this awareness to live more fully.',
+      color: 'text-ink',
+    },
+  ]
 
   const weeklyReflections = [
-    "What did I do this week that aligned with my values?",
-    "How did I grow or learn something new?",
-    "What relationships did I nurture?",
-    "What would I do differently if I knew this was my last week?",
-    "How can I make next week more meaningful?"
-  ];
+    'What did I do this week that aligned with my values?',
+    'How did I grow or learn something new?',
+    'What relationships did I nurture?',
+    'What would I do differently if I knew this was my last week?',
+    'How can I make next week more meaningful?',
+  ]
 
   return (
     <div className="space-y-6">
       {/* Motivational Message */}
       <Card className="bg-gradient-to-r from-cta/10 to-hero/10 border-cta/20 animate-fade-in">
         <CardContent className="p-6 text-center">
-          <h3 className="text-xl font-serif text-ink mb-3">Today's Reflection</h3>
+          <h3 className="text-xl font-serif text-ink mb-3">
+            Today&apos;s Reflection
+          </h3>
           <p className="text-stone italic">{motivationalMessage}</p>
         </CardContent>
       </Card>
@@ -70,7 +78,8 @@ export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriIn
             </div>
             <div className="text-sm text-stone/70">Days Lived</div>
             <div className="text-xs text-stone/50 mt-1">
-              {Math.floor(data.daysLived / 365)} years, {data.daysLived % 365} days
+              {Math.floor(data.daysLived / 365)} years, {data.daysLived % 365}{' '}
+              days
             </div>
           </CardContent>
         </Card>
@@ -123,7 +132,9 @@ export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriIn
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-stone/80 text-sm leading-relaxed">{insight.content}</p>
+              <p className="text-stone/80 text-sm leading-relaxed">
+                {insight.content}
+              </p>
             </CardContent>
           </Card>
         ))}
@@ -132,7 +143,9 @@ export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriIn
       {/* Weekly Reflection Questions */}
       <Card className="bg-white/90 animate-fade-in">
         <CardHeader>
-          <CardTitle className="text-xl font-serif text-ink">Weekly Reflection Questions</CardTitle>
+          <CardTitle className="text-xl font-serif text-ink">
+            Weekly Reflection Questions
+          </CardTitle>
           <p className="text-stone/70 text-sm">
             Use these questions to make the most of each week
           </p>
@@ -140,7 +153,10 @@ export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriIn
         <CardContent>
           <div className="space-y-3">
             {weeklyReflections.map((question, index) => (
-              <div key={index} className="flex items-start gap-3 p-3 bg-hero/5 rounded-lg">
+              <div
+                key={index}
+                className="flex items-start gap-3 p-3 bg-hero/5 rounded-lg"
+              >
                 <Badge variant="secondary" className="shrink-0 mt-0.5">
                   {index + 1}
                 </Badge>
@@ -151,5 +167,5 @@ export function MementoMoriInsights({ data, motivationalMessage }: MementoMoriIn
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

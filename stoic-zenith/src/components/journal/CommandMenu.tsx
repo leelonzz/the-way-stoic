@@ -1,13 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { Hash, Type, List, ListOrdered, MinusCircle, Image } from 'lucide-react';
-import { CommandOption } from './types';
+import React, { useEffect, useState } from 'react'
+import {
+  Hash,
+  Type,
+  List,
+  ListOrdered,
+  MinusCircle,
+  Image,
+  Quote,
+  Code,
+} from 'lucide-react'
+import { CommandOption } from './types'
 
 interface CommandMenuProps {
-  isOpen: boolean;
-  position: { x: number; y: number };
-  searchQuery: string;
-  onSelectCommand: (command: CommandOption) => void;
-  onClose: () => void;
+  isOpen: boolean
+  position: { x: number; y: number }
+  searchQuery: string
+  onSelectCommand: (command: CommandOption) => void
+  onClose: () => void
 }
 
 const COMMANDS: CommandOption[] = [
@@ -18,7 +27,7 @@ const COMMANDS: CommandOption[] = [
     shortcut: '/h1',
     type: 'heading',
     level: 1,
-    icon: 'H1'
+    icon: 'H1',
   },
   {
     id: 'h2',
@@ -27,7 +36,7 @@ const COMMANDS: CommandOption[] = [
     shortcut: '/h2',
     type: 'heading',
     level: 2,
-    icon: 'H2'
+    icon: 'H2',
   },
   {
     id: 'h3',
@@ -36,7 +45,7 @@ const COMMANDS: CommandOption[] = [
     shortcut: '/h3',
     type: 'heading',
     level: 3,
-    icon: 'H3'
+    icon: 'H3',
   },
   {
     id: 'bullet',
@@ -44,7 +53,7 @@ const COMMANDS: CommandOption[] = [
     description: 'Unordered list',
     shortcut: '/bullet',
     type: 'bullet-list',
-    icon: 'bullet'
+    icon: 'bullet',
   },
   {
     id: 'numbered',
@@ -52,7 +61,7 @@ const COMMANDS: CommandOption[] = [
     description: 'Ordered list',
     shortcut: '/numbered',
     type: 'numbered-list',
-    icon: 'numbered'
+    icon: 'numbered',
   },
   {
     id: 'paragraph',
@@ -60,7 +69,7 @@ const COMMANDS: CommandOption[] = [
     description: 'Regular text',
     shortcut: '/p',
     type: 'paragraph',
-    icon: 'paragraph'
+    icon: 'paragraph',
   },
   {
     id: 'image',
@@ -68,83 +77,110 @@ const COMMANDS: CommandOption[] = [
     description: 'Upload an image',
     shortcut: '/image',
     type: 'image',
-    icon: 'image'
-  }
-];
+    icon: 'image',
+  },
+  {
+    id: 'quote',
+    label: 'Quote',
+    description: 'Block quote',
+    shortcut: '/quote',
+    type: 'quote',
+    icon: 'quote',
+  },
+  {
+    id: 'code',
+    label: 'Code Block',
+    description: 'Code snippet',
+    shortcut: '/code',
+    type: 'code',
+    icon: 'code',
+  },
+]
 
 const getIcon = (iconType: string): JSX.Element => {
   switch (iconType) {
     case 'H1':
-      return <Hash className="w-4 h-4" />;
+      return <Hash className="w-4 h-4" />
     case 'H2':
-      return <Hash className="w-4 h-4" />;
+      return <Hash className="w-4 h-4" />
     case 'H3':
-      return <Hash className="w-4 h-4" />;
+      return <Hash className="w-4 h-4" />
     case 'bullet':
-      return <List className="w-4 h-4" />;
+      return <List className="w-4 h-4" />
     case 'numbered':
-      return <ListOrdered className="w-4 h-4" />;
+      return <ListOrdered className="w-4 h-4" />
     case 'paragraph':
-      return <Type className="w-4 h-4" />;
+      return <Type className="w-4 h-4" />
     case 'image':
-      return <Image className="w-4 h-4" />;
+      // eslint-disable-next-line jsx-a11y/alt-text
+      return <Image className="w-4 h-4" />
+    case 'quote':
+      return <Quote className="w-4 h-4" />
+    case 'code':
+      return <Code className="w-4 h-4" />
     default:
-      return <MinusCircle className="w-4 h-4" />;
+      return <MinusCircle className="w-4 h-4" />
   }
-};
+}
 
-export function CommandMenu({ isOpen, position, searchQuery, onSelectCommand, onClose }: CommandMenuProps): JSX.Element | null {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  
-  const filteredCommands = COMMANDS.filter(command =>
-    command.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    command.shortcut.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
+export function CommandMenu({
+  isOpen,
+  position,
+  searchQuery,
+  onSelectCommand,
+  onClose,
+}: CommandMenuProps): JSX.Element | null {
+  const [selectedIndex, setSelectedIndex] = useState(0)
+
+  const filteredCommands = COMMANDS.filter(
+    command =>
+      command.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      command.shortcut.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
   // Reset selection when commands change
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [searchQuery]);
-  
+    setSelectedIndex(0)
+  }, [searchQuery])
+
   // Handle keyboard navigation
   useEffect((): (() => void) => {
-    if (!isOpen) return;
-    
+    if (!isOpen) return
+
     const handleKeyDown = (e: KeyboardEvent): void => {
       switch (e.key) {
         case 'ArrowDown':
-          e.preventDefault();
-          setSelectedIndex(prev => (prev + 1) % filteredCommands.length);
-          break;
+          e.preventDefault()
+          setSelectedIndex(prev => (prev + 1) % filteredCommands.length)
+          break
         case 'ArrowUp':
-          e.preventDefault();
-          setSelectedIndex(prev => prev === 0 ? filteredCommands.length - 1 : prev - 1);
-          break;
+          e.preventDefault()
+          setSelectedIndex(prev =>
+            prev === 0 ? filteredCommands.length - 1 : prev - 1
+          )
+          break
         case 'Enter':
-          e.preventDefault();
+          e.preventDefault()
           if (filteredCommands[selectedIndex]) {
-            onSelectCommand(filteredCommands[selectedIndex]);
+            onSelectCommand(filteredCommands[selectedIndex])
           }
-          break;
+          break
         case 'Escape':
-          e.preventDefault();
-          onClose();
-          break;
+          e.preventDefault()
+          onClose()
+          break
       }
-    };
-    
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, filteredCommands, selectedIndex, onSelectCommand, onClose]);
-  
-  if (!isOpen) return null;
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, filteredCommands, selectedIndex, onSelectCommand, onClose])
+
+  if (!isOpen) return null
 
   return (
     <>
-      <div 
-        className="fixed inset-0 z-40" 
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
         className="fixed z-50 bg-white rounded-lg shadow-lg border border-stone-200 py-2 min-w-[240px]"
         style={{
@@ -167,9 +203,7 @@ export function CommandMenu({ isOpen, position, searchQuery, onSelectCommand, on
                 ${index === selectedIndex ? 'bg-orange-50 border-l-2 border-orange-400' : ''}
               `}
             >
-              <div className="text-stone-600" aria-hidden="true" role="img" aria-label={command.label}>
-                {getIcon(command.icon)}
-              </div>
+              <div className="text-stone-600">{getIcon(command.icon)}</div>
               <div className="flex-1">
                 <div className="text-sm font-medium text-stone-800 font-inknut">
                   {command.label}
@@ -186,5 +220,5 @@ export function CommandMenu({ isOpen, position, searchQuery, onSelectCommand, on
         )}
       </div>
     </>
-  );
+  )
 }

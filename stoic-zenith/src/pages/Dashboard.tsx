@@ -1,30 +1,41 @@
+import React from 'react'
+import { BookOpen, Brain, Quote, Calendar, Sparkles } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import { useQuotes } from '@/hooks/useQuotes'
+import { useAuthContext } from '@/components/auth/AuthProvider'
 
-import React from 'react';
-import { BookOpen, Brain, Quote, Calendar, Sparkles } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { useQuotes } from '@/hooks/useQuotes';
-import { useAuthContext } from '@/components/auth/AuthProvider';
+import { GetServerSideProps } from 'next'
+
+export const getServerSideProps: GetServerSideProps = async _context => {
+  // Perform any server-side logic here
+  return { props: {} }
+}
 
 export default function Dashboard(): JSX.Element {
-  const { user } = useAuthContext();
-  const { getDailyQuote, loading } = useQuotes(user);
-  
-  const currentHour = new Date().getHours();
-  const _isEvening = currentHour >= 17;
-  
-  const dailyQuote = getDailyQuote();
+  const { user } = useAuthContext()
+  const { getDailyQuote, loading } = useQuotes(user)
+
+  const currentHour = new Date().getHours()
+  const _isEvening = currentHour >= 17
+
+  const dailyQuote = getDailyQuote()
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="text-center space-y-1">
         <h1 className="text-3xl font-serif font-bold text-stone">
-          {currentHour < 12 ? 'Good Morning' : currentHour < 17 ? 'Good Afternoon' : 'Good Evening'}
+          {currentHour < 12
+            ? 'Good Morning'
+            : currentHour < 17
+              ? 'Good Afternoon'
+              : 'Good Evening'}
         </h1>
         <p className="text-sage text-base">
-          &ldquo;Every new beginning comes from some other beginning&apos;s end.&rdquo;
+          &ldquo;Every new beginning comes from some other beginning&apos;s
+          end.&rdquo;
         </p>
       </div>
 
@@ -50,7 +61,9 @@ export default function Dashboard(): JSX.Element {
                 &ldquo;{dailyQuote.text}&rdquo;
               </blockquote>
               <div>
-                <p className="font-semibold text-crail text-sm">— {dailyQuote.author}</p>
+                <p className="font-semibold text-crail text-sm">
+                  — {dailyQuote.author}
+                </p>
                 {dailyQuote.source && (
                   <p className="text-xs text-sage">{dailyQuote.source}</p>
                 )}
@@ -119,7 +132,10 @@ export default function Dashboard(): JSX.Element {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="space-y-3">
-              <p className="text-sage text-sm">Take a moment to reflect on your day and practice Stoic principles.</p>
+              <p className="text-sage text-sm">
+                Take a moment to reflect on your day and practice Stoic
+                principles.
+              </p>
               <Link href="/journal">
                 <Button className="w-full bg-primary hover:bg-primary/90 text-sm">
                   Start Journaling
@@ -128,31 +144,35 @@ export default function Dashboard(): JSX.Element {
             </div>
           </CardContent>
         </Card>
-        
+
         <div className="space-y-4">
           <div className="bg-white/90 backdrop-blur-sm border border-sage/20 rounded-lg p-6">
-            <h3 className="text-lg font-serif font-semibold text-stone mb-3">Today&apos;s Focus</h3>
+            <h3 className="text-lg font-serif font-semibold text-stone mb-3">
+              Today&apos;s Focus
+            </h3>
             <div className="space-y-3">
               <div className="p-3 bg-parchment/80 rounded-lg">
-                <h4 className="font-medium text-stone mb-1 text-sm">Stoic Practice</h4>
+                <h4 className="font-medium text-stone mb-1 text-sm">
+                  Stoic Practice
+                </h4>
                 <p className="text-sage text-xs">
-                  Focus on the dichotomy of control. What is within your influence today, 
-                  and what lies beyond it?
+                  Focus on the dichotomy of control. What is within your
+                  influence today, and what lies beyond it?
                 </p>
               </div>
-              
+
               <div className="flex gap-2">
-                <Button 
+                <Button
                   className="flex-1 bg-primary hover:bg-primary/90 text-white text-sm"
-                  onClick={() => window.location.href = '/mentors'}
+                  onClick={() => (window.location.href = '/mentors')}
                 >
                   <Brain className="w-3 h-3 mr-1" />
                   Seek Wisdom
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="flex-1 border-sage/30 hover:bg-parchment/50 text-sm"
-                  onClick={() => window.location.href = '/calendar'}
+                  onClick={() => (window.location.href = '/calendar')}
                 >
                   <Calendar className="w-3 h-3 mr-1" />
                   Memento Mori
@@ -163,5 +183,5 @@ export default function Dashboard(): JSX.Element {
         </div>
       </div>
     </div>
-  );
+  )
 }

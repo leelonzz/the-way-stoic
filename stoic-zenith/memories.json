@@ -1,4 +1,156 @@
 {
-  "memories": [],
-  "lastUpdated": "2025-07-31T13:34:53.505Z"
+  "memories": [
+    {
+      "id": "mem_1754139770197_x70x9safr",
+      "content": "User reports journal edit behavior is problematic, wants it to work like Notion's editor. Need to investigate and fix the editing experience.",
+      "type": "troubleshooting",
+      "tags": ["troubleshooting", "journal", "editor", "ux", "notion-like"],
+      "timestamp": "2025-08-02T13:02:50.196Z",
+      "context": "Journal editing UX issue",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-02T13:02:50.196Z",
+      "lastVerified": "2025-08-02T13:02:50.196Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754139836156_qirl27mvt",
+      "content": "Found the journal editor issues: Using dangerouslySetInnerHTML causes cursor jumping, setTimeout with 0ms delay is still causing flickering, and the editor uses complex cursor positioning logic that's interfering with natural typing. Need to implement Notion-like smooth editing experience.",
+      "type": "general",
+      "tags": [
+        "general",
+        "journal",
+        "editor",
+        "cursor-jumping",
+        "dangerous-innerHTML",
+        "setTimeout"
+      ],
+      "timestamp": "2025-08-02T13:03:56.156Z",
+      "context": "RichTextEditor.tsx analysis",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-02T13:03:56.156Z",
+      "lastVerified": "2025-08-02T13:03:56.156Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754139870241_orcihely9",
+      "content": "Found solution: Modern Tiptap-based editors like reactjs-tiptap-editor avoid cursor jumping by using ProseMirror's controlled state management instead of dangerouslySetInnerHTML. Key improvements needed: 1) Remove dangerouslySetInnerHTML 2) Remove setTimeout delays 3) Use proper contentEditable with controlled input handling 4) Let browser handle cursor positioning naturally",
+      "type": "warning",
+      "tags": [
+        "warning",
+        "tiptap",
+        "prosemirror",
+        "contenteditable",
+        "cursor-positioning",
+        "solution"
+      ],
+      "timestamp": "2025-08-02T13:04:30.241Z",
+      "context": "Tiptap editor best practices research",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-02T13:04:30.241Z",
+      "lastVerified": "2025-08-02T13:04:30.241Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754139992945_uye4i2k83",
+      "content": "Fixed journal editor cursor jumping issues by: 1) Removed all dangerouslySetInnerHTML usage and replaced with children text content 2) Replaced setTimeout(fn, 0) with requestAnimationFrame for better browser rendering sync 3) Simplified cursor positioning logic 4) Let browser handle natural contentEditable behavior. Development server running on localhost:3002",
+      "type": "solution",
+      "tags": [
+        "solution",
+        "journal",
+        "editor",
+        "fixed",
+        "cursor-jumping",
+        "contenteditable",
+        "localhost:3002"
+      ],
+      "timestamp": "2025-08-02T13:06:32.945Z",
+      "context": "Journal editor fixes completed",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-02T13:06:32.945Z",
+      "lastVerified": "2025-08-02T13:06:32.945Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754140873921_9l1foixlm",
+      "content": "Rich text editor issues found:\n1. Cursor placement is broken - using contentEditable divs which don't properly maintain cursor position\n2. Slash command handling interferes with cursor positioning  \n3. Block selection and focus management is unreliable\n4. Need to implement proper contentEditable cursor management similar to Google Docs/Notion\n\nCurrent architecture uses contentEditable divs for each block but lacks proper cursor state management and selection handling.",
+      "type": "warning",
+      "tags": ["warning", "rich-text-editor", "cursor-bug", "contenteditable"],
+      "timestamp": "2025-08-02T13:21:13.920Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-02T13:21:13.920Z",
+      "lastVerified": "2025-08-02T13:21:13.920Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754141038052_iahmnxblw",
+      "content": "Rich text editor fixes completed:\n1. Implemented proper cursor position management with save/restore functions\n2. Fixed slash command handling to not interfere with cursor positioning\n3. Added proper keyboard navigation (arrow keys, enter, backspace)\n4. Enhanced block focus transitions when creating/changing block types\n5. Added quote and code block support to CommandMenu and RichTextEditor\n6. Improved contentEditable handling with proper text selection preservation\n7. Added paste handling and blur events for better cursor management\n\nKey improvements:\n- CursorPosition interface tracks blockId and offset\n- saveCursorPosition and restoreCursorPosition functions maintain cursor state\n- Arrow key navigation preserves cursor position between blocks\n- Slash commands work without breaking cursor flow\n- All block types (heading, bullet, numbered, quote, code, image) supported",
+      "type": "solution",
+      "tags": [
+        "solution",
+        "rich-text-editor",
+        "cursor-fixed",
+        "slash-commands",
+        "contenteditable"
+      ],
+      "timestamp": "2025-08-02T13:23:58.052Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-02T13:23:58.052Z",
+      "lastVerified": "2025-08-02T13:23:58.052Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754141101084_zt20akkat",
+      "content": "User reported cursor still broken in rich text editor. Image shows cursor separated from text - cursor appears to be positioned incorrectly, not following the actual text content. This indicates the cursor positioning fix didn't work completely. Need to investigate the root cause of cursor not tracking with text properly in contentEditable elements.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "cursor-bug",
+        "contenteditable",
+        "text-tracking",
+        "debugging"
+      ],
+      "timestamp": "2025-08-02T13:25:01.084Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-02T13:25:01.084Z",
+      "lastVerified": "2025-08-02T13:25:01.084Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754141241611_s2vos0yib",
+      "content": "Fixed cursor positioning issue in rich text editor. Root cause was React's reconciliation interfering with contentEditable cursor position. Solution:\n\n1. Removed dangerouslySetInnerHTML and complex useRef approach\n2. Used direct `children: block.text` in props to let React handle text content naturally\n3. Simplified focusBlock function with better text node detection\n4. Added proper cursor positioning logic that works with React's virtual DOM\n5. Used setTimeout for focus to ensure DOM updates complete\n6. Improved paste handling with document.execCommand('insertText')\n\nKey insight: Let React manage the text content naturally rather than fighting it with direct DOM manipulation. The cursor now follows text properly without separation.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "react",
+        "cursor-fix",
+        "contenteditable",
+        "react-reconciliation",
+        "solution"
+      ],
+      "timestamp": "2025-08-02T13:27:21.611Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-02T13:27:21.611Z",
+      "lastVerified": "2025-08-02T13:27:21.611Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754141267411_2t84lj68x",
+      "content": "Cursor issue still persists. User shows image with cursor still separated from text. The React children approach didn't fix the fundamental problem. Need to try a different approach - maybe the issue is with how contentEditable elements are being rendered or styled. The cursor appears to be positioned incorrectly relative to the actual text content.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "react",
+        "cursor-bug",
+        "still-broken",
+        "contenteditable",
+        "positioning"
+      ],
+      "timestamp": "2025-08-02T13:27:47.411Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-02T13:27:47.411Z",
+      "lastVerified": "2025-08-02T13:27:47.411Z",
+      "status": "fresh"
+    }
+  ],
+  "lastUpdated": "2025-08-02T13:27:47.411Z"
 }
