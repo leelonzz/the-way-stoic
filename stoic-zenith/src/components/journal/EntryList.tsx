@@ -4,7 +4,7 @@ import { Search } from 'lucide-react';
 import { EntryListItem } from './EntryListItem';
 import { Input } from '@/components/ui/input';
 import { JournalEntry } from './types';
-import { getJournalEntries, JournalEntryResponse } from '@/lib/journal';
+import { getJournalEntries, JournalEntryResponse, convertSupabaseToBlocks } from '@/lib/journal';
 
 interface EntryListProps {
   selectedEntry: JournalEntry | null;
@@ -62,16 +62,11 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
       setEntries(entryItems);
       setFilteredEntries(entryItems);
       
-      // Convert to JournalEntry format for parent
+      // Convert to JournalEntry format for parent using proper conversion
       const journalEntryFormat = entryItems.map(item => ({
         id: item.entry.id,
         date: item.entry.entry_date,
-        blocks: [{
-          id: `block-${Date.now()}`,
-          type: 'paragraph' as const,
-          text: item.entry.preview || '',
-          createdAt: new Date(item.entry.created_at)
-        }],
+        blocks: convertSupabaseToBlocks(item.entry),
         createdAt: new Date(item.entry.created_at),
         updatedAt: new Date(item.entry.updated_at)
       }));

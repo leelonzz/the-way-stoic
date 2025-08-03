@@ -198,8 +198,8 @@ export default function TermsPage(): JSX.Element {
               </p>
               <div className="mt-2 p-4 bg-stone/10 rounded-lg">
                 <p className="font-medium text-ink">The Stoic Way</p>
-                <p>Email: support@thestoicway.com</p>
-                <p>Website: www.thestoicway.com</p>
+                <p>Email: support@thewaystoic.site</p>
+                <p>Website: www.thewaystoic.site</p>
               </div>
             </section>
 

@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
 import { JournalNavigation } from '@/components/journal/JournalNavigation';
 import { EntryList } from '@/components/journal/EntryList';
-import { JournalEntry, JournalBlock } from '@/components/journal/types';
-import { createJournalEntry, getJournalEntryByDate } from '@/lib/journal';
+import { JournalEntry } from '@/components/journal/types';
+import { createJournalEntry } from '@/lib/journal';
 
 export default function Journal(): JSX.Element {
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
@@ -14,13 +14,23 @@ export default function Journal(): JSX.Element {
   const [entryListLoading, setEntryListLoading] = useState(false);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
 
-  const createNewEntry = (): JournalEntry => {
+
+
+  const handleCreateEntry = (): void => {
+    // Create entry immediately in UI for instant response (0ms delay)
     const now = new Date();
-    return {
-      id: `entry-${Date.now()}`,
-      date: format(now, 'yyyy-MM-dd'),
+    const today = format(now, 'yyyy-MM-dd');
+    const timeString = format(now, 'HH:mm:ss');
+
+    // Generate temporary ID for immediate UI update
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
+    // Create local entry immediately for instant UI response
+    const newEntry: JournalEntry = {
+      id: tempId,
+      date: today,
       blocks: [{
-        id: `block-${Date.now()}`,
+        id: `${tempId}-initial`,
         type: 'paragraph',
         text: '',
         createdAt: now
@@ -28,90 +38,136 @@ export default function Journal(): JSX.Element {
       createdAt: now,
       updatedAt: now
     };
-  };
 
-  const handleCreateEntry = async (): Promise<void> => {
-    try {
-      // Always create a new journal entry - allow multiple per day
-      const now = new Date();
-      const today = format(now, 'yyyy-MM-dd');
-      const timeString = format(now, 'HH:mm:ss');
-      
-      const supabaseEntry = await createJournalEntry({
-        entry_date: today,
-        entry_type: 'morning', // Default type, can be changed later
-        excited_about: `Entry created at ${timeString}`,
-        make_today_great: '',
-      });
+    // Update UI immediately - no waiting, no loading states
+    setSelectedEntry(newEntry);
+    setRefreshKey(prev => prev + 1);
 
-      // Create a new rich-text entry for the local interface
-      const newEntry: JournalEntry = {
+    // Create in database in background without blocking UI
+    createJournalEntry({
+      entry_date: today,
+      entry_type: 'morning',
+      excited_about: `Entry created at ${timeString}`,
+      make_today_great: '',
+    }).then(supabaseEntry => {
+      // Update with real ID from database
+      const updatedEntry: JournalEntry = {
+        ...newEntry,
         id: supabaseEntry.id,
-        date: supabaseEntry.entry_date,
-        blocks: [{
-          id: `block-${Date.now()}`,
-          type: 'paragraph',
-          text: '',
-          createdAt: new Date()
-        }],
+        blocks: newEntry.blocks.map(block => ({
+          ...block,
+          id: block.id.replace(tempId, supabaseEntry.id)
+        })),
         createdAt: new Date(supabaseEntry.created_at),
         updatedAt: new Date(supabaseEntry.updated_at)
       };
-      
-      setSelectedEntry(newEntry);
-      
-      // Immediate refresh of entry list - no delay
+
+      setSelectedEntry(updatedEntry);
       setRefreshKey(prev => prev + 1);
-      
+
+    }).catch(error => {
+      console.error('Failed to sync entry to database:', error);
+      // Entry is already created locally, so user can continue working
+      // Show subtle notification without interrupting workflow
       toast({
-        title: "New journal entry created",
-        description: "You can now start writing your thoughts.",
+        title: "Entry created locally",
+        description: "Your entry is saved locally and will sync when connection is restored.",
+        variant: "default",
       });
-      
-      // Force immediate refresh of entry list
-      if (typeof window !== 'undefined' && window.refreshJournalEntries) {
-        window.refreshJournalEntries();
-      }
-    } catch (error) {
-      console.error('Error creating new journal entry:', error);
-      toast({
-        title: "Error creating entry",
-        description: "Failed to create a new journal entry. Please try again.",
-        variant: "destructive",
-      });
-      
-      // Fallback to local entry if Supabase fails
-      const fallbackEntry = createNewEntry();
-      setSelectedEntry(fallbackEntry);
-      setRefreshKey(prev => prev + 1);
-    }
+    });
   };
 
   const handleSelectEntry = (entry: JournalEntry): void => {
     setSelectedEntry(entry);
   };
 
-  const handleEntryUpdate = async (updatedEntry: JournalEntry): Promise<void> => {
+  const handleDeleteEntry = (entryId: string): void => {
+    // Clear selected entry if it's the one being deleted
+    if (selectedEntry?.id === entryId) {
+      setSelectedEntry(null);
+    }
+
+    // Remove from entries list
+    setEntries(prev => prev.filter(entry => entry.id !== entryId));
+
+    // Refresh entry list
+    setRefreshKey(prev => prev + 1);
+  };
+
+  const handleEntryUpdate = (updatedEntry: JournalEntry): void => {
     setSelectedEntry(updatedEntry);
-    
-    // Save to localStorage as backup
+
+    // Save to localStorage immediately for persistence
     const entryKey = `journal-${updatedEntry.date}`;
     try {
       localStorage.setItem(entryKey, JSON.stringify(updatedEntry));
     } catch (error) {
       console.error('Failed to save entry to localStorage:', error);
     }
-    
-    // Debounced save to Supabase would go here in a real implementation
-    // For now, we'll just update localStorage
+
+    // Update entries list if this entry is in it
+    setEntries(prev => {
+      const existingIndex = prev.findIndex(e => e.id === updatedEntry.id);
+      if (existingIndex >= 0) {
+        const newEntries = [...prev];
+        newEntries[existingIndex] = updatedEntry;
+        return newEntries;
+      } else {
+        return [updatedEntry, ...prev];
+      }
+    });
   };
 
-  // Initialize with empty state - let users create entries as needed
+  // Load today's entry on mount if it exists
   useEffect(() => {
-    setIsLoading(false);
-    // Don't auto-load any entry - start with empty state
-    setSelectedEntry(null);
+    const loadTodaysEntry = async () => {
+      const today = format(new Date(), 'yyyy-MM-dd');
+
+      // First check localStorage for unsaved changes
+      const localEntryKey = `journal-${today}`;
+      const localEntry = localStorage.getItem(localEntryKey);
+
+      if (localEntry) {
+        try {
+          const parsedEntry = JSON.parse(localEntry) as JournalEntry;
+          setSelectedEntry(parsedEntry);
+          setIsLoading(false);
+          return;
+        } catch (error) {
+          console.warn('Failed to parse local entry:', error);
+        }
+      }
+
+      // If no local entry, try to load from Supabase
+      try {
+        const { getJournalEntryAsRichText } = await import('@/lib/journal');
+        const supabaseEntry = await getJournalEntryAsRichText(today);
+
+        if (supabaseEntry) {
+          setSelectedEntry(supabaseEntry);
+        }
+      } catch (error) {
+        console.warn('Failed to load entry from Supabase:', error);
+      }
+
+      setIsLoading(false);
+    };
+
+    loadTodaysEntry();
   }, []);
+
+  // Save current entry before page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (selectedEntry) {
+        const entryKey = `journal-${selectedEntry.date}`;
+        localStorage.setItem(entryKey, JSON.stringify(selectedEntry));
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [selectedEntry]);
 
   return (
     <div className="h-full flex bg-stone-50 animate-fade-in">
@@ -140,11 +196,12 @@ export default function Journal(): JSX.Element {
             </div>
           </div>
         ) : selectedEntry ? (
-          <JournalNavigation 
+          <JournalNavigation
             className="flex-1"
             entry={selectedEntry}
             onEntryUpdate={handleEntryUpdate}
             onCreateEntry={handleCreateEntry}
+            onDeleteEntry={handleDeleteEntry}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center">

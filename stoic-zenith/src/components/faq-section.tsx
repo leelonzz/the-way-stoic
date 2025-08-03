@@ -44,8 +44,8 @@ interface FAQItemProps {
   onToggle: () => void
 }
 
-const FAQItem = ({ question, answer, isOpen, onToggle }: FAQItemProps) => {
-  const handleClick = (e: React.MouseEvent) => {
+const FAQItem = ({ question, answer, isOpen, onToggle }: FAQItemProps): JSX.Element => {
+  const handleClick = (e: React.MouseEvent): void => {
     e.preventDefault()
     onToggle()
   }
@@ -79,9 +79,9 @@ const FAQItem = ({ question, answer, isOpen, onToggle }: FAQItemProps) => {
   )
 }
 
-export function FAQSection() {
+export function FAQSection(): JSX.Element {
   const [openItems, setOpenItems] = useState<Set<number>>(new Set())
-  const toggleItem = (index: number) => {
+  const toggleItem = (index: number): void => {
     const newOpenItems = new Set(openItems)
     if (newOpenItems.has(index)) {
       newOpenItems.delete(index)

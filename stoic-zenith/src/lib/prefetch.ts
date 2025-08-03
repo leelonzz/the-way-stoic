@@ -1,40 +1,45 @@
 import { QueryClient } from '@tanstack/react-query'
 
 // Prefetch strategies for different sections
-export const prefetchQuotes = async (queryClient: QueryClient) => {
+export const prefetchQuotes = async (queryClient: QueryClient): Promise<void> => {
   // Prefetch quotes data
   await queryClient.prefetchQuery({
     queryKey: ['daily-stoic-wisdom'],
     queryFn: async () => {
       // This should match the actual fetch function used in DailyStoicWisdom
-      return null // Placeholder
+      return null; // Placeholder
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000
   })
 }
 
-export const prefetchCalendar = async (queryClient: QueryClient, userId?: string) => {
+export const prefetchCalendar = async (queryClient: QueryClient, userId?: string): Promise<void> => {
   if (!userId) return
   
   // Prefetch calendar preferences
   await queryClient.prefetchQuery({
     queryKey: ['life-calendar', 'preferences', userId],
     queryFn: async () => {
-      const { supabase } = await import('@/integrations/supabase/client')
-      const { data } = await supabase
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase
         .from('user_preferences')
         .select('*')
         .eq('user_id', userId)
-        .single()
-      return data
+        .single();
+
+      if (error) {
+        console.error('Error fetching life calendar preferences:', error);
+      }
+
+      return data;
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000
   })
 }
 
-export const prefetchJournal = async (queryClient: QueryClient, userId?: string) => {
+export const prefetchJournal = async (queryClient: QueryClient, userId?: string): Promise<void> => {
   if (!userId) return
   
   // Prefetch today's journal entry
@@ -63,7 +68,7 @@ export const handleNavigationPrefetch = (
   href: string, 
   queryClient: QueryClient, 
   userId?: string
-) => {
+): void => {
   switch (true) {
     case href.includes('/quotes'):
       prefetchQuotes(queryClient)

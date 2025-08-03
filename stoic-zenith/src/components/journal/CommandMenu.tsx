@@ -238,7 +238,7 @@ export function CommandMenu({
   }, [searchQuery])
 
   // Handle keyboard navigation
-  useEffect((): (() => void) => {
+  useEffect((): (() => void) | undefined => {
     if (!isOpen) return
 
     const handleKeyDown = (e: KeyboardEvent): void => {

@@ -144,6 +144,48 @@ All colors MUST be HSL.
     font-family: var(--font-inknut-antiqua), serif;
   }
 
+  /* Fix for empty content typography - maintain Inknut Antiqua even in editing mode when content is empty */
+  html.inknut-loaded .font-conditional.editing-mode:empty {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Also apply to blocks that only contain zero-width space (used for empty blocks) */
+  html.inknut-loaded .font-conditional.editing-mode:has(> :only-child):has(> :empty) {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Fallback for blocks with minimal content (just whitespace or zero-width characters) */
+  html.inknut-loaded .block-element.editing-mode[data-placeholder] {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Specific fix for contentEditable containers that are empty or contain only whitespace */
+  html.inknut-loaded [contenteditable].font-conditional.editing-mode:empty,
+  html.inknut-loaded [contenteditable] .font-conditional.editing-mode:empty {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Handle the case where contentEditable contains only zero-width space or minimal content */
+  html.inknut-loaded [contenteditable].font-conditional.editing-mode:not(:has(> *:not(:empty))),
+  html.inknut-loaded [contenteditable] .font-conditional.editing-mode:not(:has(> *:not(:empty))) {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Force Inknut Antiqua for empty journal editor */
+  html.inknut-loaded [contenteditable]:empty {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Ensure placeholder text also uses Inknut Antiqua */
+  html.inknut-loaded .font-conditional.editing-mode[data-placeholder]:empty::before {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Force Inknut Antiqua font class for empty content */
+  html.inknut-loaded .force-inknut-font {
+    font-family: var(--font-inknut-antiqua), serif !important;
+  }
+
   /* Debug mode styling */
   .debug-typography-enabled .block-element {
     outline: 1px dashed rgba(255, 0, 0, 0.3);

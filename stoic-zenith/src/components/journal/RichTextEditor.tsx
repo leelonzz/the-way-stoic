@@ -29,7 +29,7 @@ export function RichTextEditor({
     type: JournalBlock['type'] = 'paragraph',
     level?: number
   ): JournalBlock => ({
-    id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `block-${crypto.randomUUID()}`,
     type,
     level: level as 1 | 2 | 3,
     text: '',
@@ -74,8 +74,12 @@ export function RichTextEditor({
   const focusBlock = useCallback(
     (blockId: string, offset: number = 0): void => {
       requestAnimationFrame(() => {
-        const blockElement = blockRefs.current.get(blockId)
-        if (blockElement) {
+        try {
+          const blockElement = blockRefs.current.get(blockId)
+          if (!blockElement || !document.contains(blockElement)) {
+            return // Element doesn't exist or is not in DOM
+          }
+
           blockElement.focus()
 
           if (offset > 0) {
@@ -90,27 +94,34 @@ export function RichTextEditor({
                 )
 
                 const textNode = walker.nextNode()
-                if (textNode) {
+                if (textNode && textNode.textContent) {
                   const maxOffset = Math.min(
                     offset,
-                    textNode.textContent?.length || 0
+                    textNode.textContent.length
                   )
                   range.setStart(textNode, maxOffset)
                   range.collapse(true)
                   selection.removeAllRanges()
                   selection.addRange(range)
                 }
-              } catch {
+              } catch (error) {
+                console.warn('Error setting cursor position:', error)
                 // Fallback to end of element
-                const range = document.createRange()
-                range.selectNodeContents(blockElement)
-                range.collapse(false)
-                const selection = window.getSelection()
-                selection?.removeAllRanges()
-                selection?.addRange(range)
+                try {
+                  const range = document.createRange()
+                  range.selectNodeContents(blockElement)
+                  range.collapse(false)
+                  const selection = window.getSelection()
+                  selection?.removeAllRanges()
+                  selection?.addRange(range)
+                } catch (fallbackError) {
+                  console.warn('Fallback cursor positioning failed:', fallbackError)
+                }
               }
             }
           }
+        } catch (error) {
+          console.warn('Error focusing block:', error)
         }
       })
     },

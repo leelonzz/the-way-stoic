@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 import { format } from 'date-fns';
 import { Calendar } from 'lucide-react';
 import { JournalEntry } from './types';
-import { JournalEntryResponse } from '@/lib/journal';
+import { JournalEntryResponse, convertSupabaseToBlocks } from '@/lib/journal';
 
 interface EntryListItemProps {
   entry: JournalEntryResponse & { preview?: string };
@@ -18,16 +18,13 @@ export const EntryListItem = memo(({
   formatEntryDate 
 }: EntryListItemProps) => {
   const handleClick = () => {
-    // Convert Supabase entry to local JournalEntry format
+    // Convert Supabase entry to local JournalEntry format using proper conversion
+    const blocks = convertSupabaseToBlocks(entry);
+
     const localEntry: JournalEntry = {
       id: entry.id,
       date: entry.entry_date,
-      blocks: [{
-        id: `block-${Date.now()}`,
-        type: 'paragraph',
-        text: entry.preview || entry.excited_about || '',
-        createdAt: new Date(entry.created_at)
-      }],
+      blocks: blocks,
       createdAt: new Date(entry.created_at),
       updatedAt: new Date(entry.updated_at)
     };

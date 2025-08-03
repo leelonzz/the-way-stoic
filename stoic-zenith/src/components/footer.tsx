@@ -51,9 +51,9 @@ export function Footer(): JSX.Element {
         href: '#about',
         onClick: () => scrollToSection('about'),
       },
-      { name: 'Privacy', href: '#' },
+      { name: 'Privacy', href: '/privacy' },
       { name: 'Terms', href: '/terms' },
-      { name: 'Contact', href: '#' },
+      { name: 'Contact', href: '/contact' },
     ],
   }
 
@@ -89,8 +89,11 @@ export function Footer(): JSX.Element {
                 size="icon"
                 variant="ghost"
                 className="text-stone hover:text-ink"
+                asChild
               >
-                <Mail className="h-4 w-4" />
+                <a href="mailto:support@thewaystoic.site" aria-label="Email">
+                  <Mail className="h-4 w-4" />
+                </a>
               </Button>
             </div>
           </div>

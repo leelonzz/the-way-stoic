@@ -14,7 +14,7 @@ interface ClientProvidersProps {
   children: ReactNode
 }
 
-export function ClientProviders({ children }: ClientProvidersProps) {
+export function ClientProviders({ children }: ClientProvidersProps): JSX.Element {
   // Create QueryClient in a client component to avoid server/client boundary issues
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {

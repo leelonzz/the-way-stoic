@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Suspense } from 'react';
+import React from 'react';
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { CachedPage } from '@/components/layout/CachedPage'

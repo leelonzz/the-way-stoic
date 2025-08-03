@@ -30,11 +30,11 @@ export default function JournalPage(): JSX.Element {
   return (
     <ProtectedRoute>
       <AppLayout fullWidth>
-        <CachedPage 
-          pageKey="journal" 
+        <CachedPage
+          pageKey="journal"
           fallback={<JournalLoading />}
-          refreshOnFocus={false}
-          maxAge={60 * 60 * 1000} // 1 hour - journal content should persist longer
+          refreshOnFocus={true}
+          maxAge={5 * 60 * 1000} // 5 minutes - shorter cache for journal to ensure content freshness
         >
           <Journal />
         </CachedPage>

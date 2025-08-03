@@ -18,12 +18,11 @@ export function CachedPage({
   fallback,
   refreshOnFocus = false,
   maxAge
-}: CachedPageProps) {
+}: CachedPageProps): ReactNode {
   const { 
     getCachedPage, 
     setCachedPage, 
     updateScrollPosition, 
-    isPageCached,
     clearPageCache
   } = usePageCache()
   
@@ -31,10 +30,9 @@ export function CachedPage({
   const [showCached, setShowCached] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const pathname = usePathname()
 
   // Debug logging for development
-  const debugLog = (message: string, data?: any) => {
+  const debugLog = (message: string, data?: unknown): void => {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[CachedPage:${pageKey}] ${message}`, data || '')
     }

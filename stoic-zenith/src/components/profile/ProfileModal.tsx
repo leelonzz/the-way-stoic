@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Settings, Bell, Link, Users, Smile, Upload, Zap, Check, Star } from 'lucide-react';
+import { Settings, Bell, Link, Zap, Check, Star } from 'lucide-react';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -159,6 +159,18 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                   <span className="text-sm">Refer a friend</span>
                 </button>
               </div>
+
+              {/* Sign Out */}
+              <div className="border-t border-stone/20 pt-4">
+                <button 
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <div className="w-4 h-4 flex items-center justify-center">🚪</div>
+                  <span className="text-sm">{isSigningOut ? 'Signing out...' : 'Sign out'}</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -267,7 +279,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                             disabled={isSigningOut}
                             className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
                           >
-                            {isSigningOut ? 'Signing out...' : 'Delete my account'}
+                            {isSigningOut ? 'Signing out...' : 'Sign out'}
                           </Button>
                         </div>
                       </div>

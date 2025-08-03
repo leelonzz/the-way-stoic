@@ -52,7 +52,7 @@ export function AppSidebar(): JSX.Element {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const handleMouseEnter = (href: string) => {
+  const handleMouseEnter = (href: string): void => {
     handleNavigationPrefetch(href, queryClient, user?.id);
   };
   

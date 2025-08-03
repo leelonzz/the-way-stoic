@@ -3,7 +3,7 @@ import type { JournalEntry, JournalBlock } from '@/components/journal/types';
 
 export interface CreateJournalEntryData {
   entry_date: string;
-  entry_type: 'morning' | 'evening';
+  entry_type?: 'morning' | 'evening' | 'general';
   excited_about?: string;
   make_today_great?: string;
   must_not_do?: string;
@@ -18,7 +18,7 @@ export interface JournalEntryResponse {
   id: string;
   user_id: string;
   entry_date: string;
-  entry_type: 'morning' | 'evening';
+  entry_type: 'morning' | 'evening' | 'general';
   created_at: string;
   updated_at: string;
   excited_about?: string;
@@ -29,6 +29,7 @@ export interface JournalEntryResponse {
   tensions?: string[];
   mood_rating?: number;
   tags?: string[];
+  rich_text_content?: JournalBlock[];
 }
 
 export async function createJournalEntry(data: CreateJournalEntryData): Promise<JournalEntryResponse> {
@@ -38,13 +39,26 @@ export async function createJournalEntry(data: CreateJournalEntryData): Promise<
     throw new Error('User not authenticated');
   }
 
-  // Always create a new entry - allow multiple entries per day
+  // Generate unique entry with timestamp-based identification
+  const now = new Date();
+  const entryData = {
+    user_id: user.id,
+    entry_date: data.entry_date,
+    entry_type: data.entry_type || 'general', // Default to 'general' instead of 'morning'
+    excited_about: data.excited_about || `Entry created at ${now.toLocaleTimeString()}`,
+    make_today_great: data.make_today_great || '',
+    must_not_do: data.must_not_do || '',
+    grateful_for: data.grateful_for || '',
+    biggest_wins: data.biggest_wins || [],
+    tensions: data.tensions || [],
+    mood_rating: data.mood_rating,
+    tags: data.tags || []
+  };
+
+  // Always create a new entry - multiple entries per day are now allowed
   const { data: entry, error } = await supabase
     .from('journal_entries')
-    .insert({
-      user_id: user.id,
-      ...data
-    })
+    .insert(entryData)
     .select()
     .single();
 
@@ -57,7 +71,7 @@ export async function createJournalEntry(data: CreateJournalEntryData): Promise<
 
 export async function getJournalEntries(limit: number = 10): Promise<JournalEntryResponse[]> {
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     throw new Error('User not authenticated');
   }
@@ -102,9 +116,9 @@ export async function getJournalEntryByDate(date: string, type?: 'morning' | 'ev
   return entry as JournalEntryResponse;
 }
 
-export async function updateJournalEntry(id: string, data: Partial<CreateJournalEntryData>): Promise<JournalEntryResponse> {
+export async function updateJournalEntry(id: string, data: Partial<CreateJournalEntryData> & { rich_text_content?: JournalBlock[] }): Promise<JournalEntryResponse> {
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     throw new Error('User not authenticated');
   }
@@ -128,33 +142,45 @@ export async function updateJournalEntry(id: string, data: Partial<CreateJournal
 }
 
 // Convert rich text blocks to Supabase format
-export function convertBlocksToSupabaseFormat(blocks: JournalBlock[]): Partial<CreateJournalEntryData> {
+export function convertBlocksToSupabaseFormat(blocks: JournalBlock[]): Partial<CreateJournalEntryData> & { rich_text_content: JournalBlock[] } {
   const textContent = blocks
     .filter(block => block.text && block.text.trim() !== '')
     .map(block => block.text)
     .join('\n\n');
-  
-  // For now, store all content in excited_about field
-  // In a real implementation, you might parse specific sections
+
+  // Store rich text blocks in the new rich_text_content field
+  // Also maintain backward compatibility with excited_about field
   return {
     excited_about: textContent || '',
     make_today_great: '', // Could be parsed from blocks if needed
     must_not_do: '',
-    grateful_for: ''
+    grateful_for: '',
+    rich_text_content: blocks // Store the actual rich text blocks
   };
 }
 
 // Convert Supabase entry to rich text blocks
-export function convertSupabaseToBlocks(entry: JournalEntryResponse): JournalBlock[] {
+export function convertSupabaseToBlocks(entry: JournalEntryResponse & { rich_text_content?: JournalBlock[] }): JournalBlock[] {
+  // First, try to use the rich_text_content if it exists and has content
+  if (entry.rich_text_content && Array.isArray(entry.rich_text_content) && entry.rich_text_content.length > 0) {
+    // Ensure each block has a stable ID based on the entry ID
+    return entry.rich_text_content.map((block, index) => ({
+      ...block,
+      id: block.id || `${entry.id}-block-${index}`, // Stable ID based on entry ID
+      createdAt: block.createdAt ? new Date(block.createdAt) : new Date(entry.created_at)
+    }));
+  }
+
+  // Fallback to converting from legacy structured fields
   const blocks: JournalBlock[] = [];
-  
-  // Convert different fields to blocks
+
+  // Convert different fields to blocks with stable IDs
   if (entry.excited_about && entry.excited_about.trim()) {
     const lines = entry.excited_about.split('\n\n');
-    lines.forEach(line => {
+    lines.forEach((line, index) => {
       if (line.trim()) {
         blocks.push({
-          id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: `${entry.id}-excited-${index}`, // Stable ID
           type: 'paragraph',
           text: line.trim(),
           createdAt: new Date(entry.created_at)
@@ -162,26 +188,26 @@ export function convertSupabaseToBlocks(entry: JournalEntryResponse): JournalBlo
       }
     });
   }
-  
+
   if (entry.make_today_great && entry.make_today_great.trim()) {
     blocks.push({
-      id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `${entry.id}-make-great`, // Stable ID
       type: 'paragraph',
       text: entry.make_today_great.trim(),
       createdAt: new Date(entry.created_at)
     });
   }
-  
-  // If no content, create an empty block
+
+  // If no content, create an empty block with stable ID
   if (blocks.length === 0) {
     blocks.push({
-      id: `block-${Date.now()}`,
+      id: `${entry.id}-empty-block`,
       type: 'paragraph',
       text: '',
-      createdAt: new Date()
+      createdAt: new Date(entry.created_at)
     });
   }
-  
+
   return blocks;
 }
 

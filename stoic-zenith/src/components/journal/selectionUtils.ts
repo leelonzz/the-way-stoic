@@ -765,9 +765,8 @@ export class SelectionManager {
     })
   }
   
-  private showEnhancedBlockIndicator(event: DragEvent, blockElement: HTMLElement, container: HTMLElement): void {
+  private showEnhancedBlockIndicator(event: DragEvent, blockElement: HTMLElement, _container: HTMLElement): void {
     const rect = blockElement.getBoundingClientRect()
-    const containerRect = container.getBoundingClientRect()
     const midY = rect.top + rect.height / 2
     const isTop = event.clientY < midY
     
@@ -971,7 +970,7 @@ export class SelectionManager {
     container.appendChild(indicator)
   }
   
-  private createMagneticZone(container: HTMLElement, lineIndex: number, lineHeight: number, relativeY: number): void {
+  private createMagneticZone(container: HTMLElement, lineIndex: number, lineHeight: number, _relativeY: number): void {
     const magneticZone = document.createElement('div')
     magneticZone.className = 'magnetic-zone'
     

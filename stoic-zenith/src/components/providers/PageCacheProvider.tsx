@@ -30,7 +30,7 @@ export function PageCacheProvider({
   children, 
   maxCacheSize = 10,
   maxAge = 30 * 60 * 1000 // 30 minutes
-}: PageCacheProviderProps) {
+}: PageCacheProviderProps): JSX.Element {
   const cacheRef = useRef<Map<string, CachedPageData>>(new Map())
   const [, forceUpdate] = useState({})
 

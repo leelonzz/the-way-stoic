@@ -17,8 +17,6 @@ import {
   getBlockId,
   getCurrentBlockPosition,
   setCaretPosition,
-  getAllBlockElements,
-  blockElementToJournalBlock,
   updateNumberedListCounters,
   BLOCK_MARKER_ATTRIBUTE,
   getBlockClassName,
@@ -95,14 +93,54 @@ export function SingleEditableRichTextEditor({
   )
 
   const handleEditingEnd = useCallback(() => {
-    // Delay switching back to display mode to prevent flicker
+    // Only switch back to display mode if there's actual content
+    // This prevents typography reset when all content is cleared
     editingTimeoutRef.current = setTimeout(() => {
-      setIsEditing(false)
-      setEditingBlockId(null)
+      const hasContent = blocks.some(block => block.text.trim() !== '')
+      if (hasContent) {
+        setIsEditing(false)
+        setEditingBlockId(null)
+      } else {
+        // If no content, ensure proper font styling is applied
+        // Force a re-render to apply the correct CSS classes
+        if (editorRef.current) {
+          const blockElements = editorRef.current.querySelectorAll('.block-element')
+          blockElements.forEach(element => {
+            // Add a class to force Inknut Antiqua font for empty content
+            element.classList.add('force-inknut-font')
+          })
+        }
+      }
+      // If no content, stay in editing mode to maintain typography
     }, 500) // 500ms delay to allow for quick re-focus
-  }, [])
+  }, [blocks])
 
 
+
+  // Monitor content changes to ensure proper font handling
+  useEffect(() => {
+    const hasContent = blocks.some(block => block.text.trim() !== '')
+
+    if (!hasContent && editorRef.current) {
+      // When content is empty, ensure proper font styling
+      const blockElements = editorRef.current.querySelectorAll('.block-element')
+      blockElements.forEach(element => {
+        element.classList.add('force-inknut-font')
+      })
+
+      // Also ensure the main editor container has proper font
+      editorRef.current.style.fontFamily = 'var(--font-inknut-antiqua), serif'
+    } else if (editorRef.current) {
+      // Remove force font class when content exists
+      const blockElements = editorRef.current.querySelectorAll('.block-element')
+      blockElements.forEach(element => {
+        element.classList.remove('force-inknut-font')
+      })
+
+      // Reset editor container font to default
+      editorRef.current.style.fontFamily = ''
+    }
+  }, [blocks])
 
   // Cleanup editing timeout on unmount
   useEffect(() => {
@@ -113,20 +151,8 @@ export function SingleEditableRichTextEditor({
     }
   }, [])
 
-  const syncBlocksFromDOM = useCallback((): void => {
-    if (!editorRef.current) return
-
-    const blockElements = getAllBlockElements(editorRef.current)
-    const updatedBlocks = blockElements.map(blockElementToJournalBlock)
-
-    // Only update if blocks have actually changed
-    if (JSON.stringify(updatedBlocks) !== JSON.stringify(blocks)) {
-      onChange(updatedBlocks)
-    }
-  }, [blocks, onChange])
-
-  // Remove syncDOMFromBlocks - let React handle DOM updates naturally
-  // This prevents React virtual DOM conflicts that cause removeChild errors
+  // Removed syncBlocksFromDOM to prevent React virtual DOM conflicts
+  // All DOM updates are now handled through React state changes only
 
   const updateBlock = useCallback(
     (blockId: string, updates: Partial<JournalBlock>): void => {
@@ -180,11 +206,16 @@ export function SingleEditableRichTextEditor({
 
   const deleteBlock = useCallback(
     (blockId: string): void => {
-      if (blocks.length === 1) return
+      if (blocks.length === 1) {
+        // Instead of preventing deletion, clear the content but keep the block
+        // This maintains the editing state and typography
+        updateBlock(blockId, { text: '' })
+        return
+      }
       const updatedBlocks = blocks.filter(block => block.id !== blockId)
       onChange(updatedBlocks)
     },
-    [blocks, onChange]
+    [blocks, onChange, updateBlock]
   )
 
   const focusBlock = useCallback(
@@ -195,7 +226,8 @@ export function SingleEditableRichTextEditor({
         )
       }
 
-      setTimeout(() => {
+      // Use requestAnimationFrame for immediate but smooth focus
+      requestAnimationFrame(() => {
         if (typeof window !== 'undefined' && window.fontLoadingDebug) {
           window.fontLoadingDebug.log(
             `[FOCUS-DEBUG] Executing setCaretPosition for: ${blockId}`
@@ -222,7 +254,7 @@ export function SingleEditableRichTextEditor({
         }
 
         setCaretPosition(blockId, offset)
-      }, 20) // Increased timeout for better DOM sync
+      })
     },
     []
   )
@@ -235,6 +267,15 @@ export function SingleEditableRichTextEditor({
           case 'l':
             e.preventDefault()
             selectionManager.selectCurrentLine()
+            return
+          case 'a':
+            // Handle Ctrl+A - ensure we maintain proper font state after select all
+            // Don't prevent default, let browser handle selection
+            // But ensure we're in editing mode for proper handling
+            if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+              window.fontLoadingDebug.log('[CTRL-A] Select all detected')
+            }
+            setIsEditing(true)
             return
           case 'ArrowUp':
             if (e.shiftKey) {
@@ -250,6 +291,37 @@ export function SingleEditableRichTextEditor({
               return
             }
             break
+        }
+      }
+
+      // Handle Delete and Backspace when all content might be selected
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const selection = window.getSelection()
+        if (selection && !selection.isCollapsed) {
+          // Check if all or most content is selected
+          const selectedText = selection.toString()
+          const totalText = editorRef.current?.textContent || ''
+
+          if (selectedText.length >= totalText.length * 0.9) { // 90% or more selected
+            if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+              window.fontLoadingDebug.log('[DELETE-ALL] Most/all content selected for deletion')
+            }
+
+            // Ensure we stay in editing mode but with proper font handling
+            setIsEditing(true)
+
+            // After deletion, we'll have empty content, so we need to ensure proper font
+            setTimeout(() => {
+              // Force re-render of blocks to apply proper typography
+              const emptyBlock = createNewBlock('paragraph')
+              onChange([emptyBlock])
+
+              // Focus the new empty block
+              requestAnimationFrame(() => {
+                focusBlock(emptyBlock.id, 0)
+              })
+            }, 0)
+          }
         }
       }
 
@@ -313,18 +385,19 @@ export function SingleEditableRichTextEditor({
 
         if (typeof window !== 'undefined' && window.fontLoadingDebug) {
           window.fontLoadingDebug.log(
-            `[ENTER-DEBUG] New block created: ${newBlockId} | Focusing in 50ms`
+            `[ENTER-DEBUG] New block created: ${newBlockId} | Focusing immediately`
           )
         }
 
-        setTimeout(() => {
+        // Focus immediately using requestAnimationFrame for smooth transition
+        requestAnimationFrame(() => {
           if (typeof window !== 'undefined' && window.fontLoadingDebug) {
             window.fontLoadingDebug.log(
               `[ENTER-DEBUG] Focusing new block: ${newBlockId}`
             )
           }
           focusBlock(newBlockId, 0)
-        }, 50) // Increased timeout to ensure DOM updates
+        })
       } else if (e.key === 'Backspace') {
         const blockElement = document.querySelector(
           `[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`
@@ -335,10 +408,7 @@ export function SingleEditableRichTextEditor({
           const currentIndex = blocks.findIndex(b => b.id === blockId)
           if (currentIndex > 0) {
             const prevBlock = blocks[currentIndex - 1]
-            setTimeout(
-              () => focusBlock(prevBlock.id, prevBlock.text.length),
-              10
-            )
+            requestAnimationFrame(() => focusBlock(prevBlock.id, prevBlock.text.length))
           }
         }
       } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -354,13 +424,11 @@ export function SingleEditableRichTextEditor({
 
             e.preventDefault()
             const targetBlock = blocks[targetIndex]
-            setTimeout(
-              () =>
-                focusBlock(
-                  targetBlock.id,
-                  Math.min(offset, targetBlock.text.length)
-                ),
-              10
+            requestAnimationFrame(() =>
+              focusBlock(
+                targetBlock.id,
+                Math.min(offset, targetBlock.text.length)
+              )
             )
           }
         }
@@ -526,10 +594,10 @@ export function SingleEditableRichTextEditor({
       setActiveBlockId(null)
 
       // After command selection, enter editing mode for the transformed block
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         focusBlock(currentActiveBlockId, 0)
         handleEditingStart(currentActiveBlockId)
-      }, 10)
+      })
     },
     [
       activeBlockId,
@@ -568,7 +636,11 @@ export function SingleEditableRichTextEditor({
   // Initialize with empty block if none exist
   useEffect((): void => {
     if (blocks.length === 0) {
-      onChange([createNewBlock()])
+      const newBlock = createNewBlock()
+      onChange([newBlock])
+      // Start in editing mode for new empty blocks
+      setIsEditing(true)
+      setEditingBlockId(newBlock.id)
     }
   }, [blocks.length, onChange])
 
@@ -586,7 +658,7 @@ export function SingleEditableRichTextEditor({
 
       if (isInitialMount) {
         hasInitiallyFocused.current = true
-        setTimeout(() => focusBlock(blocks[0].id, 0), 10)
+        requestAnimationFrame(() => focusBlock(blocks[0].id, 0))
       }
     }
   }, [blocks.length, focusBlock])
@@ -620,6 +692,16 @@ export function SingleEditableRichTextEditor({
           pointer-events: none;
           position: absolute;
           user-select: none;
+          font-family: inherit; /* Inherit the current font family */
+        }
+
+        /* Ensure editing mode typography is preserved in placeholders */
+        .editing-mode[data-placeholder]:empty::before {
+          font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        .display-mode[data-placeholder]:empty::before {
+          font-family: var(--font-inknut-antiqua), serif;
         }
         
         /* Maintain block structure styling */
@@ -648,8 +730,7 @@ export function SingleEditableRichTextEditor({
           e.preventDefault()
           const text = e.clipboardData.getData('text/plain')
           selectionManager.paste(text)
-          // Update blocks from DOM after paste operation
-          setTimeout(() => syncBlocksFromDOM(), 10)
+          // React will handle DOM updates automatically
         }}
         onCopy={e => {
           e.preventDefault()
@@ -660,8 +741,7 @@ export function SingleEditableRichTextEditor({
           e.preventDefault()
           const text = selectionManager.cutSelection()
           e.clipboardData.setData('text/plain', text)
-          // Update blocks from DOM after cut operation
-          setTimeout(() => syncBlocksFromDOM(), 10)
+          // React will handle DOM updates automatically
         }}
         onFocus={e => {
           const target = e.target as HTMLElement
@@ -669,10 +749,8 @@ export function SingleEditableRichTextEditor({
           if (blockElement) {
             const blockId = getBlockId(blockElement)
             if (blockId) {
-              // Delay editing start to not interfere with input processing
-              setTimeout(() => {
-                handleEditingStart(blockId)
-              }, 10)
+              // Start editing immediately for instant response
+              handleEditingStart(blockId)
             }
           }
         }}
@@ -700,12 +778,12 @@ export function SingleEditableRichTextEditor({
         }}
       >
         {blocks.length === 0 && (
-          <div className="text-stone-400 italic text-base leading-relaxed font-conditional display-mode pointer-events-none">
+          <div className={`text-stone-400 italic text-base leading-relaxed font-conditional ${isEditing ? 'editing-mode' : 'display-mode'} pointer-events-none`}>
             Write something...
           </div>
         )}
         {blocks.length === 1 && blocks[0].text === '' && (
-          <div className="text-stone-400 italic text-base leading-relaxed font-conditional display-mode pointer-events-none">
+          <div className={`text-stone-400 italic text-base leading-relaxed font-conditional ${isEditing ? 'editing-mode' : 'display-mode'} pointer-events-none`}>
             {placeholder}
           </div>
         )}
