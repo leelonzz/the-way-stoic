@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react'
 import { CommandMenu } from './CommandMenu'
 import { JournalBlock, CommandOption } from './types'
 import {
@@ -60,23 +60,8 @@ export function SingleEditableRichTextEditor({
     }
   }, [blocks, onChange])
 
-  const syncDOMFromBlocks = useCallback((): void => {
-    if (!editorRef.current) return
-
-    const container = editorRef.current
-    
-    // Clear container
-    container.innerHTML = ''
-    
-    // Create and append block elements
-    blocks.forEach((block) => {
-      const blockElement = createBlockElement(block)
-      container.appendChild(blockElement)
-    })
-    
-    // Update numbered list counters
-    updateNumberedListCounters(container)
-  }, [blocks])
+  // Remove syncDOMFromBlocks - let React handle DOM updates naturally
+  // This prevents React virtual DOM conflicts that cause removeChild errors
 
   const updateBlock = useCallback(
     (blockId: string, updates: Partial<JournalBlock>): void => {
@@ -315,12 +300,9 @@ export function SingleEditableRichTextEditor({
     [activeBlockId, updateBlock, focusBlock, handleImageUpload]
   )
 
-  // Sync DOM when blocks change
-  useEffect(() => {
-    syncDOMFromBlocks()
-  }, [syncDOMFromBlocks])
+  // Let React handle DOM updates naturally - no manual DOM sync needed
 
-  // Setup drag and drop functionality
+  // React-based drag and drop setup
   useEffect(() => {
     if (!editorRef.current) return
 
@@ -338,27 +320,14 @@ export function SingleEditableRichTextEditor({
         dragCleanupRef.current = null
       }
     }
-  }, [blocks])
+  }, [blocks.length]) // Only depend on blocks.length, not blocks content
 
-  // Sync blocks after drag operations
-  useEffect(() => {
-    const handleDragEnd = (): void => {
-      // Small delay to ensure DOM has updated
-      setTimeout(() => {
-        syncBlocksFromDOM()
-      }, 100)
-    }
-
-    if (editorRef.current) {
-      editorRef.current.addEventListener('dragend', handleDragEnd)
-      return (): void => {
-        // Store the current value to avoid stale closure
-        const currentEditorRef = editorRef.current
-        if (currentEditorRef) {
-          currentEditorRef.removeEventListener('dragend', handleDragEnd)
-        }
-      }
-    }
+  // Handle drag end with React state updates
+  const handleDragEnd = useCallback(() => {
+    // Update blocks from DOM after drag operations
+    setTimeout(() => {
+      syncBlocksFromDOM()
+    }, 100)
   }, [syncBlocksFromDOM])
 
   // Initialize with empty block if none exist
@@ -367,6 +336,13 @@ export function SingleEditableRichTextEditor({
       onChange([createNewBlock()])
     }
   }, [blocks.length, onChange])
+
+  // Focus first block on mount
+  useLayoutEffect(() => {
+    if (typeof window !== 'undefined' && blocks.length > 0) {
+      setTimeout(() => focusBlock(blocks[0].id, 0), 10)
+    }
+  }, [])
 
   return (
     <div className="relative h-full flex flex-col">
@@ -382,11 +358,49 @@ export function SingleEditableRichTextEditor({
           pointer-events: none;
           z-index: 1000;
         }
+        .magnetic-zone {
+          pointer-events: none;
+          z-index: 999;
+        }
+        .enhanced-drag-image {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          user-select: none;
+          -webkit-user-drag: none;
+        }
+        .enhanced-block-indicator {
+          pointer-events: none;
+          z-index: 1000;
+        }
         [contenteditable]::-moz-selection {
           background-color: rgba(59, 130, 246, 0.3);
         }
         [contenteditable]::selection {
           background-color: rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Enhanced multi-line selection styling */
+        [contenteditable] .multi-line-selection {
+          background-color: rgba(16, 185, 129, 0.2);
+          border-radius: 2px;
+          box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3);
+        }
+        
+        /* Smooth transitions for drag interactions */
+        .block-element {
+          transition: background-color 0.15s ease-out, transform 0.15s ease-out;
+        }
+        
+        .block-element:hover {
+          background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        /* Enhanced cursor feedback */
+        [contenteditable][draggable="true"]:not(.dragging-text) {
+          cursor: grab;
+        }
+        
+        [contenteditable][draggable="true"].dragging-text {
+          cursor: grabbing;
         }
       `}</style>
       <div
@@ -399,7 +413,8 @@ export function SingleEditableRichTextEditor({
           e.preventDefault()
           const text = e.clipboardData.getData('text/plain')
           selectionManager.paste(text)
-          syncBlocksFromDOM()
+          // Update blocks from DOM after paste operation
+          setTimeout(() => syncBlocksFromDOM(), 10)
         }}
         onCopy={(e) => {
           e.preventDefault()
@@ -410,7 +425,8 @@ export function SingleEditableRichTextEditor({
           e.preventDefault()
           const text = selectionManager.cutSelection()
           e.clipboardData.setData('text/plain', text)
-          syncBlocksFromDOM()
+          // Update blocks from DOM after cut operation
+          setTimeout(() => syncBlocksFromDOM(), 10)
         }}
         onMouseUp={() => {
           // Update selection info after mouse operations
@@ -436,8 +452,9 @@ export function SingleEditableRichTextEditor({
         }}
         onDrop={(e) => {
           e.preventDefault()
-          syncBlocksFromDOM()
+          handleDragEnd()
         }}
+        onDragEnd={handleDragEnd}
         className={`flex-1 p-6 bg-white focus:ring-0 outline-none overflow-y-auto transition-all duration-200 ${
           isAutoConverting ? 'bg-orange-50' : ''
         }`}
@@ -466,6 +483,17 @@ export function SingleEditableRichTextEditor({
             {placeholder}
           </div>
         )}
+        {blocks.map((block) => {
+          const BlockElement = createBlockElement(block)
+          return (
+            <div
+              key={block.id}
+              data-block-id={block.id}
+              className="block-element"
+              dangerouslySetInnerHTML={{ __html: BlockElement.outerHTML }}
+            />
+          )
+        })}
       </div>
 
       <CommandMenu

@@ -348,7 +348,10 @@ export class SelectionManager {
       document.body.appendChild(textArea)
       textArea.select()
       document.execCommand('copy')
-      document.body.removeChild(textArea)
+      // Safer removal with additional checks
+      if (textArea.parentNode) {
+        textArea.remove()
+      }
     })
     
     return selectionInfo.selectedText
@@ -606,7 +609,11 @@ export class SelectionManager {
     const handleDragLeave = (e: DragEvent) => {
       const target = e.target as HTMLElement
       if (!container.contains(e.relatedTarget as Node)) {
-        container.querySelectorAll('.drop-indicator').forEach(el => el.remove())
+        container.querySelectorAll('.drop-indicator').forEach(el => {
+          if (el.parentNode) {
+            el.remove()
+          }
+        })
       }
     }
 
@@ -729,7 +736,13 @@ export class SelectionManager {
     container.addEventListener('drop', handleDrop)
     container.addEventListener('dragend', handleDragEnd)
     container.addEventListener('keydown', handleKeyDown)
-    document.addEventListener('selectionchange', handleSelectionChange)
+
+
+    // Add selection change listener once
+    const selectionChangeListener = (): void => {
+      handleSelectionChange()
+    }
+    document.addEventListener('selectionchange', selectionChangeListener)
 
     // Return cleanup function
     return (): void => {
@@ -742,7 +755,7 @@ export class SelectionManager {
       container.removeEventListener('drop', handleDrop)
       container.removeEventListener('dragend', handleDragEnd)
       container.removeEventListener('keydown', handleKeyDown)
-      document.removeEventListener('selectionchange', handleSelectionChange)
+      document.removeEventListener('selectionchange', selectionChangeListener)
     }
   }
 
@@ -842,7 +855,9 @@ export class SelectionManager {
         this.handleTextDrop(e, selectedText, container)
         
         // Enhanced cleanup
-        document.body.removeChild(dragImage)
+        if (dragImage.parentNode) {
+          dragImage.remove()
+        }
         document.removeEventListener('mousemove', handleMouseMove)
         document.removeEventListener('mouseup', handleMouseUp)
         this.cleanupDragIndicators(container)
@@ -857,10 +872,16 @@ export class SelectionManager {
   }
   
   private showDragIndicators(event: MouseEvent, container: HTMLElement): void {
-    // Remove existing indicators
-    container.querySelectorAll('.drop-indicator').forEach(el => el.remove())
-    container.querySelectorAll('.line-drop-indicator').forEach(el => el.remove())
-    container.querySelectorAll('.magnetic-zone').forEach(el => el.remove())
+    // Remove existing indicators safely
+    container.querySelectorAll('.drop-indicator').forEach(el => {
+      if (el.parentNode) el.remove()
+    })
+    container.querySelectorAll('.line-drop-indicator').forEach(el => {
+      if (el.parentNode) el.remove()
+    })
+    container.querySelectorAll('.magnetic-zone').forEach(el => {
+      if (el.parentNode) el.remove()
+    })
     
     const containerRect = container.getBoundingClientRect()
     const relativeY = event.clientY - containerRect.top
@@ -915,9 +936,8 @@ export class SelectionManager {
       el.style.transform = 'scale(0.8)'
       
       setTimeout(() => {
-        if (el.parentNode) {
-          el.parentNode.removeChild(el)
-        }
+        // Use remove() for safer element removal
+        el.remove()
       }, 150)
     })
   }

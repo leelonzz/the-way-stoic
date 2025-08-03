@@ -44,13 +44,14 @@ export function getBlockClassName(block: JournalBlock): string {
   const baseClasses = 'block-element outline-none min-h-[1.5rem] leading-relaxed cursor-text'
   
   switch (block.type) {
-    case 'heading':
+    case 'heading': {
       const headingClasses = {
         1: 'text-3xl font-bold text-stone-800 mb-6 leading-tight font-inknut',
         2: 'text-2xl font-semibold text-stone-800 mb-4 leading-tight font-inknut',
         3: 'text-xl font-medium text-stone-800 mb-3 leading-tight font-inknut',
-      }
-      return `${baseClasses} ${headingClasses[block.level || 1]}`
+      };
+      return `${baseClasses} ${headingClasses[block.level || 1]}`;
+    }
     
     case 'bullet-list':
       return `${baseClasses} mb-3 text-base text-stone-700 leading-relaxed font-inknut pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-stone-600 before:select-none`

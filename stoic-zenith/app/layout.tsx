@@ -5,6 +5,7 @@ import { Inknut_Antiqua, Inika } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { PayPalProvider } from '@/components/providers/PayPalProvider'
 
 const inknutAntiqua = Inknut_Antiqua({
   subsets: ['latin'],
@@ -49,7 +50,9 @@ html {
       <body className={`${GeistSans.variable} ${GeistMono.variable} ${inknutAntiqua.variable} ${inika.variable}`}>
         <ErrorBoundary>
           <AuthProvider>
-            {children}
+            <PayPalProvider>
+              {children}
+            </PayPalProvider>
           </AuthProvider>
         </ErrorBoundary>
       </body>

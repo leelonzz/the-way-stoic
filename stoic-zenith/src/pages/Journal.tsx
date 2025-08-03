@@ -32,23 +32,17 @@ export default function Journal(): JSX.Element {
 
   const handleCreateEntry = async (): Promise<void> => {
     try {
-      // Create a new journal entry in Supabase
-      const today = format(new Date(), 'yyyy-MM-dd');
+      // Always create a new journal entry - allow multiple per day
+      const now = new Date();
+      const today = format(now, 'yyyy-MM-dd');
+      const timeString = format(now, 'HH:mm:ss');
       
-      // Check if an entry already exists for today
-      const existingEntry = await getJournalEntryByDate(today);
-      let supabaseEntry;
-      
-      if (existingEntry) {
-        supabaseEntry = existingEntry;
-      } else {
-        supabaseEntry = await createJournalEntry({
-          entry_date: today,
-          entry_type: 'morning',
-          excited_about: '',
-          make_today_great: '',
-        });
-      }
+      const supabaseEntry = await createJournalEntry({
+        entry_date: today,
+        entry_type: 'morning', // Default type, can be changed later
+        excited_about: `Entry created at ${timeString}`,
+        make_today_great: '',
+      });
 
       // Create a new rich-text entry for the local interface
       const newEntry: JournalEntry = {
@@ -69,12 +63,10 @@ export default function Journal(): JSX.Element {
       // Immediate refresh of entry list - no delay
       setRefreshKey(prev => prev + 1);
       
-      if (!existingEntry) {
-        toast({
-          title: "New journal entry created",
-          description: "You can now start writing your thoughts.",
-        });
-      }
+      toast({
+        title: "New journal entry created",
+        description: "You can now start writing your thoughts.",
+      });
       
       // Force immediate refresh of entry list
       if (typeof window !== 'undefined' && window.refreshJournalEntries) {

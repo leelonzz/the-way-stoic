@@ -13,8 +13,8 @@
       ],
       "timestamp": "2025-07-31T06:50:52.592Z",
       "context": "Project analysis for build tool optimization",
-      "accessCount": 4,
-      "lastAccessed": "2025-08-01T23:35:29.307Z",
+      "accessCount": 5,
+      "lastAccessed": "2025-08-03T06:24:07.117Z",
       "lastVerified": "2025-07-31T06:50:52.592Z",
       "status": "fresh"
     },
@@ -262,8 +262,8 @@
       ],
       "timestamp": "2025-07-31T22:49:35.805Z",
       "context": "Analyzing stoic-zenith app structure for feature implementation",
-      "accessCount": 15,
-      "lastAccessed": "2025-08-03T01:48:32.047Z",
+      "accessCount": 16,
+      "lastAccessed": "2025-08-03T06:24:07.117Z",
       "lastVerified": "2025-07-31T22:49:35.805Z",
       "status": "fresh"
     },
@@ -788,8 +788,8 @@
       ],
       "timestamp": "2025-08-01T03:33:11.254Z",
       "context": "Fixed loading screen issue after login - JavaScript syntax errors resolved",
-      "accessCount": 9,
-      "lastAccessed": "2025-08-02T12:10:39.532Z",
+      "accessCount": 10,
+      "lastAccessed": "2025-08-03T06:24:07.117Z",
       "lastVerified": "2025-08-01T03:33:11.254Z",
       "status": "fresh"
     },
@@ -953,8 +953,8 @@
         "implementation-complete"
       ],
       "timestamp": "2025-08-01T07:30:26.513Z",
-      "accessCount": 2,
-      "lastAccessed": "2025-08-02T02:40:15.841Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-08-03T06:24:07.117Z",
       "lastVerified": "2025-08-01T07:30:26.513Z",
       "status": "fresh"
     },
@@ -1788,8 +1788,8 @@
       ],
       "timestamp": "2025-08-02T05:24:08.361Z",
       "context": "Journal layout analysis for comprehensive plan",
-      "accessCount": 2,
-      "lastAccessed": "2025-08-02T06:37:21.091Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-08-03T06:24:07.117Z",
       "lastVerified": "2025-08-02T05:24:08.361Z",
       "status": "fresh"
     },
@@ -1828,8 +1828,8 @@
       ],
       "timestamp": "2025-08-02T05:41:35.877Z",
       "context": "Journal header redesign completion",
-      "accessCount": 3,
-      "lastAccessed": "2025-08-02T06:37:21.091Z",
+      "accessCount": 4,
+      "lastAccessed": "2025-08-03T06:24:07.117Z",
       "lastVerified": "2025-08-02T05:41:35.877Z",
       "status": "fresh"
     },
@@ -2077,8 +2077,8 @@
         "duplicate-key"
       ],
       "timestamp": "2025-08-02T06:47:41.196Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-02T06:47:41.196Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-03T06:24:07.117Z",
       "lastVerified": "2025-08-02T06:47:41.196Z",
       "status": "fresh"
     },
@@ -2165,8 +2165,8 @@
         "critical"
       ],
       "timestamp": "2025-08-02T07:01:26.744Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-03T01:55:31.288Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-03T06:24:07.117Z",
       "lastVerified": "2025-08-02T07:01:26.744Z",
       "status": "fresh"
     },
@@ -2219,8 +2219,8 @@
         "focus-management"
       ],
       "timestamp": "2025-08-02T07:06:49.410Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-02T07:06:49.410Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-03T06:24:07.117Z",
       "lastVerified": "2025-08-02T07:06:49.410Z",
       "status": "fresh"
     },
@@ -2298,8 +2298,8 @@
         "completed"
       ],
       "timestamp": "2025-08-02T11:23:57.863Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-02T11:23:57.863Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-03T06:24:07.117Z",
       "lastVerified": "2025-08-02T11:23:57.863Z",
       "status": "fresh"
     },
@@ -2676,7 +2676,183 @@
       "lastAccessed": "2025-08-03T03:16:05.445Z",
       "lastVerified": "2025-08-03T03:16:05.445Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1754191096811_yul6vjknh",
+      "content": "Research complete: Found comprehensive ProseMirror documentation on drag-drop patterns, selection handling, event management, and node views. Key insights: ProseMirror uses transactions for all state changes, coordsAtPos for screen coordinates, node views for custom components, and plugin system for features. Strong patterns for visual feedback through decorations and DOM event handling.",
+      "type": "general",
+      "tags": [
+        "general",
+        "research",
+        "prosemirror",
+        "drag-drop",
+        "text-editor",
+        "completed"
+      ],
+      "timestamp": "2025-08-03T03:18:16.811Z",
+      "context": "Completed research phase for modern text editor drag-and-drop patterns",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T03:18:16.811Z",
+      "lastVerified": "2025-08-03T03:18:16.811Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754191476056_ilhzuomb8",
+      "content": "Successfully implemented enhanced multi-line text drag-drop functionality for text editor. Key improvements: 1) Enhanced ghost image with text stats, line previews, and better styling 2) Animated drop indicators with magnetic zones 3) Smooth visual feedback during drag operations 4) Better multi-line selection handling 5) Fade-out animations for source text and highlight animations for dropped text 6) Enhanced CSS styling for better user experience. The implementation builds on existing selectionManager infrastructure while adding Notion/Google Docs-like polish.",
+      "type": "general",
+      "tags": [
+        "general",
+        "text-editor",
+        "drag-drop",
+        "implementation",
+        "completed",
+        "multi-line",
+        "visual-feedback"
+      ],
+      "timestamp": "2025-08-03T03:24:36.056Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T03:24:36.056Z",
+      "lastVerified": "2025-08-03T03:24:36.056Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754200097357_s7epvlvko",
+      "content": "User wants to integrate PayPal Fastlane subscription payments. Has PayPal app credentials: Client ID and Secret Key. Needs to implement subscription functionality in profile modal pricing section.",
+      "type": "general",
+      "tags": [
+        "general",
+        "paypal",
+        "fastlane",
+        "subscription",
+        "payment-integration"
+      ],
+      "timestamp": "2025-08-03T05:48:17.357Z",
+      "context": "PayPal Fastlane integration project - initial requirements gathering",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T05:48:17.357Z",
+      "lastVerified": "2025-08-03T05:48:17.357Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754200202336_w881xgm0b",
+      "content": "Current analysis results:\n- Found ProfileModal with upgrade section containing pricing for Seeker (Free) and Philosopher ($14/month)\n- App uses Next.js with TypeScript, has @paypal/paypal-js already installed\n- No current PayPal configuration in .env.example\n- PayPal Fastlane is designed for accelerated guest checkout, while Subscriptions API handles recurring billing\n- These are separate integrations that need to be combined for subscription functionality in profile modal",
+      "type": "config",
+      "tags": [
+        "config",
+        "typescript",
+        "api",
+        "paypal",
+        "fastlane",
+        "subscription",
+        "analysis",
+        "next-js"
+      ],
+      "timestamp": "2025-08-03T05:50:02.336Z",
+      "context": "PayPal Fastlane + Subscription integration research",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T05:50:02.336Z",
+      "lastVerified": "2025-08-03T05:50:02.336Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754200803531_4h98ybbkb",
+      "content": "Successfully implemented PayPal Fastlane subscription integration with:\n- API routes for subscription plans, subscriptions, and webhooks\n- PayPal React provider with proper TypeScript types  \n- Subscription button component in ProfileModal\n- Database schema for subscription tracking\n- Success/cancel pages for user flow\n- All critical TypeScript and linting errors resolved\n- PayPal React package installed and configured",
+      "type": "solution",
+      "tags": [
+        "solution",
+        "typescript",
+        "react",
+        "api",
+        "database",
+        "paypal",
+        "fastlane",
+        "subscription",
+        "completed",
+        "integration"
+      ],
+      "timestamp": "2025-08-03T06:00:03.531Z",
+      "context": "PayPal Fastlane integration completion",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T06:00:03.531Z",
+      "lastVerified": "2025-08-03T06:00:03.531Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754201879094_t2u2tvowh",
+      "content": "User experiencing PayPal subscription API error: \"Unexpected token '<', '<!DOCTYPE'... is not valid JSON\". Error occurs when frontend calls `/api/paypal/subscriptions` and receives HTML (404 error page) instead of expected JSON. The API route exists at `/Users/lee_nhat_long/Documents/Project/the-way-stoic/stoic-zenith/src/app/api/paypal/subscriptions/route.ts` and implements both POST and GET methods properly. Frontend is making requests from PayPalProvider component. This suggests either: 1) Server not running, 2) Environment variables missing, 3) Route configuration issue, or 4) Build/deployment problem.",
+      "type": "config",
+      "tags": [
+        "config",
+        "api",
+        "deployment",
+        "paypal",
+        "error",
+        "json",
+        "404",
+        "debug"
+      ],
+      "timestamp": "2025-08-03T06:17:59.094Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T06:17:59.094Z",
+      "lastVerified": "2025-08-03T06:17:59.094Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754202084426_xsodvlpkx",
+      "content": "SOLUTION FOUND: PayPal API returning HTML instead of JSON because Next.js has conflicting app directories. Routes exist in `/src/app/api/paypal/` but Next.js is using root `/app` directory as primary. PayPal routes need to be moved from `/src/app/api/paypal/` to `/app/api/paypal/` to match the existing structure where other API routes (like chat) are located.",
+      "type": "solution",
+      "tags": [
+        "solution",
+        "api",
+        "paypal",
+        "next.js",
+        "routing",
+        "directory-structure"
+      ],
+      "timestamp": "2025-08-03T06:21:24.426Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T06:21:24.426Z",
+      "lastVerified": "2025-08-03T06:21:24.426Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754202267892_lzxjil8vf",
+      "content": "React DOM removeChild error: \"Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.\" This error typically occurs when:\n\n1. React is trying to remove a DOM element that's already been removed\n2. Manual DOM manipulation conflicts with React's virtual DOM\n3. Race conditions between React updates and direct DOM operations\n4. Component unmounting while DOM operations are in progress\n\nIn the rich text editor, this could be caused by:\n- syncDOMFromBlocks() function manually manipulating DOM with replaceChildren/innerHTML\n- Drag and drop operations conflicting with React rendering\n- Selection restoration after DOM updates\n- Multiple React re-renders happening concurrently",
+      "type": "code",
+      "tags": [
+        "code",
+        "react",
+        "dom-manipulation",
+        "error",
+        "rich-text-editor",
+        "removeChild"
+      ],
+      "timestamp": "2025-08-03T06:24:27.892Z",
+      "context": "Analyzing React removeChild error in rich text editor component",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T06:24:27.892Z",
+      "lastVerified": "2025-08-03T06:24:27.892Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754202552157_38wn6k429",
+      "content": "Fixed React removeChild DOM errors by:\n1. ✅ Removed syncDOMFromBlocks() manual DOM manipulation that used replaceChildren/innerHTML\n2. ✅ Added React-based block rendering with key props for stable element identity  \n3. ✅ Replaced direct DOM event listeners with React drag event handlers\n4. ✅ Fixed selection restoration conflicts by removing manual range manipulation\n5. ✅ Consolidated useEffect hooks and improved dependency arrays\n\nThe fix eliminates React virtual DOM conflicts that were causing \"removeChild\" errors. Server started successfully on port 3001.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "react",
+        "dom-fix",
+        "rich-text-editor",
+        "removeChild-error",
+        "completed"
+      ],
+      "timestamp": "2025-08-03T06:29:12.157Z",
+      "context": "React removeChild error fix completed in rich text editor",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T06:29:12.157Z",
+      "lastVerified": "2025-08-03T06:29:12.157Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-03T03:16:05.445Z"
+  "lastUpdated": "2025-08-03T06:29:12.157Z"
 }

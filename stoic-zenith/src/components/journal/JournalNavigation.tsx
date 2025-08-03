@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { MoreHorizontal, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-import { RichTextEditor } from './RichTextEditor';
+import { SingleEditableRichTextEditor } from './SingleEditableRichTextEditor';
 import { JournalEntry, JournalBlock } from './types';
 
 interface JournalNavigationProps {
@@ -112,7 +112,7 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
       {/* Journal Entry Area - Full remaining height */}
       <div className="flex-1 bg-white min-h-0">
         <div className="h-full" data-export-area>
-          <RichTextEditor
+          <SingleEditableRichTextEditor
             blocks={currentEntry.blocks}
             onChange={handleBlocksChange}
             placeholder={`What's on your mind for ${format(selectedDate, 'MMMM d')}?`}

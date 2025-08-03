@@ -38,13 +38,12 @@ export async function createJournalEntry(data: CreateJournalEntryData): Promise<
     throw new Error('User not authenticated');
   }
 
+  // Always create a new entry - allow multiple entries per day
   const { data: entry, error } = await supabase
     .from('journal_entries')
-    .upsert({
+    .insert({
       user_id: user.id,
       ...data
-    }, {
-      onConflict: 'user_id,entry_date,entry_type'
     })
     .select()
     .single();

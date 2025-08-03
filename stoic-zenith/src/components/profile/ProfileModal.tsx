@@ -5,6 +5,7 @@ import { Settings, Bell, Link, Users, Smile, Upload, Zap, Check, Star } from 'lu
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { SubscriptionButton } from '@/components/subscription/SubscriptionButton';
 import {
   Card,
   CardContent,
@@ -424,19 +425,33 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                             ))}
                           </ul>
 
-                          <Button
-                            disabled={plan.current}
-                            className={`w-full ${
-                              plan.current
-                                ? 'bg-stone/10 text-stone cursor-not-allowed'
-                                : plan.popular
-                                  ? 'bg-cta hover:bg-cta/90 text-white'
+                          {plan.name === 'Philosopher' ? (
+                            <SubscriptionButton
+                              planType="philosopher"
+                              planName={plan.name}
+                              planPrice={plan.price}
+                              onSuccess={(subscriptionId) => {
+                                console.log('Subscription successful:', subscriptionId);
+                                // Handle successful subscription
+                              }}
+                              onError={(error) => {
+                                console.error('Subscription error:', error);
+                                // Handle subscription error
+                              }}
+                            />
+                          ) : (
+                            <Button
+                              disabled={plan.current}
+                              className={`w-full ${
+                                plan.current
+                                  ? 'bg-stone/10 text-stone cursor-not-allowed'
                                   : 'bg-stone/10 hover:bg-stone/20 text-stone border border-stone/30'
-                            }`}
-                            size="lg"
-                          >
-                            {plan.cta}
-                          </Button>
+                              }`}
+                              size="lg"
+                            >
+                              {plan.cta}
+                            </Button>
+                          )}
                         </CardContent>
                       </Card>
                     ))}

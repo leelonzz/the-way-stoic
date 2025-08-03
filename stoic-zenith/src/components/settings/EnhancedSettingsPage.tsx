@@ -56,7 +56,7 @@ export function EnhancedSettingsPage({ profile }: EnhancedSettingsPageProps): JS
   const [preferredName, setPreferredName] = useState(profile?.name || '');
   const [supportAccess, setSupportAccess] = useState(false);
 
-  const renderAccountContent = (): JSX.Element => {
+  const renderAccountContent = (): JSX.Element => (
     <div className="space-y-8">
       {/* Account Section */}
       <div className="space-y-6">
@@ -165,7 +165,6 @@ export function EnhancedSettingsPage({ profile }: EnhancedSettingsPageProps): JS
       </div>
     </div>
   );
-  };
 
   const renderContent = (): JSX.Element => {
     switch (activeSection) {

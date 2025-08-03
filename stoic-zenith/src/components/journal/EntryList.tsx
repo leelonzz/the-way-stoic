@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
-import { Search, Calendar } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { EntryListItem } from './EntryListItem';
 import { Input } from '@/components/ui/input';
 import { JournalEntry } from './types';
 import { getJournalEntries, JournalEntryResponse } from '@/lib/journal';
@@ -172,60 +173,13 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
         ) : (
           <div className="p-2">
             {filteredEntries.map(({ entry }) => (
-              <button
+              <EntryListItem
                 key={entry.id}
-                onClick={() => {
-                  // Convert Supabase entry to local JournalEntry format
-                  const localEntry: JournalEntry = {
-                    id: entry.id,
-                    date: entry.entry_date,
-                    blocks: [{
-                      id: `block-${Date.now()}`,
-                      type: 'paragraph',
-                      text: entry.preview || entry.excited_about || '',
-                      createdAt: new Date(entry.created_at)
-                    }],
-                    createdAt: new Date(entry.created_at),
-                    updatedAt: new Date(entry.updated_at)
-                  };
-                  onSelectEntry(localEntry);
-                }}
-                className={`
-                  w-full p-3 mb-2 text-left rounded-lg transition-all duration-200
-                  hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-orange-400
-                  ${selectedEntry?.id === entry.id ? 'bg-orange-50 border border-orange-200' : 'border border-transparent'}
-                `}
-              >
-                <div className="flex gap-3">
-                  {/* Thumbnail */}
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 rounded-lg bg-stone-100 flex items-center justify-center">
-                      <Calendar className="w-5 h-5 text-stone-400" />
-                    </div>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-inknut font-medium text-stone-800">
-                        {formatEntryDate(entry.entry_date)}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-inknut text-stone-500">
-                          {format(new Date(entry.updated_at), 'h:mm a')}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {entry.preview && (
-                      <p className="text-sm font-inknut text-stone-600 line-clamp-2 leading-relaxed">
-                        {entry.preview}
-                        {entry.preview.length >= 80 && '...'}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </button>
+                entry={entry}
+                isSelected={selectedEntry?.id === entry.id}
+                formatEntryDate={formatEntryDate}
+                onSelect={onSelectEntry}
+              />
             ))}
           </div>
         )}
