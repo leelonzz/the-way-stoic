@@ -23,6 +23,15 @@ const COMMANDS: CommandOption[] = [
   {
     id: 'h1',
     label: 'Heading 1',
+    description: 'Large heading (# or /h1)',
+    shortcut: '#',
+    type: 'heading',
+    level: 1,
+    icon: 'H1',
+  },
+  {
+    id: 'h1-slash',
+    label: 'Heading 1',
     description: 'Large heading',
     shortcut: '/h1',
     type: 'heading',
@@ -31,6 +40,15 @@ const COMMANDS: CommandOption[] = [
   },
   {
     id: 'h2',
+    label: 'Heading 2',
+    description: 'Medium heading (## or /h2)',
+    shortcut: '##',
+    type: 'heading',
+    level: 2,
+    icon: 'H2',
+  },
+  {
+    id: 'h2-slash',
     label: 'Heading 2',
     description: 'Medium heading',
     shortcut: '/h2',
@@ -41,6 +59,15 @@ const COMMANDS: CommandOption[] = [
   {
     id: 'h3',
     label: 'Heading 3',
+    description: 'Small heading (### or /h3)',
+    shortcut: '###',
+    type: 'heading',
+    level: 3,
+    icon: 'H3',
+  },
+  {
+    id: 'h3-slash',
+    label: 'Heading 3',
     description: 'Small heading',
     shortcut: '/h3',
     type: 'heading',
@@ -50,16 +77,48 @@ const COMMANDS: CommandOption[] = [
   {
     id: 'bullet',
     label: 'Bullet List',
+    description: 'Unordered list (- or /bullet)',
+    shortcut: '-',
+    type: 'bullet-list',
+    icon: 'bullet',
+  },
+  {
+    id: 'bullet-slash',
+    label: 'Bullet List',
     description: 'Unordered list',
     shortcut: '/bullet',
     type: 'bullet-list',
     icon: 'bullet',
   },
   {
+    id: 'bullet-short',
+    label: 'Bullet List',
+    description: 'Unordered list',
+    shortcut: '/ul',
+    type: 'bullet-list',
+    icon: 'bullet',
+  },
+  {
     id: 'numbered',
+    label: 'Numbered List',
+    description: 'Ordered list (1. or /numbered)',
+    shortcut: '1.',
+    type: 'numbered-list',
+    icon: 'numbered',
+  },
+  {
+    id: 'numbered-slash',
     label: 'Numbered List',
     description: 'Ordered list',
     shortcut: '/numbered',
+    type: 'numbered-list',
+    icon: 'numbered',
+  },
+  {
+    id: 'numbered-short',
+    label: 'Numbered List',
+    description: 'Ordered list',
+    shortcut: '/ol',
     type: 'numbered-list',
     icon: 'numbered',
   },
@@ -82,13 +141,37 @@ const COMMANDS: CommandOption[] = [
   {
     id: 'quote',
     label: 'Quote',
+    description: 'Block quote (> or /quote)',
+    shortcut: '>',
+    type: 'quote',
+    icon: 'quote',
+  },
+  {
+    id: 'quote-slash',
+    label: 'Quote',
     description: 'Block quote',
     shortcut: '/quote',
     type: 'quote',
     icon: 'quote',
   },
   {
+    id: 'quote-short',
+    label: 'Quote',
+    description: 'Block quote',
+    shortcut: '/q',
+    type: 'quote',
+    icon: 'quote',
+  },
+  {
     id: 'code',
+    label: 'Code Block',
+    description: 'Code snippet (``` or /code)',
+    shortcut: '```',
+    type: 'code',
+    icon: 'code',
+  },
+  {
+    id: 'code-slash',
     label: 'Code Block',
     description: 'Code snippet',
     shortcut: '/code',
@@ -112,7 +195,6 @@ const getIcon = (iconType: string): JSX.Element => {
     case 'paragraph':
       return <Type className="w-4 h-4" />
     case 'image':
-      // eslint-disable-next-line jsx-a11y/alt-text
       return <Image className="w-4 h-4" />
     case 'quote':
       return <Quote className="w-4 h-4" />
@@ -212,7 +294,7 @@ export function CommandMenu({
                   {command.description}
                 </div>
               </div>
-              <div className="text-xs text-stone-400 font-mono">
+              <div className="text-xs text-stone-400 font-mono bg-stone-100 px-2 py-1 rounded">
                 {command.shortcut}
               </div>
             </button>

@@ -1,6 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { CommandMenu } from './CommandMenu'
 import { JournalBlock, CommandOption } from './types'
+import {
+  detectShortcutPattern,
+  shouldTriggerAutoConversion,
+} from './shortcutPatterns'
 
 interface RichTextEditorProps {
   blocks: JournalBlock[]
@@ -17,6 +21,7 @@ export function RichTextEditor({
   const [commandMenuPosition, setCommandMenuPosition] = useState({ x: 0, y: 0 })
   const [searchQuery, setSearchQuery] = useState('')
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null)
+  const [isAutoConverting, setIsAutoConverting] = useState(false)
   const editorRef = useRef<HTMLDivElement>(null)
   const blockRefs = useRef<Map<string, HTMLElement>>(new Map())
 
@@ -117,6 +122,30 @@ export function RichTextEditor({
       const block = blocks.find(b => b.id === blockId)
       if (!block) return
 
+      // Handle markdown shortcuts on space key
+      if (e.key === ' ') {
+        const blockElement = blockRefs.current.get(blockId)
+        const currentText = blockElement?.textContent || ''
+
+        if (shouldTriggerAutoConversion(currentText, ' ')) {
+          e.preventDefault()
+          const pattern = detectShortcutPattern(currentText + ' ')
+          if (pattern) {
+            setIsAutoConverting(true)
+            updateBlock(blockId, {
+              type: pattern.type,
+              level: pattern.level as 1 | 2 | 3,
+              text: '',
+            })
+            setTimeout(() => {
+              focusBlock(blockId, 0)
+              setIsAutoConverting(false)
+            }, 100)
+            return
+          }
+        }
+      }
+
       if (e.key === 'Enter') {
         e.preventDefault()
         if (showCommandMenu) {
@@ -167,7 +196,7 @@ export function RichTextEditor({
         setShowCommandMenu(false)
       }
     },
-    [blocks, showCommandMenu, addBlock, deleteBlock, focusBlock]
+    [blocks, showCommandMenu, addBlock, deleteBlock, focusBlock, updateBlock]
   )
 
   const handleInput = useCallback(
@@ -196,30 +225,6 @@ export function RichTextEditor({
     [updateBlock, showCommandMenu]
   )
 
-  const handleCommandSelect = useCallback(
-    (command: CommandOption): void => {
-      if (!activeBlockId) return
-
-      if (command.type === 'image') {
-        updateBlock(activeBlockId, { text: '' })
-        handleImageUpload(activeBlockId)
-      } else {
-        updateBlock(activeBlockId, {
-          type: command.type,
-          level: command.level as 1 | 2 | 3,
-          text: '',
-        })
-      }
-
-      setShowCommandMenu(false)
-      const currentActiveBlockId = activeBlockId
-      setActiveBlockId(null)
-
-      setTimeout(() => focusBlock(currentActiveBlockId, 0), 10)
-    },
-    [activeBlockId, updateBlock, focusBlock, handleImageUpload]
-  )
-
   const handleImageUpload = useCallback(
     (blockId: string): void => {
       const input = document.createElement('input')
@@ -244,6 +249,30 @@ export function RichTextEditor({
       input.click()
     },
     [updateBlock]
+  )
+
+  const handleCommandSelect = useCallback(
+    (command: CommandOption): void => {
+      if (!activeBlockId) return
+
+      if (command.type === 'image') {
+        updateBlock(activeBlockId, { text: '' })
+        handleImageUpload(activeBlockId)
+      } else {
+        updateBlock(activeBlockId, {
+          type: command.type,
+          level: command.level as 1 | 2 | 3,
+          text: '',
+        })
+      }
+
+      setShowCommandMenu(false)
+      const currentActiveBlockId = activeBlockId
+      setActiveBlockId(null)
+
+      setTimeout(() => focusBlock(currentActiveBlockId, 0), 10)
+    },
+    [activeBlockId, updateBlock, focusBlock, handleImageUpload]
   )
 
   // Sync text content from state to DOM without interfering with cursor
@@ -286,8 +315,9 @@ export function RichTextEditor({
         onInput: (e: React.FormEvent<HTMLDivElement>): void =>
           handleInput(e, block.id),
         onKeyDown: (e: React.KeyboardEvent): void => handleKeyDown(e, block.id),
-        className:
-          'outline-none focus:ring-0 rounded px-1 py-1 min-h-[1.5rem] leading-relaxed cursor-text',
+        className: `outline-none focus:ring-0 rounded px-1 py-1 min-h-[1.5rem] leading-relaxed cursor-text transition-all duration-200 ${
+          isAutoConverting ? 'bg-orange-50 border border-orange-200' : ''
+        }`,
         style: {
           whiteSpace: 'pre-wrap' as const,
           wordBreak: 'break-word' as const,
@@ -366,7 +396,6 @@ export function RichTextEditor({
           return (
             <div key={block.id} className="mb-4">
               {block.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={block.imageUrl}
                   alt={block.imageAlt || 'Uploaded image'}
@@ -392,7 +421,14 @@ export function RichTextEditor({
           )
       }
     },
-    [blocks, handleInput, handleKeyDown, handleImageUpload, setBlockRef]
+    [
+      blocks,
+      handleInput,
+      handleKeyDown,
+      handleImageUpload,
+      setBlockRef,
+      isAutoConverting,
+    ]
   )
 
   useEffect((): void => {
