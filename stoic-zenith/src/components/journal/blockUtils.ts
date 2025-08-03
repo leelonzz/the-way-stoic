@@ -13,7 +13,7 @@ export interface BlockPosition {
 
 export function createBlockElement(block: JournalBlock): HTMLElement {
   let element: HTMLElement
-  
+
   // Handle special block types
   if (block.type === 'image' && block.imageUrl) {
     element = document.createElement('div')
@@ -22,54 +22,72 @@ export function createBlockElement(block: JournalBlock): HTMLElement {
     element = document.createElement('div')
     element.textContent = block.text
   }
-  
+
   element.setAttribute(BLOCK_MARKER_ATTRIBUTE, block.id)
   element.setAttribute(BLOCK_MARKER_TYPE, block.type)
   if (block.level) {
     element.setAttribute(BLOCK_MARKER_LEVEL, block.level.toString())
   }
-  
+
   // Apply styling based on block type
   element.className = getBlockClassName(block)
-  
+
   // Make block draggable for text content (not images)
   if (block.type !== 'image') {
     element.draggable = true
   }
-  
+
   return element
 }
 
-export function getBlockClassName(block: JournalBlock): string {
-  const baseClasses = 'block-element outline-none min-h-[1.5rem] leading-relaxed cursor-text'
-  
+export function getBlockClassName(
+  block: JournalBlock,
+  isEditing: boolean = false,
+  debugMode: boolean = false
+): string {
+  const baseClasses =
+    'block-element outline-none min-h-[1.5rem] leading-relaxed cursor-text'
+
+  // Conditional font class based on editing state
+  const fontClass = isEditing
+    ? 'font-conditional editing-mode'
+    : 'font-conditional display-mode'
+  const debugClass = debugMode ? 'debug-typography' : ''
+
+  // Log font state for debugging
+  if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+    window.fontLoadingDebug.log(
+      `Block ${block.id}: ${isEditing ? 'EDITING' : 'DISPLAY'} mode`
+    )
+  }
+
   switch (block.type) {
     case 'heading': {
       const headingClasses = {
-        1: 'text-3xl font-bold text-stone-800 mb-6 leading-tight font-inknut',
-        2: 'text-2xl font-semibold text-stone-800 mb-4 leading-tight font-inknut',
-        3: 'text-xl font-medium text-stone-800 mb-3 leading-tight font-inknut',
-      };
-      return `${baseClasses} ${headingClasses[block.level || 1]}`;
+        1: 'text-3xl font-bold text-stone-800 mb-6 leading-tight',
+        2: 'text-2xl font-semibold text-stone-800 mb-4 leading-tight',
+        3: 'text-xl font-medium text-stone-800 mb-3 leading-tight',
+      }
+      return `${baseClasses} ${fontClass} ${debugClass} ${headingClasses[block.level || 1]}`
     }
-    
+
     case 'bullet-list':
-      return `${baseClasses} mb-3 text-base text-stone-700 leading-relaxed font-inknut pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-stone-600 before:select-none`
-    
+      return `${baseClasses} ${fontClass} ${debugClass} mb-3 text-base text-stone-700 leading-relaxed pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-stone-600 before:select-none`
+
     case 'numbered-list':
-      return `${baseClasses} mb-3 text-base text-stone-700 leading-relaxed font-inknut pl-6 relative before:content-[attr(data-list-number)'.'] before:absolute before:left-0 before:text-stone-600 before:select-none before:font-medium`
-    
+      return `${baseClasses} ${fontClass} ${debugClass} mb-3 text-base text-stone-700 leading-relaxed pl-6 relative before:content-[attr(data-list-number)'.'] before:absolute before:left-0 before:text-stone-600 before:select-none before:font-medium`
+
     case 'quote':
-      return `${baseClasses} border-l-4 border-stone-300 pl-4 mb-4 italic text-stone-600 text-base leading-relaxed font-inknut`
-    
+      return `${baseClasses} ${fontClass} ${debugClass} border-l-4 border-stone-300 pl-4 mb-4 italic text-stone-600 text-base leading-relaxed`
+
     case 'code':
-      return `${baseClasses} bg-stone-100 rounded-lg p-4 mb-4 font-mono text-sm text-stone-800 leading-relaxed`
-    
+      return `${baseClasses} ${debugClass} bg-stone-100 rounded-lg p-4 mb-4 font-mono text-sm text-stone-800 leading-relaxed`
+
     case 'image':
-      return `${baseClasses} mb-4`
-    
+      return `${baseClasses} ${debugClass} mb-4`
+
     default:
-      return `${baseClasses} mb-4 text-base text-stone-700 leading-relaxed font-inknut`
+      return `${baseClasses} ${fontClass} ${debugClass} mb-4 text-base text-stone-700 leading-relaxed`
   }
 }
 
@@ -91,7 +109,9 @@ export function getBlockId(element: HTMLElement): string | null {
   return element.getAttribute(BLOCK_MARKER_ATTRIBUTE)
 }
 
-export function getBlockType(element: HTMLElement): JournalBlock['type'] | null {
+export function getBlockType(
+  element: HTMLElement
+): JournalBlock['type'] | null {
   return element.getAttribute(BLOCK_MARKER_TYPE) as JournalBlock['type'] | null
 }
 
@@ -103,38 +123,40 @@ export function getBlockLevel(element: HTMLElement): 1 | 2 | 3 | null {
 export function getCurrentBlockPosition(): BlockPosition | null {
   const selection = window.getSelection()
   if (!selection || selection.rangeCount === 0) return null
-  
+
   const range = selection.getRangeAt(0)
   const blockElement = findBlockElement(range.startContainer)
-  
+
   if (!blockElement) return null
-  
+
   const blockId = getBlockId(blockElement)
   if (!blockId) return null
-  
+
   return {
     blockId,
     offset: range.startOffset,
-    node: range.startContainer
+    node: range.startContainer,
   }
 }
 
 export function setCaretPosition(blockId: string, offset: number): void {
-  const blockElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`)
+  const blockElement = document.querySelector(
+    `[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`
+  )
   if (!blockElement) return
-  
+
   const selection = window.getSelection()
   if (!selection) return
-  
+
   const range = document.createRange()
-  
+
   // Find the text node to position the caret
   const walker = document.createTreeWalker(
     blockElement,
     NodeFilter.SHOW_TEXT,
     null
   )
-  
+
   const textNode = walker.nextNode()
   if (textNode) {
     const maxOffset = Math.min(offset, textNode.textContent?.length || 0)
@@ -145,7 +167,7 @@ export function setCaretPosition(blockId: string, offset: number): void {
     range.setStart(blockElement, 0)
     range.collapse(true)
   }
-  
+
   selection.removeAllRanges()
   selection.addRange(range)
 }
@@ -159,25 +181,27 @@ export function blockElementToJournalBlock(element: HTMLElement): JournalBlock {
   const type = getBlockType(element) || 'paragraph'
   const level = getBlockLevel(element)
   const text = element.textContent || ''
-  
+
   return {
     id,
     type,
     level: level || undefined,
     text,
-    createdAt: new Date()
+    createdAt: new Date(),
   }
 }
 
 export function updateNumberedListCounters(container: HTMLElement): void {
-  const numberedLists = container.querySelectorAll(`[${BLOCK_MARKER_TYPE}="numbered-list"]`)
+  const numberedLists = container.querySelectorAll(
+    `[${BLOCK_MARKER_TYPE}="numbered-list"]`
+  )
   let counter = 1
-  
-  numberedLists.forEach((element) => {
+
+  numberedLists.forEach(element => {
     const el = element as HTMLElement
     el.style.setProperty('--list-counter', counter.toString())
     el.classList.add('numbered-list-item')
-    
+
     // Add the number as a pseudo-element
     el.setAttribute('data-list-number', counter.toString())
     counter++
@@ -187,24 +211,29 @@ export function updateNumberedListCounters(container: HTMLElement): void {
 export function getSelectedBlocks(): HTMLElement[] {
   const selection = window.getSelection()
   if (!selection || selection.rangeCount === 0) return []
-  
+
   const range = selection.getRangeAt(0)
   const startBlock = findBlockElement(range.startContainer)
   const endBlock = findBlockElement(range.endContainer)
-  
+
   if (!startBlock || !endBlock) return []
-  
+
   // If same block, return single block
   if (startBlock === endBlock) return [startBlock]
-  
+
   // Find all blocks between start and end
-  const allBlocks = getAllBlockElements(startBlock.closest('[contenteditable]') as HTMLElement)
+  const allBlocks = getAllBlockElements(
+    startBlock.closest('[contenteditable]') as HTMLElement
+  )
   const startIndex = allBlocks.indexOf(startBlock)
   const endIndex = allBlocks.indexOf(endBlock)
-  
+
   if (startIndex === -1 || endIndex === -1) return [startBlock]
-  
-  return allBlocks.slice(Math.min(startIndex, endIndex), Math.max(startIndex, endIndex) + 1)
+
+  return allBlocks.slice(
+    Math.min(startIndex, endIndex),
+    Math.max(startIndex, endIndex) + 1
+  )
 }
 
 export function getSelectedText(): string {
@@ -215,13 +244,13 @@ export function getSelectedText(): string {
 export function insertTextAtCursor(text: string): void {
   const selection = window.getSelection()
   if (!selection || selection.rangeCount === 0) return
-  
+
   const range = selection.getRangeAt(0)
   range.deleteContents()
-  
+
   const textNode = document.createTextNode(text)
   range.insertNode(textNode)
-  
+
   // Move cursor to end of inserted text
   range.setStartAfter(textNode)
   range.collapse(true)
@@ -232,7 +261,7 @@ export function insertTextAtCursor(text: string): void {
 export function deleteSelectedContent(): void {
   const selection = window.getSelection()
   if (!selection || selection.rangeCount === 0) return
-  
+
   const range = selection.getRangeAt(0)
   if (!range.collapsed) {
     range.deleteContents()
@@ -240,27 +269,36 @@ export function deleteSelectedContent(): void {
 }
 
 export function selectBlockContent(blockId: string): void {
-  const blockElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`)
+  const blockElement = document.querySelector(
+    `[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`
+  )
   if (!blockElement) return
-  
+
   const selection = window.getSelection()
   if (!selection) return
-  
+
   const range = document.createRange()
   range.selectNodeContents(blockElement)
   selection.removeAllRanges()
   selection.addRange(range)
 }
 
-export function selectMultipleBlocks(startBlockId: string, endBlockId: string): void {
-  const startElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${startBlockId}"]`)
-  const endElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${endBlockId}"]`)
-  
+export function selectMultipleBlocks(
+  startBlockId: string,
+  endBlockId: string
+): void {
+  const startElement = document.querySelector(
+    `[${BLOCK_MARKER_ATTRIBUTE}="${startBlockId}"]`
+  )
+  const endElement = document.querySelector(
+    `[${BLOCK_MARKER_ATTRIBUTE}="${endBlockId}"]`
+  )
+
   if (!startElement || !endElement) return
-  
+
   const selection = window.getSelection()
   if (!selection) return
-  
+
   const range = document.createRange()
   range.setStartBefore(startElement)
   range.setEndAfter(endElement)

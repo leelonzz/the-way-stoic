@@ -1,4 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react'
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useLayoutEffect,
+} from 'react'
+import { nanoid } from 'nanoid'
 import { CommandMenu } from './CommandMenu'
 import { JournalBlock, CommandOption } from './types'
 import {
@@ -6,7 +13,6 @@ import {
   shouldTriggerAutoConversion,
 } from './shortcutPatterns'
 import {
-  createBlockElement,
   findBlockElement,
   getBlockId,
   getCurrentBlockPosition,
@@ -15,6 +21,7 @@ import {
   blockElementToJournalBlock,
   updateNumberedListCounters,
   BLOCK_MARKER_ATTRIBUTE,
+  getBlockClassName,
 } from './blockUtils'
 import { selectionManager } from './selectionUtils'
 
@@ -29,31 +36,148 @@ export function SingleEditableRichTextEditor({
   onChange,
   placeholder = "Start writing or type '/' for commands...",
 }: SingleEditableRichTextEditorProps): JSX.Element {
+  const getPlaceholderText = (blockType: JournalBlock['type']): string => {
+    switch (blockType) {
+      case 'heading':
+        return 'Heading...'
+      case 'quote':
+        return 'Quote...'
+      case 'todo':
+        return 'To-do...'
+      case 'bulletList':
+        return 'List item...'
+      case 'numberedList':
+        return 'Numbered item...'
+      case 'code':
+        return 'Code...'
+      default:
+        return 'Type something...'
+    }
+  }
   const [showCommandMenu, setShowCommandMenu] = useState(false)
   const [commandMenuPosition, setCommandMenuPosition] = useState({ x: 0, y: 0 })
   const [searchQuery, setSearchQuery] = useState('')
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null)
   const [isAutoConverting, setIsAutoConverting] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null)
+  const [debugMode, setDebugMode] = useState(false)
+  const [fontLoaded, setFontLoaded] = useState(false)
   const editorRef = useRef<HTMLDivElement>(null)
   const dragCleanupRef = useRef<(() => void) | null>(null)
+  const editingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const createNewBlock = (
     type: JournalBlock['type'] = 'paragraph',
     level?: number
   ): JournalBlock => ({
-    id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `block-${nanoid()}`,
     type,
     level: level as 1 | 2 | 3,
     text: '',
     createdAt: new Date(),
   })
 
+  // Typography debugging and management functions
+  const logTypographyState = useCallback(
+    (action: string, blockId?: string) => {
+      if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+        window.fontLoadingDebug.log(
+          `[EDITOR] ${action}${blockId ? ` - Block: ${blockId}` : ''} | Editing: ${isEditing} | Font Loaded: ${fontLoaded}`
+        )
+      }
+    },
+    [isEditing, fontLoaded]
+  )
+
+  const handleEditingStart = useCallback(
+    (blockId: string) => {
+      // Don't immediately switch to editing mode if showing command menu
+      if (showCommandMenu) {
+        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+          window.fontLoadingDebug.log(
+            `[SLASH-DEBUG] EDITING_START_DELAYED - command menu active`
+          )
+        }
+        return
+      }
+
+      logTypographyState('EDITING_START', blockId)
+      setIsEditing(true)
+      setEditingBlockId(blockId)
+
+      // Clear any existing timeout
+      if (editingTimeoutRef.current) {
+        clearTimeout(editingTimeoutRef.current)
+      }
+    },
+    [logTypographyState, showCommandMenu]
+  )
+
+  const handleEditingEnd = useCallback(() => {
+    logTypographyState('EDITING_END_DELAYED')
+
+    // Delay switching back to display mode to prevent flicker
+    editingTimeoutRef.current = setTimeout(() => {
+      logTypographyState('EDITING_END_APPLIED')
+      setIsEditing(false)
+      setEditingBlockId(null)
+    }, 500) // 500ms delay to allow for quick re-focus
+  }, [logTypographyState])
+
+  const toggleDebugMode = useCallback(() => {
+    const newDebugMode = !debugMode
+    setDebugMode(newDebugMode)
+    logTypographyState(`DEBUG_MODE_${newDebugMode ? 'ON' : 'OFF'}`)
+
+    // Add/remove debug class from body
+    if (typeof document !== 'undefined') {
+      if (newDebugMode) {
+        document.body.classList.add('debug-typography-enabled')
+      } else {
+        document.body.classList.remove('debug-typography-enabled')
+      }
+    }
+  }, [debugMode, logTypographyState])
+
+  // Font loading detection
+  useEffect(() => {
+    const handleFontLoaded = (): void => {
+      setFontLoaded(true)
+      logTypographyState('FONT_LOADED')
+    }
+
+    // Check if font is already loaded
+    if (
+      typeof document !== 'undefined' &&
+      document.documentElement.classList.contains('inknut-loaded')
+    ) {
+      handleFontLoaded()
+    } else {
+      // Listen for font load event
+      window.addEventListener('inknut-font-loaded', handleFontLoaded)
+    }
+
+    return (): void => {
+      window.removeEventListener('inknut-font-loaded', handleFontLoaded)
+    }
+  }, [logTypographyState])
+
+  // Cleanup editing timeout on unmount
+  useEffect(() => {
+    return (): void => {
+      if (editingTimeoutRef.current) {
+        clearTimeout(editingTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const syncBlocksFromDOM = useCallback((): void => {
     if (!editorRef.current) return
 
     const blockElements = getAllBlockElements(editorRef.current)
     const updatedBlocks = blockElements.map(blockElementToJournalBlock)
-    
+
     // Only update if blocks have actually changed
     if (JSON.stringify(updatedBlocks) !== JSON.stringify(blocks)) {
       onChange(updatedBlocks)
@@ -98,11 +222,14 @@ export function SingleEditableRichTextEditor({
     [blocks, onChange]
   )
 
-  const focusBlock = useCallback((blockId: string, offset: number = 0): void => {
-    setTimeout(() => {
-      setCaretPosition(blockId, offset)
-    }, 10)
-  }, [])
+  const focusBlock = useCallback(
+    (blockId: string, offset: number = 0): void => {
+      setTimeout(() => {
+        setCaretPosition(blockId, offset)
+      }, 10)
+    },
+    []
+  )
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent): void => {
@@ -139,7 +266,9 @@ export function SingleEditableRichTextEditor({
 
       // Handle markdown shortcuts on space key
       if (e.key === ' ') {
-        const blockElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`)
+        const blockElement = document.querySelector(
+          `[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`
+        )
         const currentText = blockElement?.textContent || ''
 
         if (shouldTriggerAutoConversion(currentText, ' ')) {
@@ -171,7 +300,9 @@ export function SingleEditableRichTextEditor({
         const newBlockId = addBlock(blockId)
         setTimeout(() => focusBlock(newBlockId, 0), 10)
       } else if (e.key === 'Backspace') {
-        const blockElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`)
+        const blockElement = document.querySelector(
+          `[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`
+        )
         if (blockElement && blockElement.textContent === '') {
           e.preventDefault()
           deleteBlock(blockId)
@@ -226,20 +357,56 @@ export function SingleEditableRichTextEditor({
       const text = blockElement.textContent || ''
       updateBlock(blockId, { text })
 
+      logTypographyState('INPUT_EVENT', blockId)
+
+      // Enhanced slash command debugging
+      const isSlashCommand = text.startsWith('/')
+      const menuCurrentlyShown = showCommandMenu
+
+      // Only trigger editing state if NOT starting a slash command
+      if (!isSlashCommand) {
+        handleEditingStart(blockId)
+      }
+
+      if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+        window.fontLoadingDebug.log(
+          `[SLASH-DEBUG] Text: "${text}" | Starts with /: ${isSlashCommand} | Menu shown: ${menuCurrentlyShown}`
+        )
+      }
+
       // Handle slash commands
-      if (text.startsWith('/') && !showCommandMenu) {
+      if (isSlashCommand && !menuCurrentlyShown) {
         const rect = blockElement.getBoundingClientRect()
-        setCommandMenuPosition({
+        const position = {
           x: rect.left,
           y: rect.bottom + 5,
-        })
+        }
+
+        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+          window.fontLoadingDebug.log(
+            `[SLASH-DEBUG] SHOWING MENU at (${position.x}, ${position.y}) | Query: "${text.slice(1)}"`
+          )
+        }
+
+        setCommandMenuPosition(position)
         setSearchQuery(text.slice(1))
         setActiveBlockId(blockId)
         setShowCommandMenu(true)
-      } else if (!text.startsWith('/') && showCommandMenu) {
+      } else if (!isSlashCommand && menuCurrentlyShown) {
+        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+          window.fontLoadingDebug.log(
+            `[SLASH-DEBUG] HIDING MENU - text doesn't start with /`
+          )
+        }
         setShowCommandMenu(false)
-      } else if (text.startsWith('/') && showCommandMenu) {
-        setSearchQuery(text.slice(1))
+      } else if (isSlashCommand && menuCurrentlyShown) {
+        const newQuery = text.slice(1)
+        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+          window.fontLoadingDebug.log(
+            `[SLASH-DEBUG] UPDATING QUERY: "${newQuery}"`
+          )
+        }
+        setSearchQuery(newQuery)
       }
 
       // Update numbered list counters after text changes
@@ -247,7 +414,7 @@ export function SingleEditableRichTextEditor({
         updateNumberedListCounters(editorRef.current)
       }
     },
-    [updateBlock, showCommandMenu]
+    [updateBlock, showCommandMenu, handleEditingStart, logTypographyState]
   )
 
   const handleImageUpload = useCallback(
@@ -278,7 +445,20 @@ export function SingleEditableRichTextEditor({
 
   const handleCommandSelect = useCallback(
     (command: CommandOption): void => {
-      if (!activeBlockId) return
+      if (!activeBlockId) {
+        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+          window.fontLoadingDebug.log(
+            `[SLASH-DEBUG] COMMAND_SELECT_FAILED - no active block ID`
+          )
+        }
+        return
+      }
+
+      if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+        window.fontLoadingDebug.log(
+          `[SLASH-DEBUG] COMMAND_SELECTED: ${command.type} (${command.label}) for block ${activeBlockId}`
+        )
+      }
 
       if (command.type === 'image') {
         updateBlock(activeBlockId, { text: '' })
@@ -295,9 +475,19 @@ export function SingleEditableRichTextEditor({
       const currentActiveBlockId = activeBlockId
       setActiveBlockId(null)
 
-      setTimeout(() => focusBlock(currentActiveBlockId, 0), 10)
+      // After command selection, enter editing mode for the transformed block
+      setTimeout(() => {
+        focusBlock(currentActiveBlockId, 0)
+        handleEditingStart(currentActiveBlockId)
+      }, 10)
     },
-    [activeBlockId, updateBlock, focusBlock, handleImageUpload]
+    [
+      activeBlockId,
+      updateBlock,
+      focusBlock,
+      handleImageUpload,
+      handleEditingStart,
+    ]
   )
 
   // Let React handle DOM updates naturally - no manual DOM sync needed
@@ -312,7 +502,9 @@ export function SingleEditableRichTextEditor({
     }
 
     // Setup new drag functionality with multi-line support
-    dragCleanupRef.current = selectionManager.setupDragAndDrop(editorRef.current)
+    dragCleanupRef.current = selectionManager.setupDragAndDrop(
+      editorRef.current
+    )
 
     return (): void => {
       if (dragCleanupRef.current) {
@@ -333,19 +525,76 @@ export function SingleEditableRichTextEditor({
   // Initialize with empty block if none exist
   useEffect((): void => {
     if (blocks.length === 0) {
+      logTypographyState('INITIALIZING_EMPTY_BLOCK')
       onChange([createNewBlock()])
     }
-  }, [blocks.length, onChange])
+  }, [blocks.length, onChange, logTypographyState])
 
   // Focus first block on mount
   useLayoutEffect(() => {
     if (typeof window !== 'undefined' && blocks.length > 0) {
+      logTypographyState('FOCUSING_FIRST_BLOCK')
       setTimeout(() => focusBlock(blocks[0].id, 0), 10)
     }
-  }, [])
+  }, [blocks.length, focusBlock, logTypographyState])
+
+  // Log initial state
+  useEffect(() => {
+    logTypographyState('EDITOR_MOUNTED')
+    console.log(
+      '[FONT-DEBUG] Typography-ContentEditable Conflict Resolution System Active'
+    )
+    console.log(
+      '[FONT-DEBUG] Features: Conditional fonts, editing state management, debug mode'
+    )
+  }, [logTypographyState])
 
   return (
     <div className="relative h-full flex flex-col">
+      {/* Debug Control Panel */}
+      <div className="fixed top-4 right-4 z-50 bg-white border border-gray-300 rounded-lg p-3 shadow-lg text-xs">
+        <div className="flex items-center gap-2 mb-2">
+          <button
+            onClick={toggleDebugMode}
+            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+              debugMode
+                ? 'bg-red-100 text-red-800 border border-red-300'
+                : 'bg-gray-100 text-gray-700 border border-gray-300'
+            }`}
+          >
+            {debugMode ? 'Debug ON' : 'Debug OFF'}
+          </button>
+          <span
+            className={`px-2 py-1 rounded text-xs ${
+              fontLoaded
+                ? 'bg-green-100 text-green-800'
+                : 'bg-yellow-100 text-yellow-800'
+            }`}
+          >
+            Font: {fontLoaded ? 'Loaded' : 'Loading'}
+          </span>
+        </div>
+        {debugMode && (
+          <div className="space-y-1 text-xs">
+            <div>
+              Editing:{' '}
+              <span className="font-mono">{isEditing ? 'TRUE' : 'FALSE'}</span>
+            </div>
+            <div>
+              Block:{' '}
+              <span className="font-mono">{editingBlockId || 'NONE'}</span>
+            </div>
+            <div>
+              Blocks: <span className="font-mono">{blocks.length}</span>
+            </div>
+            <div className="mt-2 text-xs text-gray-600">
+              <div>Red outline: Base blocks</div>
+              <div>Green outline: Editing mode</div>
+              <div>Blue outline: Display mode</div>
+            </div>
+          </div>
+        )}
+      </div>
       <style>{`
         .dragging-text {
           cursor: grabbing !important;
@@ -385,6 +634,26 @@ export function SingleEditableRichTextEditor({
           box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3);
         }
         
+        /* Typography preservation for empty blocks */
+        [data-placeholder]:empty::before {
+          content: attr(data-placeholder);
+          color: rgba(120, 113, 108, 0.6);
+          font-style: italic;
+          pointer-events: none;
+          position: absolute;
+          user-select: none;
+        }
+        
+        /* Maintain block structure styling */
+        .block-element {
+          position: relative;
+          width: 100%;
+        }
+        
+        .block-element:empty {
+          min-height: 1.5rem;
+        }
+        
         /* Smooth transitions for drag interactions */
         .block-element {
           transition: background-color 0.15s ease-out, transform 0.15s ease-out;
@@ -402,6 +671,18 @@ export function SingleEditableRichTextEditor({
         [contenteditable][draggable="true"].dragging-text {
           cursor: grabbing;
         }
+        
+        /* Hide block markers from user view */
+        [data-block-id] {
+          border: none;
+          outline: none;
+        }
+        
+        /* Professional appearance */
+        .block-element:focus {
+          outline: none;
+          box-shadow: none;
+        }
       `}</style>
       <div
         ref={editorRef}
@@ -409,19 +690,19 @@ export function SingleEditableRichTextEditor({
         suppressContentEditableWarning
         onInput={handleInput}
         onKeyDown={handleKeyDown}
-        onPaste={(e) => {
+        onPaste={e => {
           e.preventDefault()
           const text = e.clipboardData.getData('text/plain')
           selectionManager.paste(text)
           // Update blocks from DOM after paste operation
           setTimeout(() => syncBlocksFromDOM(), 10)
         }}
-        onCopy={(e) => {
+        onCopy={e => {
           e.preventDefault()
           const text = selectionManager.copySelection()
           e.clipboardData.setData('text/plain', text)
         }}
-        onCut={(e) => {
+        onCut={e => {
           e.preventDefault()
           const text = selectionManager.cutSelection()
           e.clipboardData.setData('text/plain', text)
@@ -446,15 +727,43 @@ export function SingleEditableRichTextEditor({
             }, 10)
           }
         }}
-        onDragOver={(e) => {
+        onDragOver={e => {
           e.preventDefault()
           e.dataTransfer.dropEffect = 'move'
         }}
-        onDrop={(e) => {
+        onDrop={e => {
           e.preventDefault()
           handleDragEnd()
         }}
         onDragEnd={handleDragEnd}
+        onFocus={e => {
+          const target = e.target as HTMLElement
+          const blockElement = findBlockElement(target)
+          if (blockElement) {
+            const blockId = getBlockId(blockElement)
+            if (blockId) {
+              // Delay editing start to not interfere with input processing
+              setTimeout(() => {
+                handleEditingStart(blockId)
+              }, 10)
+            }
+          }
+        }}
+        onBlur={e => {
+          // Don't trigger blur if focus is moving to command menu
+          const relatedTarget = e.relatedTarget as HTMLElement
+          if (relatedTarget && relatedTarget.closest('[role="menu"]')) {
+            if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+              window.fontLoadingDebug.log(
+                '[SLASH-DEBUG] BLUR_CANCELLED - focus moving to command menu'
+              )
+            }
+            return
+          }
+
+          logTypographyState('BLUR_EVENT')
+          handleEditingEnd()
+        }}
         className={`flex-1 p-6 bg-white focus:ring-0 outline-none overflow-y-auto transition-all duration-200 ${
           isAutoConverting ? 'bg-orange-50' : ''
         }`}
@@ -463,7 +772,7 @@ export function SingleEditableRichTextEditor({
           wordBreak: 'break-word',
           userSelect: 'text',
         }}
-        onDragStart={(e) => {
+        onDragStart={e => {
           // Ensure drag data is set for text selections
           const selection = window.getSelection()
           if (selection && !selection.isCollapsed) {
@@ -474,24 +783,72 @@ export function SingleEditableRichTextEditor({
         }}
       >
         {blocks.length === 0 && (
-          <div className="text-stone-400 italic text-base leading-relaxed font-inknut pointer-events-none">
+          <div className="text-stone-400 italic text-base leading-relaxed font-conditional display-mode pointer-events-none">
             Write something...
           </div>
         )}
         {blocks.length === 1 && blocks[0].text === '' && (
-          <div className="text-stone-400 italic text-base leading-relaxed font-inknut pointer-events-none">
+          <div className="text-stone-400 italic text-base leading-relaxed font-conditional display-mode pointer-events-none">
             {placeholder}
           </div>
         )}
-        {blocks.map((block) => {
-          const BlockElement = createBlockElement(block)
+        {blocks.map(block => {
+          const isCurrentBlockEditing =
+            editingBlockId === block.id || (isEditing && !editingBlockId)
+          const className = getBlockClassName(
+            block,
+            isCurrentBlockEditing,
+            debugMode
+          )
+
+          if (block.type === 'image' && block.imageUrl) {
+            return (
+              <div
+                key={block.id}
+                data-block-id={block.id}
+                data-block-type={block.type}
+                className={className}
+                data-font-state={
+                  debugMode
+                    ? `IMG-${isCurrentBlockEditing ? 'EDITING' : 'DISPLAY'}`
+                    : undefined
+                }
+              >
+                <img
+                  src={block.imageUrl}
+                  alt={block.imageAlt || 'Uploaded image'}
+                  className="max-w-full h-auto rounded-lg shadow-sm"
+                  draggable={false}
+                />
+              </div>
+            )
+          }
+
           return (
             <div
               key={block.id}
               data-block-id={block.id}
-              className="block-element"
-              dangerouslySetInnerHTML={{ __html: BlockElement.outerHTML }}
-            />
+              data-block-type={block.type}
+              data-block-level={block.level}
+              className={className}
+              draggable={block.type !== 'image'}
+              data-placeholder={
+                block.text === '' ? getPlaceholderText(block.type) : undefined
+              }
+              data-font-state={
+                debugMode
+                  ? `${block.type.toUpperCase()}-${isCurrentBlockEditing ? 'EDITING' : 'DISPLAY'}`
+                  : undefined
+              }
+              style={{
+                // Maintain typography even when empty
+                minHeight: '1.5rem',
+                position: 'relative',
+              }}
+            >
+              {block.text || '\u200B'}
+              {/* Zero-width space to maintain layout */}
+            </div>
           )
         })}
       </div>

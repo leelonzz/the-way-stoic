@@ -264,6 +264,7 @@ export function CommandMenu({
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
+        role="menu"
         className="fixed z-50 bg-white rounded-lg shadow-lg border border-stone-200 py-2 min-w-[240px]"
         style={{
           left: position.x,

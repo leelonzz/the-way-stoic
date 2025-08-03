@@ -119,6 +119,62 @@ All colors MUST be HSL.
     font-family: var(--font-inknut-antiqua), serif;
   }
 
+  /* Conditional font utilities for typography-contentEditable conflict resolution */
+  .font-conditional {
+    font-family:
+      system-ui,
+      -apple-system,
+      sans-serif;
+    transition: font-family 0.15s ease-out;
+  }
+
+  .font-conditional.display-mode {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  .font-conditional.editing-mode {
+    font-family:
+      system-ui,
+      -apple-system,
+      sans-serif;
+  }
+
+  /* Inknut loaded state */
+  html.inknut-loaded .font-conditional:not(.editing-mode) {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Debug mode styling */
+  .debug-typography-enabled .block-element {
+    outline: 1px dashed rgba(255, 0, 0, 0.3);
+  }
+
+  .debug-typography-enabled .block-element.editing-mode {
+    outline: 1px dashed rgba(0, 255, 0, 0.3);
+  }
+
+  .debug-typography-enabled .block-element.display-mode {
+    outline: 1px dashed rgba(0, 0, 255, 0.3);
+  }
+
+  /* Smaller, more refined text cursor */
+  [contenteditable] {
+    caret-color: #3d3929;
+  }
+
+  .block-element {
+    caret-color: #3d3929;
+  }
+
+  /* Custom cursor size using CSS custom properties */
+  .block-element.editing-mode {
+    caret-color: #3d3929;
+  }
+
+  .block-element.display-mode {
+    caret-color: #3d3929;
+  }
+
   /* Remove all input outlines */
   input:focus,
   input:focus-visible,
