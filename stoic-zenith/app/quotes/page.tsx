@@ -1,28 +1,32 @@
 'use client'
 
-import React from 'react'
-import { Toaster } from '@/components/ui/toaster'
-import { Toaster as Sonner } from '@/components/ui/sonner'
-import { TooltipProvider } from '@/components/ui/tooltip'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { DailyStoicWisdom } from '@/components/quotes/DailyStoicWisdom'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { AppLayout } from '@/components/layout/AppLayout'
+import { CachedPage } from '@/components/layout/CachedPage'
+import { DailyStoicWisdom } from '@/components/quotes/DailyStoicWisdom'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
-const queryClient = new QueryClient()
+function QuotesLoading(): JSX.Element {
+  return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <LoadingSpinner size="lg" />
+    </div>
+  )
+}
 
 export default function QuotesPage(): JSX.Element {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <ProtectedRoute>
-          <AppLayout fullWidth>
-            <DailyStoicWisdom />
-          </AppLayout>
-        </ProtectedRoute>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ProtectedRoute>
+      <AppLayout fullWidth>
+        <CachedPage 
+          pageKey="quotes" 
+          fallback={<QuotesLoading />}
+          refreshOnFocus={true}
+          maxAge={10 * 60 * 1000} // 10 minutes
+        >
+          <DailyStoicWisdom />
+        </CachedPage>
+      </AppLayout>
+    </ProtectedRoute>
   )
 }

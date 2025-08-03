@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 
 import { SingleEditableRichTextEditor } from './SingleEditableRichTextEditor';
 import { JournalEntry, JournalBlock } from './types';
+import { updateJournalEntryFromBlocks } from '@/lib/journal';
 
 interface JournalNavigationProps {
   className?: string;
@@ -17,6 +18,7 @@ interface JournalNavigationProps {
 export function JournalNavigation({ className = '', entry, onEntryUpdate, onCreateEntry, isCreatingEntry: _isCreatingEntry = false }: JournalNavigationProps): JSX.Element {
   const [currentEntry, setCurrentEntry] = useState<JournalEntry>(entry);
   const [_isSaving, setIsSaving] = useState(false);
+  const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
 
   const selectedDate = new Date(currentEntry.date);
@@ -34,9 +36,12 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
       // Save to localStorage as fallback
       localStorage.setItem(`journal-${currentEntry.date}`, JSON.stringify(updatedEntry));
       
-      // TODO: Integrate with Supabase to save rich text content
-      // This would involve converting blocks to a format that can be stored in the database
-      // and then updating the journal entry via updateJournalEntry from @/lib/journal
+      // Save to Supabase with rich text content
+      try {
+        await updateJournalEntryFromBlocks(currentEntry.id, currentEntry.blocks);
+      } catch (supabaseError) {
+        console.warn('Failed to save to Supabase, localStorage backup saved:', supabaseError);
+      }
       
       setCurrentEntry(updatedEntry);
       onEntryUpdate(updatedEntry);
@@ -56,21 +61,28 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
     };
     setCurrentEntry(updatedEntry);
     onEntryUpdate(updatedEntry);
+    
+    // Auto-save with debouncing
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      saveEntry();
+    }, 2000); // Save 2 seconds after last change
   };
 
   useEffect(() => {
     setCurrentEntry(entry);
   }, [entry]);
 
-  useEffect((): (() => void) => {
-    const interval = setInterval(() => {
-      if (currentEntry && currentEntry.blocks.some(block => block.text.trim() !== '')) {
-        saveEntry();
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [currentEntry, saveEntry]);
+    };
+  }, []);
 
   return (
     <div className={`flex flex-col h-full ${className}`}>
@@ -115,7 +127,6 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
           <SingleEditableRichTextEditor
             blocks={currentEntry.blocks}
             onChange={handleBlocksChange}
-            placeholder={`What's on your mind for ${format(selectedDate, 'MMMM d')}?`}
           />
         </div>
       </div>

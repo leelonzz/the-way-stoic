@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, ChevronDown } from 'lucide-react'
 import Image from 'next/image'
 
 interface HeroSectionProps {
@@ -9,10 +9,16 @@ interface HeroSectionProps {
 
 export function HeroSection({ onGetStarted }: HeroSectionProps): JSX.Element {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isScrollButtonVisible, setIsScrollButtonVisible] = useState(true)
 
   const scrollToSection = (sectionId: string): void => {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' })
     setIsMobileMenuOpen(false) // Close mobile menu after clicking
+  }
+
+  const handleScrollToFeatures = (): void => {
+    document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
+    setIsScrollButtonVisible(false)
   }
 
   return (
@@ -23,7 +29,10 @@ export function HeroSection({ onGetStarted }: HeroSectionProps): JSX.Element {
           src="/images/hero-background-9f3f79.png"
           alt="Hero background"
           fill
-          className="object-cover object-center"
+          className="object-cover"
+          style={{
+            objectPosition: 'center 20%', // This crops the top by positioning the image higher
+          }}
           priority
         />
         {/* Noise Effect Overlay */}
@@ -165,7 +174,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps): JSX.Element {
       )}
 
       {/* Main Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-[30vh] md:min-h-[35vh] px-4 md:px-16 text-center mt-16 md:mt-20">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-[25vh] md:min-h-[30vh] px-4 md:px-16 text-center mt-8 md:mt-12">
         {/* Main Heading */}
         <h1 className="mb-4 md:mb-6 font-inknut text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-normal text-ink leading-tight max-w-4xl">
           Master Your Mind
@@ -181,6 +190,36 @@ export function HeroSection({ onGetStarted }: HeroSectionProps): JSX.Element {
           Explore now
         </Button>
       </div>
+
+      {/* Scroll Button */}
+      {isScrollButtonVisible && (
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
+          <button
+            onClick={handleScrollToFeatures}
+            className="flex items-center justify-center w-11 h-11 bg-white text-black opacity-75 border border-[#e7eae8] rounded-lg cursor-pointer transition-all duration-300 hover:opacity-100 hover:shadow-md"
+            style={{
+              animation: 'bounce_513 1s infinite',
+            }}
+          >
+            <ChevronDown className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes bounce_513 {
+          0%,
+          100% {
+            transform: translateY(-25%);
+            animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+          }
+
+          50% {
+            transform: translateY(0);
+            animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+          }
+        }
+      `}</style>
     </section>
   )
 }

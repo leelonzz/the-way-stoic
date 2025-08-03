@@ -1,31 +1,18 @@
 'use client'
 
 import React, { Suspense } from 'react';
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { CachedPage } from '@/components/layout/CachedPage'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar as CalendarIcon, BarChart3, Settings } from 'lucide-react';
 import { useLifeCalendar } from '@/hooks/useLifeCalendar';
+import { useAuthContext } from '@/components/auth/AuthProvider';
+import { Skeleton } from '@/components/ui/skeleton';
+
 import { LifeCalendarGrid } from '@/components/calendar/LifeCalendarGrid';
 import { LifeCalendarSetup } from '@/components/calendar/LifeCalendarSetup';
 import { MementoMoriInsights } from '@/components/calendar/MementoMoriInsights';
-import { useAuthContext } from '@/components/auth/AuthProvider';
-// import { Hourglass } from '@/components/ui/Hourglass';
-import { Skeleton } from '@/components/ui/skeleton';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-      retry: 2,
-    },
-  },
-});
 
 // Loading skeleton component
 function CalendarSkeleton(): JSX.Element {
@@ -137,12 +124,10 @@ function CalendarContent(): JSX.Element {
               </p>
             </div>
             
-            <Suspense fallback={<CalendarSkeleton />}>
-              <LifeCalendarGrid 
-                data={lifeCalendarData} 
-                getWeekData={getWeekData} 
-              />
-            </Suspense>
+            <LifeCalendarGrid 
+              data={lifeCalendarData} 
+              getWeekData={getWeekData} 
+            />
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-6">
@@ -170,18 +155,17 @@ function CalendarContent(): JSX.Element {
 
 export default function CalendarPage(): JSX.Element {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <ProtectedRoute>
-          <AppLayout>
-            <Suspense fallback={<CalendarSkeleton />}>
-              <CalendarContent />
-            </Suspense>
-          </AppLayout>
-        </ProtectedRoute>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ProtectedRoute>
+      <AppLayout>
+        <CachedPage 
+          pageKey="calendar" 
+          fallback={<CalendarSkeleton />}
+          refreshOnFocus={true}
+          maxAge={15 * 60 * 1000} // 15 minutes - calendar data may change
+        >
+          <CalendarContent />
+        </CachedPage>
+      </AppLayout>
+    </ProtectedRoute>
   );
 }

@@ -85,9 +85,9 @@ export function AboutSection(): JSX.Element {
                       2024 - With a vision to democratize ancient wisdom
                     </p>
                   </div>
-                  <div className="bg-secondary/10 rounded-lg p-6">
+                  <div className="bg-accent/10 rounded-lg p-6">
                     <div className="flex items-center space-x-3 mb-3">
-                      <div className="w-3 h-3 bg-secondary rounded-full"></div>
+                      <div className="w-3 h-3 bg-accent rounded-full"></div>
                       <span className="font-medium text-ink">Mission</span>
                     </div>
                     <p className="text-stone">

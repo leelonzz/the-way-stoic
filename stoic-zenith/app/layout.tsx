@@ -3,9 +3,7 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { Inknut_Antiqua, Inika } from 'next/font/google'
 import './globals.css'
-import { AuthProvider } from '@/components/auth/AuthProvider'
-import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { PayPalProvider } from '@/components/providers/PayPalProvider'
+import { ClientProviders } from '@/components/providers/ClientProviders'
 
 const inknutAntiqua = Inknut_Antiqua({
   subsets: ['latin'],
@@ -18,6 +16,7 @@ const inika = Inika({
   weight: ['400', '700'],
   variable: '--font-inika',
 })
+
 
 export const metadata: Metadata = {
   title: 'The Stoic Way - Philosophy for Daily Life',
@@ -158,11 +157,9 @@ html {
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} ${inknutAntiqua.variable} ${inika.variable}`}
       >
-        <ErrorBoundary>
-          <AuthProvider>
-            <PayPalProvider>{children}</PayPalProvider>
-          </AuthProvider>
-        </ErrorBoundary>
+        <ClientProviders>
+          {children}
+        </ClientProviders>
       </body>
     </html>
   )

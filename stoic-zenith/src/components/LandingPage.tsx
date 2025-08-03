@@ -3,6 +3,7 @@ import { FeaturesSection } from './features-section'
 import { PhilosophySection } from './philosophy-section'
 import { PricingSection } from './pricing-section'
 import { AboutSection } from './about-section'
+import { FAQSection } from './faq-section'
 import { CTASection } from './cta-section'
 import { Footer } from './footer'
 
@@ -22,6 +23,7 @@ export default function LandingPage({
         <PricingSection onGetStarted={onGetStarted} />
         <AboutSection />
         <CTASection onGetStarted={onGetStarted} />
+        <FAQSection />
       </main>
       <Footer />
     </div>

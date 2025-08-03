@@ -6,34 +6,34 @@ import { ChevronDown } from "lucide-react"
 
 const faqData = [
   {
-    question: "What is Pointer and who is it for?",
+    question: "What is The Way Stoic and who is it for?",
     answer:
-      "Pointer is an AI-powered development platform designed for developers, teams, and organizations who want toaccelerate their coding workflow. It's perfect for both individual developers looking to enhance their productivity and teams seeking seamless collaboration tools.",
+      "The Way Stoic is a comprehensive Stoic philosophy application designed for anyone seeking wisdom, resilience, and personal growth. It's perfect for individuals looking to apply ancient Stoic principles to modern life challenges, whether you're new to philosophy or a seasoned practitioner.",
   },
   {
-    question: "How does Pointer's AI code review work?",
+    question: "How does the AI mentor system work?",
     answer:
-      "Our AI analyzes your code in real-time, providing intelligent suggestions for improvements, catching potential bugs, and ensuring best practices. It learns from your coding patterns and adapts to your team's standards, making code reviews faster and more consistent.",
+      "Our AI mentors are trained on the teachings of great Stoic philosophers like Marcus Aurelius, Seneca, and Epictetus. They provide personalized guidance, answer your questions about Stoic philosophy, and help you apply these timeless principles to your daily life situations.",
   },
   {
-    question: "Can I integrate Pointer with my existing tools?",
+    question: "What features are included in the journaling system?",
     answer:
-      "Yes! Pointer offers one-click integrations with popular development tools including GitHub, GitLab, VS Code, Slack, and many more. Our MCP connectivity allows you to easily manage and configure server access across your entire development stack.",
+      "The journaling system includes daily reflection prompts, mood tracking, gratitude exercises, and guided Stoic practices. You can write freely, use structured templates, and track your progress over time to see how Stoic principles are transforming your mindset.",
   },
   {
     question: "What's included in the free plan?",
     answer:
-      "The free plan includes real-time code suggestions, basic integrations, single MCP server connection, up to 2 AI coding agents, and Vercel deployments with Pointer branding. It's perfect for individual developers getting started.",
+      "The free plan includes daily Stoic quotes, basic journaling features, access to one AI mentor, and fundamental Stoic exercises. It's perfect for beginners who want to explore Stoic philosophy and start their journey toward wisdom and resilience.",
   },
   {
-    question: "How do parallel coding agents work?",
+    question: "How does the life calendar feature work?",
     answer:
-      "Our parallel coding agents can work on different parts of your codebase simultaneously, solving complex problems faster than traditional single-threaded approaches. You can launch multiple agents to handle different tasks like bug fixes, feature development, and code optimization concurrently.",
+      "The life calendar is a visual representation of your life's timeline, inspired by the Stoic concept of memento mori (remember you must die). It helps you gain perspective on time, prioritize what truly matters, and live each day with intention and purpose.",
   },
   {
-    question: "Is my code secure with Pointer?",
+    question: "Is my personal data secure with The Way Stoic?",
     answer:
-      "Absolutely. We use enterprise-grade security measures including end-to-end encryption, secure data transmission, and compliance with industry standards. Your code never leaves your secure environment without your explicit permission, and we offer on-premises deployment options for enterprise customers.",
+      "Absolutely. We use enterprise-grade security measures to protect your personal reflections, journal entries, and preferences. Your data is encrypted and never shared with third parties. We believe in the Stoic principle of trust and integrity in all our practices.",
   },
 ]
 
@@ -99,7 +99,7 @@ export function FAQSection() {
             Frequently Asked Questions
           </h2>
           <p className="self-stretch text-center text-muted-foreground text-sm font-medium leading-[18.20px] break-words">
-            Everything you need to know about Pointer and how it can transform your development workflow
+            Everything you need to know about The Way Stoic and how it can transform your life through ancient wisdom
           </p>
         </div>
       </div>

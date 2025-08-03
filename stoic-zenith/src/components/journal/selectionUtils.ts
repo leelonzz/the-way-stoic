@@ -127,7 +127,7 @@ export class SelectionManager {
     // Insert the dragged text at the drop position
     if (insertPosition === 'inside') {
       // Focus the target block and insert at cursor
-      const targetElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${targetBlockId}"]`)
+      const targetElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${targetBlockId}"]`) as HTMLElement
       if (targetElement) {
         targetElement.focus()
         insertTextAtCursor(draggedText)
@@ -240,7 +240,7 @@ export class SelectionManager {
   }
 
   private insertSingleLineText(targetBlockId: string, text: string, position: 'before' | 'after'): void {
-    const targetElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${targetBlockId}"]`)
+    const targetElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${targetBlockId}"]`) as HTMLElement
     if (!targetElement) return
     
     if (position === 'before') {
@@ -299,8 +299,8 @@ export class SelectionManager {
   }
 
   selectText(startBlockId: string, startOffset: number, endBlockId: string, endOffset: number): void {
-    const startElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${startBlockId}"]`)
-    const endElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${endBlockId}"]`)
+    const startElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${startBlockId}"]`) as HTMLElement
+    const endElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${endBlockId}"]`) as HTMLElement
     
     if (!startElement || !endElement) return
 
@@ -547,123 +547,9 @@ export class SelectionManager {
     }
   }
 
-  // Enhanced drag and drop with visual feedback
+  // Simplified text selection only (no drag-drop)
   setupDragAndDrop(container: HTMLElement): () => void {
-    
-    const handleDragStart = (e: DragEvent): void => {
-      const selection = window.getSelection()
-      if (selection && !selection.isCollapsed) {
-        this.startDrag(e)
-        container.classList.add('dragging-text')
-        // Ensure the drag is allowed
-        if (e.dataTransfer) {
-          e.dataTransfer.effectAllowed = 'move'
-        }
-        return
-      }
-      
-      // Fallback to block-level drag
-      const target = e.target as HTMLElement
-      const blockElement = findBlockElement(target)
-      if (blockElement) {
-        this.startDrag(e)
-        blockElement.classList.add('dragging')
-      }
-    }
-
-    const handleDragOver = (e: DragEvent): void => {
-      e.preventDefault()
-      if (e.dataTransfer) {
-        e.dataTransfer.dropEffect = 'move'
-      }
-      
-      const target = e.target as HTMLElement
-      const blockElement = findBlockElement(target)
-      
-      // Remove existing drop indicators with smooth cleanup
-      this.cleanupDragIndicators(container)
-      
-      if (blockElement) {
-        // Check if we're dragging multi-line text
-        const draggedLinesData = e.dataTransfer?.getData('application/x-journal-lines')
-        let isMultiLineDrag = false
-        
-        if (draggedLinesData) {
-          try {
-            const lineData = JSON.parse(draggedLinesData)
-            isMultiLineDrag = lineData.isMultiLine
-          } catch {
-            // Ignore parsing errors
-          }
-        }
-        
-        // Enhanced visual feedback for all drag types
-        if (isMultiLineDrag) {
-          this.showLineDragIndicator(e, container)
-        } else {
-          this.showEnhancedBlockIndicator(e, blockElement, container)
-        }
-      }
-    }
-
-    const handleDragLeave = (e: DragEvent) => {
-      const target = e.target as HTMLElement
-      if (!container.contains(e.relatedTarget as Node)) {
-        container.querySelectorAll('.drop-indicator').forEach(el => {
-          if (el.parentNode) {
-            el.remove()
-          }
-        })
-      }
-    }
-
-    const handleDrop = (e: DragEvent) => {
-      e.preventDefault()
-      
-      const target = e.target as HTMLElement
-      const blockElement = findBlockElement(target)
-      
-      // Check if we're dropping multi-line text
-      const draggedLinesData = e.dataTransfer?.getData('application/x-journal-lines')
-      let isMultiLineDrop = false
-      
-      if (draggedLinesData) {
-        try {
-          const lineData = JSON.parse(draggedLinesData)
-          const _target = lineData.target
-          isMultiLineDrop = lineData.isMultiLine
-        } catch {
-          // Ignore parsing errors
-        }
-      }
-      
-      if (isMultiLineDrop) {
-        // Handle multi-line drop with precise positioning
-        this.handleDrop(e, undefined, 'between-lines')
-      } else if (blockElement) {
-        const blockId = getBlockId(blockElement)
-        if (blockId) {
-          const rect = blockElement.getBoundingClientRect()
-          const midY = rect.top + rect.height / 2
-          const position = e.clientY < midY ? 'before' : 'after'
-          
-          this.handleDrop(e, blockId, position)
-        }
-      }
-      
-      // Enhanced cleanup
-      this.cleanupDragIndicators(container)
-      container.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'))
-    }
-
-    const handleDragEnd = (): void => {
-      this.cleanupDragIndicators(container)
-      container.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'))
-      container.classList.remove('dragging-text')
-      this.endDrag()
-    }
-
-    // Add keyboard event handlers for line selection
+    // Add keyboard event handlers for line selection only
     const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
@@ -687,75 +573,12 @@ export class SelectionManager {
       }
     }
 
-    // Handle mouse events to enable text dragging
-    let mouseDownPos: { x: number; y: number } | null = null
-    const dragThreshold = 5
-    
-    const handleMouseDown = (e: MouseEvent): void => {
-      mouseDownPos = { x: e.clientX, y: e.clientY }
-    }
-    
-    const handleMouseMove = (e: MouseEvent): void => {
-      if (!mouseDownPos) return
-      
-      const selection = window.getSelection()
-      if (selection && !selection.isCollapsed) {
-        const deltaX = Math.abs(e.clientX - mouseDownPos.x)
-        const deltaY = Math.abs(e.clientY - mouseDownPos.y)
-        
-        if (deltaX > dragThreshold || deltaY > dragThreshold) {
-          // Start text drag manually
-          this.startTextDrag(e, selection.toString())
-          mouseDownPos = null
-        }
-      }
-    }
-    
-    const handleMouseUp = (): void => {
-      mouseDownPos = null
-    }
-    
-    const handleSelectionChange = (): void => {
-      const selection = window.getSelection()
-      if (selection && !selection.isCollapsed) {
-        container.draggable = true
-        container.style.cursor = 'grab'
-      } else {
-        container.draggable = false
-        container.style.cursor = 'text'
-      }
-    }
-
-    // Add event listeners
-    container.addEventListener('mousedown', handleMouseDown)
-    container.addEventListener('mousemove', handleMouseMove)
-    container.addEventListener('mouseup', handleMouseUp)
-    container.addEventListener('dragstart', handleDragStart)
-    container.addEventListener('dragover', handleDragOver)
-    container.addEventListener('dragleave', handleDragLeave)
-    container.addEventListener('drop', handleDrop)
-    container.addEventListener('dragend', handleDragEnd)
+    // Only add keyboard listener for text selection shortcuts
     container.addEventListener('keydown', handleKeyDown)
-
-
-    // Add selection change listener once
-    const selectionChangeListener = (): void => {
-      handleSelectionChange()
-    }
-    document.addEventListener('selectionchange', selectionChangeListener)
 
     // Return cleanup function
     return (): void => {
-      container.removeEventListener('mousedown', handleMouseDown)
-      container.removeEventListener('mousemove', handleMouseMove)
-      container.removeEventListener('mouseup', handleMouseUp)
-      container.removeEventListener('dragstart', handleDragStart)
-      container.removeEventListener('dragover', handleDragOver)
-      container.removeEventListener('dragleave', handleDragLeave)
-      container.removeEventListener('drop', handleDrop)
-      container.removeEventListener('dragend', handleDragEnd)
       container.removeEventListener('keydown', handleKeyDown)
-      document.removeEventListener('selectionchange', selectionChangeListener)
     }
   }
 

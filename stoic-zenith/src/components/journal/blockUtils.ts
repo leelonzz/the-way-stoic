@@ -42,8 +42,7 @@ export function createBlockElement(block: JournalBlock): HTMLElement {
 
 export function getBlockClassName(
   block: JournalBlock,
-  isEditing: boolean = false,
-  debugMode: boolean = false
+  isEditing: boolean = false
 ): string {
   const baseClasses =
     'block-element outline-none min-h-[1.5rem] leading-relaxed cursor-text'
@@ -52,14 +51,6 @@ export function getBlockClassName(
   const fontClass = isEditing
     ? 'font-conditional editing-mode'
     : 'font-conditional display-mode'
-  const debugClass = debugMode ? 'debug-typography' : ''
-
-  // Log font state for debugging
-  if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-    window.fontLoadingDebug.log(
-      `Block ${block.id}: ${isEditing ? 'EDITING' : 'DISPLAY'} mode`
-    )
-  }
 
   switch (block.type) {
     case 'heading': {
@@ -68,26 +59,26 @@ export function getBlockClassName(
         2: 'text-2xl font-semibold text-stone-800 mb-4 leading-tight',
         3: 'text-xl font-medium text-stone-800 mb-3 leading-tight',
       }
-      return `${baseClasses} ${fontClass} ${debugClass} ${headingClasses[block.level || 1]}`
+      return `${baseClasses} ${fontClass} ${headingClasses[block.level || 1]}`
     }
 
     case 'bullet-list':
-      return `${baseClasses} ${fontClass} ${debugClass} mb-3 text-base text-stone-700 leading-relaxed pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-stone-600 before:select-none`
+      return `${baseClasses} ${fontClass} mb-3 text-base text-stone-700 leading-relaxed pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-stone-600 before:select-none`
 
     case 'numbered-list':
-      return `${baseClasses} ${fontClass} ${debugClass} mb-3 text-base text-stone-700 leading-relaxed pl-6 relative before:content-[attr(data-list-number)'.'] before:absolute before:left-0 before:text-stone-600 before:select-none before:font-medium`
+      return `${baseClasses} ${fontClass} mb-3 text-base text-stone-700 leading-relaxed pl-6 relative before:content-[attr(data-list-number)'.'] before:absolute before:left-0 before:text-stone-600 before:select-none before:font-medium`
 
     case 'quote':
-      return `${baseClasses} ${fontClass} ${debugClass} border-l-4 border-stone-300 pl-4 mb-4 italic text-stone-600 text-base leading-relaxed`
+      return `${baseClasses} ${fontClass} border-l-4 border-stone-300 pl-4 mb-4 italic text-stone-600 text-base leading-relaxed`
 
     case 'code':
-      return `${baseClasses} ${debugClass} bg-stone-100 rounded-lg p-4 mb-4 font-mono text-sm text-stone-800 leading-relaxed`
+      return `${baseClasses} bg-stone-100 rounded-lg p-4 mb-4 font-mono text-sm text-stone-800 leading-relaxed`
 
     case 'image':
-      return `${baseClasses} ${debugClass} mb-4`
+      return `${baseClasses} mb-4`
 
     default:
-      return `${baseClasses} ${fontClass} ${debugClass} mb-4 text-base text-stone-700 leading-relaxed`
+      return `${baseClasses} ${fontClass} mb-4 text-base text-stone-700 leading-relaxed`
   }
 }
 

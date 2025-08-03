@@ -213,6 +213,18 @@ export function CommandMenu({
   onClose,
 }: CommandMenuProps): JSX.Element | null {
   const [selectedIndex, setSelectedIndex] = useState(0)
+  
+  // Debug component lifecycle
+  useEffect(() => {
+    console.log('[COMMAND-MENU] Component mounted')
+    return () => {
+      console.log('[COMMAND-MENU] Component unmounted')
+    }
+  }, [])
+  
+  useEffect(() => {
+    console.log('[COMMAND-MENU] isOpen prop changed to:', isOpen)
+  }, [isOpen])
 
   const filteredCommands = COMMANDS.filter(
     command =>
@@ -258,17 +270,26 @@ export function CommandMenu({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, filteredCommands, selectedIndex, onSelectCommand, onClose])
 
-  if (!isOpen) return null
+  // Debug logging
+  console.log(`[COMMAND-MENU] isOpen: ${isOpen}, position:`, position, 'searchQuery:', searchQuery)
+  console.log(`[COMMAND-MENU] Component re-render at:`, new Date().toISOString())
+  
+  if (!isOpen) {
+    console.log('[COMMAND-MENU] Menu is not open, returning null')
+    return null
+  }
+  
+  console.log('[COMMAND-MENU] Menu is open, rendering...')
 
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div
         role="menu"
-        className="fixed z-50 bg-white rounded-lg shadow-lg border border-stone-200 py-2 min-w-[240px]"
+        className="fixed z-[9999] bg-white rounded-lg shadow-lg border border-stone-200 py-2 min-w-[240px]"
         style={{
-          left: position.x,
-          top: position.y,
+          left: Math.max(0, position.x || 100),
+          top: Math.max(0, position.y || 100),
         }}
       >
         {filteredCommands.length === 0 ? (

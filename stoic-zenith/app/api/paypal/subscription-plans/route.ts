@@ -142,7 +142,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     let productId = 'STOIC_PHILOSOPHER_PRODUCT'
     try {
       const product = await createPayPalProduct(accessToken, productData)
-      productId = product.id
+      productId = product.id as string
     } catch (error) {
       // Product might already exist, use the existing ID
       console.log('Product creation failed, using existing ID:', error)

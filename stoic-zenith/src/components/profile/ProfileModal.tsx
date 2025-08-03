@@ -23,7 +23,7 @@ interface ProfileModalProps {
   onClose: () => void;
 }
 
-type NavigationSection = 'account' | 'preferences' | 'notifications' | 'connections' | 'general' | 'people' | 'teamspaces' | 'public-pages' | 'emoji' | 'import' | 'upgrade';
+type NavigationSection = 'account' | 'preferences' | 'notifications' | 'connections' | 'upgrade';
 
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Element | null {
   const { user, profile, signOut } = useAuthContext();
@@ -88,47 +88,10 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
       isUserSection: true
     },
     {
-      id: 'general' as const,
-      name: 'General',
-      icon: Settings,
-      isUserSection: false,
-      sectionTitle: 'Workspace'
-    },
-    {
-      id: 'people' as const,
-      name: 'People',
-      icon: Users,
-      isUserSection: false
-    },
-    {
-      id: 'teamspaces' as const,
-      name: 'Teamspaces',
-      icon: Users,
-      isUserSection: false
-    },
-    {
-      id: 'public-pages' as const,
-      name: 'Public pages',
-      icon: Link,
-      isUserSection: false
-    },
-    {
-      id: 'emoji' as const,
-      name: 'Emoji',
-      icon: Smile,
-      isUserSection: false
-    },
-    {
-      id: 'import' as const,
-      name: 'Import',
-      icon: Upload,
-      isUserSection: false
-    },
-    {
       id: 'upgrade' as const,
       name: 'Upgrade plan',
       icon: Zap,
-      isUserSection: false,
+      isUserSection: true,
       isSpecial: true
     }
   ];
@@ -175,28 +138,6 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                       onClick={() => setActiveSection(item.id)}
                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                         isActive ? 'bg-stone/20 text-ink' : 'text-stone hover:bg-stone/10'
-                      }`}
-                    >
-                      {Icon && <Icon className="w-4 h-4" />}
-                      <span className="text-sm">{item.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Workspace Section */}
-              <div className="space-y-1">
-                <div className="text-xs font-medium text-stone/70 px-3 py-1">Workspace</div>
-                {navigationItems.filter(item => !item.isUserSection).map((item) => {
-                  const isActive = activeSection === item.id;
-                  const Icon = item.icon;
-                  
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveSection(item.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
-                        isActive ? 'bg-stone/20 text-ink' : 'text-stone hover:bg-stone/10'
                       } ${item.isSpecial ? 'text-cta' : ''}`}
                     >
                       {Icon && <Icon className="w-4 h-4" />}
@@ -208,6 +149,8 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                   );
                 })}
               </div>
+
+
 
               {/* Refer a friend */}
               <div className="border-t border-stone/20 pt-4">

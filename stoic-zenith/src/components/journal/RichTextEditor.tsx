@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { CommandMenu } from './CommandMenu'
 import { JournalBlock, CommandOption } from './types'
 import {
@@ -15,7 +15,7 @@ interface RichTextEditorProps {
 export function RichTextEditor({
   blocks,
   onChange,
-  placeholder = "Start writing or type '/' for commands...",
+  placeholder = "Start writing or type '/' or 'splash' for commands...",
 }: RichTextEditorProps): JSX.Element {
   const [showCommandMenu, setShowCommandMenu] = useState(false)
   const [commandMenuPosition, setCommandMenuPosition] = useState({ x: 0, y: 0 })
@@ -199,30 +199,64 @@ export function RichTextEditor({
     [blocks, showCommandMenu, addBlock, deleteBlock, focusBlock, updateBlock]
   )
 
+  // Debounced input handler for better performance
+  const debouncedUpdateBlock = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout
+      return (blockId: string, updates: Partial<JournalBlock>) => {
+        clearTimeout(timeoutId)
+        timeoutId = setTimeout(() => {
+          updateBlock(blockId, updates)
+        }, 150) // 150ms debounce
+      }
+    })(),
+    [updateBlock]
+  )
+
   const handleInput = useCallback(
     (e: React.FormEvent<HTMLDivElement>, blockId: string): void => {
       const target = e.currentTarget
       const text = target.textContent || ''
 
-      updateBlock(blockId, { text })
+      // Immediate visual update for responsive feel
+      debouncedUpdateBlock(blockId, { text })
 
-      // Handle slash commands
-      if (text.startsWith('/') && !showCommandMenu) {
+      // Handle slash commands and splash commands
+      const isSlashCommand = text.startsWith('/')
+      const isSplashCommand = text.toLowerCase().startsWith('splash')
+      
+      if ((isSlashCommand || isSplashCommand) && !showCommandMenu) {
         const rect = target.getBoundingClientRect()
         setCommandMenuPosition({
           x: rect.left,
           y: rect.bottom + 5,
         })
-        setSearchQuery(text.slice(1))
+        
+        // Extract search query based on trigger type
+        let searchQuery = ''
+        if (isSlashCommand) {
+          searchQuery = text.slice(1)
+        } else if (isSplashCommand) {
+          searchQuery = text.slice(6) // Remove "splash" (6 characters)
+        }
+        
+        setSearchQuery(searchQuery)
         setActiveBlockId(blockId)
         setShowCommandMenu(true)
-      } else if (!text.startsWith('/') && showCommandMenu) {
+      } else if (!isSlashCommand && !isSplashCommand && showCommandMenu) {
         setShowCommandMenu(false)
-      } else if (text.startsWith('/') && showCommandMenu) {
-        setSearchQuery(text.slice(1))
+      } else if ((isSlashCommand || isSplashCommand) && showCommandMenu) {
+        // Update search query based on trigger type
+        let searchQuery = ''
+        if (isSlashCommand) {
+          searchQuery = text.slice(1)
+        } else if (isSplashCommand) {
+          searchQuery = text.slice(6) // Remove "splash" (6 characters)
+        }
+        setSearchQuery(searchQuery)
       }
     },
-    [updateBlock, showCommandMenu]
+    [debouncedUpdateBlock, showCommandMenu]
   )
 
   const handleImageUpload = useCallback(
@@ -304,131 +338,136 @@ export function RichTextEditor({
     [blocks]
   )
 
-  const renderBlock = useCallback(
-    (block: JournalBlock): JSX.Element => {
-      const commonProps = {
-        key: block.id,
-        ref: (el: HTMLElement | null): void => setBlockRef(el, block.id),
-        'data-block-id': block.id,
-        contentEditable: true,
-        suppressContentEditableWarning: true,
-        onInput: (e: React.FormEvent<HTMLDivElement>): void =>
-          handleInput(e, block.id),
-        onKeyDown: (e: React.KeyboardEvent): void => handleKeyDown(e, block.id),
-        className: `outline-none focus:ring-0 rounded px-1 py-1 min-h-[1.5rem] leading-relaxed cursor-text transition-all duration-200 ${
-          isAutoConverting ? 'bg-orange-50 border border-orange-200' : ''
-        }`,
-        style: {
-          whiteSpace: 'pre-wrap' as const,
-          wordBreak: 'break-word' as const,
-          minHeight: '1.5rem',
-        },
+  // Memoized block renderer for better performance
+  const MemoizedBlock = useMemo(() => React.memo(({ block }: { block: JournalBlock }) => {
+    const commonProps = {
+      key: block.id,
+      ref: (el: HTMLElement | null): void => setBlockRef(el, block.id),
+      'data-block-id': block.id,
+      contentEditable: true,
+      suppressContentEditableWarning: true,
+      onInput: (e: React.FormEvent<HTMLDivElement>): void =>
+        handleInput(e, block.id),
+      onKeyDown: (e: React.KeyboardEvent): void => handleKeyDown(e, block.id),
+      className: `outline-none focus:ring-0 rounded px-1 py-1 min-h-[1.5rem] leading-relaxed cursor-text transition-all duration-200 ${
+        isAutoConverting ? 'bg-orange-50 border border-orange-200' : ''
+      }`,
+      style: {
+        whiteSpace: 'pre-wrap' as const,
+        wordBreak: 'break-word' as const,
+        minHeight: '1.5rem',
+      },
+    }
+
+    switch (block.type) {
+      case 'heading': {
+        const HeadingTag = `h${block.level}` as 'h1' | 'h2' | 'h3'
+        const headingClasses = {
+          1: 'text-3xl font-bold text-stone-800 mb-6 leading-tight font-inknut',
+          2: 'text-2xl font-semibold text-stone-800 mb-4 leading-tight font-inknut',
+          3: 'text-xl font-medium text-stone-800 mb-3 leading-tight font-inknut',
+        }
+        return React.createElement(HeadingTag, {
+          ...commonProps,
+          className: `${commonProps.className} ${headingClasses[block.level || 1]}`,
+        })
       }
 
-      switch (block.type) {
-        case 'heading': {
-          const HeadingTag = `h${block.level}` as 'h1' | 'h2' | 'h3'
-          const headingClasses = {
-            1: 'text-3xl font-bold text-stone-800 mb-6 leading-tight font-inknut',
-            2: 'text-2xl font-semibold text-stone-800 mb-4 leading-tight font-inknut',
-            3: 'text-xl font-medium text-stone-800 mb-3 leading-tight font-inknut',
-          }
-          return React.createElement(HeadingTag, {
-            ...commonProps,
-            className: `${commonProps.className} ${headingClasses[block.level || 1]}`,
-          })
-        }
-
-        case 'bullet-list':
-          return (
-            <div key={block.id} className="flex items-start gap-3 mb-3">
-              <span className="text-stone-600 mt-1 select-none text-lg">•</span>
-              <div
-                {...commonProps}
-                className={`${commonProps.className} flex-1 text-base text-stone-700 leading-relaxed font-inknut`}
-              />
-            </div>
-          )
-
-        case 'numbered-list': {
-          const index =
-            blocks.filter(b => b.type === 'numbered-list').indexOf(block) + 1
-          return (
-            <div key={block.id} className="flex items-start gap-3 mb-3">
-              <span className="text-stone-600 mt-1 select-none min-w-[24px] text-base font-medium">
-                {index}.
-              </span>
-              <div
-                {...commonProps}
-                className={`${commonProps.className} flex-1 text-base text-stone-700 leading-relaxed font-inknut`}
-              />
-            </div>
-          )
-        }
-
-        case 'quote':
-          return (
-            <div
-              key={block.id}
-              className="border-l-4 border-stone-300 pl-4 mb-4 italic text-stone-600"
-            >
-              <div
-                {...commonProps}
-                className={`${commonProps.className} text-base leading-relaxed font-inknut`}
-              />
-            </div>
-          )
-
-        case 'code':
-          return (
-            <div
-              key={block.id}
-              className="bg-stone-100 rounded-lg p-4 mb-4 font-mono text-sm"
-            >
-              <div
-                {...commonProps}
-                className={`${commonProps.className} text-stone-800 leading-relaxed`}
-              />
-            </div>
-          )
-
-        case 'image':
-          return (
-            <div key={block.id} className="mb-4">
-              {block.imageUrl ? (
-                <img
-                  src={block.imageUrl}
-                  alt={block.imageAlt || 'Uploaded image'}
-                  className="max-w-full h-auto rounded-lg shadow-sm"
-                />
-              ) : (
-                <div
-                  className="border-2 border-dashed border-stone-300 rounded-lg p-8 text-center cursor-pointer hover:border-stone-400 transition-colors"
-                  onClick={(): void => handleImageUpload(block.id)}
-                >
-                  <p className="text-stone-500">Click to upload an image</p>
-                </div>
-              )}
-            </div>
-          )
-
-        default:
-          return (
+      case 'bullet-list':
+        return (
+          <div key={block.id} className="flex items-start gap-3 mb-3">
+            <span className="text-stone-600 mt-1 select-none text-lg">•</span>
             <div
               {...commonProps}
-              className={`${commonProps.className} mb-4 text-base text-stone-700 leading-relaxed font-inknut`}
+              className={`${commonProps.className} flex-1 text-base text-stone-700 leading-relaxed font-inknut`}
             />
-          )
+          </div>
+        )
+
+      case 'numbered-list': {
+        const index =
+          blocks.filter(b => b.type === 'numbered-list').indexOf(block) + 1
+        return (
+          <div key={block.id} className="flex items-start gap-3 mb-3">
+            <span className="text-stone-600 mt-1 select-none min-w-[24px] text-base font-medium">
+              {index}.
+            </span>
+            <div
+              {...commonProps}
+              className={`${commonProps.className} flex-1 text-base text-stone-700 leading-relaxed font-inknut`}
+            />
+          </div>
+        )
       }
+
+      case 'quote':
+        return (
+          <div
+            key={block.id}
+            className="border-l-4 border-stone-300 pl-4 mb-4 italic text-stone-600"
+          >
+            <div
+              {...commonProps}
+              className={`${commonProps.className} text-base leading-relaxed font-inknut`}
+            />
+          </div>
+        )
+
+      case 'code':
+        return (
+          <div
+            key={block.id}
+            className="bg-stone-100 rounded-lg p-4 mb-4 font-mono text-sm"
+          >
+            <div
+              {...commonProps}
+              className={`${commonProps.className} text-stone-800 leading-relaxed`}
+            />
+          </div>
+        )
+
+      case 'image':
+        return (
+          <div key={block.id} className="mb-4">
+            {block.imageUrl ? (
+              <img
+                src={block.imageUrl}
+                alt={block.imageAlt || 'Uploaded image'}
+                className="max-w-full h-auto rounded-lg shadow-sm"
+              />
+            ) : (
+              <div
+                className="border-2 border-dashed border-stone-300 rounded-lg p-8 text-center cursor-pointer hover:border-stone-400 transition-colors"
+                onClick={(): void => handleImageUpload(block.id)}
+              >
+                <p className="text-stone-500">Click to upload an image</p>
+              </div>
+            )}
+          </div>
+        )
+
+      default:
+        return (
+          <div
+            {...commonProps}
+            className={`${commonProps.className} mb-4 text-base text-stone-700 leading-relaxed font-inknut`}
+          />
+        )
+    }
+  }), [
+    blocks,
+    handleInput,
+    handleKeyDown,
+    handleImageUpload,
+    setBlockRef,
+    isAutoConverting,
+  ])
+
+  const renderBlock = useCallback(
+    (block: JournalBlock): JSX.Element => {
+      return <MemoizedBlock block={block} />
     },
-    [
-      blocks,
-      handleInput,
-      handleKeyDown,
-      handleImageUpload,
-      setBlockRef,
-      isAutoConverting,
-    ]
+    [MemoizedBlock]
   )
 
   useEffect((): void => {

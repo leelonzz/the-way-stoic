@@ -106,85 +106,12 @@ export default function Journal(): JSX.Element {
     // For now, we'll just update localStorage
   };
 
-  const loadTodaysEntry = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const today = format(new Date(), 'yyyy-MM-dd');
-      
-      // Try to load from Supabase first
-      const supabaseEntry = await getJournalEntryByDate(today);
-      
-      if (supabaseEntry) {
-        // Convert Supabase entry to local format
-        const localEntry: JournalEntry = {
-          id: supabaseEntry.id,
-          date: supabaseEntry.entry_date,
-          blocks: [{
-            id: `block-${Date.now()}`,
-            type: 'paragraph',
-            text: supabaseEntry.excited_about || '',
-            createdAt: new Date(supabaseEntry.created_at)
-          }],
-          createdAt: new Date(supabaseEntry.created_at),
-          updatedAt: new Date(supabaseEntry.updated_at)
-        };
-        setSelectedEntry(localEntry);
-      } else {
-        // Check localStorage as fallback
-        const todayKey = `journal-${today}`;
-        const existingEntry = localStorage.getItem(todayKey);
-        
-        if (existingEntry) {
-          try {
-            const entry = JSON.parse(existingEntry);
-            entry.blocks = entry.blocks.map((block: JournalBlock) => ({
-              ...block,
-              createdAt: new Date(block.createdAt)
-            }));
-            entry.createdAt = new Date(entry.createdAt);
-            entry.updatedAt = new Date(entry.updatedAt);
-            setSelectedEntry(entry);
-          } catch (error) {
-            console.error('Error loading today\'s entry from localStorage:', error);
-            setSelectedEntry(createNewEntry());
-          }
-        } else {
-          setSelectedEntry(createNewEntry());
-        }
-      }
-    } catch (error) {
-      console.error('Error loading today\'s entry from Supabase:', error);
-      
-      // Fallback to localStorage if Supabase fails
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const todayKey = `journal-${today}`;
-      const existingEntry = localStorage.getItem(todayKey);
-      
-      if (existingEntry) {
-        try {
-          const entry = JSON.parse(existingEntry);
-          entry.blocks = entry.blocks.map((block: JournalBlock) => ({
-            ...block,
-            createdAt: new Date(block.createdAt)
-          }));
-          entry.createdAt = new Date(entry.createdAt);
-          entry.updatedAt = new Date(entry.updatedAt);
-          setSelectedEntry(entry);
-        } catch (error) {
-          console.error('Error loading today\'s entry from localStorage:', error);
-          setSelectedEntry(createNewEntry());
-        }
-      } else {
-        setSelectedEntry(createNewEntry());
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
+  // Initialize with empty state - let users create entries as needed
   useEffect(() => {
-    loadTodaysEntry();
-  }, [loadTodaysEntry]);
+    setIsLoading(false);
+    // Don't auto-load any entry - start with empty state
+    setSelectedEntry(null);
+  }, []);
 
   return (
     <div className="h-full flex bg-stone-50 animate-fade-in">
@@ -221,7 +148,15 @@ export default function Journal(): JSX.Element {
           />
         ) : (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-stone-500 font-inknut">No entry selected</div>
+            <div className="text-center">
+              <div className="text-stone-500 font-inknut mb-4">No entry selected</div>
+              <button
+                onClick={handleCreateEntry}
+                className="px-4 py-2 bg-stone-800 text-white rounded-lg hover:bg-stone-700 transition-colors"
+              >
+                Create New Entry
+              </button>
+            </div>
           </div>
         )}
       </div>

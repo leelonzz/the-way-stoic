@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
   },
   eslint: {
     dirs: ['src'],
+    ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: false,

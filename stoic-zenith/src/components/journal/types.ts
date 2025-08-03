@@ -8,6 +8,7 @@ export interface JournalBlock {
     | 'image'
     | 'quote'
     | 'code'
+    | 'todo'
   level?: 1 | 2 | 3
   text: string
   imageUrl?: string

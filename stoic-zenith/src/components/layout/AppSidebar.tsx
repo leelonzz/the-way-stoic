@@ -9,6 +9,8 @@ import { useAuthContext } from '@/components/auth/AuthProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ProfileModal } from '@/components/profile/ProfileModal';
+import { useQueryClient } from '@tanstack/react-query';
+import { handleNavigationPrefetch } from '@/lib/prefetch';
 
 const navigationItems = [
   {
@@ -48,6 +50,11 @@ export function AppSidebar(): JSX.Element {
   const pathname = usePathname();
   const { isAuthenticated, user, profile } = useAuthContext();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleMouseEnter = (href: string) => {
+    handleNavigationPrefetch(href, queryClient, user?.id);
+  };
   
   return (
     <div className="w-64 bg-parchment border-r border-stone/20 h-screen flex flex-col fixed left-0 top-0 z-40">
@@ -88,6 +95,7 @@ export function AppSidebar(): JSX.Element {
             <Link
               key={item.name}
               href={item.href}
+              onMouseEnter={() => handleMouseEnter(item.href)}
               className={`
                 flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200
                 ${isActive 
