@@ -200,14 +200,38 @@ export function SingleEditableRichTextEditor({
   const addBlock = useCallback(
     (afterBlockId?: string): string => {
       const newBlock = createNewBlock()
+
+      if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+        window.fontLoadingDebug.log(
+          `[ADD-BLOCK-DEBUG] Creating block: ${newBlock.id} | After: ${afterBlockId || 'END'}`
+        )
+      }
+
       if (!afterBlockId) {
+        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+          window.fontLoadingDebug.log(
+            `[ADD-BLOCK-DEBUG] Adding to end | Total blocks before: ${blocks.length}`
+          )
+        }
         onChange([...blocks, newBlock])
       } else {
         const index = blocks.findIndex(b => b.id === afterBlockId)
+        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+          window.fontLoadingDebug.log(
+            `[ADD-BLOCK-DEBUG] Inserting at index: ${index + 1} | Total blocks before: ${blocks.length}`
+          )
+        }
         const newBlocks = [...blocks]
         newBlocks.splice(index + 1, 0, newBlock)
         onChange(newBlocks)
       }
+
+      if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+        window.fontLoadingDebug.log(
+          `[ADD-BLOCK-DEBUG] Block created successfully: ${newBlock.id}`
+        )
+      }
+
       return newBlock.id
     },
     [blocks, onChange]
@@ -224,9 +248,40 @@ export function SingleEditableRichTextEditor({
 
   const focusBlock = useCallback(
     (blockId: string, offset: number = 0): void => {
+      if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+        window.fontLoadingDebug.log(
+          `[FOCUS-DEBUG] Attempting to focus block: ${blockId} at offset: ${offset}`
+        )
+      }
+
       setTimeout(() => {
+        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+          window.fontLoadingDebug.log(
+            `[FOCUS-DEBUG] Executing setCaretPosition for: ${blockId}`
+          )
+        }
+
+        // Check if the block exists before trying to focus it
+        const blockElement = document.querySelector(
+          `[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`
+        )
+        if (!blockElement) {
+          if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+            window.fontLoadingDebug.log(
+              `[FOCUS-DEBUG] ERROR: Block not found: ${blockId}`
+            )
+          }
+          return
+        }
+
+        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+          window.fontLoadingDebug.log(
+            `[FOCUS-DEBUG] Block found, setting caret position`
+          )
+        }
+
         setCaretPosition(blockId, offset)
-      }, 10)
+      }, 20) // Increased timeout for better DOM sync
     },
     []
   )
@@ -292,13 +347,43 @@ export function SingleEditableRichTextEditor({
 
       if (e.key === 'Enter') {
         e.preventDefault()
+
+        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+          window.fontLoadingDebug.log(
+            `[ENTER-DEBUG] Enter pressed | Current block: ${blockId} | Command menu: ${showCommandMenu}`
+          )
+        }
+
         if (showCommandMenu) {
+          if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+            window.fontLoadingDebug.log(`[ENTER-DEBUG] Closing command menu`)
+          }
           setShowCommandMenu(false)
           return
         }
 
+        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+          window.fontLoadingDebug.log(
+            `[ENTER-DEBUG] Creating new block after: ${blockId}`
+          )
+        }
+
         const newBlockId = addBlock(blockId)
-        setTimeout(() => focusBlock(newBlockId, 0), 10)
+
+        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+          window.fontLoadingDebug.log(
+            `[ENTER-DEBUG] New block created: ${newBlockId} | Focusing in 50ms`
+          )
+        }
+
+        setTimeout(() => {
+          if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+            window.fontLoadingDebug.log(
+              `[ENTER-DEBUG] Focusing new block: ${newBlockId}`
+            )
+          }
+          focusBlock(newBlockId, 0)
+        }, 50) // Increased timeout to ensure DOM updates
       } else if (e.key === 'Backspace') {
         const blockElement = document.querySelector(
           `[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`
@@ -530,13 +615,36 @@ export function SingleEditableRichTextEditor({
     }
   }, [blocks.length, onChange, logTypographyState])
 
-  // Focus first block on mount
+  // Focus first block on mount - but only once
+  const hasInitiallyFocused = useRef(false)
+
   useLayoutEffect(() => {
-    if (typeof window !== 'undefined' && blocks.length > 0) {
-      logTypographyState('FOCUSING_FIRST_BLOCK')
-      setTimeout(() => focusBlock(blocks[0].id, 0), 10)
+    if (
+      typeof window !== 'undefined' &&
+      blocks.length > 0 &&
+      !hasInitiallyFocused.current
+    ) {
+      // Only focus on initial mount, not on every blocks.length change
+      const isInitialMount = blocks.length === 1 && blocks[0].text === ''
+
+      if (isInitialMount) {
+        logTypographyState('FOCUSING_FIRST_BLOCK_ON_MOUNT')
+        hasInitiallyFocused.current = true
+        setTimeout(() => focusBlock(blocks[0].id, 0), 10)
+      } else {
+        logTypographyState('SKIPPING_FIRST_BLOCK_FOCUS - not initial mount')
+      }
     }
   }, [blocks.length, focusBlock, logTypographyState])
+
+  // Separate effect to log block changes without auto-focusing
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.fontLoadingDebug) {
+      window.fontLoadingDebug.log(
+        `[BLOCK-CHANGE-DEBUG] Blocks count changed to: ${blocks.length}`
+      )
+    }
+  }, [blocks.length])
 
   // Log initial state
   useEffect(() => {

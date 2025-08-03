@@ -98,18 +98,34 @@ html {
             // Detect when Inknut Antiqua is loaded
             if ('fonts' in document) {
               document.fonts.ready.then(() => {
-                window.fontLoadingDebug.log('Fonts ready');
-                document.fonts.check('16px "Inknut Antiqua"').then ? 
-                  document.fonts.check('16px "Inknut Antiqua"') : 
-                  document.fonts.check('16px Inknut Antiqua')
-                .then((loaded) => {
-                  window.fontLoadingDebug.inknutLoaded = loaded;
-                  window.fontLoadingDebug.log('Inknut Antiqua loaded: ' + loaded);
-                  if (loaded) {
-                    document.documentElement.classList.add('inknut-loaded');
-                    window.dispatchEvent(new CustomEvent('inknut-font-loaded'));
-                  }
-                });
+                window.fontLoadingDebug.log('Fonts ready - checking Inknut Antiqua');
+                
+                // Try different font check variations
+                const fontCheck1 = document.fonts.check('16px "Inknut Antiqua"');
+                const fontCheck2 = document.fonts.check('16px Inknut Antiqua');
+                
+                window.fontLoadingDebug.log('Font check 1 (quoted): ' + fontCheck1);
+                window.fontLoadingDebug.log('Font check 2 (unquoted): ' + fontCheck2);
+                
+                const loaded = fontCheck1 || fontCheck2;
+                window.fontLoadingDebug.inknutLoaded = loaded;
+                window.fontLoadingDebug.log('Inknut Antiqua loaded: ' + loaded);
+                
+                if (loaded) {
+                  document.documentElement.classList.add('inknut-loaded');
+                  window.dispatchEvent(new CustomEvent('inknut-font-loaded'));
+                } else {
+                  // Wait a bit more and try again
+                  setTimeout(() => {
+                    const retryCheck = document.fonts.check('16px "Inknut Antiqua"') || document.fonts.check('16px Inknut Antiqua');
+                    window.fontLoadingDebug.log('Retry font check: ' + retryCheck);
+                    if (retryCheck) {
+                      window.fontLoadingDebug.inknutLoaded = true;
+                      document.documentElement.classList.add('inknut-loaded');
+                      window.dispatchEvent(new CustomEvent('inknut-font-loaded'));
+                    }
+                  }, 1000);
+                }
               });
             }
 
