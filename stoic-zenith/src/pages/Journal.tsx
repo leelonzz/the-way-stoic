@@ -5,7 +5,6 @@ import { toast } from '@/components/ui/use-toast';
 import { JournalNavigation } from '@/components/journal/JournalNavigation';
 import { EntryList } from '@/components/journal/EntryList';
 import { JournalEntry, JournalBlock } from '@/components/journal/types';
-// Rich text journal imports removed - using regular journal entries instead
 import { createJournalEntry, getJournalEntryByDate } from '@/lib/journal';
 
 export default function Journal(): JSX.Element {

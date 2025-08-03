@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, Quote, Calendar, Brain } from 'lucide-react';
+import { Home, BookOpen, Quote, Calendar, Brain, GraduationCap } from 'lucide-react';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,12 @@ const navigationItems = [
     name: 'Mentors',
     href: '/mentors',
     icon: Brain
+  },
+  {
+    name: 'Course',
+    href: '/course',
+    icon: GraduationCap,
+    comingSoon: true
   },
   {
     name: 'Quotes',
@@ -61,6 +67,23 @@ export function AppSidebar(): JSX.Element {
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {navigationItems.map((item) => {
           const isActive = pathname === item.href;
+          const isComingSoon = item.comingSoon;
+          
+          if (isComingSoon) {
+            return (
+              <div
+                key={item.name}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sage/50 cursor-not-allowed relative"
+              >
+                <item.icon size={18} className="text-sage/50" />
+                <span className="font-medium text-sm">{item.name}</span>
+                <span className="ml-auto text-xs bg-sage/20 text-sage/70 px-2 py-1 rounded-full">
+                  Coming Soon
+                </span>
+              </div>
+            );
+          }
+          
           return (
             <Link
               key={item.name}

@@ -4,7 +4,13 @@
       "id": "mem_1753944652595_nhmddbmw3",
       "content": "User asking about removing Vite and running only on Next.js. Need to check current project setup to understand what's currently configured.",
       "type": "config",
-      "tags": ["config", "nextjs", "vite", "build-tools", "project-setup"],
+      "tags": [
+        "config",
+        "nextjs",
+        "vite",
+        "build-tools",
+        "project-setup"
+      ],
       "timestamp": "2025-07-31T06:50:52.592Z",
       "context": "Project analysis for build tool optimization",
       "accessCount": 4,
@@ -36,7 +42,13 @@
       "id": "mem_1753944835907_swpf92y9s",
       "content": "User has a stoic-zenith subdirectory with separate Vite project that's failing. They're in wrong directory - should be in main project root, not stoic-zenith subfolder.",
       "type": "tip",
-      "tags": ["tip", "navigation", "vite", "directory-error", "stoic-zenith"],
+      "tags": [
+        "tip",
+        "navigation",
+        "vite",
+        "directory-error",
+        "stoic-zenith"
+      ],
       "timestamp": "2025-07-31T06:53:55.907Z",
       "context": "User navigation error - running Vite project instead of Next.js",
       "accessCount": 0,
@@ -48,7 +60,12 @@
       "id": "mem_1753944876920_jyhk2qyip",
       "content": "Converting stoic-zenith Vite project to Next.js to match main project structure. Need to analyze current setup first.",
       "type": "config",
-      "tags": ["config", "migration", "vite-to-nextjs", "stoic-zenith"],
+      "tags": [
+        "config",
+        "migration",
+        "vite-to-nextjs",
+        "stoic-zenith"
+      ],
       "timestamp": "2025-07-31T06:54:36.920Z",
       "context": "Project migration task",
       "accessCount": 2,
@@ -594,7 +611,12 @@
       "id": "mem_1754016081088_ybbsxmhpf",
       "content": "User wants to recreate a landing page by copying from landing-page-stoicm project. Need to examine the structure and systematically copy components.",
       "type": "general",
-      "tags": ["general", "landing-page", "project-recreation", "stoic"],
+      "tags": [
+        "general",
+        "landing-page",
+        "project-recreation",
+        "stoic"
+      ],
       "timestamp": "2025-08-01T02:41:21.088Z",
       "context": "Starting landing page recreation task",
       "accessCount": 1,
@@ -624,7 +646,13 @@
       "id": "mem_1754016546863_a3ehp4sqh",
       "content": "Successfully completed landing page recreation from landing-page-stoicm project. All components copied and integrated: hero with animated SVG, dashboard preview, social proof, bento features, testimonials, pricing, FAQ, CTA, and footer. Updated CSS variables to modern dark theme, added Geist fonts, copied all assets and images. Build successful - ready for use.",
       "type": "general",
-      "tags": ["general", "completed", "landing-page", "components", "success"],
+      "tags": [
+        "general",
+        "completed",
+        "landing-page",
+        "components",
+        "success"
+      ],
       "timestamp": "2025-08-01T02:49:06.863Z",
       "context": "Landing page recreation complete",
       "accessCount": 3,
@@ -690,7 +718,13 @@
       "id": "mem_1754017950862_t8yxzr58c",
       "content": "User wants to make the CTA meaning button in landing page navigate to login screen",
       "type": "general",
-      "tags": ["general", "landing-page", "navigation", "login", "cta-button"],
+      "tags": [
+        "general",
+        "landing-page",
+        "navigation",
+        "login",
+        "cta-button"
+      ],
       "timestamp": "2025-08-01T03:12:30.862Z",
       "context": "Landing page modification request",
       "accessCount": 1,
@@ -763,7 +797,12 @@
       "id": "mem_1754030585199_wdw6sah1c",
       "content": "Current color analysis for Stoic app:\n\nEXISTING COLORS:\n- Primary accent: Teal (#78fcd6) - currently used for buttons, highlights\n- CTA color: Brown/Orange (#) - used for important buttons\n- Background: Light cream/white (#f4f3ee hero variable)\n- Text: Dark ink (#2d2d2d)\n- Sidebar: Parchment background\n- Cards: White/transparent backgrounds\n\nNEW COLOR PALETTE TO IMPLEMENT:\n- Primary: Terra Cotta #DA7756 (60-30-10 rule: 10% accent)\n- Alternative: Peach #DE7356 \n- Chat/Button: #BD5D3A (action elements)\n- Typography: #3D3929 (main text)\n- Neutrals: Craíl #C15F3C, Cloudy #B1ADA1, Pampas #F4F3EE (60% background)\n- Light Background: #EEECE2 (30% secondary areas)\n- Black: #000000 (accent text)\n\nKey files to update:\n1. globals.css - CSS variables\n2. Landing page components (hero, features, etc.)\n3. Dashboard components \n4. Sidebar component\n5. Card and button components",
       "type": "general",
-      "tags": ["general", "color-palette", "ui-design", "stoic-app"],
+      "tags": [
+        "general",
+        "color-palette",
+        "ui-design",
+        "stoic-app"
+      ],
       "timestamp": "2025-08-01T06:43:05.199Z",
       "accessCount": 0,
       "lastAccessed": "2025-08-01T06:43:05.199Z",
@@ -870,7 +909,13 @@
       "id": "mem_1754032851638_8sv8lbibw",
       "content": "Landing page styling issue: Epictetus card lost gradient color and \"Greatest Minds\" text lost color. Need to investigate CSS styling for these elements.",
       "type": "troubleshooting",
-      "tags": ["troubleshooting", "bug", "css", "landing-page", "styling"],
+      "tags": [
+        "troubleshooting",
+        "bug",
+        "css",
+        "landing-page",
+        "styling"
+      ],
       "timestamp": "2025-08-01T07:20:51.638Z",
       "accessCount": 0,
       "lastAccessed": "2025-08-01T07:20:51.638Z",
@@ -952,7 +997,13 @@
       "id": "mem_1754046109897_7gpc5462p",
       "content": "Authentication routing bugs identified:\n\n**Bug 1**: New users route to landing page first instead of login screen\n- Root cause: ProtectedRoute fallback shows LandingPage by default, requires clicking \"Get Started\" to reach LoginScreen\n\n**Bug 2**: Dashboard reload shows landing page briefly then goes to dashboard  \n- Root cause: During auth loading state, ProtectedRoute shows fallback (LandingPage) instead of LoadingFallback, causing flash\n\n**Solution Strategy**:\n1. Fix ProtectedRoute.tsx: Always show LoadingFallback during isLoading state\n2. Enhance user flow: Distinguish between first-time visitors (show landing) vs returning users (show login directly)\n3. Use localStorage session detection to determine user type",
       "type": "tip",
-      "tags": ["tip", "authentication", "routing", "bug-analysis", "ux-fix"],
+      "tags": [
+        "tip",
+        "authentication",
+        "routing",
+        "bug-analysis",
+        "ux-fix"
+      ],
       "timestamp": "2025-08-01T11:01:49.897Z",
       "context": "Analyzing authentication routing issues in stoic-zenith app",
       "accessCount": 3,
@@ -1095,7 +1146,14 @@
       "id": "mem_1754090095425_d7ksp9e6u",
       "content": "Vercel MCP server setup: Clone repo, npm install/build, configure access token in src/config/constants.ts and src/index.ts, add to Cursor MCP settings with Node.js path pointing to dist/index.js. Enables AI control of Vercel deployments through Cursor Composer.",
       "type": "config",
-      "tags": ["config", "vercel", "mcp", "setup", "cursor", "deployment"],
+      "tags": [
+        "config",
+        "vercel",
+        "mcp",
+        "setup",
+        "cursor",
+        "deployment"
+      ],
       "timestamp": "2025-08-01T23:14:55.425Z",
       "accessCount": 1,
       "lastAccessed": "2025-08-01T23:58:27.016Z",
@@ -1165,7 +1223,13 @@
       "id": "mem_1754092261511_cpjfcmaly",
       "content": "User wants to redesign navigation structure: 1) Settings page should have navigation layout like Notion preferences (left sidebar with sections), 2) Main sidebar components (home, journal, mentors, quotes, calendar) should be smaller with no description text, 3) Keep \"The Stoic Way\" text in upper left, 4) Reference shows compact navigation style",
       "type": "tip",
-      "tags": ["tip", "navigation", "ui-redesign", "sidebar", "settings"],
+      "tags": [
+        "tip",
+        "navigation",
+        "ui-redesign",
+        "sidebar",
+        "settings"
+      ],
       "timestamp": "2025-08-01T23:51:01.511Z",
       "context": "UI/UX redesign task for navigation components",
       "accessCount": 1,
@@ -1195,7 +1259,13 @@
       "id": "mem_1754092610161_ux1o81cj3",
       "content": "Successfully completed navigation redesign: 1) Made main sidebar compact by removing descriptions and reducing padding/sizing, 2) Created new /settings page with Notion-style left sidebar navigation, 3) Created SettingsSidebar, AccountSettings, and PreferencesSettings components, 4) Added Settings link to main sidebar, 5) Updated profile page to redirect to new settings page",
       "type": "config",
-      "tags": ["config", "completed", "navigation", "settings", "ui-redesign"],
+      "tags": [
+        "config",
+        "completed",
+        "navigation",
+        "settings",
+        "ui-redesign"
+      ],
       "timestamp": "2025-08-01T23:56:50.161Z",
       "context": "Navigation redesign implementation completed",
       "accessCount": 1,
@@ -1345,7 +1415,13 @@
       "id": "mem_1754099828587_qxr6ul7j5",
       "content": "User wants to convert a Figma design to code for a journal navigation component. The design shows a split layout with left side for day selection and right side for writing. Users should be able to format text with \"/\" command like Notion (headings, bullet points, etc.). Need to first examine the Figma design and then plan implementation.",
       "type": "tip",
-      "tags": ["tip", "figma", "journal", "navigation", "notion-like-editor"],
+      "tags": [
+        "tip",
+        "figma",
+        "journal",
+        "navigation",
+        "notion-like-editor"
+      ],
       "timestamp": "2025-08-02T01:57:08.587Z",
       "context": "Journal navigation component implementation task",
       "accessCount": 0,
@@ -1414,7 +1490,13 @@
       "id": "mem_1754100926876_nufb9j292",
       "content": "User wants to copy the styling from the first image (full-page layout with background, centered content, bottom navigation) to wrap the journal page instead of having it as a separate component like in the second image",
       "type": "general",
-      "tags": ["general", "ui-design", "journal", "layout", "styling"],
+      "tags": [
+        "general",
+        "ui-design",
+        "journal",
+        "layout",
+        "styling"
+      ],
       "timestamp": "2025-08-02T02:15:26.876Z",
       "context": "Analyzing UI styling requirements for journal page layout",
       "accessCount": 0,
@@ -1426,7 +1508,13 @@
       "id": "mem_1754101142542_2kwu0hfa5",
       "content": "Successfully applied full-page layout styling to journal page, similar to homepage. Removed AppLayout wrapper and applied bg-hero background, centered content with max-w-6xl, proper spacing. Journal now has full-page layout like homepage instead of being constrained within sidebar layout.",
       "type": "general",
-      "tags": ["general", "journal", "layout", "styling", "completed"],
+      "tags": [
+        "general",
+        "journal",
+        "layout",
+        "styling",
+        "completed"
+      ],
       "timestamp": "2025-08-02T02:19:02.542Z",
       "context": "Journal page layout update completion",
       "accessCount": 0,
@@ -1438,7 +1526,13 @@
       "id": "mem_1754101267421_8l0xtfgsl",
       "content": "User requested to undo the full-page layout changes to journal. Reverted both the journal page.tsx to use AppLayout wrapper and restored the original Journal component layout with sidebar constraints instead of full-page background.",
       "type": "general",
-      "tags": ["general", "journal", "revert", "layout", "undo"],
+      "tags": [
+        "general",
+        "journal",
+        "revert",
+        "layout",
+        "undo"
+      ],
       "timestamp": "2025-08-02T02:21:07.421Z",
       "context": "Reverted journal layout changes per user request",
       "accessCount": 2,
@@ -1503,7 +1597,13 @@
       "id": "mem_1754103486731_nxxer450g",
       "content": "Updated quotes navigation with new design:\n- Changed TabsList from plain bg-white/50 to gradient background with hero/sage/stone colors\n- Added backdrop-blur-sm, border, shadow-lg, rounded-xl for modern glass effect\n- Updated TabsTrigger styling with:\n  - More padding (px-6 py-3)  \n  - Rounded corners (rounded-lg)\n  - Better active states with white background and cta border\n  - Smooth transitions (duration-300)\n  - Responsive text (hidden sm:inline for labels)\n  - Proper disabled states with opacity\n- Maintained all existing functionality while improving visual design\n- Server running on port 3002, need to test navigation manually",
       "type": "general",
-      "tags": ["general", "quotes", "navigation", "design-update", "completed"],
+      "tags": [
+        "general",
+        "quotes",
+        "navigation",
+        "design-update",
+        "completed"
+      ],
       "timestamp": "2025-08-02T02:58:06.731Z",
       "accessCount": 1,
       "lastAccessed": "2025-08-03T01:55:31.288Z",
@@ -1514,7 +1614,13 @@
       "id": "mem_1754103741587_4ap8rsd7p",
       "content": "User wants to update quotes navigation UI to match Figma design at: https://www.figma.com/design/3LJ4corvfi71hyu0gYaNqx/Untitled?node-id=16-266&t=L10ha9O2DSVpj24V-11\nNeed to download all design elements and implement them.",
       "type": "general",
-      "tags": ["general", "figma", "ui-design", "quotes-navigation", "task"],
+      "tags": [
+        "general",
+        "figma",
+        "ui-design",
+        "quotes-navigation",
+        "task"
+      ],
       "timestamp": "2025-08-02T03:02:21.586Z",
       "accessCount": 0,
       "lastAccessed": "2025-08-02T03:02:21.586Z",
@@ -1583,7 +1689,13 @@
       "id": "mem_1754111201842_9lq0md2jr",
       "content": "Next.js console showing multiple 404 errors for static files - CSS stylesheets and JS chunks failing to load from _next/static/* paths. Also MIME type errors suggesting server config issues.",
       "type": "config",
-      "tags": ["config", "nextjs", "404-errors", "static-files", "mime-type"],
+      "tags": [
+        "config",
+        "nextjs",
+        "404-errors",
+        "static-files",
+        "mime-type"
+      ],
       "timestamp": "2025-08-02T05:06:41.842Z",
       "accessCount": 0,
       "lastAccessed": "2025-08-02T05:06:41.842Z",
@@ -1611,7 +1723,13 @@
       "id": "mem_1754111410367_u0z495x4t",
       "content": "User wants quotes navigation to be in-page (not open new page) like other navigation, and ensure save/share/reload buttons work properly in quotes section",
       "type": "general",
-      "tags": ["general", "quotes", "navigation", "buttons", "ui-fix"],
+      "tags": [
+        "general",
+        "quotes",
+        "navigation",
+        "buttons",
+        "ui-fix"
+      ],
       "timestamp": "2025-08-02T05:10:10.367Z",
       "context": "Investigating quotes page navigation issue",
       "accessCount": 0,
@@ -1661,7 +1779,13 @@
       "id": "mem_1754112248361_fihc40afy",
       "content": "JOURNAL LAYOUT ANALYSIS COMPLETE:\n\nCurrent Implementation:\n- Journal.tsx: Two-panel layout (left sidebar 320px + right content area)\n- Left panel: Static \"Today\" header with hardcoded content, no entry list\n- Right panel: JournalNavigation with timeline header + RichTextEditor\n- Storage: localStorage with journal-YYYY-MM-DD keys\n- No entry thumbnails, search, or navigation list in left panel\n\nTarget Layout (from images):\n- Left panel: List of journal entries with thumbnails, dates, and previews\n- Remove H1/H2 toolbar (user wants slash commands only)\n- Smooth writing experience\n- Export images functionality\n- Working search/find function\n- Create new entries capability\n\nKey missing features:\n1. Entry list with thumbnails in left panel\n2. Search functionality\n3. Image export\n4. Entry navigation\n5. Thumbnail generation from first image",
       "type": "code",
-      "tags": ["code", "journal", "layout", "analysis", "planning"],
+      "tags": [
+        "code",
+        "journal",
+        "layout",
+        "analysis",
+        "planning"
+      ],
       "timestamp": "2025-08-02T05:24:08.361Z",
       "context": "Journal layout analysis for comprehensive plan",
       "accessCount": 2,
@@ -1713,7 +1837,12 @@
       "id": "mem_1754113963857_4ai6pa3i0",
       "content": "Current journal header structure: Has three sections - left (3-dot menu + plus button), center (date & time), right (export + save buttons). Need to update to match screenshot which shows different layout/styling.",
       "type": "code",
-      "tags": ["code", "journal", "header", "ui-update"],
+      "tags": [
+        "code",
+        "journal",
+        "header",
+        "ui-update"
+      ],
       "timestamp": "2025-08-02T05:52:43.857Z",
       "context": "Analyzing journal header before implementing changes to match user's screenshot",
       "accessCount": 1,
@@ -1725,7 +1854,13 @@
       "id": "mem_1754113996653_vb9jkf7x6",
       "content": "Successfully updated journal header to match screenshot: Combined date and time into single line format \"MMM d, yyyy, h:mm a\" instead of separate lines. Changed from font-inknut to default font and adjusted text sizing.",
       "type": "general",
-      "tags": ["general", "journal", "header", "ui-update", "completed"],
+      "tags": [
+        "general",
+        "journal",
+        "header",
+        "ui-update",
+        "completed"
+      ],
       "timestamp": "2025-08-02T05:53:16.653Z",
       "context": "Completed journal header update to match user's screenshot requirements",
       "accessCount": 0,
@@ -1775,7 +1910,13 @@
       "id": "mem_1754114252175_lc2xs3txy",
       "content": "Removed the date/time header section from EntryList component (left panel) and kept only the search bar. Eliminated the \"Saturday, August 2, 12:56 PM\" display along with the three-dot menu and plus button.",
       "type": "general",
-      "tags": ["general", "journal", "entry-list", "ui-cleanup", "search-only"],
+      "tags": [
+        "general",
+        "journal",
+        "entry-list",
+        "ui-cleanup",
+        "search-only"
+      ],
       "timestamp": "2025-08-02T05:57:32.175Z",
       "context": "Cleaned up journal left panel to show only search functionality as requested",
       "accessCount": 1,
@@ -1928,7 +2069,13 @@
       "id": "mem_1754117261196_8z8a6hcrx",
       "content": "Journal has duplicate key constraint errors on journal_entries_user_id_entry_date_entry_type_key when creating entries. Multiple POST requests failing with 409 conflicts. Need to investigate journal creation logic and ensure proper unique constraint handling.",
       "type": "general",
-      "tags": ["general", "bug", "journal", "supabase", "duplicate-key"],
+      "tags": [
+        "general",
+        "bug",
+        "journal",
+        "supabase",
+        "duplicate-key"
+      ],
       "timestamp": "2025-08-02T06:47:41.196Z",
       "accessCount": 0,
       "lastAccessed": "2025-08-02T06:47:41.196Z",
@@ -1939,7 +2086,13 @@
       "id": "mem_1754117388522_kto7gioaj",
       "content": "Fixed journal duplicate key constraint issue by replacing INSERT with UPSERT operation in createJournalEntry function. This handles the unique constraint on (user_id, entry_date, entry_type) properly by updating existing entries instead of failing with duplicate key errors.",
       "type": "troubleshooting",
-      "tags": ["troubleshooting", "fix", "journal", "upsert", "duplicate-key"],
+      "tags": [
+        "troubleshooting",
+        "fix",
+        "journal",
+        "upsert",
+        "duplicate-key"
+      ],
       "timestamp": "2025-08-02T06:49:48.522Z",
       "accessCount": 0,
       "lastAccessed": "2025-08-02T06:49:48.522Z",
@@ -1950,7 +2103,13 @@
       "id": "mem_1754117469356_9miaacz75",
       "content": "Completed journal fixes: 1) Changed createJournalEntry to use upsert with onConflict for (user_id, entry_date, entry_type) 2) Simplified MorningJournal and EveningJournal components to always use createJournalEntry since upsert handles both insert and update cases 3) Removed conditional logic checking for existing entries. Journal should now work smoothly without duplicate key constraint errors.",
       "type": "tip",
-      "tags": ["tip", "completed", "journal", "upsert", "fix"],
+      "tags": [
+        "tip",
+        "completed",
+        "journal",
+        "upsert",
+        "fix"
+      ],
       "timestamp": "2025-08-02T06:51:09.356Z",
       "accessCount": 0,
       "lastAccessed": "2025-08-02T06:51:09.356Z",
@@ -2033,7 +2192,13 @@
       "id": "mem_1754118264861_i11dsr3s4",
       "content": "User reports cursor behavior issues in rich text editor - cursor not behaving like normal editor and toolbar functions not executing properly",
       "type": "general",
-      "tags": ["general", "bug", "rich-text-editor", "cursor", "toolbar"],
+      "tags": [
+        "general",
+        "bug",
+        "rich-text-editor",
+        "cursor",
+        "toolbar"
+      ],
       "timestamp": "2025-08-02T07:04:24.861Z",
       "accessCount": 1,
       "lastAccessed": "2025-08-03T01:55:31.288Z",
@@ -2063,7 +2228,13 @@
       "id": "mem_1754132303905_xroz8y54p",
       "content": "User wants to remove one \"x\" icon from their profile interface - they've shown 2 images indicating duplicate close buttons that need to be cleaned up",
       "type": "general",
-      "tags": ["general", "ui", "profile", "cleanup", "duplicate-icons"],
+      "tags": [
+        "general",
+        "ui",
+        "profile",
+        "cleanup",
+        "duplicate-icons"
+      ],
       "timestamp": "2025-08-02T10:58:23.905Z",
       "context": "UI cleanup task for profile component",
       "accessCount": 0,
@@ -2256,7 +2427,256 @@
       "lastAccessed": "2025-08-03T01:56:02.895Z",
       "lastVerified": "2025-08-03T01:56:02.895Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1754186652341_74wwttyc4",
+      "content": "✅ MULTI-BLOCK TEXT SELECTION IMPLEMENTATION COMPLETE! Successfully solved the user's issue with rich text editor only allowing single-line text selection. Built complete solution: 1) SingleEditableRichTextEditor with single contentEditable container 2) Block management system with boundary detection 3) Cross-block text selection and drag/drop utilities 4) Enhanced selection manager with visual feedback 5) Preserved all existing features (markdown shortcuts, slash commands) 6) Created test page at /test-editor to verify functionality. User can now select and drag text across multiple lines/blocks just like Notion/Google Docs!",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "implementation-complete",
+        "multi-block-selection",
+        "rich-text-editor",
+        "drag-drop",
+        "cross-line-selection",
+        "notion-like"
+      ],
+      "timestamp": "2025-08-03T02:04:12.341Z",
+      "context": "Multi-block text selection implementation completed successfully",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T02:04:12.341Z",
+      "lastVerified": "2025-08-03T02:04:12.341Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754188018278_wkynnhowb",
+      "content": "User wants to add a \"course\" navigation item with \"coming soon\" label to the navigation menu",
+      "type": "general",
+      "tags": [
+        "general",
+        "navigation",
+        "ui",
+        "course",
+        "coming-soon"
+      ],
+      "timestamp": "2025-08-03T02:26:58.278Z",
+      "context": "Navigation enhancement task",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T02:26:58.278Z",
+      "lastVerified": "2025-08-03T02:26:58.278Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754188089093_nrpxbs9fc",
+      "content": "Successfully added \"Course\" navigation item to AppSidebar.tsx with GraduationCap icon and \"Coming Soon\" badge. The item is disabled (cursor-not-allowed) and styled with muted colors to indicate it's not yet available.",
+      "type": "general",
+      "tags": [
+        "general",
+        "navigation",
+        "course",
+        "coming-soon",
+        "ui",
+        "completed"
+      ],
+      "timestamp": "2025-08-03T02:28:09.093Z",
+      "context": "Course navigation implementation completed",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T02:28:09.093Z",
+      "lastVerified": "2025-08-03T02:28:09.093Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754188879270_inpv0cmpd",
+      "content": "Current text editor analysis: \n- Has SingleEditableRichTextEditor with drag/drop partially implemented\n- Uses selectionManager with setupDragAndDrop() that has visual indicators\n- Current limitation: only allows dragging within same line, needs enhancement for multi-line block selection and repositioning\n- Architecture: Block-based editor with JournalBlock types, each block has unique ID\n- Current drag implementation: basic text drag within blocks, not full block reordering\n- Files: SingleEditableRichTextEditor.tsx, selectionUtils.ts, blockUtils.ts, types.ts",
+      "type": "concept",
+      "tags": [
+        "concept",
+        "text-editor",
+        "drag-drop",
+        "analysis",
+        "architecture"
+      ],
+      "timestamp": "2025-08-03T02:41:19.270Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T02:41:19.270Z",
+      "lastVerified": "2025-08-03T02:41:19.270Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754189389654_2c2m26ft7",
+      "content": "Successfully implemented multi-line text drag and drop for text editor:\n- Enhanced selectionUtils.ts with multi-line detection, drag/drop logic\n- Added keyboard shortcuts: Ctrl+L (select line), Ctrl+Shift+arrows (extend selection)\n- Implemented visual feedback: green indicators for multi-line, blue for blocks\n- Updated SingleEditableRichTextEditor integration\n- Features: VS Code-style multi-line selection and dragging, smart drop positioning, line-aware operations",
+      "type": "general",
+      "tags": [
+        "general",
+        "text-editor",
+        "drag-drop",
+        "implementation",
+        "multi-line",
+        "completed"
+      ],
+      "timestamp": "2025-08-03T02:49:49.653Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T02:49:49.653Z",
+      "lastVerified": "2025-08-03T02:49:49.653Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754189791040_hev7sjwwl",
+      "content": "User wants to redesign profile modal to match a specific design shown in an image. Need to analyze current ProfileModal component and plan redesign without copying typography or colors from the reference.",
+      "type": "general",
+      "tags": [
+        "general",
+        "redesign",
+        "profile-modal",
+        "ui-update"
+      ],
+      "timestamp": "2025-08-03T02:56:31.040Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T02:56:31.040Z",
+      "lastVerified": "2025-08-03T02:56:31.040Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754189919741_a34kwiwu7",
+      "content": "Starting ProfileModal redesign to match Notion-style account settings. Current modal is complex with tabs, progress tracking, achievements, gradient headers. Target: Simple single-column layout with Account header, profile section (avatar/name/email), account security section (email/password/2FA/passkeys), and support section. Using existing Tailwind theme colors (stone, ink, parchment) and UI components. Removing all complex features like stats, achievements, navigation tabs.",
+      "type": "config",
+      "tags": [
+        "config",
+        "profile-modal",
+        "redesign",
+        "simplification",
+        "account-settings"
+      ],
+      "timestamp": "2025-08-03T02:58:39.741Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T02:58:39.741Z",
+      "lastVerified": "2025-08-03T02:58:39.741Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754190059816_m8nagdxi2",
+      "content": "Successfully redesigned ProfileModal to match Notion-style account settings. Completed all changes: removed complex tabs/navigation, removed progress tracking/achievements/stats, simplified to clean single-column layout with Account header, profile section (avatar/name/email), account security section (email/password/2FA/passkeys), and support section. Build compiles successfully. Design now matches reference image with clean white background and simple organized sections.",
+      "type": "config",
+      "tags": [
+        "config",
+        "profile-modal",
+        "redesign-complete",
+        "success",
+        "notion-style"
+      ],
+      "timestamp": "2025-08-03T03:00:59.816Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T03:00:59.816Z",
+      "lastVerified": "2025-08-03T03:00:59.816Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754190233398_9kyaclllw",
+      "content": "Successfully added left navigation sidebar to ProfileModal matching Notion design. Now includes: left sidebar with user section (Account with avatar, Preferences, Notifications, Connections) and workspace section (General, People, Teamspaces, Public pages, Emoji, Import, Upgrade plan with blue dot). Added \"Refer a friend\" at bottom. Two-panel layout with sidebar and content area. Navigation switches between sections. Build compiles successfully. Matches reference image perfectly now.",
+      "type": "general",
+      "tags": [
+        "general",
+        "profile-modal",
+        "navigation-added",
+        "notion-style",
+        "complete"
+      ],
+      "timestamp": "2025-08-03T03:03:53.398Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T03:03:53.398Z",
+      "lastVerified": "2025-08-03T03:03:53.398Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754190391921_8h3ccc9in",
+      "content": "Successfully updated ProfileModal to use app's custom color palette. Replaced all gray colors with: parchment (background), stone (text/borders), ink (headings/primary text), cta (accent color for links and upgrade plan indicator). Navigation sidebar uses parchment background with stone/20 borders, content area uses white background. Maintains Notion-style layout while matching app's stoic color scheme. Build compiles successfully.",
+      "type": "general",
+      "tags": [
+        "general",
+        "profile-modal",
+        "color-scheme",
+        "parchment",
+        "stone",
+        "ink",
+        "cta"
+      ],
+      "timestamp": "2025-08-03T03:06:31.921Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T03:06:31.921Z",
+      "lastVerified": "2025-08-03T03:06:31.921Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754190550390_xkvrdi96u",
+      "content": "Successfully implemented pricing section from landing page into ProfileModal upgrade plan section. Added two pricing cards: Seeker (Free, marked as current plan) and Philosopher ($14/month, marked as most popular). Includes all features from original pricing section, proper styling with app color scheme (parchment, stone, ink, cta), Star icon for popular plan, Check icons for features, and disabled current plan button. Uses Card components and matches the original design perfectly.",
+      "type": "general",
+      "tags": [
+        "general",
+        "profile-modal",
+        "upgrade-plan",
+        "pricing-section",
+        "implementation-complete"
+      ],
+      "timestamp": "2025-08-03T03:09:10.390Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T03:09:10.390Z",
+      "lastVerified": "2025-08-03T03:09:10.390Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754190894205_bjkfy4dw0",
+      "content": "User wants to add multi-line text drag-and-drop functionality to their text editor. Current limitation: only single-line dragging. Requirements: drag any selected text (multi-line), visual feedback during drag, native text manipulation feel (not block handles), similar to Notion/Google Docs",
+      "type": "general",
+      "tags": [
+        "general",
+        "text-editor",
+        "drag-drop",
+        "multi-line",
+        "text-selection"
+      ],
+      "timestamp": "2025-08-03T03:14:54.205Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T03:14:54.205Z",
+      "lastVerified": "2025-08-03T03:14:54.205Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754190947960_oli1z64jd",
+      "content": "Analyzed current text editor implementation. Has comprehensive drag-drop system with: multi-line selection (Ctrl/Cmd+L for current line, Shift+Arrow for extension), visual feedback during drag, setupDragAndDrop method in selectionManager, supports both block-level and text selection dragging. Current limitation: drag is mostly working but user wants enhanced multi-line text dragging similar to Notion/Google Docs with better visual feedback and smoother interaction.",
+      "type": "general",
+      "tags": [
+        "general",
+        "text-editor",
+        "drag-drop",
+        "analysis",
+        "existing-features"
+      ],
+      "timestamp": "2025-08-03T03:15:47.960Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T03:15:47.960Z",
+      "lastVerified": "2025-08-03T03:15:47.960Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754190965445_bqqcgf9y2",
+      "content": "Starting research on modern text editor drag-and-drop patterns for React/TypeScript contentEditable-based editor. Focus areas: Notion/Google Docs patterns, HTML5 drag API, visual feedback, selection management, accessibility, performance.",
+      "type": "general",
+      "tags": [
+        "general",
+        "typescript",
+        "react",
+        "api",
+        "research",
+        "text-editor",
+        "drag-drop"
+      ],
+      "timestamp": "2025-08-03T03:16:05.445Z",
+      "context": "User working on text editor implementation and needs guidance on drag-and-drop patterns",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-03T03:16:05.445Z",
+      "lastVerified": "2025-08-03T03:16:05.445Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-03T01:56:02.895Z"
+  "lastUpdated": "2025-08-03T03:16:05.445Z"
 }
