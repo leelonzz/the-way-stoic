@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react'
 import { JournalBlock } from './types'
-import { Bold, Italic, Underline, Strikethrough, Link as LinkIcon, Code } from 'lucide-react'
+import { Bold, Italic, Underline, Strikethrough, Link as LinkIcon } from 'lucide-react'
 
 interface SimplifiedRichTextEditorProps {
   block: JournalBlock
@@ -213,7 +213,7 @@ export function SimplifiedRichTextEditor({
         if (cursorPositionRef.current) {
           setTimeout(() => {
             if (editorRef.current) {
-              restoreCursorPosition(editorRef.current, cursorPositionRef.current!)
+              restoreCursorPosition(editorRef.current, cursorPositionRef.current)
               cursorPositionRef.current = null
             }
             setIsUpdating(false)
@@ -253,7 +253,7 @@ export function SimplifiedRichTextEditor({
 
   // Handle text selection changes to show/hide toolbar
   useEffect(() => {
-    const handleSelectionChange = () => {
+    const handleSelectionChange = (): void => {
       const selection = window.getSelection()
       if (!selection || !editorRef.current) return
 
@@ -284,7 +284,7 @@ export function SimplifiedRichTextEditor({
     return () => document.removeEventListener('selectionchange', handleSelectionChange)
   }, [])
 
-  const applyFormat = useCallback((command: string) => {
+  const applyFormat = useCallback((command: string): void => {
     // Save cursor position before formatting
     if (editorRef.current) {
       cursorPositionRef.current = saveCursorPosition(editorRef.current)
@@ -301,7 +301,7 @@ export function SimplifiedRichTextEditor({
     }, 0)
   }, [])
 
-  const insertLink = useCallback(() => {
+  const insertLink = useCallback((): void => {
     // Save cursor position before link insertion
     if (editorRef.current) {
       cursorPositionRef.current = saveCursorPosition(editorRef.current)

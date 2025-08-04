@@ -7,23 +7,12 @@ import React, {
 } from 'react'
 import { nanoid } from 'nanoid'
 import { CommandMenu } from './CommandMenu'
-import { TipTapRichTextEditor } from './TipTapRichTextEditor'
 import { SimplifiedRichTextEditor } from './SimplifiedRichTextEditor'
 import { JournalBlock, CommandOption } from './types'
 import {
-  detectShortcutPattern,
-  shouldTriggerAutoConversion,
-} from './shortcutPatterns'
-import {
-  findBlockElement,
-  getBlockId,
-  getCurrentBlockPosition,
-  setCaretPosition,
   updateNumberedListCounters,
-  BLOCK_MARKER_ATTRIBUTE,
   getBlockClassName,
 } from './blockUtils'
-import { selectionManager } from './selectionUtils'
 
 interface EnhancedRichTextEditorProps {
   blocks: JournalBlock[]
@@ -38,11 +27,8 @@ export function EnhancedRichTextEditor({
   const [commandMenuPosition, setCommandMenuPosition] = useState({ x: 0, y: 0 })
   const [searchQuery, setSearchQuery] = useState('')
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null)
-  const [isAutoConverting, setIsAutoConverting] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [editingBlockId, setEditingBlockId] = useState<string | null>(null)
   const editorRef = useRef<HTMLDivElement>(null)
-  const dragCleanupRef = useRef<(() => void) | null>(null)
   const editingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const createNewBlock = (
@@ -57,10 +43,9 @@ export function EnhancedRichTextEditor({
     createdAt: new Date(),
   })
 
-  const handleEditingStart = useCallback(
-    (blockId: string) => {
+  const _handleEditingStart = useCallback(
+    (_blockId: string) => {
       setIsEditing(true)
-      setEditingBlockId(blockId)
 
       if (editingTimeoutRef.current) {
         clearTimeout(editingTimeoutRef.current)
@@ -69,13 +54,12 @@ export function EnhancedRichTextEditor({
     []
   )
 
-  const handleEditingEnd = useCallback(() => {
+  const _handleEditingEnd = useCallback(() => {
     editingTimeoutRef.current = setTimeout(() => {
       const hasContent = blocks.some(block => block.text.trim() !== '')
 
       if (hasContent && blocks.length > 1) {
         setIsEditing(false)
-        setEditingBlockId(null)
       } else {
         setIsEditing(true)
       }
@@ -88,7 +72,6 @@ export function EnhancedRichTextEditor({
       const newBlock = createNewBlock()
       onChange([newBlock])
       setIsEditing(true)
-      setEditingBlockId(newBlock.id)
     }
   }, [blocks.length, onChange])
 
@@ -177,7 +160,7 @@ export function EnhancedRichTextEditor({
 
   // Setup global keyboard event listener for Ctrl+A
   useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+    const handleGlobalKeyDown = (e: KeyboardEvent): void => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         // Check if the focus is within our editor
         const activeElement = document.activeElement
@@ -193,7 +176,7 @@ export function EnhancedRichTextEditor({
   }, [selectAllContent])
 
   const handleBlockKeyDown = useCallback(
-    (e: KeyboardEvent, blockId: string) => {
+    (e: KeyboardEvent, blockId: string): void => {
       const block = blocks.find(b => b.id === blockId)
       if (!block) return
 
@@ -312,7 +295,7 @@ export function EnhancedRichTextEditor({
     [activeBlockId, updateBlock]
   )
 
-  const renderBlock = (block: JournalBlock, index: number) => {
+  const renderBlock = (block: JournalBlock, index: number): JSX.Element => {
     const blockClassName = getBlockClassName(block, isEditing)
     
     // For image blocks, render differently
@@ -406,9 +389,7 @@ export function EnhancedRichTextEditor({
       
       <div
         ref={editorRef}
-        className={`flex-1 p-6 bg-white focus:ring-0 outline-none overflow-y-auto transition-all duration-200 ${
-          isAutoConverting ? 'bg-orange-50' : ''
-        }`}
+        className="flex-1 p-6 bg-white focus:ring-0 outline-none overflow-y-auto transition-all duration-200"
         style={{
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',

@@ -640,8 +640,7 @@ export class SelectionManager {
 
   selectWordAtPoint(clientX: number, clientY: number): void {
     try {
-      const range = document.caretRangeFromPoint?.(clientX, clientY) ||
-                   (document as any).caretPositionFromPoint?.(clientX, clientY)
+      const range = document.caretRangeFromPoint?.(clientX, clientY)
       if (!range) return
 
       const selection = window.getSelection()

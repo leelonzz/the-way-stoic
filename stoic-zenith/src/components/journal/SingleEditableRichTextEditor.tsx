@@ -241,7 +241,7 @@ export function SingleEditableRichTextEditor({
     [blocks.length]
   )
 
-  const selectAllContent = useCallback(() => {
+  const selectAllContent = useCallback((): void => {
     if (!editorRef.current || blocks.length === 0) return
 
     try {

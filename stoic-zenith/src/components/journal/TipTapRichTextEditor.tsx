@@ -5,7 +5,7 @@ import Underline from '@tiptap/extension-underline'
 import Strike from '@tiptap/extension-strike'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
-import { Bold, Italic, Underline as UnderlineIcon, Strikethrough, Link as LinkIcon, Code } from 'lucide-react'
+
 import { JournalBlock } from './types'
 import { sanitizeHtml, preserveTypography } from './richTextUtils'
 import { handleFormattingShortcut } from './keyboardShortcuts'
@@ -26,7 +26,7 @@ export function TipTapRichTextEditor({
   className = '',
   placeholder = 'Type something...'
 }: TipTapRichTextEditorProps): JSX.Element {
-  const editorRef = useRef<HTMLDivElement>(null)
+  const _editorRef = useRef<HTMLDivElement>(null)
   const [showLinkEditor, setShowLinkEditor] = useState(false)
   const [linkEditorPosition, setLinkEditorPosition] = useState({ x: 0, y: 0 })
   const [currentLinkData, setCurrentLinkData] = useState({ url: '', text: '' })
@@ -81,7 +81,7 @@ export function TipTapRichTextEditor({
         }
         return false // Let TipTap handle the event
       },
-      handlePaste: (view, event, slice) => {
+      handlePaste: (view, event, _slice) => {
         // Get clipboard data
         const clipboardData = event.clipboardData
         if (!clipboardData) return false
