@@ -9,14 +9,12 @@ import { nanoid } from 'nanoid'
 import { CommandMenu } from './CommandMenu'
 import { SimplifiedRichTextEditor } from './SimplifiedRichTextEditor'
 import { JournalBlock, CommandOption } from './types'
-import {
-  updateNumberedListCounters,
-  getBlockClassName,
-} from './blockUtils'
+import { updateNumberedListCounters, getBlockClassName } from './blockUtils'
 import {
   detectShortcutPattern,
   shouldTriggerAutoConversion,
 } from './shortcutPatterns'
+import { SelectionManager } from './selectionUtils'
 
 interface EnhancedRichTextEditorProps {
   blocks: JournalBlock[]
@@ -34,6 +32,7 @@ export function EnhancedRichTextEditor({
   const [isEditing, setIsEditing] = useState(false)
   const editorRef = useRef<HTMLDivElement>(null)
   const editingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const selectionManagerRef = useRef<SelectionManager | null>(null)
 
   const createNewBlock = (
     type: JournalBlock['type'] = 'paragraph',
@@ -47,16 +46,13 @@ export function EnhancedRichTextEditor({
     createdAt: new Date(),
   })
 
-  const _handleEditingStart = useCallback(
-    (_blockId: string) => {
-      setIsEditing(true)
+  const _handleEditingStart = useCallback((_blockId: string) => {
+    setIsEditing(true)
 
-      if (editingTimeoutRef.current) {
-        clearTimeout(editingTimeoutRef.current)
-      }
-    },
-    []
-  )
+    if (editingTimeoutRef.current) {
+      clearTimeout(editingTimeoutRef.current)
+    }
+  }, [])
 
   const _handleEditingEnd = useCallback(() => {
     editingTimeoutRef.current = setTimeout(() => {
@@ -92,8 +88,10 @@ export function EnhancedRichTextEditor({
   const addBlock = useCallback(
     (afterBlockId: string, newBlock?: Partial<JournalBlock>) => {
       const afterIndex = blocks.findIndex(b => b.id === afterBlockId)
-      const block = newBlock ? { ...createNewBlock(), ...newBlock } : createNewBlock()
-      
+      const block = newBlock
+        ? { ...createNewBlock(), ...newBlock }
+        : createNewBlock()
+
       const newBlocks = [
         ...blocks.slice(0, afterIndex + 1),
         block,
@@ -144,8 +142,12 @@ export function EnhancedRichTextEditor({
       if (!selection) return
 
       // Find the first and last block elements
-      const firstBlockElement = editorRef.current.querySelector(`[data-block-id="${blocks[0].id}"] [contenteditable]`) as HTMLElement
-      const lastBlockElement = editorRef.current.querySelector(`[data-block-id="${blocks[blocks.length - 1].id}"] [contenteditable]`) as HTMLElement
+      const firstBlockElement = editorRef.current.querySelector(
+        `[data-block-id="${blocks[0].id}"] [contenteditable]`
+      ) as HTMLElement
+      const lastBlockElement = editorRef.current.querySelector(
+        `[data-block-id="${blocks[blocks.length - 1].id}"] [contenteditable]`
+      ) as HTMLElement
 
       if (!firstBlockElement || !lastBlockElement) return
 
@@ -172,18 +174,30 @@ export function EnhancedRichTextEditor({
       const range = selection.getRangeAt(0)
 
       // Find the first and last block elements
-      const firstBlockElement = editorRef.current.querySelector(`[data-block-id="${blocks[0].id}"] [contenteditable]`) as HTMLElement
-      const lastBlockElement = editorRef.current.querySelector(`[data-block-id="${blocks[blocks.length - 1].id}"] [contenteditable]`) as HTMLElement
+      const firstBlockElement = editorRef.current.querySelector(
+        `[data-block-id="${blocks[0].id}"] [contenteditable]`
+      ) as HTMLElement
+      const lastBlockElement = editorRef.current.querySelector(
+        `[data-block-id="${blocks[blocks.length - 1].id}"] [contenteditable]`
+      ) as HTMLElement
 
       if (!firstBlockElement || !lastBlockElement) return false
 
       // Check if selection spans from start of first block to end of last block
-      const isStartAtFirstBlock = range.startContainer === firstBlockElement || firstBlockElement.contains(range.startContainer)
-      const isEndAtLastBlock = range.endContainer === lastBlockElement || lastBlockElement.contains(range.endContainer)
+      const isStartAtFirstBlock =
+        range.startContainer === firstBlockElement ||
+        firstBlockElement.contains(range.startContainer)
+      const isEndAtLastBlock =
+        range.endContainer === lastBlockElement ||
+        lastBlockElement.contains(range.endContainer)
 
       // Check if selection starts at the beginning and ends at the end
       const isAtStart = range.startOffset === 0
-      const isAtEnd = range.endOffset === (range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer.textContent?.length || 0 : range.endContainer.childNodes.length)
+      const isAtEnd =
+        range.endOffset ===
+        (range.endContainer.nodeType === Node.TEXT_NODE
+          ? range.endContainer.textContent?.length || 0
+          : range.endContainer.childNodes.length)
 
       return isStartAtFirstBlock && isEndAtLastBlock && isAtStart && isAtEnd
     } catch (error) {
@@ -199,14 +213,16 @@ export function EnhancedRichTextEditor({
       type: 'paragraph',
       text: '',
       richText: '',
-      createdAt: new Date()
+      createdAt: new Date(),
     }
 
     onChange([newBlock])
 
     // Focus the new empty block
     setTimeout(() => {
-      const newElement = editorRef.current?.querySelector(`[data-block-id="${newBlock.id}"] [contenteditable]`) as HTMLElement
+      const newElement = editorRef.current?.querySelector(
+        `[data-block-id="${newBlock.id}"] [contenteditable]`
+      ) as HTMLElement
       if (newElement) {
         newElement.focus()
         // Place cursor at the beginning
@@ -221,7 +237,350 @@ export function EnhancedRichTextEditor({
   }, [onChange])
 
   // Setup global keyboard event listener for Ctrl+A
-  useEffect(() => {
+  // Initialize cross-block text selection
+  useEffect((): (() => void) => {
+    if (!editorRef.current) return
+
+    // Initialize SelectionManager
+    if (!selectionManagerRef.current) {
+      selectionManagerRef.current = new SelectionManager()
+    }
+
+    // Setup cross-block selection functionality
+    const cleanup = selectionManagerRef.current.setupDragAndDrop(
+      editorRef.current
+    )
+
+    // Enhanced cross-block selection with contenteditable management
+    let isSelecting = false
+    let selectionStartBlock: HTMLElement | null = null
+    let selectionStartOffset = 0
+    let selectionStartContainer: Node | null = null
+    const originalContentEditableStates: Map<HTMLElement, boolean> = new Map()
+
+    const handleMouseDown = (e: MouseEvent): void => {
+      const target = e.target as HTMLElement
+
+      // Only handle if clicking on text content, not UI elements
+      if (target.closest('button') || target.closest('.command-menu')) return
+
+      const contentEditable = target.closest('[contenteditable]') as HTMLElement
+      if (!contentEditable) return
+
+      isSelecting = true
+      selectionStartBlock = contentEditable.closest(
+        '[data-block-id]'
+      ) as HTMLElement
+
+      // Capture the exact start position
+      const selection = window.getSelection()
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0)
+        selectionStartContainer = range.startContainer
+        selectionStartOffset = range.startOffset
+      }
+    }
+
+    const handleMouseMove = (e: MouseEvent): void => {
+      if (!isSelecting || !selectionStartBlock) return
+
+      const target = e.target as HTMLElement
+      const currentContentEditable = target.closest(
+        '[contenteditable]'
+      ) as HTMLElement
+      if (!currentContentEditable) return
+
+      const currentBlock = currentContentEditable.closest(
+        '[data-block-id]'
+      ) as HTMLElement
+      if (!currentBlock) return
+
+      // If we're selecting across different blocks
+      if (selectionStartBlock !== currentBlock) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        // Temporarily disable contenteditable on all blocks to allow cross-block selection
+        const allContentEditables = editorRef.current?.querySelectorAll(
+          '[contenteditable]'
+        ) as NodeListOf<HTMLElement>
+        allContentEditables.forEach(el => {
+          if (!originalContentEditableStates.has(el)) {
+            originalContentEditableStates.set(el, el.contentEditable === 'true')
+            el.contentEditable = 'false'
+          }
+        })
+
+        try {
+          const selection = window.getSelection()
+          if (!selection) return
+
+          // Get current mouse position
+          const caretPos = getCaretPositionFromPoint(e.clientX, e.clientY)
+          let currentContainer: Node | null = null
+          let currentOffset = 0
+
+          if (caretPos) {
+            currentContainer = caretPos.node
+            currentOffset = caretPos.offset
+          } else {
+            // Fallback: use end of current block
+            const lastTextNode = getLastTextNode(currentContentEditable)
+            if (lastTextNode) {
+              currentContainer = lastTextNode
+              currentOffset = lastTextNode.textContent?.length || 0
+            } else {
+              currentContainer = currentContentEditable
+              currentOffset = currentContentEditable.childNodes.length
+            }
+          }
+
+          if (!currentContainer || !selectionStartContainer) return
+
+          // Determine the correct order for start and end positions
+          const range = document.createRange()
+          const comparison =
+            selectionStartContainer.compareDocumentPosition(currentContainer)
+
+          // Check if start comes before end in document order
+          const startBeforeEnd =
+            (comparison & Node.DOCUMENT_POSITION_FOLLOWING) !== 0 ||
+            (selectionStartContainer === currentContainer &&
+              selectionStartOffset <= currentOffset)
+
+          if (startBeforeEnd) {
+            // Normal selection: start to end
+            range.setStart(selectionStartContainer, selectionStartOffset)
+            range.setEnd(currentContainer, currentOffset)
+          } else {
+            // Reverse selection: end to start (user dragged upward)
+            range.setStart(currentContainer, currentOffset)
+            range.setEnd(selectionStartContainer, selectionStartOffset)
+          }
+
+          selection.removeAllRanges()
+          selection.addRange(range)
+        } catch (error) {
+          console.warn('Cross-block selection error:', error)
+        }
+      }
+    }
+
+    const handleMouseUp = (): void => {
+      // Restore contenteditable states
+      originalContentEditableStates.forEach((wasEditable, element) => {
+        element.contentEditable = wasEditable ? 'true' : 'false'
+      })
+      originalContentEditableStates.clear()
+
+      isSelecting = false
+      selectionStartBlock = null
+      selectionStartOffset = 0
+      selectionStartContainer = null
+    }
+
+    // Helper function to get caret position from mouse coordinates
+    const getCaretPositionFromPoint = (
+      x: number,
+      y: number
+    ): { node: Node; offset: number } | null => {
+      if (document.caretPositionFromPoint) {
+        const pos = document.caretPositionFromPoint(x, y)
+        return pos ? { node: pos.offsetNode, offset: pos.offset } : null
+      } else if (document.caretRangeFromPoint) {
+        const range = document.caretRangeFromPoint(x, y)
+        return range
+          ? { node: range.startContainer, offset: range.startOffset }
+          : null
+      }
+      return null
+    }
+
+    // Helper function to get the first text node
+    const _getFirstTextNode = (element: HTMLElement): Text | null => {
+      const walker = document.createTreeWalker(
+        element,
+        NodeFilter.SHOW_TEXT,
+        null
+      )
+      return walker.nextNode() as Text | null
+    }
+
+    // Helper function to get the last text node
+    const getLastTextNode = (element: HTMLElement): Text | null => {
+      const walker = document.createTreeWalker(
+        element,
+        NodeFilter.SHOW_TEXT,
+        null
+      )
+      let lastNode: Text | null = null
+      let node = walker.nextNode() as Text | null
+      while (node) {
+        lastNode = node
+        node = walker.nextNode() as Text | null
+      }
+      return lastNode
+    }
+
+    // Add event listeners with capture to intercept before contenteditable handles them
+    editorRef.current.addEventListener('mousedown', handleMouseDown, true)
+    document.addEventListener('mousemove', handleMouseMove, true)
+    document.addEventListener('mouseup', handleMouseUp, true)
+
+    return () => {
+      cleanup()
+      editorRef.current?.removeEventListener('mousedown', handleMouseDown, true)
+      document.removeEventListener('mousemove', handleMouseMove, true)
+      document.removeEventListener('mouseup', handleMouseUp, true)
+    }
+  }, [])
+
+  // Helper function to check if selection spans multiple blocks
+  const isCrossBlockSelection = (): boolean => {
+    const selection = window.getSelection()
+    if (!selection || selection.rangeCount === 0) return false
+
+    const range = selection.getRangeAt(0)
+    const startBlock =
+      range.startContainer.nodeType === Node.TEXT_NODE
+        ? range.startContainer.parentElement?.closest('[data-block-id]')
+        : (range.startContainer as Element).closest('[data-block-id]')
+    const endBlock =
+      range.endContainer.nodeType === Node.TEXT_NODE
+        ? range.endContainer.parentElement?.closest('[data-block-id]')
+        : (range.endContainer as Element).closest('[data-block-id]')
+
+    return startBlock !== endBlock && !!startBlock && !!endBlock
+  }
+
+  // Helper function to handle cross-block selection deletion
+  const handleCrossBlockDeletion = (): void => {
+    const selection = window.getSelection()
+    if (!selection || selection.rangeCount === 0) return
+
+    const range = selection.getRangeAt(0)
+
+    // Get the blocks involved in the selection
+    const startBlock =
+      range.startContainer.nodeType === Node.TEXT_NODE
+        ? range.startContainer.parentElement?.closest('[data-block-id]')
+        : (range.startContainer as Element).closest('[data-block-id]')
+    const endBlock =
+      range.endContainer.nodeType === Node.TEXT_NODE
+        ? range.endContainer.parentElement?.closest('[data-block-id]')
+        : (range.endContainer as Element).closest('[data-block-id]')
+
+    if (!startBlock || !endBlock) return
+
+    // Get block IDs
+    const startBlockId = startBlock.getAttribute('data-block-id')
+    const endBlockId = endBlock.getAttribute('data-block-id')
+    if (!startBlockId || !endBlockId) return
+
+    // Find the blocks in our state
+    const startBlockIndex = blocks.findIndex(b => b.id === startBlockId)
+    const endBlockIndex = blocks.findIndex(b => b.id === endBlockId)
+    if (startBlockIndex === -1 || endBlockIndex === -1) return
+
+    // Determine the correct order
+    const firstIndex = Math.min(startBlockIndex, endBlockIndex)
+    const lastIndex = Math.max(startBlockIndex, endBlockIndex)
+
+    // Extract the selected content to determine what to keep
+    const selectedContent = range.toString()
+
+    // Get the remaining text from the first and last blocks
+    const firstBlock = blocks[firstIndex]
+    const lastBlock = blocks[lastIndex]
+
+    // Create new content by combining the unselected parts
+    let newText = ''
+    if (firstIndex === lastIndex) {
+      // Same block - just remove the selected text
+      newText = firstBlock.text.replace(selectedContent, '')
+    } else {
+      // Multiple blocks - we need to extract the text more carefully
+      // Get the actual text content and positions within each block
+      const firstBlockContentEditable = startBlock.querySelector(
+        '[contenteditable]'
+      ) as HTMLElement
+      const lastBlockContentEditable = endBlock.querySelector(
+        '[contenteditable]'
+      ) as HTMLElement
+
+      if (firstBlockContentEditable && lastBlockContentEditable) {
+        // Calculate the actual text positions
+        const firstBlockFullText = firstBlockContentEditable.textContent || ''
+        const lastBlockFullText = lastBlockContentEditable.textContent || ''
+
+        // Find the selection boundaries within each block's text
+        let firstBlockEndPos = firstBlockFullText.length
+        let lastBlockStartPos = 0
+
+        // For more accurate positioning, we need to calculate based on the range
+        if (range.startContainer.nodeType === Node.TEXT_NODE) {
+          firstBlockEndPos = range.startOffset
+        }
+        if (range.endContainer.nodeType === Node.TEXT_NODE) {
+          lastBlockStartPos = range.endOffset
+        }
+
+        const firstBlockText = firstBlockFullText.substring(0, firstBlockEndPos)
+        const lastBlockText = lastBlockFullText.substring(lastBlockStartPos)
+        newText = firstBlockText + lastBlockText
+      } else {
+        // Fallback: just combine the texts
+        newText = firstBlock.text + lastBlock.text
+      }
+    }
+
+    // Update the blocks
+    const newBlocks = [...blocks]
+
+    // Remove the blocks in between (if any)
+    if (lastIndex > firstIndex) {
+      newBlocks.splice(firstIndex + 1, lastIndex - firstIndex)
+    }
+
+    // Update the first block with the combined text
+    newBlocks[firstIndex] = {
+      ...firstBlock,
+      text: newText,
+    }
+
+    // If it was the same block, we're done. If different blocks, remove the last block
+    if (firstIndex !== lastIndex && newBlocks[firstIndex + 1]) {
+      newBlocks.splice(firstIndex + 1, 1)
+    }
+
+    onChange(newBlocks)
+
+    // Clear selection and position cursor
+    selection.removeAllRanges()
+
+    // Position cursor at the end of the remaining text in the first block
+    setTimeout(() => {
+      const updatedBlock = document.querySelector(
+        `[data-block-id="${startBlockId}"] [contenteditable]`
+      ) as HTMLElement
+      if (updatedBlock) {
+        updatedBlock.focus()
+        const range = document.createRange()
+        const textNode = updatedBlock.firstChild
+        if (textNode) {
+          range.setStart(
+            textNode,
+            Math.min(newText.length, textNode.textContent?.length || 0)
+          )
+          range.collapse(true)
+          selection.removeAllRanges()
+          selection.addRange(range)
+        }
+      }
+    }, 0)
+  }
+
+  useEffect((): (() => void) => {
     const handleGlobalKeyDown = (e: KeyboardEvent): void => {
       // Don't interfere when command menu is open
       if (showCommandMenu) return
@@ -234,17 +593,58 @@ export function EnhancedRichTextEditor({
         e.preventDefault()
         selectAllContent()
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        // Handle Delete/Backspace when all content is selected
-        if (isAllContentSelected()) {
+        // Handle cross-block selection deletion
+        if (isCrossBlockSelection()) {
+          e.preventDefault()
+          handleCrossBlockDeletion()
+        } else if (isAllContentSelected()) {
+          // Handle Delete/Backspace when all content is selected
           e.preventDefault()
           clearAllContent()
+        }
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // Handle text replacement for cross-block selections
+        if (isCrossBlockSelection()) {
+          e.preventDefault()
+          handleCrossBlockDeletion()
+
+          // Insert the new character
+          setTimeout(() => {
+            const selection = window.getSelection()
+            if (selection && selection.rangeCount > 0) {
+              const range = selection.getRangeAt(0)
+              const textNode = document.createTextNode(e.key)
+              range.insertNode(textNode)
+              range.setStartAfter(textNode)
+              range.collapse(true)
+              selection.removeAllRanges()
+              selection.addRange(range)
+
+              // Trigger input event to update the block
+              const contentEditable = textNode.parentElement?.closest(
+                '[contenteditable]'
+              ) as HTMLElement
+              if (contentEditable) {
+                const inputEvent = new Event('input', { bubbles: true })
+                contentEditable.dispatchEvent(inputEvent)
+              }
+            }
+          }, 0)
         }
       }
     }
 
     document.addEventListener('keydown', handleGlobalKeyDown)
     return () => document.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [selectAllContent, isAllContentSelected, clearAllContent, showCommandMenu])
+  }, [
+    selectAllContent,
+    isAllContentSelected,
+    clearAllContent,
+    showCommandMenu,
+    blocks,
+    onChange,
+    handleCrossBlockDeletion,
+  ])
 
   const handleBlockKeyDown = useCallback(
     (e: KeyboardEvent, blockId: string): void => {
@@ -390,7 +790,16 @@ export function EnhancedRichTextEditor({
         }
       }
     },
-    [blocks, addBlock, deleteBlock, updateBlock, isAllContentSelected, clearAllContent, selectAllContent, showCommandMenu]
+    [
+      blocks,
+      addBlock,
+      deleteBlock,
+      updateBlock,
+      isAllContentSelected,
+      clearAllContent,
+      selectAllContent,
+      showCommandMenu,
+    ]
   )
 
   const handleCommandSelect = useCallback(
@@ -445,15 +854,11 @@ export function EnhancedRichTextEditor({
 
   const renderBlock = (block: JournalBlock, index: number): JSX.Element => {
     const blockClassName = getBlockClassName(block, isEditing)
-    
+
     // For image blocks, render differently
     if (block.type === 'image' && block.imageUrl) {
       return (
-        <div
-          key={block.id}
-          data-block-id={block.id}
-          className={blockClassName}
-        >
+        <div key={block.id} data-block-id={block.id} className={blockClassName}>
           <img
             src={block.imageUrl}
             alt={block.imageAlt || 'Uploaded image'}
@@ -466,11 +871,7 @@ export function EnhancedRichTextEditor({
 
     // For text blocks, use simplified rich text editor for better reliability
     return (
-      <div
-        key={block.id}
-        data-block-id={block.id}
-        className={blockClassName}
-      >
+      <div key={block.id} data-block-id={block.id} className={blockClassName}>
         <SimplifiedRichTextEditor
           block={block}
           onChange={updateBlock}
@@ -481,7 +882,10 @@ export function EnhancedRichTextEditor({
     )
   }
 
-  const getPlaceholderForBlockType = (type: JournalBlock['type'], blockIndex: number): string => {
+  const getPlaceholderForBlockType = (
+    type: JournalBlock['type'],
+    blockIndex: number
+  ): string => {
     switch (type) {
       case 'heading':
         return 'Heading'
@@ -534,7 +938,7 @@ export function EnhancedRichTextEditor({
           opacity: 0.5;
         }
       `}</style>
-      
+
       <div
         ref={editorRef}
         className="flex-1 p-6 bg-white focus:ring-0 outline-none overflow-y-auto transition-all duration-200"
