@@ -344,7 +344,8 @@ export function DailyStoicWisdom(): JSX.Element {
     refreshDailyQuote,
     reloadCount,
     maxReloads,
-    canReload
+    canReload,
+    isRefetching
   } = useQuotes(user)
 
   const dailyQuote = getDailyQuote()
@@ -369,6 +370,16 @@ export function DailyStoicWisdom(): JSX.Element {
     const quote = getDailyQuote()
     setCurrentDailyQuote(quote)
   }, [getDailyQuote])
+
+  // Show toast when refetching due to tab visibility
+  useEffect(() => {
+    if (isRefetching) {
+      toast({
+        title: "Refreshing quotes...",
+        description: "Loading latest quotes from the database",
+      })
+    }
+  }, [isRefetching, toast])
 
   const handleRefreshDailyQuote = async (): Promise<void> => {
     if (!canReload || isRefreshing) {
@@ -471,7 +482,8 @@ export function DailyStoicWisdom(): JSX.Element {
     return refreshedQuotes.get(originalQuote.id) || originalQuote
   }
 
-  if (loading) {
+  // Show loading screen for initial load or refetching
+  if (loading || isRefetching) {
     return <MinimalLoadingScreen />
   }
 

@@ -2,16 +2,58 @@ import { QueryClient } from '@tanstack/react-query'
 
 // Prefetch strategies for different sections
 export const prefetchQuotes = async (queryClient: QueryClient): Promise<void> => {
-  // Prefetch quotes data
-  await queryClient.prefetchQuery({
-    queryKey: ['daily-stoic-wisdom'],
-    queryFn: async () => {
-      // This should match the actual fetch function used in DailyStoicWisdom
-      return null; // Placeholder
-    },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000
-  })
+  // Prefetch quotes data with better error handling
+  try {
+    await queryClient.prefetchQuery({
+      queryKey: ['quotes', 'all'],
+      queryFn: async () => {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data, error } = await supabase
+          .from('quotes')
+          .select('*')
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          console.error('Error prefetching quotes:', error);
+          throw error;
+        }
+
+        return data || [];
+      },
+      staleTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 30 * 60 * 1000 // 30 minutes
+    });
+
+    // Also prefetch daily quote
+    await queryClient.prefetchQuery({
+      queryKey: ['daily-quote'],
+      queryFn: async () => {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data, error } = await supabase
+          .from('quotes')
+          .select('*')
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          console.error('Error prefetching daily quote:', error);
+          throw error;
+        }
+
+        if (!data || data.length === 0) {
+          return null;
+        }
+
+        // Calculate daily quote
+        const today = new Date();
+        const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+        return data[dayOfYear % data.length];
+      },
+      staleTime: 24 * 60 * 60 * 1000, // 24 hours (daily quote)
+      gcTime: 24 * 60 * 60 * 1000
+    });
+  } catch (error) {
+    console.warn('Failed to prefetch quotes:', error);
+  }
 }
 
 export const prefetchCalendar = async (queryClient: QueryClient, userId?: string): Promise<void> => {

@@ -158,22 +158,89 @@ export function EnhancedRichTextEditor({
     }
   }, [blocks])
 
+  const isAllContentSelected = useCallback(() => {
+    if (!editorRef.current || blocks.length === 0) return false
+
+    try {
+      const selection = window.getSelection()
+      if (!selection || selection.rangeCount === 0) return false
+
+      const range = selection.getRangeAt(0)
+
+      // Find the first and last block elements
+      const firstBlockElement = editorRef.current.querySelector(`[data-block-id="${blocks[0].id}"] [contenteditable]`) as HTMLElement
+      const lastBlockElement = editorRef.current.querySelector(`[data-block-id="${blocks[blocks.length - 1].id}"] [contenteditable]`) as HTMLElement
+
+      if (!firstBlockElement || !lastBlockElement) return false
+
+      // Check if selection spans from start of first block to end of last block
+      const isStartAtFirstBlock = range.startContainer === firstBlockElement || firstBlockElement.contains(range.startContainer)
+      const isEndAtLastBlock = range.endContainer === lastBlockElement || lastBlockElement.contains(range.endContainer)
+
+      // Check if selection starts at the beginning and ends at the end
+      const isAtStart = range.startOffset === 0
+      const isAtEnd = range.endOffset === (range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer.textContent?.length || 0 : range.endContainer.childNodes.length)
+
+      return isStartAtFirstBlock && isEndAtLastBlock && isAtStart && isAtEnd
+    } catch (error) {
+      console.warn('Failed to check if all content is selected:', error)
+      return false
+    }
+  }, [blocks])
+
+  const clearAllContent = useCallback(() => {
+    // Replace all blocks with a single empty block
+    const newBlock: JournalBlock = {
+      id: nanoid(),
+      type: 'paragraph',
+      text: '',
+      richText: '',
+      createdAt: new Date()
+    }
+
+    onChange([newBlock])
+
+    // Focus the new empty block
+    setTimeout(() => {
+      const newElement = editorRef.current?.querySelector(`[data-block-id="${newBlock.id}"] [contenteditable]`) as HTMLElement
+      if (newElement) {
+        newElement.focus()
+        // Place cursor at the beginning
+        const range = document.createRange()
+        const selection = window.getSelection()
+        range.setStart(newElement, 0)
+        range.collapse(true)
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+      }
+    }, 10)
+  }, [onChange])
+
   // Setup global keyboard event listener for Ctrl+A
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent): void => {
+      // Don't interfere when command menu is open
+      if (showCommandMenu) return
+
+      // Check if the focus is within our editor
+      const activeElement = document.activeElement
+      if (!activeElement || !editorRef.current?.contains(activeElement)) return
+
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
-        // Check if the focus is within our editor
-        const activeElement = document.activeElement
-        if (activeElement && editorRef.current?.contains(activeElement)) {
+        e.preventDefault()
+        selectAllContent()
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Handle Delete/Backspace when all content is selected
+        if (isAllContentSelected()) {
           e.preventDefault()
-          selectAllContent()
+          clearAllContent()
         }
       }
     }
 
     document.addEventListener('keydown', handleGlobalKeyDown)
     return () => document.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [selectAllContent])
+  }, [selectAllContent, isAllContentSelected, clearAllContent, showCommandMenu])
 
   const handleBlockKeyDown = useCallback(
     (e: KeyboardEvent, blockId: string): void => {
@@ -187,8 +254,8 @@ export function EnhancedRichTextEditor({
         return
       }
 
-      // Handle Enter key for new blocks
-      if (e.key === 'Enter' && !e.shiftKey) {
+      // Handle Enter key for new blocks (but not when command menu is open)
+      if (e.key === 'Enter' && !e.shiftKey && !showCommandMenu) {
         e.preventDefault()
         const newBlockId = addBlock(blockId)
 
@@ -209,6 +276,15 @@ export function EnhancedRichTextEditor({
           }
         }, 10)
         return
+      }
+
+      // Handle Delete and Backspace when all content is selected
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (isAllContentSelected()) {
+          e.preventDefault()
+          clearAllContent()
+          return
+        }
       }
 
       // Handle Backspace at beginning of block
@@ -237,33 +313,39 @@ export function EnhancedRichTextEditor({
         }
       }
 
-      // Handle slash commands
+      // Handle slash commands - don't prevent default, let the "/" be typed
       if (e.key === '/') {
         const selection = window.getSelection()
         if (selection && selection.rangeCount > 0) {
           const range = selection.getRangeAt(0)
-          if (range.startOffset === 0) {
-            e.preventDefault()
-            setActiveBlockId(blockId)
-            setShowCommandMenu(true)
-            setSearchQuery('')
-            
-            // Position command menu
-            const rect = range.getBoundingClientRect()
-            setCommandMenuPosition({
-              x: rect.left,
-              y: rect.bottom + 5,
-            })
+          if (range.startOffset === 0 && block.text.trim() === '') {
+            // Only show command menu if we're at the beginning of an empty block
+            setTimeout(() => {
+              setActiveBlockId(blockId)
+              setShowCommandMenu(true)
+              setSearchQuery('')
+
+              // Position command menu
+              const element = e.target as HTMLElement
+              const rect = element.getBoundingClientRect()
+              setCommandMenuPosition({
+                x: rect.left,
+                y: rect.bottom + 5,
+              })
+            }, 10) // Small delay to let the "/" character be typed first
           }
         }
       }
     },
-    [blocks, addBlock, deleteBlock, updateBlock]
+    [blocks, addBlock, deleteBlock, updateBlock, isAllContentSelected, clearAllContent, selectAllContent, showCommandMenu]
   )
 
   const handleCommandSelect = useCallback(
     (command: CommandOption): void => {
       if (!activeBlockId) return
+
+      // Capture the activeBlockId before clearing it
+      const blockIdToFocus = activeBlockId
 
       updateBlock(activeBlockId, {
         type: command.type,
@@ -278,19 +360,23 @@ export function EnhancedRichTextEditor({
       // Focus the transformed block
       setTimeout(() => {
         const element = document.querySelector(
-          `[data-block-id="${activeBlockId}"] [contenteditable]`
+          `[data-block-id="${blockIdToFocus}"] [contenteditable]`
         ) as HTMLElement
         if (element) {
           element.focus()
           // Place cursor at the beginning
           const range = document.createRange()
           const selection = window.getSelection()
-          range.setStart(element, 0)
+          if (element.firstChild) {
+            range.setStart(element.firstChild, 0)
+          } else {
+            range.setStart(element, 0)
+          }
           range.collapse(true)
           selection?.removeAllRanges()
           selection?.addRange(range)
         }
-      }, 10)
+      }, 50) // Increased timeout to ensure DOM updates are complete
     },
     [activeBlockId, updateBlock]
   )
@@ -346,11 +432,11 @@ export function EnhancedRichTextEditor({
       case 'code':
         return 'Code'
       default:
-        // Only show "Type / for commands" for the first empty text block
+        // Only show placeholder for the first empty text block
         if (blockIndex === 0) {
-          return 'Type / for commands'
+          return 'Start writing your thoughts...'
         }
-        return 'Continue writing...'
+        return '' // No placeholder for subsequent blocks to avoid clutter
     }
   }
 

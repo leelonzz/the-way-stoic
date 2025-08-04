@@ -102,27 +102,53 @@ export function useQuotes(user: User | null): {
   maxReloads: number;
   canReload: boolean;
   debugCacheStatus: () => void;
+  isRefetching: boolean;
 } {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
   const [userQuotes, setUserQuotes] = useState<UserQuote[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isRefetching, setIsRefetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionShownQuotes, setSessionShownQuotes] = useState<string[]>([]);
   const [reloadCount, setReloadCount] = useState(0);
   const [cachedDailyQuote, setCachedDailyQuote] = useState<Quote | null>(null);
   const [cachedDate, setCachedDate] = useState<string>('');
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const [isTabVisible, setIsTabVisible] = useState(true);
   
   const maxReloads = 10;
   const canReload = reloadCount < maxReloads;
 
+  // Tab visibility detection
+  useEffect(() => {
+    const handleVisibilityChange = (): void => {
+      const wasVisible = isTabVisible;
+      const isVisible = !document.hidden;
+      setIsTabVisible(isVisible);
+      
+      // If tab becomes visible and it's been more than 5 minutes since last fetch, refetch
+      if (isVisible && !wasVisible) {
+        const timeSinceLastFetch = Date.now() - lastFetchTime;
+        const fiveMinutes = 5 * 60 * 1000;
+        
+        if (timeSinceLastFetch > fiveMinutes) {
+          console.log('Tab became visible, refetching quotes after', Math.round(timeSinceLastFetch / 1000), 'seconds');
+          refetchQuotes();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isTabVisible, lastFetchTime]);
+
   // Cleanup old cached quotes from localStorage
-  const cleanupOldCachedQuotes = useCallback(() => {
+  const cleanupOldCachedQuotes = useCallback((): void => {
     if (typeof window === 'undefined') return;
     
     try {
       const today = new Date();
-      const todayString = today.toISOString().split('T')[0];
       
       // Remove cached quotes older than 7 days
       for (let i = 0; i < 7; i++) {
@@ -142,7 +168,7 @@ export function useQuotes(user: User | null): {
   }, []);
 
   // Quota management helpers
-  const getQuotaKey = useCallback(() => {
+  const getQuotaKey = useCallback((): string => {
     const today = new Date().toISOString().split('T')[0];
     const userId = user?.id || 'guest';
     return `quote-reload-quota-${userId}-${today}`;
@@ -193,6 +219,7 @@ export function useQuotes(user: User | null): {
       }
       
       setError(null); // Clear any previous errors on successful fetch
+      setLastFetchTime(Date.now());
     } catch (err) {
       console.error('Failed to fetch quotes:', err);
       console.log('Using fallback quotes due to error');
@@ -202,6 +229,23 @@ export function useQuotes(user: User | null): {
       setLoading(false);
     }
   }, []);
+
+  const refetchQuotes = useCallback(async () => {
+    if (isRefetching) return; // Prevent multiple simultaneous refetches
+    
+    try {
+      setIsRefetching(true);
+      console.log('Refetching quotes due to tab visibility change...');
+      
+      await fetchQuotes();
+      if (user) {
+        await fetchSavedQuotes();
+        await fetchUserQuotes();
+      }
+    } finally {
+      setIsRefetching(false);
+    }
+  }, [isRefetching, fetchQuotes, user]);
 
   const fetchSavedQuotes = useCallback(async () => {
     if (!user) return;
@@ -338,7 +382,7 @@ export function useQuotes(user: User | null): {
   };
 
   // Debug function to check cache status
-  const debugCacheStatus = () => {
+  const debugCacheStatus = (): void => {
     // Debug function removed - no longer needed
   };
 
@@ -610,6 +654,7 @@ export function useQuotes(user: User | null): {
     debugCacheStatus,
     reloadCount,
     maxReloads,
-    canReload
+    canReload,
+    isRefetching
   };
 }
