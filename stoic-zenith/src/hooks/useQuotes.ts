@@ -174,7 +174,7 @@ export function useQuotes(user: User | null): {
     return `quote-reload-quota-${userId}-${today}`;
   }, [user?.id]);
 
-  const loadQuotaFromStorage = useCallback(() => {
+  const loadQuotaFromStorage = useCallback((): number => {
     if (typeof window === 'undefined') return 0;
     try {
       const quotaData = localStorage.getItem(getQuotaKey());

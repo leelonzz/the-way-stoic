@@ -13,6 +13,10 @@ import {
   updateNumberedListCounters,
   getBlockClassName,
 } from './blockUtils'
+import {
+  detectShortcutPattern,
+  shouldTriggerAutoConversion,
+} from './shortcutPatterns'
 
 interface EnhancedRichTextEditorProps {
   blocks: JournalBlock[]
@@ -287,6 +291,55 @@ export function EnhancedRichTextEditor({
         }
       }
 
+      // Handle markdown shortcuts on space key
+      if (e.key === ' ') {
+        const currentText = block.text || ''
+
+        if (shouldTriggerAutoConversion(currentText, ' ')) {
+          e.preventDefault()
+          const pattern = detectShortcutPattern(currentText + ' ')
+          if (pattern) {
+            // Clear the DOM content to remove the markdown shortcut text
+            const element = document.querySelector(
+              `[data-block-id="${blockId}"] [contenteditable]`
+            ) as HTMLElement
+            if (element) {
+              element.innerHTML = ''
+              element.textContent = ''
+            }
+
+            updateBlock(blockId, {
+              type: pattern.type,
+              level: pattern.level as 1 | 2 | 3,
+              text: '',
+              richText: '',
+            })
+
+            // Focus the transformed block
+            setTimeout(() => {
+              const element = document.querySelector(
+                `[data-block-id="${blockId}"] [contenteditable]`
+              ) as HTMLElement
+              if (element) {
+                element.focus()
+                // Place cursor at the beginning
+                const range = document.createRange()
+                const selection = window.getSelection()
+                if (element.firstChild) {
+                  range.setStart(element.firstChild, 0)
+                } else {
+                  range.setStart(element, 0)
+                }
+                range.collapse(true)
+                selection?.removeAllRanges()
+                selection?.addRange(range)
+              }
+            }, 50)
+            return
+          }
+        }
+      }
+
       // Handle Backspace at beginning of block
       if (e.key === 'Backspace') {
         const selection = window.getSelection()
@@ -346,6 +399,15 @@ export function EnhancedRichTextEditor({
 
       // Capture the activeBlockId before clearing it
       const blockIdToFocus = activeBlockId
+
+      // First, clear the DOM content to remove the "/" character immediately
+      const element = document.querySelector(
+        `[data-block-id="${activeBlockId}"] [contenteditable]`
+      ) as HTMLElement
+      if (element) {
+        element.innerHTML = ''
+        element.textContent = ''
+      }
 
       updateBlock(activeBlockId, {
         type: command.type,
