@@ -43,9 +43,9 @@ export function TipTapRichTextEditor({
         codeBlock: false,
         horizontalRule: false,
         // Keep only inline formatting
-        bold: true,
-        italic: true,
-        code: true,
+        bold: {},
+        italic: {},
+        code: {},
         strike: false, // We'll use our custom Strike extension
         // Disable paragraph since we handle blocks differently
         paragraph: false,

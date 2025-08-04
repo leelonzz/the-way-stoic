@@ -57,7 +57,7 @@ const restoreCursorPosition = (element: HTMLElement, position: { start: number; 
       charIndex = nextCharIndex
     } else {
       for (let i = node.childNodes.length - 1; i >= 0; i--) {
-        nodeStack.push(node.childNodes[i])
+        nodeStack.push(node.childNodes[i] as HTMLElement)
       }
     }
   }
@@ -80,6 +80,8 @@ export function SimplifiedRichTextEditor({
 }: SimplifiedRichTextEditorProps): JSX.Element {
   const editorRef = useRef<HTMLDivElement>(null)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [showToolbar, setShowToolbar] = useState(false)
+  const [toolbarPosition, setToolbarPosition] = useState({ x: 0, y: 0 })
   const cursorPositionRef = useRef<{ start: number; end: number } | null>(null)
 
   const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
@@ -88,6 +90,11 @@ export function SimplifiedRichTextEditor({
     const target = e.currentTarget
     const text = target.textContent || ''
     const html = target.innerHTML || ''
+
+    // Immediately remove placeholder when user starts typing
+    if (text.length > 0 && target.hasAttribute('data-placeholder')) {
+      target.removeAttribute('data-placeholder')
+    }
 
     // Save cursor position before updating
     if (editorRef.current) {
@@ -101,6 +108,14 @@ export function SimplifiedRichTextEditor({
   }, [block.id, onChange, isUpdating])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Remove placeholder immediately when user starts typing any printable character
+    if (editorRef.current && editorRef.current.hasAttribute('data-placeholder')) {
+      const isPrintableChar = e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey
+      if (isPrintableChar) {
+        editorRef.current.removeAttribute('data-placeholder')
+      }
+    }
+
     // Save cursor position before any operations
     if (editorRef.current) {
       cursorPositionRef.current = saveCursorPosition(editorRef.current)
@@ -164,6 +179,25 @@ export function SimplifiedRichTextEditor({
     document.execCommand('insertText', false, text)
   }, [])
 
+  const handleFocus = useCallback(() => {
+    // Remove placeholder when focused
+    if (editorRef.current) {
+      editorRef.current.removeAttribute('data-placeholder')
+    }
+  }, [])
+
+  const handleBlur = useCallback(() => {
+    // Re-evaluate placeholder when focus is lost
+    if (editorRef.current && !isUpdating) {
+      const isEmpty = !block.text || block.text.trim() === ''
+      const hasNoContent = !editorRef.current.textContent || editorRef.current.textContent.trim() === ''
+
+      if (isEmpty && hasNoContent) {
+        editorRef.current.setAttribute('data-placeholder', placeholder)
+      }
+    }
+  }, [block.text, placeholder, isUpdating])
+
   // Update content when block changes externally
   useEffect(() => {
     if (editorRef.current && !isUpdating) {
@@ -196,8 +230,10 @@ export function SimplifiedRichTextEditor({
     if (editorRef.current && !isUpdating) {
       const isEmpty = !block.text || block.text.trim() === ''
       const hasNoContent = !editorRef.current.textContent || editorRef.current.textContent.trim() === ''
+      const isFocused = editorRef.current.contains(document.activeElement)
 
-      if (isEmpty && hasNoContent) {
+      // Only show placeholder if block is empty AND not currently focused
+      if (isEmpty && hasNoContent && !isFocused) {
         editorRef.current.setAttribute('data-placeholder', placeholder)
       } else {
         editorRef.current.removeAttribute('data-placeholder')
@@ -214,6 +250,39 @@ export function SimplifiedRichTextEditor({
       }
     }
   }, []) // Only run on mount
+
+  // Handle text selection changes to show/hide toolbar
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const selection = window.getSelection()
+      if (!selection || !editorRef.current) return
+
+      const hasSelection = !selection.isCollapsed && selection.toString().length > 0
+
+      if (hasSelection) {
+        // Check if selection is within this editor
+        const range = selection.getRangeAt(0)
+        const isWithinEditor = editorRef.current.contains(range.commonAncestorContainer)
+
+        if (isWithinEditor) {
+          // Calculate toolbar position
+          const rect = range.getBoundingClientRect()
+          const x = (rect.left + rect.right) / 2
+          const y = rect.top - 50 // Position above selection
+
+          setToolbarPosition({ x, y })
+          setShowToolbar(true)
+        } else {
+          setShowToolbar(false)
+        }
+      } else {
+        setShowToolbar(false)
+      }
+    }
+
+    document.addEventListener('selectionchange', handleSelectionChange)
+    return () => document.removeEventListener('selectionchange', handleSelectionChange)
+  }, [])
 
   const applyFormat = useCallback((command: string) => {
     // Save cursor position before formatting
@@ -253,58 +322,66 @@ export function SimplifiedRichTextEditor({
   }, [])
 
   return (
-    <div className="relative group">
-      {/* Formatting Toolbar - appears on hover */}
-      <div className="absolute -top-10 left-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-        <div className="flex items-center gap-1 p-1 bg-white border border-stone-200 rounded-lg shadow-lg">
-          <button
-            type="button"
-            onClick={() => applyFormat('bold')}
-            className="p-1.5 rounded hover:bg-stone-100 text-stone-600"
-            title="Bold (Ctrl+B)"
-          >
-            <Bold size={14} />
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => applyFormat('italic')}
-            className="p-1.5 rounded hover:bg-stone-100 text-stone-600"
-            title="Italic (Ctrl+I)"
-          >
-            <Italic size={14} />
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => applyFormat('underline')}
-            className="p-1.5 rounded hover:bg-stone-100 text-stone-600"
-            title="Underline (Ctrl+U)"
-          >
-            <Underline size={14} />
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => applyFormat('strikeThrough')}
-            className="p-1.5 rounded hover:bg-stone-100 text-stone-600"
-            title="Strikethrough"
-          >
-            <Strikethrough size={14} />
-          </button>
-          
-          <div className="w-px h-4 bg-stone-300 mx-1" />
-          
-          <button
-            type="button"
-            onClick={insertLink}
-            className="p-1.5 rounded hover:bg-stone-100 text-stone-600"
-            title="Add Link (Ctrl+K)"
-          >
-            <LinkIcon size={14} />
-          </button>
+    <div className="relative">
+      {/* Formatting Toolbar - appears on text selection */}
+      {showToolbar && (
+        <div
+          className="fixed z-50 animate-in fade-in-0 zoom-in-95 duration-200"
+          style={{
+            left: toolbarPosition.x - 100, // Center the toolbar
+            top: Math.max(10, toolbarPosition.y),
+          }}
+        >
+          <div className="flex items-center gap-1 p-1 bg-white border border-stone-200 rounded-lg shadow-lg">
+            <button
+              type="button"
+              onClick={() => applyFormat('bold')}
+              className="p-1.5 rounded hover:bg-stone-100 text-stone-600"
+              title="Bold (Ctrl+B)"
+            >
+              <Bold size={14} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => applyFormat('italic')}
+              className="p-1.5 rounded hover:bg-stone-100 text-stone-600"
+              title="Italic (Ctrl+I)"
+            >
+              <Italic size={14} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => applyFormat('underline')}
+              className="p-1.5 rounded hover:bg-stone-100 text-stone-600"
+              title="Underline (Ctrl+U)"
+            >
+              <Underline size={14} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => applyFormat('strikeThrough')}
+              className="p-1.5 rounded hover:bg-stone-100 text-stone-600"
+              title="Strikethrough"
+            >
+              <Strikethrough size={14} />
+            </button>
+
+            <div className="w-px h-4 bg-stone-300 mx-1" />
+
+            <button
+              type="button"
+              onClick={insertLink}
+              className="p-1.5 rounded hover:bg-stone-100 text-stone-600"
+              title="Add Link (Ctrl+K)"
+            >
+              <LinkIcon size={14} />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Editor Content */}
       <div
@@ -314,6 +391,8 @@ export function SimplifiedRichTextEditor({
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         className={`min-h-[1.5rem] focus:outline-none ${className}`}
         style={{
           whiteSpace: 'pre-wrap',
@@ -327,6 +406,16 @@ export function SimplifiedRichTextEditor({
           content: attr(data-placeholder);
           color: #a8a29e;
           font-style: italic;
+          pointer-events: none;
+          position: absolute;
+        }
+
+        [contenteditable]:focus:empty:before {
+          opacity: 0.7;
+        }
+
+        [contenteditable]:not(:empty):before {
+          display: none;
         }
         
         [contenteditable] a {

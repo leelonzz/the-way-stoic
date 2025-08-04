@@ -241,6 +241,34 @@ export function SingleEditableRichTextEditor({
     [blocks.length]
   )
 
+  const selectAllContent = useCallback(() => {
+    if (!editorRef.current || blocks.length === 0) return
+
+    try {
+      const selection = window.getSelection()
+      if (!selection) return
+
+      // Find all block elements
+      const blockElements = Array.from(editorRef.current.querySelectorAll(`[${BLOCK_MARKER_ATTRIBUTE}]`)) as HTMLElement[]
+
+      if (blockElements.length === 0) return
+
+      const firstBlock = blockElements[0]
+      const lastBlock = blockElements[blockElements.length - 1]
+
+      const range = document.createRange()
+
+      // Set range from start of first block to end of last block
+      range.setStart(firstBlock, 0)
+      range.setEnd(lastBlock, lastBlock.childNodes.length)
+
+      selection.removeAllRanges()
+      selection.addRange(range)
+    } catch (error) {
+      console.warn('Failed to select all content:', error)
+    }
+  }, [blocks])
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent): void => {
       // Handle line selection shortcuts first
@@ -251,10 +279,9 @@ export function SingleEditableRichTextEditor({
             selectionManager.selectCurrentLine()
             return
           case 'a':
-            // Handle Ctrl+A - ensure we maintain proper font state after select all
-            // Don't prevent default, let browser handle selection
-            // But ensure we're in editing mode for proper handling
-
+            // Handle Ctrl+A - select all content across blocks
+            e.preventDefault()
+            selectAllContent()
             setIsEditing(true)
             return
           case 'ArrowUp':

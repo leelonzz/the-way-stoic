@@ -557,9 +557,50 @@ export class SelectionManager {
     }
   }
 
-  // Simplified text selection only (no drag-drop)
+  // Enhanced text selection with proper gestures
   setupDragAndDrop(container: HTMLElement): () => void {
-    // Add keyboard event handlers for line selection only
+    let clickCount = 0
+    let clickTimer: NodeJS.Timeout | null = null
+    let lastClickTime = 0
+
+    // Enhanced click handler for word/paragraph selection
+    const handleClick = (e: MouseEvent): void => {
+      // Only handle if not dragging and not in an input/contenteditable
+      const target = e.target as HTMLElement
+      if (!target || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        return
+      }
+
+      const currentTime = Date.now()
+      const timeDiff = currentTime - lastClickTime
+
+      // Reset click count if too much time has passed
+      if (timeDiff > 500) {
+        clickCount = 0
+      }
+
+      clickCount++
+      lastClickTime = currentTime
+
+      // Clear existing timer
+      if (clickTimer) {
+        clearTimeout(clickTimer)
+      }
+
+      // Set timer to handle the click after a short delay
+      clickTimer = setTimeout(() => {
+        if (clickCount === 2) {
+          // Double-click: select word
+          this.selectWordAtPoint(e.clientX, e.clientY)
+        } else if (clickCount === 3) {
+          // Triple-click: select paragraph/block
+          this.selectParagraphAtPoint(e.clientX, e.clientY)
+        }
+        clickCount = 0
+      }, 200) // Reduced delay for better responsiveness
+    }
+
+    // Add keyboard event handlers for line selection
     const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
@@ -583,12 +624,82 @@ export class SelectionManager {
       }
     }
 
-    // Only add keyboard listener for text selection shortcuts
+    // Add event listeners with passive options for better performance
+    container.addEventListener('click', handleClick, { passive: true })
     container.addEventListener('keydown', handleKeyDown)
 
     // Return cleanup function
     return (): void => {
+      if (clickTimer) {
+        clearTimeout(clickTimer)
+      }
+      container.removeEventListener('click', handleClick)
       container.removeEventListener('keydown', handleKeyDown)
+    }
+  }
+
+  selectWordAtPoint(clientX: number, clientY: number): void {
+    try {
+      const range = document.caretRangeFromPoint?.(clientX, clientY) ||
+                   (document as any).caretPositionFromPoint?.(clientX, clientY)
+      if (!range) return
+
+      const selection = window.getSelection()
+      if (!selection) return
+
+      // Get the text node and offset
+      const textNode = range.startContainer
+      const offset = range.startOffset
+
+      if (textNode.nodeType !== Node.TEXT_NODE) return
+
+      const text = textNode.textContent || ''
+
+      // Find word boundaries
+      let start = offset
+      let end = offset
+
+      // Move start backward to find word start
+      while (start > 0 && /\w/.test(text[start - 1])) {
+        start--
+      }
+
+      // Move end forward to find word end
+      while (end < text.length && /\w/.test(text[end])) {
+        end++
+      }
+
+      // Create new range for the word
+      const wordRange = document.createRange()
+      wordRange.setStart(textNode, start)
+      wordRange.setEnd(textNode, end)
+
+      selection.removeAllRanges()
+      selection.addRange(wordRange)
+    } catch (error) {
+      console.warn('Failed to select word:', error)
+    }
+  }
+
+  selectParagraphAtPoint(clientX: number, clientY: number): void {
+    try {
+      const element = document.elementFromPoint(clientX, clientY)
+      if (!element) return
+
+      // Find the block element containing this point
+      const blockElement = findBlockElement(element)
+      if (!blockElement) return
+
+      const selection = window.getSelection()
+      if (!selection) return
+
+      const range = document.createRange()
+      range.selectNodeContents(blockElement)
+
+      selection.removeAllRanges()
+      selection.addRange(range)
+    } catch (error) {
+      console.warn('Failed to select paragraph:', error)
     }
   }
 

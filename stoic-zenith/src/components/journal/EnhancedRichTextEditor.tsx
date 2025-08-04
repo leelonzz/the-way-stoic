@@ -131,10 +131,17 @@ export function EnhancedRichTextEditor({
       if (newBlocks[targetIndex]) {
         setTimeout(() => {
           const targetElement = document.querySelector(
-            `[data-block-id="${newBlocks[targetIndex].id}"]`
+            `[data-block-id="${newBlocks[targetIndex].id}"] [contenteditable]`
           ) as HTMLElement
           if (targetElement) {
             targetElement.focus()
+            // Place cursor at the end
+            const range = document.createRange()
+            const selection = window.getSelection()
+            range.selectNodeContents(targetElement)
+            range.collapse(false)
+            selection?.removeAllRanges()
+            selection?.addRange(range)
           }
         }, 10)
       }
@@ -142,21 +149,80 @@ export function EnhancedRichTextEditor({
     [blocks, onChange]
   )
 
+  const selectAllContent = useCallback(() => {
+    if (!editorRef.current || blocks.length === 0) return
+
+    try {
+      const selection = window.getSelection()
+      if (!selection) return
+
+      // Find the first and last block elements
+      const firstBlockElement = editorRef.current.querySelector(`[data-block-id="${blocks[0].id}"] [contenteditable]`) as HTMLElement
+      const lastBlockElement = editorRef.current.querySelector(`[data-block-id="${blocks[blocks.length - 1].id}"] [contenteditable]`) as HTMLElement
+
+      if (!firstBlockElement || !lastBlockElement) return
+
+      const range = document.createRange()
+
+      // Set range from start of first block to end of last block
+      range.setStart(firstBlockElement, 0)
+      range.setEnd(lastBlockElement, lastBlockElement.childNodes.length)
+
+      selection.removeAllRanges()
+      selection.addRange(range)
+    } catch (error) {
+      console.warn('Failed to select all content:', error)
+    }
+  }, [blocks])
+
+  // Setup global keyboard event listener for Ctrl+A
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        // Check if the focus is within our editor
+        const activeElement = document.activeElement
+        if (activeElement && editorRef.current?.contains(activeElement)) {
+          e.preventDefault()
+          selectAllContent()
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleGlobalKeyDown)
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [selectAllContent])
+
   const handleBlockKeyDown = useCallback(
     (e: KeyboardEvent, blockId: string) => {
       const block = blocks.find(b => b.id === blockId)
       if (!block) return
 
+      // Handle Ctrl+A to select all content across blocks
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault()
+        selectAllContent()
+        return
+      }
+
       // Handle Enter key for new blocks
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault()
         const newBlockId = addBlock(blockId)
+
+        // Focus the new block and ensure it's ready for input
         setTimeout(() => {
           const newElement = document.querySelector(
-            `[data-block-id="${newBlockId}"]`
+            `[data-block-id="${newBlockId}"] [contenteditable]`
           ) as HTMLElement
           if (newElement) {
             newElement.focus()
+            // Place cursor at the beginning
+            const range = document.createRange()
+            const selection = window.getSelection()
+            range.setStart(newElement, 0)
+            range.collapse(true)
+            selection?.removeAllRanges()
+            selection?.addRange(range)
           }
         }, 10)
         return
@@ -229,10 +295,17 @@ export function EnhancedRichTextEditor({
       // Focus the transformed block
       setTimeout(() => {
         const element = document.querySelector(
-          `[data-block-id="${activeBlockId}"]`
+          `[data-block-id="${activeBlockId}"] [contenteditable]`
         ) as HTMLElement
         if (element) {
           element.focus()
+          // Place cursor at the beginning
+          const range = document.createRange()
+          const selection = window.getSelection()
+          range.setStart(element, 0)
+          range.collapse(true)
+          selection?.removeAllRanges()
+          selection?.addRange(range)
         }
       }, 10)
     },
