@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal, Plus, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Plus, Trash2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,11 +19,41 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-import { SingleEditableRichTextEditor } from './SingleEditableRichTextEditor';
+import { EnhancedRichTextEditor } from './EnhancedRichTextEditor';
+import { SafeEditorWrapper } from './SafeEditorWrapper';
 import { JournalEntry, JournalBlock } from './types';
 import { updateJournalEntryFromBlocks, deleteJournalEntry } from '@/lib/journal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { toast } from '@/components/ui/use-toast';
+
+// Data validation utilities
+const validateJournalEntry = (entry: JournalEntry): boolean => {
+  if (!entry || !entry.id || !entry.date || !Array.isArray(entry.blocks)) {
+    return false;
+  }
+
+  // Validate each block
+  for (const block of entry.blocks) {
+    if (!block.id || !block.type || typeof block.text !== 'string') {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const sanitizeJournalEntry = (entry: JournalEntry): JournalEntry => {
+  return {
+    ...entry,
+    blocks: entry.blocks.map(block => ({
+      ...block,
+      text: typeof block.text === 'string' ? block.text : '',
+      id: block.id || `block-${Date.now()}-${Math.random()}`,
+      type: block.type || 'paragraph',
+      createdAt: block.createdAt || new Date()
+    }))
+  };
+};
 
 interface JournalNavigationProps {
   className?: string;
@@ -36,36 +66,219 @@ interface JournalNavigationProps {
 
 export function JournalNavigation({ className = '', entry, onEntryUpdate, onCreateEntry, onDeleteEntry, isCreatingEntry: _isCreatingEntry = false }: JournalNavigationProps): JSX.Element {
   const [currentEntry, setCurrentEntry] = useState<JournalEntry>(entry);
-  const [_isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isSwitchingEntry, setIsSwitchingEntry] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+  const [performanceWarning, setPerformanceWarning] = useState<string | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const entrySwitchLockRef = useRef<boolean>(false);
+  const performanceCheckRef = useRef<NodeJS.Timeout | null>(null);
 
   const selectedDate = new Date(currentEntry.date);
 
-  // Debounced save function
+  // Debounced save function with adaptive timing based on content size
   const debouncedSave = useCallback((entryToSave: JournalEntry) => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
+    // Calculate adaptive debounce delay based on content size
+    const totalTextLength = entryToSave.blocks.reduce((total, block) => total + block.text.length, 0);
+    const blockCount = entryToSave.blocks.length;
+
+    let debounceDelay = 1000; // Default 1 second
+
+    if (blockCount > 100 || totalTextLength > 10000) {
+      // Very large content: 3 seconds
+      debounceDelay = 3000;
+    } else if (blockCount > 50 || totalTextLength > 5000) {
+      // Large content: 2 seconds
+      debounceDelay = 2000;
+    } else if (blockCount > 20 || totalTextLength > 2000) {
+      // Medium content: 1.5 seconds
+      debounceDelay = 1500;
+    }
+
+    console.log(`🔄 Auto-save scheduled in ${debounceDelay}ms for ${blockCount} blocks, ${totalTextLength} chars`);
+
     saveTimeoutRef.current = setTimeout(async () => {
       try {
         setIsSaving(true);
+        setSaveStatus('saving');
+        console.log('🔄 Starting auto-save for entry:', entryToSave.id);
 
-        // Save to localStorage immediately
-        const entryKey = `journal-${entryToSave.date}`;
-        localStorage.setItem(entryKey, JSON.stringify(entryToSave));
+        // Validate and sanitize entry before saving
+        if (!validateJournalEntry(entryToSave)) {
+          console.warn('⚠️ Invalid entry data detected, sanitizing...');
+          entryToSave = sanitizeJournalEntry(entryToSave);
+        }
+
+        // Save to localStorage immediately using standardized format with error handling
+        const entryIdKey = `journal-entry-${entryToSave.id}`;
+        const dateKey = `journal-${entryToSave.date}`;
+
+        try {
+          // Save the entry data with entry ID key
+          localStorage.setItem(entryIdKey, JSON.stringify(entryToSave));
+          // Save the pointer from date to entry ID
+          localStorage.setItem(dateKey, entryIdKey);
+        } catch (localStorageError) {
+          console.error('❌ localStorage save failed:', localStorageError);
+
+          // Try to recover by clearing some old entries
+          try {
+            const keysToRemove: string[] = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith('journal-entry-') && key !== entryIdKey) {
+                keysToRemove.push(key);
+              }
+            }
+
+            // Remove oldest entries (keep only last 10)
+            keysToRemove.slice(0, -10).forEach(key => localStorage.removeItem(key));
+
+            // Try saving again
+            localStorage.setItem(entryIdKey, JSON.stringify(entryToSave));
+            localStorage.setItem(dateKey, entryIdKey);
+            console.log('✅ localStorage save succeeded after cleanup');
+          } catch (retryError) {
+            console.error('❌ localStorage save failed even after cleanup:', retryError);
+            throw new Error('Failed to save to local storage - storage may be full');
+          }
+        }
+
+        console.log('✅ Saved to localStorage:', entryIdKey, 'with date pointer:', dateKey);
 
         // Save to Supabase
-        await updateJournalEntryFromBlocks(entryToSave.id, entryToSave.blocks);
-        console.log('Auto-saved to Supabase:', entryToSave.id);
+        console.log('🔄 Attempting Supabase save for entry:', entryToSave.id, 'with', entryToSave.blocks.length, 'blocks');
+
+        let result: any;
+        // Check if this is a temporary/recovery entry that needs to be created first
+        if (entryToSave.id.startsWith('temp-') || entryToSave.id.startsWith('recovery-')) {
+          console.log('Creating new entry in Supabase for temporary ID:', entryToSave.id);
+
+          // Create a new entry in Supabase
+          const { createJournalEntry } = await import('@/lib/journal');
+          const newSupabaseEntry = await createJournalEntry({
+            entry_date: entryToSave.date,
+            entry_type: 'general',
+            excited_about: '',
+            make_today_great: '',
+          });
+
+          // Update the entry with the real Supabase ID
+          const realEntry = {
+            ...entryToSave,
+            id: newSupabaseEntry.id,
+            blocks: entryToSave.blocks.map(block => ({
+              ...block,
+              id: block.id.replace(entryToSave.id, newSupabaseEntry.id)
+            }))
+          };
+
+          // Now save the blocks to the real entry
+          result = await updateJournalEntryFromBlocks(newSupabaseEntry.id, realEntry.blocks);
+
+          // Update localStorage with the real ID
+          const newEntryIdKey = `journal-entry-${newSupabaseEntry.id}`;
+          const dateKey = `journal-${entryToSave.date}`;
+          localStorage.setItem(newEntryIdKey, JSON.stringify(realEntry));
+          localStorage.setItem(dateKey, newEntryIdKey);
+
+          // Remove old temporary entry from localStorage
+          const oldEntryIdKey = `journal-entry-${entryToSave.id}`;
+          localStorage.removeItem(oldEntryIdKey);
+
+          console.log('✅ Auto-saved new entry to Supabase:', newSupabaseEntry.id, 'Result:', result);
+        } else {
+          // Regular update for existing entries
+          result = await updateJournalEntryFromBlocks(entryToSave.id, entryToSave.blocks);
+          console.log('✅ Auto-saved existing entry to Supabase:', entryToSave.id, 'Result:', result);
+        }
+
+        // Verify the save by checking the updated_at timestamp
+        if (result && result.updated_at) {
+          console.log('✅ Save verified - updated_at:', result.updated_at);
+          setSaveStatus('saved');
+          setLastSaveTime(new Date());
+
+          // Reset to idle after showing saved status for 2 seconds
+          setTimeout(() => setSaveStatus('idle'), 2000);
+        } else {
+          console.warn('⚠️ Save result missing updated_at timestamp:', result);
+          setSaveStatus('saved'); // Still show as saved since localStorage worked
+          setLastSaveTime(new Date());
+          setTimeout(() => setSaveStatus('idle'), 2000);
+        }
 
       } catch (error) {
-        console.warn('Auto-save failed:', error);
+        console.error('❌ Auto-save failed:', error);
+
+        // Log detailed error information
+        if (error instanceof Error) {
+          console.error('Error message:', error.message);
+          console.error('Error stack:', error.stack);
+        }
+
+        // Enhanced error categorization and recovery
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const isAuthError = errorMessage.includes('not authenticated') || errorMessage.includes('auth') || errorMessage.includes('JWT');
+        const isNetworkError = errorMessage.includes('network') || errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch');
+        const isQuotaError = errorMessage.includes('quota') || errorMessage.includes('limit') || errorMessage.includes('storage');
+        const isValidationError = errorMessage.includes('validation') || errorMessage.includes('invalid');
+
+        let description = "Your changes are saved locally but couldn't sync to the cloud.";
+        let shouldRetry = false;
+
+        if (isAuthError) {
+          description = "Authentication issue. Please refresh the page and try again.";
+        } else if (isNetworkError) {
+          description = "Network issue. Your changes are saved locally and will sync when you're back online.";
+          shouldRetry = true;
+        } else if (isQuotaError) {
+          description = "Storage quota exceeded. Please contact support or delete old entries.";
+        } else if (isValidationError) {
+          description = "Data validation error. Your content is saved locally.";
+          // Try to sanitize and retry once
+          try {
+            const sanitizedEntry = sanitizeJournalEntry(entryToSave);
+            console.log('🔄 Retrying with sanitized data...');
+            await updateJournalEntryFromBlocks(sanitizedEntry.id, sanitizedEntry.blocks);
+            console.log('✅ Retry with sanitized data succeeded');
+            setSaveStatus('saved');
+            setLastSaveTime(new Date());
+            setTimeout(() => setSaveStatus('idle'), 2000);
+            return; // Exit early on successful retry
+          } catch (retryError) {
+            console.error('❌ Retry with sanitized data failed:', retryError);
+          }
+        }
+
+        // Schedule retry for network errors
+        if (shouldRetry) {
+          setTimeout(() => {
+            console.log('🔄 Retrying auto-save after network error...');
+            debouncedSave(entryToSave);
+          }, 30000); // Retry after 30 seconds
+        }
+
+        // Show user-friendly error message
+        toast({
+          title: "Save failed",
+          description,
+          variant: "destructive",
+        });
+
+        setSaveStatus('failed');
+        // Reset to idle after showing failed status for 3 seconds
+        setTimeout(() => setSaveStatus('idle'), 3000);
       } finally {
         setIsSaving(false);
       }
-    }, 1000); // 1 second debounce
+    }, debounceDelay); // Adaptive debounce delay
   }, []);
 
   // Cleanup timeout on unmount
@@ -81,8 +294,11 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
     try {
       await deleteJournalEntry(currentEntry.id);
 
-      // Remove from localStorage as well
-      localStorage.removeItem(`journal-${currentEntry.date}`);
+      // Remove from localStorage as well (both keys)
+      const entryIdKey = `journal-entry-${currentEntry.id}`;
+      const dateKey = `journal-${currentEntry.date}`;
+      localStorage.removeItem(entryIdKey);
+      localStorage.removeItem(dateKey);
 
       // Call parent delete handler for immediate UI update
       onDeleteEntry?.(currentEntry.id);
@@ -105,37 +321,132 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
   };
 
   const saveEntry = async (): Promise<void> => {
-    if (!currentEntry) return;
+    if (!currentEntry || entrySwitchLockRef.current) return;
 
     setIsSaving(true);
+    setSaveStatus('saving');
     try {
       const updatedEntry = {
         ...currentEntry,
         updatedAt: new Date()
       };
 
-      // Save to localStorage as immediate backup
-      const entryKey = `journal-${currentEntry.date}`;
-      localStorage.setItem(entryKey, JSON.stringify(updatedEntry));
+      // Save to localStorage as immediate backup using standardized format
+      const entryIdKey = `journal-entry-${currentEntry.id}`;
+      const dateKey = `journal-${currentEntry.date}`;
+
+      localStorage.setItem(entryIdKey, JSON.stringify(updatedEntry));
+      localStorage.setItem(dateKey, entryIdKey);
 
       // Save to Supabase with rich text content
       try {
-        await updateJournalEntryFromBlocks(currentEntry.id, currentEntry.blocks);
-        console.log('Successfully saved to Supabase:', currentEntry.id);
+        // Check if this is a temporary/recovery entry that needs to be created first
+        if (currentEntry.id.startsWith('temp-') || currentEntry.id.startsWith('recovery-')) {
+          console.log('Creating new entry in Supabase for temporary ID:', currentEntry.id);
+
+          // Create a new entry in Supabase
+          const { createJournalEntry } = await import('@/lib/journal');
+          const newSupabaseEntry = await createJournalEntry({
+            entry_date: currentEntry.date,
+            entry_type: 'general',
+            excited_about: '',
+            make_today_great: '',
+          });
+
+          // Update the entry with the real Supabase ID
+          const realEntry = {
+            ...currentEntry,
+            id: newSupabaseEntry.id,
+            blocks: currentEntry.blocks.map(block => ({
+              ...block,
+              id: block.id.replace(currentEntry.id, newSupabaseEntry.id)
+            }))
+          };
+
+          // Now save the blocks to the real entry
+          await updateJournalEntryFromBlocks(newSupabaseEntry.id, realEntry.blocks);
+
+          // Update localStorage with the real ID
+          const newEntryIdKey = `journal-entry-${newSupabaseEntry.id}`;
+          const dateKey = `journal-${currentEntry.date}`;
+          localStorage.setItem(newEntryIdKey, JSON.stringify(realEntry));
+          localStorage.setItem(dateKey, newEntryIdKey);
+
+          // Remove old temporary entry from localStorage
+          const oldEntryIdKey = `journal-entry-${currentEntry.id}`;
+          localStorage.removeItem(oldEntryIdKey);
+
+          // Update the current entry state
+          setCurrentEntry(realEntry);
+          onEntryUpdate(realEntry);
+
+          console.log('Successfully created and saved new entry:', newSupabaseEntry.id);
+        } else {
+          // Regular update for existing entries
+          await updateJournalEntryFromBlocks(currentEntry.id, currentEntry.blocks);
+          console.log('Successfully updated existing entry:', currentEntry.id);
+        }
+
+        setSaveStatus('saved');
+        setLastSaveTime(new Date());
+        setTimeout(() => setSaveStatus('idle'), 2000);
       } catch (supabaseError) {
         console.warn('Failed to save to Supabase, localStorage backup saved:', supabaseError);
-        // Still update the UI even if Supabase fails
+        setSaveStatus('saved'); // Still show as saved since localStorage worked
+        setLastSaveTime(new Date());
+        setTimeout(() => setSaveStatus('idle'), 2000);
       }
 
       setCurrentEntry(updatedEntry);
       onEntryUpdate(updatedEntry);
     } catch (error) {
       console.error('Error saving entry:', error);
+      setSaveStatus('failed');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } finally {
       setIsSaving(false);
     }
   };
 
+  // Manual save function for the save button
+  const handleManualSave = async (): Promise<void> => {
+    if (!currentEntry) return;
+
+    // Clear any pending auto-save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+
+    await saveEntry();
+
+    toast({
+      title: "Saved",
+      description: "Your journal entry has been saved successfully.",
+    });
+  };
+
+
+  // Performance monitoring function
+  const checkPerformance = useCallback((entry: JournalEntry) => {
+    const totalTextLength = entry.blocks.reduce((total, block) => total + block.text.length, 0);
+    const blockCount = entry.blocks.length;
+
+    // Clear existing warning
+    setPerformanceWarning(null);
+
+    // Performance thresholds
+    if (blockCount > 200 || totalTextLength > 50000) {
+      setPerformanceWarning('Very large entry detected. Consider splitting into multiple entries for better performance.');
+    } else if (blockCount > 100 || totalTextLength > 20000) {
+      setPerformanceWarning('Large entry detected. Performance may be affected with very long content.');
+    }
+
+    // Log performance metrics
+    if (blockCount > 50 || totalTextLength > 5000) {
+      console.log(`📊 Performance metrics: ${blockCount} blocks, ${totalTextLength} characters`);
+    }
+  }, []);
 
   const handleBlocksChange = (blocks: JournalBlock[]): void => {
     if (!currentEntry) return;
@@ -147,23 +458,65 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
     setCurrentEntry(updatedEntry);
     onEntryUpdate(updatedEntry);
 
+    // Performance monitoring with debouncing
+    if (performanceCheckRef.current) {
+      clearTimeout(performanceCheckRef.current);
+    }
+    performanceCheckRef.current = setTimeout(() => {
+      checkPerformance(updatedEntry);
+    }, 2000); // Check performance 2 seconds after user stops typing
+
     // Auto-save with debouncing
     debouncedSave(updatedEntry);
   };
 
   useEffect(() => {
-    // Save current entry before switching to new one
-    if (currentEntry && currentEntry.id !== entry.id) {
-      saveEntry();
-    }
-    setCurrentEntry(entry);
-  }, [entry]);
+    const switchEntry = async () => {
+      // Prevent concurrent entry switches
+      if (entrySwitchLockRef.current) return;
+      
+      // Save current entry before switching to new one
+      if (currentEntry && currentEntry.id !== entry.id) {
+        entrySwitchLockRef.current = true;
+        setIsSwitchingEntry(true);
+        
+        try {
+          // Clear any pending debounced saves first
+          if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+            saveTimeoutRef.current = null;
+          }
+          
+          // Save current entry and wait for completion
+          await saveEntry();
+          
+          // Update to new entry
+          setCurrentEntry(entry);
+        } catch (error) {
+          console.error('Error during entry switch:', error);
+          // Still switch entry even if save fails
+          setCurrentEntry(entry);
+        } finally {
+          setIsSwitchingEntry(false);
+          entrySwitchLockRef.current = false;
+        }
+      } else {
+        // No save needed, just update entry
+        setCurrentEntry(entry);
+      }
+    };
 
-  // Cleanup timeout on unmount
+    switchEntry();
+  }, [entry, currentEntry, saveEntry]);
+
+  // Cleanup timeouts on unmount
   useEffect((): (() => void) => {
     return (): void => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
+      }
+      if (performanceCheckRef.current) {
+        clearTimeout(performanceCheckRef.current);
       }
     };
   }, []);
@@ -202,10 +555,54 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
             <div className="text-base font-medium text-stone-800">
               {format(selectedDate, 'MMM d, yyyy, h:mm a')}
             </div>
+            {/* Enhanced save status indicators */}
+            {saveStatus === 'saving' && (
+              <div className="text-xs text-blue-600 mt-1 flex items-center justify-center gap-1">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                Saving...
+              </div>
+            )}
+            {saveStatus === 'saved' && (
+              <div className="text-xs text-green-600 mt-1 flex items-center justify-center gap-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                Saved
+              </div>
+            )}
+            {saveStatus === 'failed' && (
+              <div className="text-xs text-red-600 mt-1 flex items-center justify-center gap-1">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                Save failed
+              </div>
+            )}
+            {saveStatus === 'idle' && lastSaveTime && (
+              <div className="text-xs text-stone-400 mt-1">
+                Last saved {format(lastSaveTime, 'h:mm a')}
+              </div>
+            )}
+            {performanceWarning && (
+              <div className="text-xs text-amber-600 mt-1 max-w-xs text-center">
+                ⚠️ {performanceWarning}
+              </div>
+            )}
           </div>
 
-          {/* Right side - Plus button */}
-          <div className="flex gap-3">
+          {/* Right side - Save and Plus buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleManualSave}
+              disabled={isSaving || saveStatus === 'saving'}
+              className="h-8 w-8 p-0 hover:bg-stone-100 rounded-lg"
+              title="Save manually"
+            >
+              <Save className={`h-4 w-4 ${
+                saveStatus === 'saving' ? 'text-blue-500 animate-pulse' :
+                saveStatus === 'saved' ? 'text-green-500' :
+                saveStatus === 'failed' ? 'text-red-500' :
+                'text-stone-600'
+              }`} />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -222,10 +619,12 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
       <div className="flex-1 bg-white min-h-0">
         <div className="h-full" data-export-area>
           <ErrorBoundary>
-            <SingleEditableRichTextEditor
-              blocks={currentEntry.blocks}
-              onChange={handleBlocksChange}
-            />
+            <SafeEditorWrapper>
+              <EnhancedRichTextEditor
+                blocks={currentEntry.blocks}
+                onChange={handleBlocksChange}
+              />
+            </SafeEditorWrapper>
           </ErrorBoundary>
         </div>
       </div>

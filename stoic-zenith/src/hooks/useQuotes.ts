@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
@@ -98,12 +98,74 @@ export function useQuotes(user: User | null): {
   deleteUserQuote: (id: string) => Promise<boolean>;
   refetch: () => void;
   refreshDailyQuote: () => Quote | null;
+  reloadCount: number;
+  maxReloads: number;
+  canReload: boolean;
+  debugCacheStatus: () => void;
 } {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
   const [userQuotes, setUserQuotes] = useState<UserQuote[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionShownQuotes, setSessionShownQuotes] = useState<string[]>([]);
+  const [reloadCount, setReloadCount] = useState(0);
+  const [cachedDailyQuote, setCachedDailyQuote] = useState<Quote | null>(null);
+  const [cachedDate, setCachedDate] = useState<string>('');
+  
+  const maxReloads = 10;
+  const canReload = reloadCount < maxReloads;
+
+  // Cleanup old cached quotes from localStorage
+  const cleanupOldCachedQuotes = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0];
+      
+      // Remove cached quotes older than 7 days
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i - 1); // Start from yesterday
+        const dateString = date.toISOString().split('T')[0];
+        const key = `daily-quote-${dateString}`;
+        
+        if (localStorage.getItem(key)) {
+          localStorage.removeItem(key);
+          console.log('Cleaned up old cached quote for:', dateString);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to cleanup old cached quotes:', error);
+    }
+  }, []);
+
+  // Quota management helpers
+  const getQuotaKey = useCallback(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const userId = user?.id || 'guest';
+    return `quote-reload-quota-${userId}-${today}`;
+  }, [user?.id]);
+
+  const loadQuotaFromStorage = useCallback(() => {
+    if (typeof window === 'undefined') return 0;
+    try {
+      const quotaData = localStorage.getItem(getQuotaKey());
+      return quotaData ? parseInt(quotaData, 10) : 0;
+    } catch {
+      return 0;
+    }
+  }, [getQuotaKey]);
+
+  const saveQuotaToStorage = useCallback((count: number) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(getQuotaKey(), count.toString());
+    } catch {
+      // Silently fail if localStorage is unavailable
+    }
+  }, [getQuotaKey]);
 
   const fetchQuotes = useCallback(async () => {
     try {
@@ -208,7 +270,8 @@ export function useQuotes(user: User | null): {
     }
   }, [user]);
 
-  const getDailyQuote = (): Quote | null => {
+  // Memoized daily quote calculation
+  const dailyQuote = useMemo(() => {
     // If no quotes available, return the first fallback quote
     if (quotes.length === 0) {
       console.log('No quotes available for daily quote, using fallback');
@@ -217,21 +280,66 @@ export function useQuotes(user: User | null): {
     
     // Get today's date in YYYY-MM-DD format
     const today = new Date();
-    const _todayString = today.toISOString().split('T')[0];
+    const todayString = today.toISOString().split('T')[0];
     
-    // Try to get a specific daily quote for today first
-    // For now, use the day-based algorithm as fallback
+    // Check if we have a cached quote for today
+    if (cachedDailyQuote && cachedDate === todayString) {
+      console.log('Using cached daily quote for today:', cachedDate);
+      return cachedDailyQuote;
+    }
+    
+    // Check localStorage for cached quote
+    if (typeof window !== 'undefined') {
+      try {
+        const storedQuoteData = localStorage.getItem(`daily-quote-${todayString}`);
+        if (storedQuoteData) {
+          const storedQuote = JSON.parse(storedQuoteData);
+          console.log('Using localStorage cached daily quote for today:', todayString);
+          setCachedDailyQuote(storedQuote);
+          setCachedDate(todayString);
+          return storedQuote;
+        }
+      } catch (error) {
+        console.warn('Failed to load cached quote from localStorage:', error);
+      }
+    }
+    
+    // Calculate new daily quote
     const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
     const selectedQuote = quotes[dayOfYear % quotes.length];
     
-    console.log('Daily quote selected:', {
+    // Cache the quote and date in both state and localStorage
+    setCachedDailyQuote(selectedQuote);
+    setCachedDate(todayString);
+    
+    // Store in localStorage for persistence across sessions
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`daily-quote-${todayString}`, JSON.stringify(selectedQuote));
+      } catch (error) {
+        console.warn('Failed to cache quote in localStorage:', error);
+      }
+    }
+    
+    console.log('New daily quote calculated and cached:', {
       dayOfYear,
       totalQuotes: quotes.length,
       selectedQuoteIndex: dayOfYear % quotes.length,
-      quote: selectedQuote
+      quote: selectedQuote,
+      date: todayString
     });
     
     return selectedQuote;
+  }, [quotes, cachedDailyQuote, cachedDate]);
+
+  const getDailyQuote = (): Quote | null => {
+    console.log('getDailyQuote called - returning cached quote:', dailyQuote?.id);
+    return dailyQuote;
+  };
+
+  // Debug function to check cache status
+  const debugCacheStatus = () => {
+    // Debug function removed - no longer needed
   };
 
   const saveQuote = async (quoteId: string, notes?: string): Promise<boolean> => {
@@ -246,7 +354,7 @@ export function useQuotes(user: User | null): {
       }
 
       // Check if already saved
-      const alreadySaved = savedQuotes.some(saved => saved.quote_id === quoteId);
+      const alreadySaved = isQuoteSaved(quoteId);
       if (alreadySaved) {
         setError('Quote already saved');
         return false;
@@ -280,8 +388,18 @@ export function useQuotes(user: User | null): {
     if (!user) return false;
 
     try {
-      // Find the saved quote by quote_id (which is the original quote's ID)
-      const savedQuote = savedQuotes.find(saved => saved.quote_id === quoteId);
+      // Find the saved quote by matching the quote text and author
+      // Since we store quote data directly, we need to find by content
+      const quote = quotes.find(q => q.id === quoteId);
+      if (!quote) {
+        setError('Quote not found');
+        return false;
+      }
+
+      const savedQuote = savedQuotes.find(saved => 
+        saved.quote.text === quote.text && saved.quote.author === quote.author
+      );
+      
       if (!savedQuote) {
         setError('Saved quote not found');
         return false;
@@ -305,7 +423,12 @@ export function useQuotes(user: User | null): {
   };
 
   const isQuoteSaved = (quoteId: string): boolean => {
-    return savedQuotes.some(saved => saved.quote_id === quoteId);
+    const quote = quotes.find(q => q.id === quoteId);
+    if (!quote) return false;
+    
+    return savedQuotes.some(saved => 
+      saved.quote.text === quote.text && saved.quote.author === quote.author
+    );
   };
 
   const getQuotesByCategory = (category: string): Quote[] => {
@@ -381,6 +504,9 @@ export function useQuotes(user: User | null): {
 
   useEffect((): void => {
     const loadData = async (): Promise<void> => {
+      // Cleanup old cached quotes first
+      cleanupOldCachedQuotes();
+      
       // Only show loading if we don't have any quotes yet
       if (quotes.length === 0) {
         setLoading(true);
@@ -395,7 +521,68 @@ export function useQuotes(user: User | null): {
     };
 
     loadData();
-  }, [user, fetchQuotes, fetchSavedQuotes, fetchUserQuotes]);
+  }, [user, fetchQuotes, fetchSavedQuotes, fetchUserQuotes, cleanupOldCachedQuotes]);
+
+  // Load quota on mount and when user changes
+  useEffect(() => {
+    const currentQuota = loadQuotaFromStorage();
+    setReloadCount(currentQuota);
+  }, [loadQuotaFromStorage]);
+
+  const refreshDailyQuote = (): Quote | null => {
+    if (!canReload) {
+      console.log('Daily reload quota exceeded');
+      return getDailyQuote();
+    }
+
+    if (quotes.length === 0) {
+      console.log('No quotes available for reload');
+      return getDailyQuote();
+    }
+
+    // Find quotes not shown in current session
+    const availableQuotes = quotes.filter(quote => !sessionShownQuotes.includes(quote.id));
+    
+    let selectedQuote: Quote;
+    
+    if (availableQuotes.length === 0) {
+      // If all quotes shown, reset session and pick randomly
+      console.log('All quotes shown in session, resetting and picking randomly');
+      selectedQuote = quotes[Math.floor(Math.random() * quotes.length)];
+      setSessionShownQuotes([selectedQuote.id]);
+    } else {
+      // Pick randomly from available quotes
+      selectedQuote = availableQuotes[Math.floor(Math.random() * availableQuotes.length)];
+      setSessionShownQuotes(prev => [...prev, selectedQuote.id]);
+    }
+
+    // Update quota
+    const newCount = reloadCount + 1;
+    setReloadCount(newCount);
+    saveQuotaToStorage(newCount);
+
+    // Update cache with new quote
+    const todayString = new Date().toISOString().split('T')[0];
+    setCachedDailyQuote(selectedQuote);
+    setCachedDate(todayString);
+
+    // Update localStorage cache
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`daily-quote-${todayString}`, JSON.stringify(selectedQuote));
+      } catch (error) {
+        console.warn('Failed to update cached quote in localStorage:', error);
+      }
+    }
+
+    console.log('Daily quote reloaded:', {
+      selectedQuote: selectedQuote.id,
+      reloadCount: newCount,
+      sessionShownQuotes: sessionShownQuotes.length + 1
+    });
+
+    return selectedQuote;
+  };
 
   return {
     quotes,
@@ -419,10 +606,10 @@ export function useQuotes(user: User | null): {
         fetchUserQuotes();
       }
     },
-    refreshDailyQuote: (): Quote | null => {
-      // Force a refresh of the daily quote by clearing cache or using different logic
-      const newQuote = getDailyQuote();
-      return newQuote;
-    }
+    refreshDailyQuote: refreshDailyQuote,
+    debugCacheStatus,
+    reloadCount,
+    maxReloads,
+    canReload
   };
 }

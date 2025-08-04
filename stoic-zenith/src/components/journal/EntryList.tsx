@@ -37,7 +37,27 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
     
     try {
       const journalEntries = await getJournalEntries(50);
-      const entryItems: EntryListItem[] = journalEntries.map(entry => {
+
+      // Filter out entries that appear to be test/debug entries with timestamp text
+      const filteredJournalEntries = journalEntries.filter(entry => {
+        // Check if the entry contains only timestamp-like content
+        const timestampPattern = /^Entry created at \d{1,2}:\d{2}:\d{2}$/;
+        const isTimestampEntry = timestampPattern.test(entry.excited_about || '');
+
+        // Also check if the entry has no meaningful content (only timestamp text)
+        const hasRealContent = [
+          entry.make_today_great,
+          entry.must_not_do,
+          entry.grateful_for,
+          ...(Array.isArray(entry.biggest_wins) ? entry.biggest_wins : []),
+          ...(Array.isArray(entry.tensions) ? entry.tensions : [])
+        ].some(content => content && content.trim() !== '');
+
+        // Include entry if it's not a timestamp entry OR if it has real content beyond the timestamp
+        return !isTimestampEntry || hasRealContent;
+      });
+
+      const entryItems: EntryListItem[] = filteredJournalEntries.map(entry => {
         // Generate preview from journal entry content
         const contentParts = [
           entry.excited_about,
@@ -47,9 +67,9 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
           ...(Array.isArray(entry.biggest_wins) ? entry.biggest_wins : []),
           ...(Array.isArray(entry.tensions) ? entry.tensions : [])
         ].filter(Boolean);
-        
+
         const preview = contentParts.join(' ').slice(0, 80);
-        
+
         return {
           entry: {
             ...entry,
@@ -115,6 +135,52 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
 
   useEffect(() => {
     loadEntries();
+  }, [loadEntries]);
+
+  // Real-time subscription for entry list updates
+  useEffect(() => {
+    let subscription: any = null;
+
+    const setupRealtimeSync = async () => {
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) return;
+
+        // Subscribe to changes in journal_entries table for the current user
+        subscription = supabase
+          .channel('entry_list_changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+              schema: 'public',
+              table: 'journal_entries',
+              filter: `user_id=eq.${user.id}`
+            },
+            (payload) => {
+              console.log('Entry list real-time update received:', payload);
+              // Refresh the entry list when any journal entry changes
+              loadEntries();
+            }
+          )
+          .subscribe((status) => {
+            console.log('Entry list subscription status:', status);
+          });
+
+      } catch (error) {
+        console.error('Failed to setup entry list real-time sync:', error);
+      }
+    };
+
+    setupRealtimeSync();
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, [loadEntries]);
 
   // Function to refresh entries (can be called from parent components)

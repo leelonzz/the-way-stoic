@@ -39,13 +39,11 @@ export async function createJournalEntry(data: CreateJournalEntryData): Promise<
     throw new Error('User not authenticated');
   }
 
-  // Generate unique entry with timestamp-based identification
-  const now = new Date();
   const entryData = {
     user_id: user.id,
     entry_date: data.entry_date,
-    entry_type: data.entry_type || 'general', // Default to 'general' instead of 'morning'
-    excited_about: data.excited_about || `Entry created at ${now.toLocaleTimeString()}`,
+    entry_type: data.entry_type || 'general',
+    excited_about: data.excited_about || '',
     make_today_great: data.make_today_great || '',
     must_not_do: data.must_not_do || '',
     grateful_for: data.grateful_for || '',

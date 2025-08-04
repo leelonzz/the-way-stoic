@@ -57,7 +57,6 @@ export function MultiBlockTest(): JSX.Element {
         <SingleEditableRichTextEditor
           blocks={blocks}
           onChange={setBlocks}
-          placeholder="Start typing to test multi-block selection..."
         />
       </div>
       

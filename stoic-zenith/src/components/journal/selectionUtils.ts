@@ -299,31 +299,36 @@ export class SelectionManager {
   }
 
   selectText(startBlockId: string, startOffset: number, endBlockId: string, endOffset: number): void {
-    const startElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${startBlockId}"]`) as HTMLElement
-    const endElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${endBlockId}"]`) as HTMLElement
-    
-    if (!startElement || !endElement) return
+    try {
+      const startElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${startBlockId}"]`) as HTMLElement
+      const endElement = document.querySelector(`[${BLOCK_MARKER_ATTRIBUTE}="${endBlockId}"]`) as HTMLElement
+      
+      if (!startElement || !endElement) return
 
-    const selection = window.getSelection()
-    if (!selection) return
+      const selection = window.getSelection()
+      if (!selection) return
 
-    const range = document.createRange()
-    
-    // Find text nodes for precise positioning
-    const startTextNode = this.findTextNodeAtOffset(startElement, startOffset)
-    const endTextNode = this.findTextNodeAtOffset(endElement, endOffset)
-    
-    if (startTextNode.node && endTextNode.node) {
-      range.setStart(startTextNode.node, startTextNode.offset)
-      range.setEnd(endTextNode.node, endTextNode.offset)
-    } else {
-      // Fallback to element-based selection
-      range.setStart(startElement, startOffset)
-      range.setEnd(endElement, endOffset)
+      const range = document.createRange()
+      
+      // Find text nodes for precise positioning
+      const startTextNode = this.findTextNodeAtOffset(startElement, startOffset)
+      const endTextNode = this.findTextNodeAtOffset(endElement, endOffset)
+      
+      if (startTextNode.node && endTextNode.node) {
+        range.setStart(startTextNode.node, startTextNode.offset)
+        range.setEnd(endTextNode.node, endTextNode.offset)
+      } else {
+        // Fallback to element-based selection
+        range.setStart(startElement, startOffset)
+        range.setEnd(endElement, endOffset)
+      }
+      
+      selection.removeAllRanges()
+      selection.addRange(range)
+    } catch (error) {
+      // Ignore DOM manipulation errors - they're expected during React re-renders
+      console.warn('selectText warning (safely ignored):', error)
     }
-    
-    selection.removeAllRanges()
-    selection.addRange(range)
   }
 
   selectBlocks(blockIds: string[]): void {
@@ -349,8 +354,13 @@ export class SelectionManager {
       textArea.select()
       document.execCommand('copy')
       // Safer removal with additional checks
-      if (textArea.parentNode) {
-        textArea.remove()
+      try {
+        if (textArea.parentNode) {
+          textArea.remove()
+        }
+      } catch (error) {
+        // Ignore DOM manipulation errors - they're expected during React re-renders
+        console.warn('DOM cleanup warning (safely ignored):', error)
       }
     })
     
@@ -678,8 +688,13 @@ export class SelectionManager {
         this.handleTextDrop(e, selectedText, container)
         
         // Enhanced cleanup
-        if (dragImage.parentNode) {
-          dragImage.remove()
+        try {
+          if (dragImage.parentNode) {
+            dragImage.remove()
+          }
+        } catch (error) {
+          // Ignore DOM manipulation errors - they're expected during React re-renders
+          console.warn('DOM cleanup warning (safely ignored):', error)
         }
         document.removeEventListener('mousemove', handleMouseMove)
         document.removeEventListener('mouseup', handleMouseUp)
@@ -696,15 +711,20 @@ export class SelectionManager {
   
   private showDragIndicators(event: MouseEvent, container: HTMLElement): void {
     // Remove existing indicators safely
-    container.querySelectorAll('.drop-indicator').forEach(el => {
-      if (el.parentNode) el.remove()
-    })
-    container.querySelectorAll('.line-drop-indicator').forEach(el => {
-      if (el.parentNode) el.remove()
-    })
-    container.querySelectorAll('.magnetic-zone').forEach(el => {
-      if (el.parentNode) el.remove()
-    })
+    try {
+      container.querySelectorAll('.drop-indicator').forEach(el => {
+        if (el.parentNode) el.remove()
+      })
+      container.querySelectorAll('.line-drop-indicator').forEach(el => {
+        if (el.parentNode) el.remove()
+      })
+      container.querySelectorAll('.magnetic-zone').forEach(el => {
+        if (el.parentNode) el.remove()
+      })
+    } catch (error) {
+      // Ignore DOM manipulation errors - they're expected during React re-renders
+      console.warn('DOM cleanup warning (safely ignored):', error)
+    }
     
     const containerRect = container.getBoundingClientRect()
     const relativeY = event.clientY - containerRect.top
@@ -751,18 +771,23 @@ export class SelectionManager {
 
   private cleanupDragIndicators(container: HTMLElement): void {
     // Smooth cleanup of all drag indicators
-    const indicators = container.querySelectorAll('.drop-indicator, .line-drop-indicator, .magnetic-zone')
-    indicators.forEach(indicator => {
-      const el = indicator as HTMLElement
-      el.style.transition = 'opacity 0.15s ease-out, transform 0.15s ease-out'
-      el.style.opacity = '0'
-      el.style.transform = 'scale(0.8)'
-      
-      setTimeout(() => {
-        // Use remove() for safer element removal
-        el.remove()
-      }, 150)
-    })
+    try {
+      const indicators = container.querySelectorAll('.drop-indicator, .line-drop-indicator, .magnetic-zone')
+      indicators.forEach(indicator => {
+        const el = indicator as HTMLElement
+        el.style.transition = 'opacity 0.15s ease-out, transform 0.15s ease-out'
+        el.style.opacity = '0'
+        el.style.transform = 'scale(0.8)'
+        
+        setTimeout(() => {
+          // Use remove() for safer element removal
+          el.remove()
+        }, 150)
+      })
+    } catch (error) {
+      // Ignore DOM manipulation errors - they're expected during React re-renders
+      console.warn('DOM cleanup warning (safely ignored):', error)
+    }
   }
   
   private showEnhancedBlockIndicator(event: DragEvent, blockElement: HTMLElement, _container: HTMLElement): void {

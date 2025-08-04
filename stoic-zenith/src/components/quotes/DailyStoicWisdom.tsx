@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Search, Bookmark, BookmarkCheck, Share, RotateCcw } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,10 @@ interface DailyStoicQuoteCardProps {
   onSave?: (quoteId: string) => Promise<boolean>
   onUnsave?: (quoteId: string) => Promise<boolean>
   onRefresh?: () => void
+  canReload?: boolean
+  reloadCount?: number
+  maxReloads?: number
+  isRefreshing?: boolean
 }
 
 function DailyStoicQuoteCard({ 
@@ -24,7 +28,11 @@ function DailyStoicQuoteCard({
   isSaved = false, 
   onSave, 
   onUnsave,
-  onRefresh
+  onRefresh,
+  canReload = true,
+  reloadCount = 0,
+  maxReloads = 10,
+  isRefreshing = false
 }: DailyStoicQuoteCardProps): JSX.Element {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
@@ -84,14 +92,31 @@ function DailyStoicQuoteCard({
         {/* Action buttons in top right */}
         <div className="absolute top-4 right-6 flex items-center gap-2">
           {onRefresh && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onRefresh}
-              className="text-stone hover:text-cta hover:bg-transparent p-2"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRefresh}
+                disabled={!canReload || isRefreshing}
+                className={`p-2 hover:bg-transparent transition-all ${
+                  canReload && !isRefreshing
+                    ? 'text-stone hover:text-cta' 
+                    : 'text-stone/40 cursor-not-allowed'
+                } ${isRefreshing ? 'animate-spin' : ''}`}
+                title={
+                  !canReload 
+                    ? `Daily quota reached (${reloadCount}/${maxReloads})` 
+                    : `Reload quote (${maxReloads - reloadCount} left)`
+                }
+              >
+                <RotateCcw className="w-4 h-4" />
+              </Button>
+              {canReload && (
+                <span className="text-xs text-stone/70 font-medium">
+                  {maxReloads - reloadCount}
+                </span>
+              )}
+            </div>
           )}
           
           <Button
@@ -144,13 +169,23 @@ interface SimplifiedQuoteCardProps {
   isSaved?: boolean
   onSave?: (quoteId: string) => Promise<boolean>
   onUnsave?: (quoteId: string) => Promise<boolean>
+  onRefresh?: () => void
+  canReload?: boolean
+  reloadCount?: number
+  maxReloads?: number
+  isRefreshing?: boolean
 }
 
 function SimplifiedQuoteCard({ 
   quote, 
   isSaved = false, 
   onSave, 
-  onUnsave 
+  onUnsave,
+  onRefresh,
+  canReload = true,
+  reloadCount = 0,
+  maxReloads = 10,
+  isRefreshing = false
 }: SimplifiedQuoteCardProps): JSX.Element {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
@@ -222,6 +257,34 @@ function SimplifiedQuoteCard({
           </div>
           
           <div className="flex items-center gap-1 shrink-0">
+            {onRefresh && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onRefresh}
+                  disabled={!canReload || isRefreshing}
+                  className={`p-2 hover:bg-transparent transition-all ${
+                    canReload && !isRefreshing
+                      ? 'text-stone hover:text-cta' 
+                      : 'text-stone/40 cursor-not-allowed'
+                  } ${isRefreshing ? 'animate-spin' : ''}`}
+                  title={
+                    !canReload 
+                      ? `Daily quota reached (${reloadCount}/${maxReloads})` 
+                      : `Reload quote (${maxReloads - reloadCount} left)`
+                  }
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+                {canReload && (
+                  <span className="text-xs text-stone/70 font-medium">
+                    {maxReloads - reloadCount}
+                  </span>
+                )}
+              </div>
+            )}
+            
             <Button
               variant="ghost"
               size="sm"
@@ -260,6 +323,7 @@ function SimplifiedQuoteCard({
 export function DailyStoicWisdom(): JSX.Element {
   const { user } = useAuthContext()
   const { isAuthenticated } = useAuthContext()
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState<'library' | 'favorites' | 'my-quotes'>('library')
   
@@ -277,7 +341,10 @@ export function DailyStoicWisdom(): JSX.Element {
     createUserQuote: _createUserQuote, 
     updateUserQuote: _updateUserQuote, 
     deleteUserQuote: _deleteUserQuote,
-    refreshDailyQuote
+    refreshDailyQuote,
+    reloadCount,
+    maxReloads,
+    canReload
   } = useQuotes(user)
 
   const dailyQuote = getDailyQuote()
@@ -292,11 +359,116 @@ export function DailyStoicWisdom(): JSX.Element {
     return filtered
   }, [quotes, searchTerm, searchQuotes])
 
-  const handleRefreshDailyQuote = (): void => {
-    // Use the refresh function from the hook instead of reloading the page
-    refreshDailyQuote()
-    // Force component re-render by updating a state
-    setSearchTerm(prev => prev) // Trigger a re-render
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [currentDailyQuote, setCurrentDailyQuote] = useState<QuoteType | null>(null)
+  const [refreshedQuotes, setRefreshedQuotes] = useState<Map<string, QuoteType>>(new Map())
+  const [individualRefreshStates, setIndividualRefreshStates] = useState<Map<string, boolean>>(new Map())
+
+  // Initialize current daily quote
+  useEffect(() => {
+    const quote = getDailyQuote()
+    setCurrentDailyQuote(quote)
+  }, [getDailyQuote])
+
+  const handleRefreshDailyQuote = async (): Promise<void> => {
+    if (!canReload || isRefreshing) {
+      if (!canReload) {
+        toast({
+          title: "Daily quota reached",
+          description: `You've used all ${maxReloads} reloads for today. Come back tomorrow!`,
+          variant: "destructive"
+        })
+      }
+      return
+    }
+    
+    setIsRefreshing(true)
+    try {
+      // Add small delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 300))
+      const newQuote = refreshDailyQuote()
+      setCurrentDailyQuote(newQuote)
+      
+      if (newQuote) {
+        const remaining = maxReloads - reloadCount - 1
+        toast({
+          title: "Quote refreshed!",
+          description: remaining > 0 
+            ? `${remaining} reloads remaining today`
+            : "Last reload for today used!",
+        })
+      } else {
+        toast({
+          title: "Unable to refresh",
+          description: "No new quotes available at the moment",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Error refreshing quote:', error)
+      toast({
+        title: "Refresh failed",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+  const handleRefreshIndividualQuote = async (quoteId: string): Promise<void> => {
+    if (!canReload) {
+      toast({
+        title: "Daily quota reached",
+        description: `You've used all ${maxReloads} reloads for today. Come back tomorrow!`,
+        variant: "destructive"
+      })
+      return
+    }
+    
+    // Set individual refresh state
+    setIndividualRefreshStates(prev => new Map(prev).set(quoteId, true))
+    
+    try {
+      // Add small delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // Use the hook's refreshDailyQuote function as fallback
+      const newQuote = refreshDailyQuote()
+      
+      if (newQuote) {
+        // Update the refreshed quotes map with the new quote
+        setRefreshedQuotes(prev => new Map(prev).set(quoteId, newQuote))
+        
+        const remaining = maxReloads - reloadCount - 1
+        toast({
+          title: "Quote refreshed!",
+          description: remaining > 0 
+            ? `${remaining} reloads remaining today`
+            : "Last reload for today used!",
+        })
+      } else {
+        toast({
+          title: "Unable to refresh",
+          description: "No new quotes available at the moment",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Error refreshing individual quote:', error)
+      toast({
+        title: "Refresh failed",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIndividualRefreshStates(prev => new Map(prev).set(quoteId, false))
+    }
+  }
+
+  // Get the display quote (either original or refreshed)
+  const getDisplayQuote = (originalQuote: QuoteType): QuoteType => {
+    return refreshedQuotes.get(originalQuote.id) || originalQuote
   }
 
   if (loading) {
@@ -330,13 +502,17 @@ export function DailyStoicWisdom(): JSX.Element {
             Today Quote
           </h2>
           
-          {dailyQuote && (
+          {(currentDailyQuote || dailyQuote) && (
             <DailyStoicQuoteCard
-              quote={dailyQuote}
-              isSaved={isAuthenticated ? isQuoteSaved(dailyQuote.id) : false}
+              quote={currentDailyQuote || dailyQuote}
+              isSaved={isAuthenticated ? isQuoteSaved((currentDailyQuote || dailyQuote).id) : false}
               onSave={isAuthenticated ? saveQuote : undefined}
               onUnsave={isAuthenticated ? unsaveQuote : undefined}
               onRefresh={handleRefreshDailyQuote}
+              canReload={canReload}
+              reloadCount={reloadCount}
+              maxReloads={maxReloads}
+              isRefreshing={isRefreshing}
             />
           )}
         </div>
@@ -396,15 +572,25 @@ export function DailyStoicWisdom(): JSX.Element {
           {activeTab === 'library' && (
             <div className="space-y-4">
               {filteredQuotes.length > 0 ? (
-                filteredQuotes.map((quote) => (
-                  <SimplifiedQuoteCard
-                    key={quote.id}
-                    quote={quote}
-                    isSaved={isAuthenticated ? isQuoteSaved(quote.id) : false}
-                    onSave={isAuthenticated ? saveQuote : undefined}
-                    onUnsave={isAuthenticated ? unsaveQuote : undefined}
-                  />
-                ))
+                filteredQuotes.map((originalQuote) => {
+                  const displayQuote = getDisplayQuote(originalQuote)
+                  const isRefreshing = individualRefreshStates.get(originalQuote.id) || false
+                  
+                  return (
+                    <SimplifiedQuoteCard
+                      key={originalQuote.id}
+                      quote={displayQuote}
+                      isSaved={isAuthenticated ? isQuoteSaved(displayQuote.id) : false}
+                      onSave={isAuthenticated ? saveQuote : undefined}
+                      onUnsave={isAuthenticated ? unsaveQuote : undefined}
+                      onRefresh={() => handleRefreshIndividualQuote(originalQuote.id)}
+                      canReload={canReload}
+                      reloadCount={reloadCount}
+                      maxReloads={maxReloads}
+                      isRefreshing={isRefreshing}
+                    />
+                  )
+                })
               ) : (
                 <div className="text-center py-12">
                   <p className="text-stone">No quotes found matching your search.</p>

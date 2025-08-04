@@ -26,32 +26,13 @@ import { selectionManager } from './selectionUtils'
 interface SingleEditableRichTextEditorProps {
   blocks: JournalBlock[]
   onChange: (blocks: JournalBlock[]) => void
-  placeholder?: string
 }
 
 export function SingleEditableRichTextEditor({
   blocks,
   onChange,
-  placeholder = "Start writing or type '/' or 'splash' for commands...",
 }: SingleEditableRichTextEditorProps): JSX.Element {
-  const getPlaceholderText = (blockType: JournalBlock['type']): string => {
-    switch (blockType) {
-      case 'heading':
-        return 'Heading...'
-      case 'quote':
-        return 'Quote...'
-      case 'todo':
-        return 'To-do...'
-      case 'bullet-list':
-        return 'List item...'
-      case 'numbered-list':
-        return 'Numbered item...'
-      case 'code':
-        return 'Code...'
-      default:
-        return 'Type something...'
-    }
-  }
+
   const [showCommandMenu, setShowCommandMenu] = useState(false)
   
 
@@ -64,6 +45,7 @@ export function SingleEditableRichTextEditor({
   const editorRef = useRef<HTMLDivElement>(null)
   const dragCleanupRef = useRef<(() => void) | null>(null)
   const editingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const inputThrottleRef = useRef<NodeJS.Timeout | null>(null)
 
   const createNewBlock = (
     type: JournalBlock['type'] = 'paragraph',
@@ -93,26 +75,21 @@ export function SingleEditableRichTextEditor({
   )
 
   const handleEditingEnd = useCallback(() => {
-    // Only switch back to display mode if there's actual content
-    // This prevents typography reset when all content is cleared
+    // For modern editor behavior, stay in editing mode longer
+    // Only exit editing mode if user explicitly clicks away and there's content
     editingTimeoutRef.current = setTimeout(() => {
       const hasContent = blocks.some(block => block.text.trim() !== '')
-      if (hasContent) {
+
+      // Only exit editing mode if there's substantial content
+      if (hasContent && blocks.length > 1) {
         setIsEditing(false)
         setEditingBlockId(null)
       } else {
-        // If no content, ensure proper font styling is applied
-        // Force a re-render to apply the correct CSS classes
-        if (editorRef.current) {
-          const blockElements = editorRef.current.querySelectorAll('.block-element')
-          blockElements.forEach(element => {
-            // Add a class to force Inknut Antiqua font for empty content
-            element.classList.add('force-inknut-font')
-          })
-        }
+        // Stay in editing mode for empty or single-block entries
+        // This provides a better writing experience like Notion
+        setIsEditing(true)
       }
-      // If no content, stay in editing mode to maintain typography
-    }, 500) // 500ms delay to allow for quick re-focus
+    }, 2000) // Longer delay for better UX
   }, [blocks])
 
 
@@ -142,11 +119,14 @@ export function SingleEditableRichTextEditor({
     }
   }, [blocks])
 
-  // Cleanup editing timeout on unmount
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return (): void => {
       if (editingTimeoutRef.current) {
         clearTimeout(editingTimeoutRef.current)
+      }
+      if (inputThrottleRef.current) {
+        clearTimeout(inputThrottleRef.current)
       }
     }
   }, [])
@@ -168,35 +148,25 @@ export function SingleEditableRichTextEditor({
     (afterBlockId?: string): string => {
       const newBlock = createNewBlock()
 
-      if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-        window.fontLoadingDebug.log(
-          `[ADD-BLOCK-DEBUG] Creating block: ${newBlock.id} | After: ${afterBlockId || 'END'}`
-        )
-      }
-
+      // Performance optimization: Use more efficient array operations for large content
       if (!afterBlockId) {
-        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-          window.fontLoadingDebug.log(
-            `[ADD-BLOCK-DEBUG] Adding to end | Total blocks before: ${blocks.length}`
-          )
-        }
+        // Simple append case
         onChange([...blocks, newBlock])
       } else {
         const index = blocks.findIndex(b => b.id === afterBlockId)
-        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-          window.fontLoadingDebug.log(
-            `[ADD-BLOCK-DEBUG] Inserting at index: ${index + 1} | Total blocks before: ${blocks.length}`
-          )
-        }
-        const newBlocks = [...blocks]
-        newBlocks.splice(index + 1, 0, newBlock)
-        onChange(newBlocks)
-      }
 
-      if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-        window.fontLoadingDebug.log(
-          `[ADD-BLOCK-DEBUG] Block created successfully: ${newBlock.id}`
-        )
+        // For large arrays, use more efficient insertion
+        if (blocks.length > 50) {
+          // Use Array.from for better performance with large arrays
+          const newBlocks = Array.from(blocks)
+          newBlocks.splice(index + 1, 0, newBlock)
+          onChange(newBlocks)
+        } else {
+          // Standard approach for smaller arrays
+          const newBlocks = [...blocks]
+          newBlocks.splice(index + 1, 0, newBlock)
+          onChange(newBlocks)
+        }
       }
 
       return newBlock.id
@@ -212,6 +182,10 @@ export function SingleEditableRichTextEditor({
         updateBlock(blockId, { text: '' })
         return
       }
+      
+      // Skip DOM manipulation - let React handle the cleanup
+      // This prevents the "removeChild" errors we were seeing
+      
       const updatedBlocks = blocks.filter(block => block.id !== blockId)
       onChange(updatedBlocks)
     },
@@ -220,43 +194,51 @@ export function SingleEditableRichTextEditor({
 
   const focusBlock = useCallback(
     (blockId: string, offset: number = 0): void => {
-      if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-        window.fontLoadingDebug.log(
-          `[FOCUS-DEBUG] Attempting to focus block: ${blockId} at offset: ${offset}`
-        )
+      // Performance optimization: Skip complex focus operations for very large content
+      if (blocks.length > 100) {
+        // For very large content, use a simplified focus approach
+        try {
+          const blockElement = document.querySelector(
+            `[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`
+          ) as HTMLElement
+          if (blockElement) {
+            blockElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+            blockElement.focus()
+          }
+        } catch (error) {
+          console.warn('Simplified focus warning (safely ignored):', error)
+        }
+        return
       }
 
       // Use requestAnimationFrame for immediate but smooth focus
       requestAnimationFrame(() => {
-        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-          window.fontLoadingDebug.log(
-            `[FOCUS-DEBUG] Executing setCaretPosition for: ${blockId}`
-          )
-        }
-
-        // Check if the block exists before trying to focus it
-        const blockElement = document.querySelector(
-          `[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`
-        )
-        if (!blockElement) {
-          if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-            window.fontLoadingDebug.log(
-              `[FOCUS-DEBUG] ERROR: Block not found: ${blockId}`
-            )
+        try {
+          // Check if the block exists before trying to focus it
+          const blockElement = document.querySelector(
+            `[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`
+          ) as HTMLElement
+          if (!blockElement) {
+            return
           }
-          return
-        }
 
-        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-          window.fontLoadingDebug.log(
-            `[FOCUS-DEBUG] Block found, setting caret position`
-          )
-        }
+          // Ensure the parent contentEditable is focused first
+          const contentEditableParent = blockElement.closest('[contenteditable]') as HTMLElement
+          if (contentEditableParent && document.activeElement !== contentEditableParent) {
+            contentEditableParent.focus()
+          }
 
-        setCaretPosition(blockId, offset)
+          // Small delay to ensure proper focus state
+          setTimeout(() => {
+            setCaretPosition(blockId, offset)
+          }, 5)
+        } catch (error) {
+          // Ignore DOM manipulation errors - they're expected during React re-renders
+          console.warn('Focus block warning (safely ignored):', error)
+        }
       })
     },
-    []
+    [blocks.length]
   )
 
   const handleKeyDown = useCallback(
@@ -272,9 +254,7 @@ export function SingleEditableRichTextEditor({
             // Handle Ctrl+A - ensure we maintain proper font state after select all
             // Don't prevent default, let browser handle selection
             // But ensure we're in editing mode for proper handling
-            if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-              window.fontLoadingDebug.log('[CTRL-A] Select all detected')
-            }
+
             setIsEditing(true)
             return
           case 'ArrowUp':
@@ -303,9 +283,7 @@ export function SingleEditableRichTextEditor({
           const totalText = editorRef.current?.textContent || ''
 
           if (selectedText.length >= totalText.length * 0.9) { // 90% or more selected
-            if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-              window.fontLoadingDebug.log('[DELETE-ALL] Most/all content selected for deletion')
-            }
+
 
             // Ensure we stay in editing mode but with proper font handling
             setIsEditing(true)
@@ -361,43 +339,40 @@ export function SingleEditableRichTextEditor({
       if (e.key === 'Enter') {
         e.preventDefault()
 
-        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-          window.fontLoadingDebug.log(
-            `[ENTER-DEBUG] Enter pressed | Current block: ${blockId} | Command menu: ${showCommandMenu}`
-          )
-        }
-
         if (showCommandMenu) {
-          if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-            window.fontLoadingDebug.log(`[ENTER-DEBUG] Closing command menu`)
-          }
           setShowCommandMenu(false)
           return
         }
 
-        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-          window.fontLoadingDebug.log(
-            `[ENTER-DEBUG] Creating new block after: ${blockId}`
-          )
-        }
-
+        // Performance optimization: Batch DOM operations and reduce re-renders
         const newBlockId = addBlock(blockId)
 
-        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-          window.fontLoadingDebug.log(
-            `[ENTER-DEBUG] New block created: ${newBlockId} | Focusing immediately`
-          )
+        // Use a more efficient focus strategy for large content
+        if (blocks.length > 30) {
+          // For large content, use a simpler focus approach to avoid performance issues
+          setTimeout(() => {
+            const blockElement = document.querySelector(
+              `[${BLOCK_MARKER_ATTRIBUTE}="${newBlockId}"]`
+            ) as HTMLElement
+            if (blockElement) {
+              blockElement.focus()
+              // Set cursor to beginning of new block
+              const range = document.createRange()
+              const selection = window.getSelection()
+              if (selection) {
+                range.setStart(blockElement, 0)
+                range.collapse(true)
+                selection.removeAllRanges()
+                selection.addRange(range)
+              }
+            }
+          }, 0)
+        } else {
+          // Standard focus approach for smaller content
+          requestAnimationFrame(() => {
+            focusBlock(newBlockId, 0)
+          })
         }
-
-        // Focus immediately using requestAnimationFrame for smooth transition
-        requestAnimationFrame(() => {
-          if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-            window.fontLoadingDebug.log(
-              `[ENTER-DEBUG] Focusing new block: ${newBlockId}`
-            )
-          }
-          focusBlock(newBlockId, 0)
-        })
       } else if (e.key === 'Backspace') {
         const blockElement = document.querySelector(
           `[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`
@@ -441,47 +416,41 @@ export function SingleEditableRichTextEditor({
 
   const handleInput = useCallback(
     (e: React.FormEvent<HTMLDivElement>): void => {
-      console.log('[INPUT-EVENT] Input event triggered')
-      
       const target = e.target as HTMLElement
-      console.log('[INPUT-EVENT] Target element:', target)
-      console.log('[INPUT-EVENT] Target tagName:', target.tagName)
-      console.log('[INPUT-EVENT] Target className:', target.className)
-      console.log('[INPUT-EVENT] Target contentEditable:', target.contentEditable)
-      console.log('[INPUT-EVENT] Target attributes:', target.getAttributeNames())
-      console.log('[INPUT-EVENT] Target data-block-id:', target.getAttribute('data-block-id'))
-      
+
       const blockElement = findBlockElement(target)
-      console.log('[INPUT-EVENT] Block element found:', blockElement)
-      console.log('[INPUT-EVENT] Block element attributes:', blockElement?.getAttributeNames())
-      console.log('[INPUT-EVENT] Block element data-block-id:', blockElement?.getAttribute('data-block-id'))
-      
+
       if (!blockElement) {
-        console.log('[INPUT-EVENT] No block element found, returning')
         return
       }
 
       const blockId = getBlockId(blockElement)
-      console.log('[INPUT-EVENT] Block ID:', blockId)
-      
+
       if (!blockId) {
-        console.log('[INPUT-EVENT] No block ID found, returning')
         return
       }
 
-      // Get text from the entire contentEditable container
-      const containerText = editorRef.current?.textContent || ''
-      console.log('[INPUT-EVENT] Container text:', containerText)
-      
-      // For now, let's use the block element text as a fallback
-      const text = blockElement.textContent || ''
-      console.log('[INPUT-EVENT] Block text:', text)
-      
+      // Get text from block element and clean it
+      let text = blockElement.textContent || ''
+
       // Clean the text by removing zero-width spaces and other invisible characters
       const cleanText = text.replace(/[\u200B-\u200D\uFEFF]/g, '')
-      
-      // Update the block with the clean text
-      updateBlock(blockId, { text: cleanText })
+
+      // Performance optimization: Throttle input updates for large content
+      if (blocks.length > 50 || cleanText.length > 1000) {
+        // Clear existing throttle
+        if (inputThrottleRef.current) {
+          clearTimeout(inputThrottleRef.current)
+        }
+
+        // Throttle updates for large content to improve performance
+        inputThrottleRef.current = setTimeout(() => {
+          updateBlock(blockId, { text: cleanText })
+        }, 100) // 100ms throttle for large content
+      } else {
+        // Update immediately for smaller content
+        updateBlock(blockId, { text: cleanText })
+      }
 
       // Enhanced slash command and splash command debugging
       const isSlashCommand = cleanText.startsWith('/')
@@ -564,19 +533,10 @@ export function SingleEditableRichTextEditor({
   const handleCommandSelect = useCallback(
     (command: CommandOption): void => {
       if (!activeBlockId) {
-        if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-          window.fontLoadingDebug.log(
-            `[SLASH-DEBUG] COMMAND_SELECT_FAILED - no active block ID`
-          )
-        }
         return
       }
 
-      if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-        window.fontLoadingDebug.log(
-          `[SLASH-DEBUG] COMMAND_SELECTED: ${command.type} (${command.label}) for block ${activeBlockId}`
-        )
-      }
+
 
       if (command.type === 'image') {
         updateBlock(activeBlockId, { text: '' })
@@ -644,6 +604,14 @@ export function SingleEditableRichTextEditor({
     }
   }, [blocks.length, onChange])
 
+  // Always start in editing mode for better UX
+  useEffect(() => {
+    if (blocks.length === 1 && blocks[0].text === '') {
+      setIsEditing(true)
+      setEditingBlockId(blocks[0].id)
+    }
+  }, [blocks])
+
   // Focus first block on mount - but only once
   const hasInitiallyFocused = useRef(false)
 
@@ -658,18 +626,23 @@ export function SingleEditableRichTextEditor({
 
       if (isInitialMount) {
         hasInitiallyFocused.current = true
-        requestAnimationFrame(() => focusBlock(blocks[0].id, 0))
+        
+        // Use multiple animation frames to ensure DOM is fully rendered
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            // Add a small delay to ensure React has fully rendered the block
+            setTimeout(() => {
+              focusBlock(blocks[0].id, 0)
+            }, 10)
+          })
+        })
       }
     }
   }, [blocks.length, focusBlock])
 
   // Separate effect to log block changes without auto-focusing
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-      window.fontLoadingDebug.log(
-        `[BLOCK-CHANGE-DEBUG] Blocks count changed to: ${blocks.length}`
-      )
-    }
+
   }, [blocks.length])
 
   // Log initial state
@@ -684,25 +657,7 @@ export function SingleEditableRichTextEditor({
           background-color: rgba(59, 130, 246, 0.3);
         }
         
-        /* Typography preservation for empty blocks */
-        [data-placeholder]:empty::before {
-          content: attr(data-placeholder);
-          color: rgba(120, 113, 108, 0.6);
-          font-style: italic;
-          pointer-events: none;
-          position: absolute;
-          user-select: none;
-          font-family: inherit; /* Inherit the current font family */
-        }
 
-        /* Ensure editing mode typography is preserved in placeholders */
-        .editing-mode[data-placeholder]:empty::before {
-          font-family: system-ui, -apple-system, sans-serif;
-        }
-
-        .display-mode[data-placeholder]:empty::before {
-          font-family: var(--font-inknut-antiqua), serif;
-        }
         
         /* Maintain block structure styling */
         .block-element {
@@ -758,11 +713,7 @@ export function SingleEditableRichTextEditor({
           // Don't trigger blur if focus is moving to command menu
           const relatedTarget = e.relatedTarget as HTMLElement
           if (relatedTarget && relatedTarget.closest('[role="menu"]')) {
-            if (typeof window !== 'undefined' && window.fontLoadingDebug) {
-              window.fontLoadingDebug.log(
-                '[SLASH-DEBUG] BLUR_CANCELLED - focus moving to command menu'
-              )
-            }
+            
             return
           }
 
@@ -777,23 +728,19 @@ export function SingleEditableRichTextEditor({
           userSelect: 'text',
         }}
       >
-        {blocks.length === 0 && (
-          <div className={`text-stone-400 italic text-base leading-relaxed font-conditional ${isEditing ? 'editing-mode' : 'display-mode'} pointer-events-none`}>
-            Write something...
-          </div>
-        )}
-        {blocks.length === 1 && blocks[0].text === '' && (
-          <div className={`text-stone-400 italic text-base leading-relaxed font-conditional ${isEditing ? 'editing-mode' : 'display-mode'} pointer-events-none`}>
-            {placeholder}
+        {!isEditing && blocks.length === 1 && blocks[0].text === '' && !editingBlockId && (
+          <div className="absolute top-6 left-6 text-stone-400 italic text-base leading-relaxed pointer-events-none z-0 select-none transition-opacity duration-200">
+            Start writing your thoughts...
           </div>
         )}
         {blocks.map(block => {
           const isCurrentBlockEditing =
             editingBlockId === block.id || (isEditing && !editingBlockId)
-          const className = getBlockClassName(
+          const baseClassName = getBlockClassName(
             block,
             isCurrentBlockEditing
           )
+          const className = `${baseClassName} ${block.text === '' ? 'only-zwsp' : ''}`
 
           if (block.type === 'image' && block.imageUrl) {
             return (
@@ -821,18 +768,15 @@ export function SingleEditableRichTextEditor({
               data-block-type={block.type}
               data-block-level={block.level}
               className={className}
-              data-placeholder={
-                block.text === '' ? getPlaceholderText(block.type) : undefined
-              }
-
               style={{
                 // Maintain typography even when empty
                 minHeight: '1.5rem',
                 position: 'relative',
+                zIndex: 1, // Ensure block content appears above placeholder
               }}
+
             >
               {block.text || '\u200B'}
-              {/* Zero-width space to maintain layout */}
             </div>
           )
         })}

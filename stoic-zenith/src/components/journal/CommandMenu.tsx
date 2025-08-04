@@ -214,17 +214,7 @@ export function CommandMenu({
 }: CommandMenuProps): JSX.Element | null {
   const [selectedIndex, setSelectedIndex] = useState(0)
   
-  // Debug component lifecycle
-  useEffect(() => {
-    console.log('[COMMAND-MENU] Component mounted')
-    return () => {
-      console.log('[COMMAND-MENU] Component unmounted')
-    }
-  }, [])
-  
-  useEffect(() => {
-    console.log('[COMMAND-MENU] isOpen prop changed to:', isOpen)
-  }, [isOpen])
+
 
   const filteredCommands = COMMANDS.filter(
     command =>
@@ -270,16 +260,9 @@ export function CommandMenu({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, filteredCommands, selectedIndex, onSelectCommand, onClose])
 
-  // Debug logging
-  console.log(`[COMMAND-MENU] isOpen: ${isOpen}, position:`, position, 'searchQuery:', searchQuery)
-  console.log(`[COMMAND-MENU] Component re-render at:`, new Date().toISOString())
-  
   if (!isOpen) {
-    console.log('[COMMAND-MENU] Menu is not open, returning null')
     return null
   }
-  
-  console.log('[COMMAND-MENU] Menu is open, rendering...')
 
   return (
     <>

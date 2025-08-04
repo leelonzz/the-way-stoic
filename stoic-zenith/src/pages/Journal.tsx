@@ -13,6 +13,7 @@ export default function Journal(): JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [entryListLoading, setEntryListLoading] = useState(false);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'pending' | 'error'>('synced');
 
 
 
@@ -20,7 +21,6 @@ export default function Journal(): JSX.Element {
     // Create entry immediately in UI for instant response (0ms delay)
     const now = new Date();
     const today = format(now, 'yyyy-MM-dd');
-    const timeString = format(now, 'HH:mm:ss');
 
     // Generate temporary ID for immediate UI update
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
@@ -46,8 +46,8 @@ export default function Journal(): JSX.Element {
     // Create in database in background without blocking UI
     createJournalEntry({
       entry_date: today,
-      entry_type: 'morning',
-      excited_about: `Entry created at ${timeString}`,
+      entry_type: 'general',
+      excited_about: '',
       make_today_great: '',
     }).then(supabaseEntry => {
       // Update with real ID from database
@@ -97,10 +97,22 @@ export default function Journal(): JSX.Element {
   const handleEntryUpdate = (updatedEntry: JournalEntry): void => {
     setSelectedEntry(updatedEntry);
 
-    // Save to localStorage immediately for persistence
-    const entryKey = `journal-${updatedEntry.date}`;
+    // Standardize localStorage key usage - use entry ID as primary key
+    const entryIdKey = `journal-entry-${updatedEntry.id}`;
     try {
-      localStorage.setItem(entryKey, JSON.stringify(updatedEntry));
+      const serializedEntry = JSON.stringify({
+        ...updatedEntry,
+        // Ensure blocks have proper IDs scoped to this entry
+        blocks: updatedEntry.blocks.map(block => ({
+          ...block,
+          id: block.id.startsWith(`${updatedEntry.id}-`) ? block.id : `${updatedEntry.id}-${block.id}`
+        }))
+      });
+      localStorage.setItem(entryIdKey, serializedEntry);
+      
+      // Keep date key for backward compatibility but make it reference the entry ID key
+      const dateKey = `journal-${updatedEntry.date}`;
+      localStorage.setItem(dateKey, entryIdKey);
     } catch (error) {
       console.error('Failed to save entry to localStorage:', error);
     }
@@ -123,18 +135,93 @@ export default function Journal(): JSX.Element {
     const loadTodaysEntry = async () => {
       const today = format(new Date(), 'yyyy-MM-dd');
 
-      // First check localStorage for unsaved changes
-      const localEntryKey = `journal-${today}`;
-      const localEntry = localStorage.getItem(localEntryKey);
+      // First check localStorage for unsaved changes using new standardized approach
+      const dateKey = `journal-${today}`;
+      const dateKeyValue = localStorage.getItem(dateKey);
 
-      if (localEntry) {
+      // Check if date key points to entry ID key (new format) or contains entry data (old format)
+      if (dateKeyValue) {
         try {
-          const parsedEntry = JSON.parse(localEntry) as JournalEntry;
-          setSelectedEntry(parsedEntry);
-          setIsLoading(false);
-          return;
+          if (dateKeyValue.startsWith('journal-entry-')) {
+            // New format: date key points to entry ID key
+            const actualEntry = localStorage.getItem(dateKeyValue);
+            if (actualEntry) {
+              const parsedEntry = JSON.parse(actualEntry) as JournalEntry;
+              setSelectedEntry(parsedEntry);
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            // Old format: date key contains entry data directly
+            const parsedEntry = JSON.parse(dateKeyValue) as JournalEntry;
+            // Migrate to new format
+            const entryIdKey = `journal-entry-${parsedEntry.id}`;
+            const updatedEntry = {
+              ...parsedEntry,
+              blocks: parsedEntry.blocks.map(block => ({
+                ...block,
+                id: block.id.startsWith(`${parsedEntry.id}-`) ? block.id : `${parsedEntry.id}-${block.id}`
+              }))
+            };
+            localStorage.setItem(entryIdKey, JSON.stringify(updatedEntry));
+            localStorage.setItem(dateKey, entryIdKey);
+            setSelectedEntry(updatedEntry);
+            setIsLoading(false);
+            return;
+          }
         } catch (error) {
           console.warn('Failed to parse local entry:', error);
+
+          // Enhanced recovery: Try to salvage data before clearing
+          try {
+            const rawData = localStorage.getItem(dateKey);
+            if (rawData) {
+              // Try to extract any readable text content
+              const textMatches = rawData.match(/"text":"([^"]*?)"/g);
+              if (textMatches && textMatches.length > 0) {
+                console.log('🔄 Attempting to recover text content from corrupted entry...');
+
+                // Create a recovery entry with extracted text
+                const recoveredText = textMatches
+                  .map(match => match.replace(/"text":"/, '').replace(/"$/, ''))
+                  .join('\n\n');
+
+                if (recoveredText.trim()) {
+                  toast({
+                    title: "Data Recovery",
+                    description: `Recovered ${recoveredText.length} characters from corrupted entry. Please review and save.`,
+                    variant: "default",
+                  });
+
+                  // Create a recovery entry with the extracted text
+                  const now = new Date();
+                  const recoveryEntryId = `recovery-${Date.now()}`;
+                  const recoveredBlock = {
+                    id: `${recoveryEntryId}-recovered-block`,
+                    type: 'paragraph' as const,
+                    text: recoveredText,
+                    createdAt: now
+                  };
+
+                  const recoveredEntry: JournalEntry = {
+                    id: recoveryEntryId,
+                    date: today,
+                    blocks: [recoveredBlock],
+                    createdAt: now,
+                    updatedAt: now
+                  };
+
+                  setSelectedEntry(recoveredEntry);
+                  handleEntryUpdate(recoveredEntry);
+                }
+              }
+            }
+          } catch (recoveryError) {
+            console.warn('Data recovery failed:', recoveryError);
+          }
+
+          // Clear corrupted data
+          localStorage.removeItem(dateKey);
         }
       }
 
@@ -144,7 +231,18 @@ export default function Journal(): JSX.Element {
         const supabaseEntry = await getJournalEntryAsRichText(today);
 
         if (supabaseEntry) {
-          setSelectedEntry(supabaseEntry);
+          // Save using standardized format
+          const entryIdKey = `journal-entry-${supabaseEntry.id}`;
+          const entryWithScopedBlocks = {
+            ...supabaseEntry,
+            blocks: supabaseEntry.blocks.map(block => ({
+              ...block,
+              id: block.id.startsWith(`${supabaseEntry.id}-`) ? block.id : `${supabaseEntry.id}-${block.id}`
+            }))
+          };
+          localStorage.setItem(entryIdKey, JSON.stringify(entryWithScopedBlocks));
+          localStorage.setItem(dateKey, entryIdKey);
+          setSelectedEntry(entryWithScopedBlocks);
         }
       } catch (error) {
         console.warn('Failed to load entry from Supabase:', error);
@@ -156,12 +254,141 @@ export default function Journal(): JSX.Element {
     loadTodaysEntry();
   }, []);
 
-  // Save current entry before page unload
+  // Real-time sync with Supabase subscriptions
+  useEffect(() => {
+    let subscription: any = null;
+
+    const setupRealtimeSync = async () => {
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) return;
+
+        // Subscribe to changes in journal_entries table for the current user
+        subscription = supabase
+          .channel(`journal_entries_changes_${user.id}`, {
+            config: {
+              broadcast: { self: false },
+              presence: { key: user.id }
+            }
+          })
+          .on(
+            'postgres_changes',
+            {
+              event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+              schema: 'public',
+              table: 'journal_entries',
+              filter: `user_id=eq.${user.id}`
+            },
+            async (payload) => {
+              console.log('Real-time update received:', payload);
+
+              // Handle different types of changes
+              if (payload.eventType === 'UPDATE' && selectedEntry) {
+                const updatedEntry = payload.new;
+
+                // Check if this update is for the currently selected entry
+                if (updatedEntry.id === selectedEntry.id) {
+                  try {
+                    const { getJournalEntryAsRichText } = await import('@/lib/journal');
+                    const serverEntry = await getJournalEntryAsRichText(selectedEntry.date);
+
+                    if (serverEntry) {
+                      const serverTime = new Date(serverEntry.updatedAt);
+                      const localTime = new Date(selectedEntry.updatedAt);
+
+                      console.log('Real-time sync comparison:', {
+                        serverTime: serverTime.toISOString(),
+                        localTime: localTime.toISOString(),
+                        serverNewer: serverTime > localTime,
+                        serverBlocks: serverEntry.blocks.length,
+                        localBlocks: selectedEntry.blocks.length
+                      });
+
+                      if (serverTime > localTime) {
+                        console.log('Real-time sync: Server has newer version, updating local entry');
+                        const entryIdKey = `journal-entry-${serverEntry.id}`;
+                        const dateKey = `journal-${serverEntry.date}`;
+                        const entryWithScopedBlocks = {
+                          ...serverEntry,
+                          blocks: serverEntry.blocks.map(block => ({
+                            ...block,
+                            id: block.id.startsWith(`${serverEntry.id}-`) ? block.id : `${serverEntry.id}-${block.id}`
+                          }))
+                        };
+                        localStorage.setItem(entryIdKey, JSON.stringify(entryWithScopedBlocks));
+                        localStorage.setItem(dateKey, entryIdKey);
+                        setSelectedEntry(entryWithScopedBlocks);
+                        setSyncStatus('synced');
+                      } else {
+                        console.log('Real-time sync: Local version is newer or same, keeping local changes');
+                        setSyncStatus('synced');
+                      }
+                    }
+                  } catch (error) {
+                    console.warn('Real-time sync failed:', error);
+                    setSyncStatus('error');
+                  }
+                }
+              }
+
+              // Refresh entry list for INSERT/DELETE events
+              if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
+                setRefreshKey(prev => prev + 1);
+              }
+            }
+          )
+          .subscribe((status) => {
+            console.log('Real-time subscription status:', status);
+            if (status === 'SUBSCRIBED') {
+              setSyncStatus('synced');
+              console.log('✅ Real-time sync established');
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              setSyncStatus('error');
+              console.warn('❌ Real-time sync failed:', status);
+
+              // Retry connection after a delay
+              setTimeout(() => {
+                console.log('🔄 Retrying real-time connection...');
+                setupRealtimeSync();
+              }, 5000);
+            } else if (status === 'CLOSED') {
+              setSyncStatus('pending');
+              console.log('🔄 Real-time connection closed, will retry...');
+            }
+          });
+
+      } catch (error) {
+        console.error('Failed to setup real-time sync:', error);
+        setSyncStatus('error');
+      }
+    };
+
+    setupRealtimeSync();
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
+  }, [selectedEntry]);
+
+  // Save current entry before page unload using standardized format
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (selectedEntry) {
-        const entryKey = `journal-${selectedEntry.date}`;
-        localStorage.setItem(entryKey, JSON.stringify(selectedEntry));
+        const entryIdKey = `journal-entry-${selectedEntry.id}`;
+        const dateKey = `journal-${selectedEntry.date}`;
+        const entryWithScopedBlocks = {
+          ...selectedEntry,
+          blocks: selectedEntry.blocks.map(block => ({
+            ...block,
+            id: block.id.startsWith(`${selectedEntry.id}-`) ? block.id : `${selectedEntry.id}-${block.id}`
+          }))
+        };
+        localStorage.setItem(entryIdKey, JSON.stringify(entryWithScopedBlocks));
+        localStorage.setItem(dateKey, entryIdKey);
       }
     };
 

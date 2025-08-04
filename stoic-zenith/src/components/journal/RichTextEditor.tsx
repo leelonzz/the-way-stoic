@@ -9,13 +9,11 @@ import {
 interface RichTextEditorProps {
   blocks: JournalBlock[]
   onChange: (blocks: JournalBlock[]) => void
-  placeholder?: string
 }
 
 export function RichTextEditor({
   blocks,
   onChange,
-  placeholder = "Start writing or type '/' or 'splash' for commands...",
 }: RichTextEditorProps): JSX.Element {
   const [showCommandMenu, setShowCommandMenu] = useState(false)
   const [commandMenuPosition, setCommandMenuPosition] = useState({ x: 0, y: 0 })
@@ -493,14 +491,9 @@ export function RichTextEditor({
         ref={editorRef}
         className="flex-1 p-6 bg-white focus-within:ring-0 overflow-y-auto"
       >
-        {blocks.length === 0 && (
-          <div className="text-stone-400 italic text-base leading-relaxed font-inknut">
-            Write something...
-          </div>
-        )}
-        {blocks.length === 1 && blocks[0].text === '' && (
+        {(blocks.length === 0 || (blocks.length === 1 && blocks[0].text === '')) && (
           <div className="absolute top-6 left-6 text-stone-400 italic text-base leading-relaxed font-inknut pointer-events-none">
-            {placeholder}
+            Start writing your thoughts...
           </div>
         )}
         {blocks.map(renderBlock)}

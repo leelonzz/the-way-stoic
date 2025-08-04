@@ -131,36 +131,74 @@ export function getCurrentBlockPosition(): BlockPosition | null {
 }
 
 export function setCaretPosition(blockId: string, offset: number): void {
-  const blockElement = document.querySelector(
-    `[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`
-  )
-  if (!blockElement) return
+  try {
+    const blockElement = document.querySelector(
+      `[${BLOCK_MARKER_ATTRIBUTE}="${blockId}"]`
+    )
+    if (!blockElement) return
 
-  const selection = window.getSelection()
-  if (!selection) return
+    const selection = window.getSelection()
+    if (!selection) return
 
-  const range = document.createRange()
+    const range = document.createRange()
 
-  // Find the text node to position the caret
-  const walker = document.createTreeWalker(
-    blockElement,
-    NodeFilter.SHOW_TEXT,
-    null
-  )
+    // Find the text node to position the caret
+    const walker = document.createTreeWalker(
+      blockElement,
+      NodeFilter.SHOW_TEXT,
+      null
+    )
 
-  const textNode = walker.nextNode()
-  if (textNode) {
-    const maxOffset = Math.min(offset, textNode.textContent?.length || 0)
-    range.setStart(textNode, maxOffset)
-    range.collapse(true)
-  } else {
-    // If no text node, position at the start of the block
-    range.setStart(blockElement, 0)
-    range.collapse(true)
+    const textNode = walker.nextNode()
+    if (textNode && textNode.textContent) {
+      // Position in text node, ensuring we don't exceed its length
+      const maxOffset = Math.min(offset, textNode.textContent.length)
+      range.setStart(textNode, maxOffset)
+      range.collapse(true)
+    } else {
+      // No text node or empty text - handle empty blocks
+      // Check if block has zero-width space or is completely empty
+      const blockText = blockElement.textContent || ''
+      
+      if (blockText === '\u200B' || blockText === '') {
+        // For empty blocks with zero-width space or completely empty
+        // Focus the block element itself and ensure cursor is at start
+        ;(blockElement as HTMLElement).focus()
+        
+        // Create a text node if none exists
+        if (!blockElement.firstChild || blockElement.firstChild.nodeType !== Node.TEXT_NODE) {
+          const textNode = document.createTextNode('\u200B')
+          blockElement.appendChild(textNode)
+        }
+        
+        // Position cursor at the beginning of the text node
+        const firstTextNode = blockElement.firstChild
+        if (firstTextNode && firstTextNode.nodeType === Node.TEXT_NODE) {
+          range.setStart(firstTextNode, 0)
+          range.collapse(true)
+        } else {
+          // Fallback: position at start of block element
+          range.setStart(blockElement, 0)
+          range.collapse(true)
+        }
+      } else {
+        // Block has content but no text nodes found - position at start
+        range.setStart(blockElement, 0)
+        range.collapse(true)
+      }
+    }
+
+    selection.removeAllRanges()
+    selection.addRange(range)
+    
+    // Ensure the block element is focused for proper cursor visibility
+    if (document.activeElement !== blockElement) {
+      ;(blockElement as HTMLElement).focus()
+    }
+  } catch (error) {
+    // Ignore DOM manipulation errors - they're expected during React re-renders
+    console.warn('setCaretPosition warning (safely ignored):', error)
   }
-
-  selection.removeAllRanges()
-  selection.addRange(range)
 }
 
 export function getAllBlockElements(container: HTMLElement): HTMLElement[] {

@@ -11,9 +11,31 @@ export interface JournalBlock {
     | 'todo'
   level?: 1 | 2 | 3
   text: string
+  // Rich text content stored as HTML for inline formatting
+  richText?: string
+  // Structured rich text content for advanced formatting
+  content?: RichTextContent[]
   imageUrl?: string
   imageAlt?: string
   createdAt: Date
+}
+
+// Rich text content structure for inline formatting
+export interface RichTextContent {
+  type: 'text' | 'bold' | 'italic' | 'underline' | 'strike' | 'link' | 'code'
+  text?: string
+  href?: string // for links
+  marks?: RichTextMark[]
+  children?: RichTextContent[]
+}
+
+export interface RichTextMark {
+  type: 'bold' | 'italic' | 'underline' | 'strike' | 'code' | 'link'
+  attrs?: {
+    href?: string
+    target?: string
+    class?: string
+  }
 }
 
 export interface JournalEntry {
