@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
-import { Search, Plus, Trash2 } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { EntryListItem } from './EntryListItem';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -33,9 +33,9 @@ export const EntryList = React.memo(function EntryList({
   onCreateEntry, 
   onDeleteEntry,
   className = '', 
-  isParentLoading = false, 
+  isParentLoading: _isParentLoading = false, 
   onLoadingStateChange, 
-  entries: parentEntries, 
+  entries: _parentEntries, 
   onEntriesChange,
   syncStatus = 'synced'
 }: EntryListProps): JSX.Element {

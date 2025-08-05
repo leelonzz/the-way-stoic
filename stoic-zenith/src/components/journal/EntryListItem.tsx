@@ -2,7 +2,6 @@ import React, { memo } from 'react';
 import { format } from 'date-fns';
 import { Calendar } from 'lucide-react';
 import { JournalEntry } from './types';
-import { JournalEntryResponse, convertSupabaseToBlocks } from '@/lib/journal';
 
 interface EntryListItemProps {
   entry: JournalEntry & { preview?: string };
@@ -16,10 +15,10 @@ export const EntryListItem = memo(({
   entry, 
   isSelected, 
   onSelect,
-  onDelete,
+  onDelete: _onDelete,
   dateLabel
 }: EntryListItemProps) => {
-  const handleClick = () => {
+  const handleClick = (): void => {
     // INSTANT selection - no await, no try/catch needed
     onSelect();
   };

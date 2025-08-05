@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal, Plus, Trash2, Save } from 'lucide-react';
+import { MoreHorizontal, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -117,7 +117,7 @@ export const JournalNavigation = React.memo(function JournalNavigation({
 
   // Cleanup save timeout on unmount
   useEffect(() => {
-    return () => {
+    return (): void => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
