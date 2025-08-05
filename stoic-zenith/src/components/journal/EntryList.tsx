@@ -5,10 +5,11 @@ import { EntryListItem } from './EntryListItem';
 import { Input } from '@/components/ui/input';
 import { JournalEntry } from './types';
 import { getJournalEntries, JournalEntryResponse, convertSupabaseToBlocks } from '@/lib/journal';
+import { useTabVisibility } from '@/hooks/useTabVisibility';
 
 interface EntryListProps {
   selectedEntry: JournalEntry | null;
-  onSelectEntry: (entry: JournalEntry) => void;
+  onSelectEntry: (entry: JournalEntry) => Promise<void>;
   onCreateEntry: () => void;
   className?: string;
   isParentLoading?: boolean;
@@ -27,6 +28,10 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredEntries, setFilteredEntries] = useState<EntryListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastLoadTime, setLastLoadTime] = useState<number>(Date.now());
+
+  // Use centralized tab visibility management
+  const tabVisibility = useTabVisibility({ refreshThreshold: 2000 }); // 2 seconds threshold
 
   const loadEntries = useCallback(async () => {
     if (!onLoadingStateChange) {
@@ -92,6 +97,7 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
       }));
       
       onEntriesChange?.(journalEntryFormat);
+      setLastLoadTime(Date.now());
     } catch (error) {
       console.error('Failed to load journal entries:', error);
     } finally {
@@ -199,6 +205,50 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
       }
     };
   }, [refreshEntries]);
+
+  // Register tab visibility callbacks with centralized system
+  useEffect(() => {
+    const callbackId = 'entryList';
+
+    tabVisibility.registerCallbacks(callbackId, {
+      onVisible: async (state) => {
+        const hasNoEntries = entries.length === 0;
+        const shouldRefreshData = tabVisibility.shouldRefresh(lastLoadTime);
+
+        console.log('🔍 [EntryList] Tab became visible, checking refresh conditions:', {
+          hasNoEntries,
+          shouldRefreshData,
+          wasHiddenDuration: Math.round(state.wasHiddenDuration / 1000),
+          entriesLength: entries.length,
+          lastLoadTime: new Date(lastLoadTime).toLocaleTimeString()
+        });
+
+        // Refresh if:
+        // 1. No entries are currently loaded
+        // 2. shouldRefresh logic determines it's needed based on time thresholds
+        if (hasNoEntries || shouldRefreshData) {
+          console.log('✅ [EntryList] TRIGGERING REFRESH:', {
+            hasNoEntries,
+            shouldRefreshData,
+            reason: hasNoEntries ? 'no entries loaded' : 'time threshold exceeded'
+          });
+          await loadEntries();
+        } else {
+          console.log('⏭️ [EntryList] No refresh needed:', {
+            entriesCount: entries.length,
+            wasHiddenDuration: Math.round(state.wasHiddenDuration / 1000)
+          });
+        }
+      },
+      onHidden: () => {
+        console.log('🔍 [EntryList] Tab became hidden');
+      }
+    });
+
+    return () => {
+      tabVisibility.unregisterCallbacks(callbackId);
+    };
+  }, [tabVisibility, entries.length, lastLoadTime, loadEntries]);
 
   // const hasEntryContent = selectedEntry?.blocks?.some(block => block.text?.trim() !== '') || false;
 

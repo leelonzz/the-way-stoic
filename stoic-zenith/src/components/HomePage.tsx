@@ -19,23 +19,6 @@ function HomePage(): JSX.Element {
 
   const dailyQuote = getDailyQuote()
 
-  // Debug function to test caching
-  const testCaching = () => {
-    console.log('=== Testing Quote Caching ===');
-    debugCacheStatus();
-    
-    // Call getDailyQuote multiple times to see if it's cached
-    const quote1 = getDailyQuote();
-    const quote2 = getDailyQuote();
-    const quote3 = getDailyQuote();
-    
-    console.log('Quote 1 ID:', quote1?.id);
-    console.log('Quote 2 ID:', quote2?.id);
-    console.log('Quote 3 ID:', quote3?.id);
-    console.log('All quotes same:', quote1?.id === quote2?.id && quote2?.id === quote3?.id);
-    console.log('=== End Test ===');
-  };
-
   return (
     <div className="min-h-screen p-6" style={{ background: 'transparent' }}>
       {/* Main Container - Removed background */}
@@ -49,16 +32,6 @@ function HomePage(): JSX.Element {
             {greeting}
           </h1>
           
-          {/* Debug button - only show in development */}
-          {process.env.NODE_ENV === 'development' && (
-            <Button
-              onClick={testCaching}
-              className="mt-4 text-xs bg-gray-500 hover:bg-gray-600"
-              size="sm"
-            >
-              Test Caching
-            </Button>
-          )}
         </div>
 
         {/* Quote Section */}

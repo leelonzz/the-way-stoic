@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { useTabVisibility } from './useTabVisibility';
 
 export interface Quote {
   id: string;
@@ -115,33 +116,14 @@ export function useQuotes(user: User | null): {
   const [cachedDailyQuote, setCachedDailyQuote] = useState<Quote | null>(null);
   const [cachedDate, setCachedDate] = useState<string>('');
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
-  const [isTabVisible, setIsTabVisible] = useState(true);
+
+  // Use centralized tab visibility management
+  const tabVisibility = useTabVisibility({ refreshThreshold: 2000 }); // 2 seconds
   
   const maxReloads = 10;
   const canReload = reloadCount < maxReloads;
 
-  // Tab visibility detection
-  useEffect(() => {
-    const handleVisibilityChange = (): void => {
-      const wasVisible = isTabVisible;
-      const isVisible = !document.hidden;
-      setIsTabVisible(isVisible);
-      
-      // If tab becomes visible and it's been more than 5 minutes since last fetch, refetch
-      if (isVisible && !wasVisible) {
-        const timeSinceLastFetch = Date.now() - lastFetchTime;
-        const fiveMinutes = 5 * 60 * 1000;
-        
-        if (timeSinceLastFetch > fiveMinutes) {
-          console.log('Tab became visible, refetching quotes after', Math.round(timeSinceLastFetch / 1000), 'seconds');
-          refetchQuotes();
-        }
-      }
-    };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isTabVisible, lastFetchTime]);
 
   // Cleanup old cached quotes from localStorage
   const cleanupOldCachedQuotes = useCallback((): void => {
@@ -230,23 +212,6 @@ export function useQuotes(user: User | null): {
     }
   }, []);
 
-  const refetchQuotes = useCallback(async () => {
-    if (isRefetching) return; // Prevent multiple simultaneous refetches
-    
-    try {
-      setIsRefetching(true);
-      console.log('Refetching quotes due to tab visibility change...');
-      
-      await fetchQuotes();
-      if (user) {
-        await fetchSavedQuotes();
-        await fetchUserQuotes();
-      }
-    } finally {
-      setIsRefetching(false);
-    }
-  }, [isRefetching, fetchQuotes, user]);
-
   const fetchSavedQuotes = useCallback(async () => {
     if (!user) return;
 
@@ -313,6 +278,81 @@ export function useQuotes(user: User | null): {
       setError(err instanceof Error ? err.message : 'Failed to fetch user quotes');
     }
   }, [user]);
+
+  const refetchQuotes = useCallback(async () => {
+    if (isRefetching) {
+      console.log('🔍 [useQuotes] Refetch already in progress, skipping');
+      return; // Prevent multiple simultaneous refetches
+    }
+
+    try {
+      setIsRefetching(true);
+      console.log('🔄 [useQuotes] Starting refetch due to tab visibility change...');
+
+      await fetchQuotes();
+      console.log('✅ [useQuotes] fetchQuotes completed');
+
+      if (user) {
+        await fetchSavedQuotes();
+        console.log('✅ [useQuotes] fetchSavedQuotes completed');
+        await fetchUserQuotes();
+        console.log('✅ [useQuotes] fetchUserQuotes completed');
+      }
+
+      console.log('🎉 [useQuotes] All refetch operations completed successfully');
+    } catch (error) {
+      console.error('❌ [useQuotes] Error during refetch:', error);
+    } finally {
+      setIsRefetching(false);
+      console.log('🔍 [useQuotes] Refetch process finished');
+    }
+  }, [isRefetching, fetchQuotes, fetchSavedQuotes, fetchUserQuotes, user]);
+
+  // Register tab visibility callbacks with centralized system
+  useEffect(() => {
+    const callbackId = 'useQuotes';
+
+    tabVisibility.registerCallbacks(callbackId, {
+      onVisible: async (state) => {
+        const hasNoQuotes = quotes.length === 0;
+        const shouldRefreshData = tabVisibility.shouldRefresh(lastFetchTime);
+
+        console.log('🔍 [useQuotes] Tab became visible, checking refresh conditions:', {
+          hasNoQuotes,
+          shouldRefreshData,
+          wasHiddenDuration: Math.round(state.wasHiddenDuration / 1000),
+          quotesLength: quotes.length,
+          lastFetchTime: new Date(lastFetchTime).toLocaleTimeString()
+        });
+
+        // Refetch if:
+        // 1. No quotes are currently loaded (immediate refresh)
+        // 2. shouldRefresh logic determines it's needed based on time thresholds
+        if (hasNoQuotes || shouldRefreshData) {
+          console.log('✅ [useQuotes] TRIGGERING REFETCH:', {
+            hasNoQuotes,
+            shouldRefreshData,
+            reason: hasNoQuotes ? 'no quotes loaded' : 'time threshold exceeded'
+          });
+          await refetchQuotes();
+        } else {
+          console.log('⏭️ [useQuotes] No refetch needed:', {
+            quotesCount: quotes.length,
+            wasHiddenDuration: Math.round(state.wasHiddenDuration / 1000)
+          });
+        }
+      },
+      onHidden: () => {
+        console.log('🔍 [useQuotes] Tab became hidden');
+      }
+    });
+
+    return () => {
+      tabVisibility.unregisterCallbacks(callbackId);
+    };
+  }, [tabVisibility, quotes.length, lastFetchTime, refetchQuotes]);
+
+
 
   // Memoized daily quote calculation
   const dailyQuote = useMemo(() => {

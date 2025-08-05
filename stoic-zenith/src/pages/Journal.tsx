@@ -77,7 +77,41 @@ export default function Journal(): JSX.Element {
     });
   };
 
-  const handleSelectEntry = (entry: JournalEntry): void => {
+  const handleSelectEntry = async (entry: JournalEntry): Promise<void> => {
+    // If there's a currently selected entry, save it before switching
+    if (selectedEntry && selectedEntry.id !== entry.id) {
+      console.log('🔄 Saving current entry before switching to:', entry.id);
+      
+      try {
+        // Save current entry to localStorage immediately
+        const entryIdKey = `journal-entry-${selectedEntry.id}`;
+        const dateKey = `journal-${selectedEntry.date}`;
+        const entryWithScopedBlocks = {
+          ...selectedEntry,
+          blocks: selectedEntry.blocks.map(block => ({
+            ...block,
+            id: block.id.startsWith(`${selectedEntry.id}-`) ? block.id : `${selectedEntry.id}-${block.id}`
+          }))
+        };
+        localStorage.setItem(entryIdKey, JSON.stringify(entryWithScopedBlocks));
+        localStorage.setItem(dateKey, entryIdKey);
+        
+        // Try to save to Supabase in the background
+        try {
+          const { updateJournalEntryFromBlocks } = await import('@/lib/journal');
+          await updateJournalEntryFromBlocks(selectedEntry.id, selectedEntry.blocks);
+          console.log('✅ Current entry saved to Supabase before switch');
+        } catch (supabaseError) {
+          console.warn('⚠️ Failed to save current entry to Supabase before switch:', supabaseError);
+          // Continue with switch even if Supabase save fails
+        }
+      } catch (error) {
+        console.error('❌ Failed to save current entry before switch:', error);
+        // Continue with switch even if save fails
+      }
+    }
+    
+    // Switch to the new entry
     setSelectedEntry(entry);
   };
 
@@ -128,6 +162,21 @@ export default function Journal(): JSX.Element {
         return [updatedEntry, ...prev];
       }
     });
+
+    // Trigger background save to Supabase for non-temporary entries
+    if (!updatedEntry.id.startsWith('temp-') && !updatedEntry.id.startsWith('recovery-')) {
+      // Save to Supabase in the background without blocking the UI
+      (async () => {
+        try {
+          const { updateJournalEntryFromBlocks } = await import('@/lib/journal');
+          await updateJournalEntryFromBlocks(updatedEntry.id, updatedEntry.blocks);
+          console.log('✅ Background save to Supabase successful for entry:', updatedEntry.id);
+        } catch (error) {
+          console.warn('⚠️ Background save to Supabase failed for entry:', updatedEntry.id, error);
+          // Don't show error to user since localStorage save worked
+        }
+      })();
+    }
   };
 
   // Load today's entry on mount if it exists
@@ -254,6 +303,39 @@ export default function Journal(): JSX.Element {
     loadTodaysEntry();
   }, []);
 
+  // Save current entry when component unmounts
+  useEffect(() => {
+    return () => {
+      if (selectedEntry) {
+        console.log('🔄 Saving entry on component unmount');
+        const entryIdKey = `journal-entry-${selectedEntry.id}`;
+        const dateKey = `journal-${selectedEntry.date}`;
+        const entryWithScopedBlocks = {
+          ...selectedEntry,
+          blocks: selectedEntry.blocks.map(block => ({
+            ...block,
+            id: block.id.startsWith(`${selectedEntry.id}-`) ? block.id : `${selectedEntry.id}-${block.id}`
+          }))
+        };
+        localStorage.setItem(entryIdKey, JSON.stringify(entryWithScopedBlocks));
+        localStorage.setItem(dateKey, entryIdKey);
+        
+        // Try to save to Supabase in the background
+        if (!selectedEntry.id.startsWith('temp-') && !selectedEntry.id.startsWith('recovery-')) {
+          (async () => {
+            try {
+              const { updateJournalEntryFromBlocks } = await import('@/lib/journal');
+              await updateJournalEntryFromBlocks(selectedEntry.id, selectedEntry.blocks);
+              console.log('✅ Entry saved to Supabase on component unmount');
+            } catch (error) {
+              console.warn('⚠️ Failed to save entry to Supabase on component unmount:', error);
+            }
+          })();
+        }
+      }
+    };
+  }, [selectedEntry]);
+
   // Real-time sync with Supabase subscriptions
   useEffect(() => {
     let subscription: any = null;
@@ -374,10 +456,11 @@ export default function Journal(): JSX.Element {
     };
   }, [selectedEntry]);
 
-  // Save current entry before page unload using standardized format
+  // Save current entry before page unload and on page visibility change
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (selectedEntry) {
+        console.log('🔄 Saving entry before page unload');
         const entryIdKey = `journal-entry-${selectedEntry.id}`;
         const dateKey = `journal-${selectedEntry.date}`;
         const entryWithScopedBlocks = {
@@ -392,8 +475,43 @@ export default function Journal(): JSX.Element {
       }
     };
 
+    const handleVisibilityChange = async () => {
+      if (document.hidden && selectedEntry) {
+        console.log('🔄 Saving entry on page visibility change (page hidden)');
+        
+        // Save to localStorage immediately
+        const entryIdKey = `journal-entry-${selectedEntry.id}`;
+        const dateKey = `journal-${selectedEntry.date}`;
+        const entryWithScopedBlocks = {
+          ...selectedEntry,
+          blocks: selectedEntry.blocks.map(block => ({
+            ...block,
+            id: block.id.startsWith(`${selectedEntry.id}-`) ? block.id : `${selectedEntry.id}-${block.id}`
+          }))
+        };
+        localStorage.setItem(entryIdKey, JSON.stringify(entryWithScopedBlocks));
+        localStorage.setItem(dateKey, entryIdKey);
+        
+        // Try to save to Supabase in the background
+        if (!selectedEntry.id.startsWith('temp-') && !selectedEntry.id.startsWith('recovery-')) {
+          try {
+            const { updateJournalEntryFromBlocks } = await import('@/lib/journal');
+            await updateJournalEntryFromBlocks(selectedEntry.id, selectedEntry.blocks);
+            console.log('✅ Entry saved to Supabase on page visibility change');
+          } catch (error) {
+            console.warn('⚠️ Failed to save entry to Supabase on page visibility change:', error);
+          }
+        }
+      }
+    };
+
     window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [selectedEntry]);
 
   return (

@@ -142,8 +142,8 @@
       ],
       "timestamp": "2025-07-31T13:39:36.389Z",
       "context": "New feature request for The Way Stoic project",
-      "accessCount": 20,
-      "lastAccessed": "2025-08-03T12:04:24.269Z",
+      "accessCount": 21,
+      "lastAccessed": "2025-08-04T13:01:49.464Z",
       "lastVerified": "2025-07-31T13:39:36.389Z",
       "status": "fresh"
     },
@@ -180,8 +180,8 @@
       ],
       "timestamp": "2025-07-31T13:40:28.510Z",
       "context": "Complete project analysis for auth implementation planning",
-      "accessCount": 26,
-      "lastAccessed": "2025-08-03T12:04:24.269Z",
+      "accessCount": 27,
+      "lastAccessed": "2025-08-04T13:01:49.464Z",
       "lastVerified": "2025-07-31T13:40:28.510Z",
       "status": "fresh"
     },
@@ -202,8 +202,8 @@
       ],
       "timestamp": "2025-07-31T13:46:36.273Z",
       "context": "Complete authentication implementation summary",
-      "accessCount": 25,
-      "lastAccessed": "2025-08-03T11:51:16.389Z",
+      "accessCount": 26,
+      "lastAccessed": "2025-08-04T13:01:49.464Z",
       "lastVerified": "2025-07-31T13:46:36.273Z",
       "status": "fresh"
     },
@@ -222,8 +222,8 @@
       ],
       "timestamp": "2025-07-31T13:54:18.341Z",
       "context": "Authentication debugging - login failing with CORS errors",
-      "accessCount": 17,
-      "lastAccessed": "2025-08-03T11:51:16.389Z",
+      "accessCount": 18,
+      "lastAccessed": "2025-08-04T13:01:49.464Z",
       "lastVerified": "2025-07-31T13:54:18.341Z",
       "status": "fresh"
     },
@@ -242,8 +242,8 @@
       ],
       "timestamp": "2025-07-31T13:57:29.542Z",
       "context": "Authentication troubleshooting complete - fixed CSP and added debugging",
-      "accessCount": 24,
-      "lastAccessed": "2025-08-03T11:51:16.389Z",
+      "accessCount": 25,
+      "lastAccessed": "2025-08-04T13:01:49.464Z",
       "lastVerified": "2025-07-31T13:57:29.542Z",
       "status": "fresh"
     },
@@ -262,8 +262,8 @@
       ],
       "timestamp": "2025-07-31T22:49:35.805Z",
       "context": "Analyzing stoic-zenith app structure for feature implementation",
-      "accessCount": 21,
-      "lastAccessed": "2025-08-03T12:04:24.269Z",
+      "accessCount": 22,
+      "lastAccessed": "2025-08-04T13:01:49.464Z",
       "lastVerified": "2025-07-31T22:49:35.805Z",
       "status": "fresh"
     },
@@ -284,8 +284,8 @@
       ],
       "timestamp": "2025-07-31T22:58:58.884Z",
       "context": "Completed The Way Stoic app feature implementation",
-      "accessCount": 23,
-      "lastAccessed": "2025-08-03T11:51:16.389Z",
+      "accessCount": 24,
+      "lastAccessed": "2025-08-04T13:01:49.464Z",
       "lastVerified": "2025-07-31T22:58:58.884Z",
       "status": "fresh"
     },
@@ -303,8 +303,8 @@
       ],
       "timestamp": "2025-07-31T23:00:33.021Z",
       "context": "Debugging Calendar and Quotes page errors",
-      "accessCount": 14,
-      "lastAccessed": "2025-08-03T07:28:46.301Z",
+      "accessCount": 15,
+      "lastAccessed": "2025-08-04T13:01:49.464Z",
       "lastVerified": "2025-07-31T23:00:33.021Z",
       "status": "fresh"
     },
@@ -343,8 +343,8 @@
       ],
       "timestamp": "2025-07-31T23:17:13.996Z",
       "context": "Implementation completion summary",
-      "accessCount": 23,
-      "lastAccessed": "2025-08-03T11:51:16.389Z",
+      "accessCount": 24,
+      "lastAccessed": "2025-08-04T13:01:49.464Z",
       "lastVerified": "2025-07-31T23:17:13.996Z",
       "status": "fresh"
     },
@@ -550,8 +550,8 @@
         "flow-fixed"
       ],
       "timestamp": "2025-08-01T02:18:57.198Z",
-      "accessCount": 20,
-      "lastAccessed": "2025-08-03T11:51:16.389Z",
+      "accessCount": 21,
+      "lastAccessed": "2025-08-04T13:01:49.464Z",
       "lastVerified": "2025-08-01T02:18:57.198Z",
       "status": "fresh"
     },
@@ -3564,7 +3564,61 @@
       "lastAccessed": "2025-08-04T10:25:36.600Z",
       "lastVerified": "2025-08-04T10:25:36.600Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1754312183922_mginbhu2n",
+      "content": "User reports tab visibility refresh works once but fails on subsequent attempts. Need to investigate state management, event listener cleanup, or caching issues in the centralized tab visibility system.",
+      "type": "general",
+      "tags": [
+        "general",
+        "tab-visibility",
+        "bug",
+        "state-management",
+        "event-listeners"
+      ],
+      "timestamp": "2025-08-04T12:56:23.922Z",
+      "context": "Tab visibility debugging - inconsistent behavior pattern",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-04T12:56:23.922Z",
+      "lastVerified": "2025-08-04T12:56:23.922Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754312234980_jpmxv78ww",
+      "content": "Found the issue! In useTabVisibility.ts line 103-109, after callbacks complete, wasHiddenDuration is reset to 0. This causes shouldRefresh to return false on subsequent tab switches because wasActuallyHidden becomes false. The reset happens too early - it should only reset after the refresh decision is made, not immediately after callbacks complete.",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "tab-visibility",
+        "bug-fix",
+        "state-management",
+        "wasHiddenDuration"
+      ],
+      "timestamp": "2025-08-04T12:57:14.980Z",
+      "context": "Tab visibility bug root cause analysis",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-04T12:57:14.980Z",
+      "lastVerified": "2025-08-04T12:57:14.980Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754312262719_87c14puqq",
+      "content": "Fixed the tab visibility issue by removing premature wasHiddenDuration reset in useTabVisibility.ts:103-109. The reset was happening immediately after callbacks completed, causing shouldRefresh to return false on subsequent tab switches. Now wasHiddenDuration persists until the next actual visibility change, allowing consistent refresh behavior.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "tab-visibility",
+        "fix-applied",
+        "shouldRefresh",
+        "wasHiddenDuration"
+      ],
+      "timestamp": "2025-08-04T12:57:42.719Z",
+      "context": "Tab visibility fix implementation",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-04T12:57:42.719Z",
+      "lastVerified": "2025-08-04T12:57:42.719Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-04T10:25:36.600Z"
+  "lastUpdated": "2025-08-04T12:57:42.719Z"
 }

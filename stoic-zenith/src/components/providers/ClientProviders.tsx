@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/components/auth/AuthProvider'
-import { PayPalProvider } from '@/components/providers/PayPalProvider'
+import { DodoProvider } from '@/components/providers/DodoProvider'
 import { PageCacheProvider } from '@/components/providers/PageCacheProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ReactNode, useState } from 'react'
@@ -36,13 +36,13 @@ export function ClientProviders({ children }: ClientProvidersProps): JSX.Element
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <AuthProvider>
-            <PayPalProvider>
+            <DodoProvider>
               <PageCacheProvider maxCacheSize={15} maxAge={60 * 60 * 1000}>
                 {children}
                 <Toaster />
                 <Sonner />
               </PageCacheProvider>
-            </PayPalProvider>
+            </DodoProvider>
           </AuthProvider>
         </TooltipProvider>
       </QueryClientProvider>

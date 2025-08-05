@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test New Entry Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-case {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>New Entry Creation Fix - Test Results</h1>
+    
+    <div class="test-case info">
+        <h2>Issue Description</h2>
+        <p>When clicking the "New Entry" button or plus icon, the right panel was showing blank/empty instead of displaying the rich text editor.</p>
+    </div>
+
+    <div class="test-case info">
+        <h2>Root Cause Analysis</h2>
+        <p>The issue was in the <code>JournalNavigation</code> component's state synchronization logic:</p>
+        <ul>
+            <li>The component initialized <code>currentEntry</code> state with the <code>entry</code> prop</li>
+            <li>The <code>useEffect</code> that handled entry switching had a condition that prevented it from updating <code>currentEntry</code> when the IDs were the same</li>
+            <li>When a new entry was created, the prop and state had the same ID, so the effect didn't trigger</li>
+            <li>This resulted in a race condition where the editor wouldn't render</li>
+        </ul>
+    </div>
+
+    <div class="test-case success">
+        <h2>Fix Implementation</h2>
+        <p>The fix involved separating concerns in the <code>JournalNavigation</code> component:</p>
+        <ol>
+            <li><strong>Added dedicated entry synchronization effect</strong>:
+                <pre><code>useEffect(() => {
+  if (entry?.id !== currentEntry?.id) {
+    setCurrentEntry(entry);
+  }
+}, [entry.id, currentEntry?.id]);</code></pre>
+            </li>
+            <li><strong>Simplified entry switching logic</strong>: Separated the save logic from the sync logic to prevent race conditions</li>
+            <li><strong>Fixed save conditions</strong>: Only save when switching between non-temporary entries</li>
+        </ol>
+    </div>
+
+    <div class="test-case info">
+        <h2>Testing Instructions</h2>
+        <ol>
+            <li>Navigate to <a href="http://localhost:3001/journal" target="_blank">http://localhost:3001/journal</a></li>
+            <li>Click the "+" button in the top-right corner of the journal navigation</li>
+            <li>Verify that the right panel immediately shows the rich text editor with a blank entry</li>
+            <li>Try typing in the editor to confirm it's functional</li>
+            <li>Click the "Create New Entry" button in the center if no entry is selected</li>
+            <li>Verify the same behavior occurs</li>
+        </ol>
+    </div>
+
+    <div class="test-case success">
+        <h2>Expected Results</h2>
+        <ul>
+            <li>✅ Right panel shows the rich text editor immediately when creating a new entry</li>
+            <li>✅ No blank/loading state when clicking new entry buttons</li>
+            <li>✅ Editor is functional and ready for input</li>
+            <li>✅ Entry creation is instant with no delays</li>
+            <li>✅ Switching between entries works smoothly</li>
+        </ul>
+    </div>
+
+    <div class="test-case info">
+        <h2>Files Modified</h2>
+        <ul>
+            <li><code>stoic-zenith/src/components/journal/JournalNavigation.tsx</code> - Fixed entry state synchronization</li>
+            <li><code>stoic-zenith/src/pages/Journal.tsx</code> - Verified entry creation logic</li>
+        </ul>
+    </div>
+
+    <script>
+        // Auto-refresh every 30 seconds to check for updates
+        setTimeout(() => {
+            window.location.reload();
+        }, 30000);
+        
+        console.log('Test page loaded. Navigate to the journal to test the fix.');
+    </script>
+</body>
+</html>

@@ -18,14 +18,8 @@ export default function QuotesPage(): JSX.Element {
   return (
     <ProtectedRoute>
       <AppLayout fullWidth>
-        <CachedPage 
-          pageKey="quotes" 
-          fallback={<QuotesLoading />}
-          refreshOnFocus={true}
-          maxAge={10 * 60 * 1000} // 10 minutes
-        >
-          <DailyStoicWisdom />
-        </CachedPage>
+        {/* Temporarily disabled CachedPage to test tab visibility fixes */}
+        <DailyStoicWisdom />
       </AppLayout>
     </ProtectedRoute>
   )

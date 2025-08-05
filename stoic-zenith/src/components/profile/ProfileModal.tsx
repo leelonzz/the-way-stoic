@@ -167,7 +167,6 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                   disabled={isSigningOut}
                   className="w-full flex items-center gap-3 px-3 py-2 text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  <div className="w-4 h-4 flex items-center justify-center">🚪</div>
                   <span className="text-sm">{isSigningOut ? 'Signing out...' : 'Sign out'}</span>
                 </button>
               </div>

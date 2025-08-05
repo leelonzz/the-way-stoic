@@ -1,26 +1,40 @@
-# Tab Visibility Fix for Quote Loading Issue
+# Tab Visibility Fix for Quote Loading and Journal Issues
 
 ## Problem Description
-When users opened a new tab and returned to the app, the quotes in the quote navigation and dashboard were not loading properly. This was caused by:
+When users opened a new tab and returned to the app, the following components failed to load properly:
+
+1. **Quotes**: Not loading in quote navigation and dashboard
+2. **Journal Entries**: Not appearing in the journal entry list
+3. **Today's Journal Entry**: Not loading when returning to the journal page
+
+This was caused by:
 
 1. **Browser Tab Suspension**: When switching tabs, browsers may pause JavaScript execution
-2. **State Management Issues**: The `useQuotes` hook didn't handle tab visibility changes
-3. **Cache Invalidation**: Daily quote cache wasn't properly refreshed when returning to the tab
+2. **State Management Issues**: Components didn't handle tab visibility changes properly
+3. **Cache Invalidation**: Data wasn't properly refreshed when returning to the tab
 4. **Loading State Problems**: No proper loading indicators during refetch operations
+5. **Inconsistent Behavior**: Different components handled tab visibility differently
 
 ## Solution Implemented
 
-### 1. Tab Visibility Detection
-- Added `visibilitychange` event listener to detect when tab becomes visible/hidden
-- Tracks tab visibility state with `isTabVisible` state
-- Monitors time since last fetch to determine if refetch is needed
+### 1. Enhanced useQuotes Tab Visibility (IMPROVED)
+- **Reduced threshold**: From 5 minutes to 30 seconds for better user experience
+- **Immediate refresh**: Quotes now refresh immediately if none are loaded when returning to tab
+- **Better logic**: Refetches if no quotes OR time threshold exceeded
+- **Improved logging**: More detailed console logs for debugging
 
-### 2. Smart Refetching Logic
-- Only refetches quotes if more than 5 minutes have passed since last fetch
-- Prevents unnecessary API calls for short tab switches
-- Uses `lastFetchTime` to track when data was last fetched
+### 2. NEW: Journal Component Tab Visibility
+- **Added tab visibility detection**: Journal now detects when tab becomes visible/hidden
+- **Smart refresh logic**: Refreshes data if no entries/selected entry or after 1 minute
+- **Automatic entry loading**: Attempts to reload today's entry when returning to tab
+- **Coordinated refresh**: Triggers both entry list and selected entry refresh
 
-### 3. Enhanced Loading States
+### 3. NEW: EntryList Component Tab Visibility
+- **Tab visibility handling**: Entry list refreshes when tab becomes visible
+- **Time-based refresh**: Only refreshes if no entries or after 1 minute threshold
+- **Prevents duplicate requests**: Coordinates with main Journal component
+
+### 4. Enhanced Loading States (EXISTING)
 - Added `isRefetching` state to distinguish between initial load and refetch
 - Shows loading screen during refetch operations
 - Provides user feedback via toast notifications
@@ -37,22 +51,30 @@ When users opened a new tab and returned to the app, the quotes in the quote nav
 
 ## Key Changes Made
 
-### `useQuotes.ts`
+### `useQuotes.ts` (IMPROVED)
 ```typescript
-// Added tab visibility detection
+// Enhanced tab visibility detection with immediate refresh and shorter threshold
 useEffect(() => {
-  const handleVisibilityChange = () => {
+  const handleVisibilityChange = (): void => {
     const wasVisible = isTabVisible;
     const isVisible = !document.hidden;
     setIsTabVisible(isVisible);
-    
-    // If tab becomes visible and it's been more than 5 minutes since last fetch, refetch
+
+    // If tab becomes visible, check if we need to refetch
     if (isVisible && !wasVisible) {
       const timeSinceLastFetch = Date.now() - lastFetchTime;
-      const fiveMinutes = 5 * 60 * 1000;
-      
-      if (timeSinceLastFetch > fiveMinutes) {
-        console.log('Tab became visible, refetching quotes after', Math.round(timeSinceLastFetch / 1000), 'seconds');
+      const thirtySeconds = 30 * 1000; // Reduced from 5 minutes
+      const hasNoQuotes = quotes.length === 0;
+
+      // Refetch if:
+      // 1. No quotes are currently loaded (immediate refresh)
+      // 2. It's been more than 30 seconds since last fetch
+      if (hasNoQuotes || timeSinceLastFetch > thirtySeconds) {
+        console.log('Tab became visible, refetching quotes:', {
+          hasNoQuotes,
+          timeSinceLastFetch: Math.round(timeSinceLastFetch / 1000),
+          reason: hasNoQuotes ? 'no quotes loaded' : 'time threshold exceeded'
+        });
         refetchQuotes();
       }
     }
@@ -60,7 +82,70 @@ useEffect(() => {
 
   document.addEventListener('visibilitychange', handleVisibilityChange);
   return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-}, [isTabVisible, lastFetchTime]);
+}, [isTabVisible, lastFetchTime, quotes.length, refetchQuotes]);
+```
+
+### `Journal.tsx` (NEW)
+```typescript
+// Tab visibility detection for journal data refresh
+useEffect(() => {
+  const handleVisibilityChange = async () => {
+    const wasVisible = isTabVisible;
+    const isVisible = !document.hidden;
+    setIsTabVisible(isVisible);
+
+    // If tab becomes visible, check if we need to refresh data
+    if (isVisible && !wasVisible) {
+      const timeSinceLastLoad = Date.now() - lastLoadTime;
+      const oneMinute = 60 * 1000;
+      const hasNoEntries = entries.length === 0;
+      const hasNoSelectedEntry = !selectedEntry;
+
+      // Refresh if no entries, no selected entry, or time threshold exceeded
+      if (hasNoEntries || hasNoSelectedEntry || timeSinceLastLoad > oneMinute) {
+        console.log('Tab became visible, refreshing journal data');
+        setRefreshKey(prev => prev + 1); // Triggers EntryList refresh
+        setLastLoadTime(Date.now());
+
+        // Reload today's entry if none is selected
+        if (!selectedEntry) {
+          // ... entry loading logic
+        }
+      }
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+}, [isTabVisible, lastLoadTime, entries.length, selectedEntry]);
+```
+
+### `EntryList.tsx` (NEW)
+```typescript
+// Tab visibility detection for entry list refresh
+useEffect(() => {
+  const handleVisibilityChange = () => {
+    const wasVisible = isTabVisible;
+    const isVisible = !document.hidden;
+    setIsTabVisible(isVisible);
+
+    // If tab becomes visible, check if we need to refresh entries
+    if (isVisible && !wasVisible) {
+      const timeSinceLastLoad = Date.now() - lastLoadTime;
+      const oneMinute = 60 * 1000;
+      const hasNoEntries = entries.length === 0;
+
+      // Refresh if no entries or time threshold exceeded
+      if (hasNoEntries || timeSinceLastLoad > oneMinute) {
+        console.log('Tab became visible, refreshing entry list');
+        loadEntries();
+      }
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+}, [isTabVisible, lastLoadTime, entries.length, loadEntries]);
 ```
 
 ### `DailyStoicWisdom.tsx`

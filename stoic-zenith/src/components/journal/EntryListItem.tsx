@@ -7,7 +7,7 @@ import { JournalEntryResponse, convertSupabaseToBlocks } from '@/lib/journal';
 interface EntryListItemProps {
   entry: JournalEntryResponse & { preview?: string };
   isSelected: boolean;
-  onSelect: (entry: JournalEntry) => void;
+  onSelect: (entry: JournalEntry) => Promise<void>;
   formatEntryDate: (date: string) => string;
 }
 
@@ -17,7 +17,7 @@ export const EntryListItem = memo(({
   onSelect, 
   formatEntryDate 
 }: EntryListItemProps) => {
-  const handleClick = () => {
+  const handleClick = async () => {
     // Convert Supabase entry to local JournalEntry format using proper conversion
     const blocks = convertSupabaseToBlocks(entry);
 
@@ -28,7 +28,12 @@ export const EntryListItem = memo(({
       createdAt: new Date(entry.created_at),
       updatedAt: new Date(entry.updated_at)
     };
-    onSelect(localEntry);
+    
+    try {
+      await onSelect(localEntry);
+    } catch (error) {
+      console.error('Failed to select entry:', error);
+    }
   };
 
   return (

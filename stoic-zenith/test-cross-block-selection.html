@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cross-Block Selection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-instructions {
+            background: #f0f8ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .test-case {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .test-case h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .pending { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>Cross-Block Text Selection Test</h1>
+    
+    <div class="test-instructions">
+        <h2>Test Instructions</h2>
+        <p>Please test the following scenarios in the journal editor at <a href="http://localhost:3001" target="_blank">http://localhost:3001</a>:</p>
+        <ol>
+            <li>Create multiple blocks with text content</li>
+            <li>Test each scenario below</li>
+            <li>Mark each test as PASS or FAIL based on the results</li>
+        </ol>
+    </div>
+
+    <div class="test-case">
+        <h3>Test 1: Top-to-Bottom Selection <span class="status pending" id="test1">PENDING</span></h3>
+        <p><strong>Steps:</strong></p>
+        <ol>
+            <li>Click and drag from the beginning of an upper block to the end of a lower block</li>
+            <li>Verify that text across multiple blocks is selected</li>
+        </ol>
+        <p><strong>Expected:</strong> Text selection should work smoothly from top to bottom</p>
+        <button onclick="updateStatus('test1', 'pass')">PASS</button>
+        <button onclick="updateStatus('test1', 'fail')">FAIL</button>
+    </div>
+
+    <div class="test-case">
+        <h3>Test 2: Bottom-to-Top Selection <span class="status pending" id="test2">PENDING</span></h3>
+        <p><strong>Steps:</strong></p>
+        <ol>
+            <li>Click and drag from the end of a lower block to the beginning of an upper block</li>
+            <li>Verify that text across multiple blocks is selected</li>
+        </ol>
+        <p><strong>Expected:</strong> Text selection should work smoothly from bottom to top</p>
+        <button onclick="updateStatus('test2', 'pass')">PASS</button>
+        <button onclick="updateStatus('test2', 'fail')">FAIL</button>
+    </div>
+
+    <div class="test-case">
+        <h3>Test 3: Cross-Block Deletion with Delete Key <span class="status pending" id="test3">PENDING</span></h3>
+        <p><strong>Steps:</strong></p>
+        <ol>
+            <li>Select text across multiple blocks (either direction)</li>
+            <li>Press the Delete key</li>
+            <li>Verify that selected text is deleted and cursor is positioned correctly</li>
+        </ol>
+        <p><strong>Expected:</strong> Selected text should be deleted, blocks should merge if needed, cursor positioned correctly</p>
+        <button onclick="updateStatus('test3', 'pass')">PASS</button>
+        <button onclick="updateStatus('test3', 'fail')">FAIL</button>
+    </div>
+
+    <div class="test-case">
+        <h3>Test 4: Cross-Block Deletion with Backspace Key <span class="status pending" id="test4">PENDING</span></h3>
+        <p><strong>Steps:</strong></p>
+        <ol>
+            <li>Select text across multiple blocks (either direction)</li>
+            <li>Press the Backspace key</li>
+            <li>Verify that selected text is deleted and cursor is positioned correctly</li>
+        </ol>
+        <p><strong>Expected:</strong> Selected text should be deleted, blocks should merge if needed, cursor positioned correctly</p>
+        <button onclick="updateStatus('test4', 'pass')">PASS</button>
+        <button onclick="updateStatus('test4', 'fail')">FAIL</button>
+    </div>
+
+    <div class="test-case">
+        <h3>Test 5: Cross-Block Text Replacement <span class="status pending" id="test5">PENDING</span></h3>
+        <p><strong>Steps:</strong></p>
+        <ol>
+            <li>Select text across multiple blocks (either direction)</li>
+            <li>Type new text (e.g., "REPLACED")</li>
+            <li>Verify that selected text is replaced with the new text</li>
+        </ol>
+        <p><strong>Expected:</strong> Selected text should be replaced with new text, cursor positioned after new text</p>
+        <button onclick="updateStatus('test5', 'pass')">PASS</button>
+        <button onclick="updateStatus('test5', 'fail')">FAIL</button>
+    </div>
+
+    <div class="test-case">
+        <h3>Test 6: Mixed Direction Operations <span class="status pending" id="test6">PENDING</span></h3>
+        <p><strong>Steps:</strong></p>
+        <ol>
+            <li>Test both top-to-bottom and bottom-to-top selections</li>
+            <li>Perform deletion and replacement operations on both types</li>
+            <li>Verify consistent behavior regardless of selection direction</li>
+        </ol>
+        <p><strong>Expected:</strong> All operations should work consistently regardless of selection direction</p>
+        <button onclick="updateStatus('test6', 'pass')">PASS</button>
+        <button onclick="updateStatus('test6', 'fail')">FAIL</button>
+    </div>
+
+    <div class="test-case">
+        <h3>Test 7: Typography Font Awareness <span class="status pending" id="test7">PENDING</span></h3>
+        <p><strong>Steps:</strong></p>
+        <ol>
+            <li>Create blocks with different typography styles (if available)</li>
+            <li>Test cross-block selection between blocks with different fonts</li>
+            <li>Verify selection accuracy and cursor positioning</li>
+            <li>Test deletion and replacement with mixed typography</li>
+        </ol>
+        <p><strong>Expected:</strong> Selection should work accurately regardless of font differences</p>
+        <button onclick="updateStatus('test7', 'pass')">PASS</button>
+        <button onclick="updateStatus('test7', 'fail')">FAIL</button>
+    </div>
+
+    <div class="test-case">
+        <h3>Test 8: Font Loading States <span class="status pending" id="test8">PENDING</span></h3>
+        <p><strong>Steps:</strong></p>
+        <ol>
+            <li>Refresh the page and immediately try cross-block selection</li>
+            <li>Test selection while fonts are still loading</li>
+            <li>Verify that selection works after fonts have loaded</li>
+        </ol>
+        <p><strong>Expected:</strong> Selection should work correctly both during and after font loading</p>
+        <button onclick="updateStatus('test8', 'pass')">PASS</button>
+        <button onclick="updateStatus('test8', 'fail')">FAIL</button>
+    </div>
+
+    <div id="summary" style="margin-top: 30px; padding: 20px; background: #e9ecef; border-radius: 8px;">
+        <h2>Test Summary</h2>
+        <p id="summary-text">Complete the tests above to see the summary.</p>
+    </div>
+
+    <script>
+        function updateStatus(testId, status) {
+            const element = document.getElementById(testId);
+            element.className = `status ${status}`;
+            element.textContent = status.toUpperCase();
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const tests = ['test1', 'test2', 'test3', 'test4', 'test5', 'test6', 'test7', 'test8'];
+            let passed = 0;
+            let failed = 0;
+            let pending = 0;
+
+            tests.forEach(testId => {
+                const element = document.getElementById(testId);
+                if (element.classList.contains('pass')) passed++;
+                else if (element.classList.contains('fail')) failed++;
+                else pending++;
+            });
+
+            const summaryText = document.getElementById('summary-text');
+            summaryText.innerHTML = `
+                <strong>Results:</strong><br>
+                ✅ Passed: ${passed}<br>
+                ❌ Failed: ${failed}<br>
+                ⏳ Pending: ${pending}<br><br>
+                ${failed === 0 && pending === 0 ? '🎉 All tests passed!' : 
+                  failed > 0 ? '⚠️ Some tests failed - check the implementation' : 
+                  '📝 Tests still pending'}
+            `;
+        }
+
+        // Initialize summary
+        updateSummary();
+    </script>
+</body>
+</html>
