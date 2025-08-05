@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import crypto from 'crypto'
+import { Webhook } from 'standardwebhooks'
 
 interface DodoWebhookEvent {
-  id: string
+  business_id: string
   type: string
+  timestamp: string
   data: {
-    id: string
-    object: string
+    payload_type: string
     [key: string]: any
   }
-  created_at: string
 }
 
 interface PaymentEvent {
@@ -33,39 +32,40 @@ interface SubscriptionEvent {
   created_at: string
 }
 
-function verifyWebhookSignature(
-  payload: string,
-  signature: string,
-  secret: string
-): boolean {
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(payload, 'utf8')
-    .digest('hex')
-
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  )
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text()
-    const signature = request.headers.get('x-dodo-signature')
     const webhookSecret = process.env.DODO_WEBHOOK_SECRET
 
-    if (!signature || !webhookSecret) {
+    if (!webhookSecret) {
       return NextResponse.json(
-        { error: 'Missing signature or webhook secret' },
+        { error: 'Webhook secret not configured' },
+        { status: 500 }
+      )
+    }
+
+    // Get Standard Webhooks headers
+    const webhookHeaders = {
+      "webhook-id": request.headers.get("webhook-id") || "",
+      "webhook-signature": request.headers.get("webhook-signature") || "",
+      "webhook-timestamp": request.headers.get("webhook-timestamp") || "",
+    }
+
+    if (!webhookHeaders["webhook-id"] || !webhookHeaders["webhook-signature"] || !webhookHeaders["webhook-timestamp"]) {
+      return NextResponse.json(
+        { error: 'Missing required webhook headers' },
         { status: 400 }
       )
     }
 
-    // Verify webhook signature
-    if (!verifyWebhookSignature(body, signature, webhookSecret)) {
+    // Verify webhook signature using Standard Webhooks
+    const webhook = new Webhook(webhookSecret)
+    try {
+      await webhook.verify(body, webhookHeaders)
+    } catch (error) {
+      console.error('Webhook signature verification failed:', error)
       return NextResponse.json(
-        { error: 'Invalid signature' },
+        { error: 'Invalid webhook signature' },
         { status: 401 }
       )
     }
@@ -73,30 +73,30 @@ export async function POST(request: NextRequest) {
     const event: DodoWebhookEvent = JSON.parse(body)
     console.log('Received Dodo webhook event:', event.type)
 
-    // Handle different event types
+    // Handle different event types according to Dodo Payments documentation
     switch (event.type) {
-      case 'payment.completed':
-        await handlePaymentCompleted(event.data as unknown as PaymentEvent)
+      case 'payment.succeeded':
+        await handlePaymentSucceeded(event.data as unknown as PaymentEvent)
         break
 
       case 'payment.failed':
         await handlePaymentFailed(event.data as unknown as PaymentEvent)
         break
 
-      case 'subscription.created':
-        await handleSubscriptionCreated(event.data as unknown as SubscriptionEvent)
+      case 'subscription.active':
+        await handleSubscriptionActive(event.data as unknown as SubscriptionEvent)
         break
 
-      case 'subscription.updated':
-        await handleSubscriptionUpdated(event.data as unknown as SubscriptionEvent)
+      case 'subscription.on_hold':
+        await handleSubscriptionOnHold(event.data as unknown as SubscriptionEvent)
         break
 
-      case 'subscription.canceled':
-        await handleSubscriptionCanceled(event.data as unknown as SubscriptionEvent)
+      case 'subscription.failed':
+        await handleSubscriptionFailed(event.data as unknown as SubscriptionEvent)
         break
 
-      case 'subscription.payment_failed':
-        await handleSubscriptionPaymentFailed(event.data as unknown as SubscriptionEvent)
+      case 'subscription.renewed':
+        await handleSubscriptionRenewed(event.data as unknown as SubscriptionEvent)
         break
 
       default:
@@ -113,9 +113,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handlePaymentCompleted(payment: PaymentEvent) {
-  console.log('Payment completed:', payment.id)
-  
+async function handlePaymentSucceeded(payment: PaymentEvent) {
+  console.log('Payment succeeded:', payment.id)
+
   // Update your database with payment status
   // Update user subscription status
   // Send confirmation email
@@ -124,39 +124,40 @@ async function handlePaymentCompleted(payment: PaymentEvent) {
 
 async function handlePaymentFailed(payment: PaymentEvent) {
   console.log('Payment failed:', payment.id)
-  
+
   // Update your database with payment status
   // Notify user of payment failure
   // etc.
 }
 
-async function handleSubscriptionCreated(subscription: SubscriptionEvent) {
-  console.log('Subscription created:', subscription.id)
-  
+async function handleSubscriptionActive(subscription: SubscriptionEvent) {
+  console.log('Subscription activated:', subscription.id)
+
   // Update your database with subscription details
   // Send welcome email
   // etc.
 }
 
-async function handleSubscriptionUpdated(subscription: SubscriptionEvent) {
-  console.log('Subscription updated:', subscription.id)
-  
-  // Update your database with subscription changes
+async function handleSubscriptionOnHold(subscription: SubscriptionEvent) {
+  console.log('Subscription on hold:', subscription.id)
+
+  // Update your database with subscription status
+  // Notify user of payment issues
   // etc.
 }
 
-async function handleSubscriptionCanceled(subscription: SubscriptionEvent) {
-  console.log('Subscription canceled:', subscription.id)
-  
+async function handleSubscriptionFailed(subscription: SubscriptionEvent) {
+  console.log('Subscription failed:', subscription.id)
+
   // Update your database with subscription status
-  // Send cancellation email
+  // Send failure notification
   // etc.
 }
 
-async function handleSubscriptionPaymentFailed(subscription: SubscriptionEvent) {
-  console.log('Subscription payment failed:', subscription.id)
-  
-  // Update your database with subscription status
-  // Notify user of payment failure
+async function handleSubscriptionRenewed(subscription: SubscriptionEvent) {
+  console.log('Subscription renewed:', subscription.id)
+
+  // Update your database with subscription renewal
+  // Send renewal confirmation
   // etc.
-} 
+}

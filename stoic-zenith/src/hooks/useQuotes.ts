@@ -127,7 +127,7 @@ export function useQuotes(user: User | null): {
 
   // Cleanup old cached quotes from localStorage
   const cleanupOldCachedQuotes = useCallback((): void => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
     
     try {
       const today = new Date();

@@ -1,37 +1,51 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
-import { Search } from 'lucide-react';
+import { Search, Plus, Trash2 } from 'lucide-react';
 import { EntryListItem } from './EntryListItem';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { JournalEntry } from './types';
-import { getJournalEntries, JournalEntryResponse, convertSupabaseToBlocks } from '@/lib/journal';
+import { journalManager } from '@/lib/journal';
 import { useTabVisibility } from '@/hooks/useTabVisibility';
+import { toast } from '@/components/ui/use-toast';
 
 interface EntryListProps {
   selectedEntry: JournalEntry | null;
   onSelectEntry: (entry: JournalEntry) => void;
   onCreateEntry: () => void;
+  onDeleteEntry?: (entryId: string) => void;
   className?: string;
   isParentLoading?: boolean;
   onLoadingStateChange?: (loading: boolean) => void;
   entries?: JournalEntry[];
   onEntriesChange?: (entries: JournalEntry[]) => void;
+  syncStatus?: 'synced' | 'pending' | 'error';
 }
 
-interface EntryListItem {
-  entry: JournalEntryResponse & { preview?: string };
+interface EntryListItemData {
+  entry: JournalEntry & { preview?: string };
   dateKey: string;
 }
 
-export const EntryList = React.memo(function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCreateEntry, className = '', isParentLoading = false, onLoadingStateChange, entries: _parentEntries, onEntriesChange }: EntryListProps): JSX.Element {
-  const [entries, setEntries] = useState<EntryListItem[]>([]);
+export const EntryList = React.memo(function EntryList({ 
+  selectedEntry, 
+  onSelectEntry, 
+  onCreateEntry, 
+  onDeleteEntry,
+  className = '', 
+  isParentLoading = false, 
+  onLoadingStateChange, 
+  entries: parentEntries, 
+  onEntriesChange,
+  syncStatus = 'synced'
+}: EntryListProps): JSX.Element {
+  const [entries, setEntries] = useState<EntryListItemData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredEntries, setFilteredEntries] = useState<EntryListItem[]>([]);
+  const [filteredEntries, setFilteredEntries] = useState<EntryListItemData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [lastLoadTime, setLastLoadTime] = useState<number>(Date.now());
 
   // Use centralized tab visibility management
-  const tabVisibility = useTabVisibility({ refreshThreshold: 2000 }); // 2 seconds threshold
+  const tabVisibility = useTabVisibility({ refreshThreshold: 2000 });
 
   const loadEntries = useCallback(async () => {
     if (!onLoadingStateChange) {
@@ -41,37 +55,27 @@ export const EntryList = React.memo(function EntryList({ selectedEntry, onSelect
     }
     
     try {
-      const journalEntries = await getJournalEntries(50);
+      // Use the real-time manager to get entries
+      const journalEntries = await journalManager.getAllEntries();
 
       // Filter out entries that appear to be test/debug entries with timestamp text
+      // But allow empty entries to be deletable
       const filteredJournalEntries = journalEntries.filter(entry => {
-        // Check if the entry contains only timestamp-like content
         const timestampPattern = /^Entry created at \d{1,2}:\d{2}:\d{2}$/;
-        const isTimestampEntry = timestampPattern.test(entry.excited_about || '');
+        const isTimestampEntry = entry.blocks.some(block => 
+          timestampPattern.test(block.text || '')
+        );
 
-        // Also check if the entry has no meaningful content (only timestamp text)
-        const hasRealContent = [
-          entry.make_today_great,
-          entry.must_not_do,
-          entry.grateful_for,
-          ...(Array.isArray(entry.biggest_wins) ? entry.biggest_wins : []),
-          ...(Array.isArray(entry.tensions) ? entry.tensions : [])
-        ].some(content => content && content.trim() !== '');
-
-        // Include entry if it's not a timestamp entry OR if it has real content beyond the timestamp
-        return !isTimestampEntry || hasRealContent;
+        // Allow empty entries (they should be deletable)
+        // Only filter out timestamp-only entries
+        return !isTimestampEntry;
       });
 
-      const entryItems: EntryListItem[] = filteredJournalEntries.map(entry => {
-        // Generate preview from journal entry content
-        const contentParts = [
-          entry.excited_about,
-          entry.make_today_great,
-          entry.must_not_do,
-          entry.grateful_for,
-          ...(Array.isArray(entry.biggest_wins) ? entry.biggest_wins : []),
-          ...(Array.isArray(entry.tensions) ? entry.tensions : [])
-        ].filter(Boolean);
+      const entryItems: EntryListItemData[] = filteredJournalEntries.map(entry => {
+        // Generate preview from journal entry blocks
+        const contentParts = entry.blocks
+          .map(block => block.text)
+          .filter(Boolean);
 
         const preview = contentParts.join(' ').slice(0, 80);
 
@@ -80,26 +84,23 @@ export const EntryList = React.memo(function EntryList({ selectedEntry, onSelect
             ...entry,
             preview
           },
-          dateKey: entry.entry_date
+          dateKey: entry.date
         };
       });
       
       setEntries(entryItems);
       setFilteredEntries(entryItems);
       
-      // Convert to JournalEntry format for parent using proper conversion
-      const journalEntryFormat = entryItems.map(item => ({
-        id: item.entry.id,
-        date: item.entry.entry_date,
-        blocks: convertSupabaseToBlocks(item.entry),
-        createdAt: new Date(item.entry.created_at),
-        updatedAt: new Date(item.entry.updated_at)
-      }));
+      // Update parent with entries
+      onEntriesChange?.(filteredJournalEntries);
       
-      onEntriesChange?.(journalEntryFormat);
-      setLastLoadTime(Date.now());
     } catch (error) {
-      console.error('Failed to load journal entries:', error);
+      console.error('Failed to load entries:', error);
+      toast({
+        title: "Failed to load entries",
+        description: "Please try refreshing the page.",
+        variant: "destructive",
+      });
     } finally {
       if (!onLoadingStateChange) {
         setIsLoading(false);
@@ -109,16 +110,12 @@ export const EntryList = React.memo(function EntryList({ selectedEntry, onSelect
     }
   }, [onLoadingStateChange, onEntriesChange]);
 
-  const formatEntryDate = (dateStr: string): string => {
-    try {
-      const date = parseISO(dateStr);
-      if (isToday(date)) return 'Today';
-      if (isYesterday(date)) return 'Yesterday';
-      return format(date, 'MMM d, yyyy');
-    } catch {
-      return dateStr;
+  // Load entries on mount and when tab becomes visible
+  useEffect(() => {
+    if (tabVisibility.isVisible) {
+      loadEntries();
     }
-  };
+  }, [loadEntries, tabVisibility.isVisible]);
 
   const handleSearch = (query: string): void => {
     setSearchQuery(query);
@@ -127,220 +124,108 @@ export const EntryList = React.memo(function EntryList({ selectedEntry, onSelect
     } else {
       const filtered = entries.filter(({ entry }) =>
         entry.preview?.toLowerCase().includes(query.toLowerCase()) ||
-        entry.entry_date.includes(query) ||
-        entry.excited_about?.toLowerCase().includes(query.toLowerCase()) ||
-        entry.make_today_great?.toLowerCase().includes(query.toLowerCase()) ||
-        entry.must_not_do?.toLowerCase().includes(query.toLowerCase()) ||
-        entry.grateful_for?.toLowerCase().includes(query.toLowerCase()) ||
-        (Array.isArray(entry.biggest_wins) && entry.biggest_wins.some(win => win.toLowerCase().includes(query.toLowerCase()))) ||
-        (Array.isArray(entry.tensions) && entry.tensions.some(tension => tension.toLowerCase().includes(query.toLowerCase())))
+        entry.date.includes(query) ||
+        entry.blocks.some(block => 
+          block.text?.toLowerCase().includes(query.toLowerCase())
+        )
       );
       setFilteredEntries(filtered);
     }
   };
 
-  useEffect(() => {
-    loadEntries();
-  }, [loadEntries]);
-
-  // Optimized real-time subscription with targeted updates
-  useEffect(() => {
-    let subscription: ReturnType<typeof import('@/integrations/supabase/client').supabase.channel> | null = null;
-
-    const setupRealtimeSync = async () => {
-      try {
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) return;
-
-        // Subscribe to changes in journal_entries table for the current user
-        subscription = supabase
-          .channel('entry_list_changes')
-          .on(
-            'postgres_changes',
-            {
-              event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-              schema: 'public',
-              table: 'journal_entries',
-              filter: `user_id=eq.${user.id}`
-            },
-            (payload) => {
-              console.log('Entry list real-time update received:', payload);
-              
-              // TARGETED UPDATES instead of full refresh
-              if (payload.eventType === 'INSERT' && payload.new) {
-                // Add new entry to the top of the list
-                const newEntry = payload.new;
-                const newEntryItem: EntryListItem = {
-                  entry: {
-                    ...newEntry,
-                    preview: [
-                      newEntry.excited_about,
-                      newEntry.make_today_great,
-                      newEntry.must_not_do,
-                      newEntry.grateful_for,
-                      ...(Array.isArray(newEntry.biggest_wins) ? newEntry.biggest_wins : []),
-                      ...(Array.isArray(newEntry.tensions) ? newEntry.tensions : [])
-                    ].filter(Boolean).join(' ').slice(0, 80)
-                  } as JournalEntryResponse & { preview?: string },
-                  dateKey: newEntry.entry_date
-                };
-                
-                setEntries(prev => [newEntryItem, ...prev]);
-                setFilteredEntries(prev => [newEntryItem, ...prev]);
-                
-              } else if (payload.eventType === 'UPDATE' && payload.new) {
-                // Update existing entry in place
-                const updatedEntry = payload.new;
-                const updatedPreview = [
-                  updatedEntry.excited_about,
-                  updatedEntry.make_today_great,
-                  updatedEntry.must_not_do,
-                  updatedEntry.grateful_for,
-                  ...(Array.isArray(updatedEntry.biggest_wins) ? updatedEntry.biggest_wins : []),
-                  ...(Array.isArray(updatedEntry.tensions) ? updatedEntry.tensions : [])
-                ].filter(Boolean).join(' ').slice(0, 80);
-                
-                const updateEntryList = (prev: EntryListItem[]): EntryListItem[] => 
-                  prev.map(item => 
-                    item.entry.id === updatedEntry.id 
-                      ? { ...item, entry: { ...updatedEntry, preview: updatedPreview } as JournalEntryResponse & { preview?: string } }
-                      : item
-                  );
-                
-                setEntries(updateEntryList);
-                setFilteredEntries(updateEntryList);
-                
-              } else if (payload.eventType === 'DELETE' && payload.old) {
-                // Remove entry from list
-                const deletedId = payload.old.id;
-                const filterOut = (prev: EntryListItem[]): EntryListItem[] => prev.filter(item => item.entry.id !== deletedId);
-                
-                setEntries(filterOut);
-                setFilteredEntries(filterOut);
-              }
-            }
-          )
-          .subscribe((status) => {
-            console.log('Entry list subscription status:', status);
-          });
-
-      } catch (error) {
-        console.error('Failed to setup entry list real-time sync:', error);
+  const formatEntryDate = (dateStr: string): string => {
+    try {
+      const date = parseISO(dateStr);
+      if (isToday(date)) {
+        return 'Today';
+      } else if (isYesterday(date)) {
+        return 'Yesterday';
+      } else {
+        return format(date, 'MMM d, yyyy');
       }
-    };
-
-    setupRealtimeSync();
-
-    return () => {
-      if (subscription) {
-        subscription.unsubscribe();
-      }
-    };
-  }, []); // Remove loadEntries dependency to prevent recreating subscription
-
-  // Function to refresh entries (can be called from parent components)
-  const refreshEntries = useCallback((): void => {
-    loadEntries();
-  }, [loadEntries]);
-
-  // Expose refresh function via ref or callback
-  useEffect((): (() => void) => {
-    if (typeof window !== 'undefined') {
-      window.refreshJournalEntries = refreshEntries;
+    } catch (error) {
+      console.warn('Invalid date format:', dateStr, error);
+      // Fallback to a safe date format
+      return 'Unknown Date';
     }
-    return () => {
-      if (typeof window !== 'undefined') {
-        delete window.refreshJournalEntries;
-      }
-    };
-  }, [refreshEntries]);
+  };
 
-  // Register tab visibility callbacks with centralized system
-  useEffect(() => {
-    const callbackId = 'entryList';
-
-    tabVisibility.registerCallbacks(callbackId, {
-      onVisible: async (state) => {
-        const hasNoEntries = entries.length === 0;
-        const shouldRefreshData = tabVisibility.shouldRefresh(lastLoadTime);
-
-        console.log('🔍 [EntryList] Tab became visible, checking refresh conditions:', {
-          hasNoEntries,
-          shouldRefreshData,
-          wasHiddenDuration: Math.round(state.wasHiddenDuration / 1000),
-          entriesLength: entries.length,
-          lastLoadTime: new Date(lastLoadTime).toLocaleTimeString()
-        });
-
-        // Refresh if:
-        // 1. No entries are currently loaded
-        // 2. shouldRefresh logic determines it's needed based on time thresholds
-        if (hasNoEntries || shouldRefreshData) {
-          console.log('✅ [EntryList] TRIGGERING REFRESH:', {
-            hasNoEntries,
-            shouldRefreshData,
-            reason: hasNoEntries ? 'no entries loaded' : 'time threshold exceeded'
-          });
-          await loadEntries();
-        } else {
-          console.log('⏭️ [EntryList] No refresh needed:', {
-            entriesCount: entries.length,
-            wasHiddenDuration: Math.round(state.wasHiddenDuration / 1000)
-          });
-        }
-      },
-      onHidden: () => {
-        console.log('🔍 [EntryList] Tab became hidden');
-      }
-    });
-
-    return () => {
-      tabVisibility.unregisterCallbacks(callbackId);
-    };
-  }, [tabVisibility, entries.length, lastLoadTime, loadEntries]);
-
-  // const hasEntryContent = selectedEntry?.blocks?.some(block => block.text?.trim() !== '') || false;
+  const handleDeleteEntry = async (entryId: string): Promise<void> => {
+    try {
+      await onDeleteEntry?.(entryId);
+      // Refresh entries after deletion
+      await loadEntries();
+    } catch (error) {
+      console.error('Failed to delete entry:', error);
+    }
+  };
 
   return (
-    <div className={`flex flex-col h-full bg-white ${className}`}>
-      {/* Search Only */}
+    <div className={`flex flex-col h-full ${className}`}>
+      {/* Header */}
       <div className="p-4 border-b border-stone-200">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-stone-800">Journal Entries</h2>
+          <Button
+            onClick={() => {
+              console.log('🔄 New Entry button clicked');
+              onCreateEntry();
+            }}
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New Entry
+          </Button>
+        </div>
+        
+        {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-stone-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 h-4 w-4" />
           <Input
-            type="text"
             placeholder="Search entries..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
-            className="pl-10 bg-stone-50 border-stone-200 focus:border-orange-400 focus:ring-orange-400 font-inknut"
+            className="pl-10"
           />
+        </div>
+        
+        {/* Sync Status */}
+        <div className="mt-2 flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${
+            syncStatus === 'synced' ? 'bg-green-500' :
+            syncStatus === 'pending' ? 'bg-yellow-500' :
+            'bg-red-500'
+          }`} />
+          <span className="text-xs text-stone-500">
+            {syncStatus === 'synced' ? 'Synced' :
+             syncStatus === 'pending' ? 'Syncing...' :
+             'Sync failed'}
+          </span>
         </div>
       </div>
 
       {/* Entries List */}
       <div className="flex-1 overflow-y-auto">
-        {(isLoading || isParentLoading) ? (
-          <div className="p-6 text-center font-inknut text-stone-500">
-            <div className="animate-pulse">
-              <div className="h-4 bg-stone-200 rounded w-24 mx-auto mb-2"></div>
-              <div className="h-3 bg-stone-100 rounded w-32 mx-auto"></div>
-            </div>
+        {isLoading ? (
+          <div className="p-4 text-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-stone-800 mx-auto mb-2"></div>
+            <p className="text-sm text-stone-600">Loading entries...</p>
           </div>
         ) : filteredEntries.length === 0 ? (
-          <div className="p-6 text-center font-inknut text-stone-500">
-            {searchQuery ? 'No entries match your search' : 'No journal entries yet'}
+          <div className="p-4 text-center">
+            <p className="text-sm text-stone-600">No entries found</p>
           </div>
         ) : (
           <div className="p-2">
-            {filteredEntries.map(({ entry }) => (
+            {filteredEntries.map(({ entry, dateKey }) => (
               <EntryListItem
                 key={entry.id}
                 entry={entry}
                 isSelected={selectedEntry?.id === entry.id}
-                formatEntryDate={formatEntryDate}
-                onSelect={onSelectEntry}
+                onSelect={() => onSelectEntry(entry)}
+                onDelete={() => handleDeleteEntry(entry.id)}
+                dateLabel={formatEntryDate(dateKey)}
               />
             ))}
           </div>

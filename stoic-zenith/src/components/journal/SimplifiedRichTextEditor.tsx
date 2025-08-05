@@ -101,11 +101,40 @@ export function SimplifiedRichTextEditor({
       cursorPositionRef.current = saveCursorPosition(editorRef.current)
     }
 
-    onChange(block.id, {
-      text,
-      richText: html,
-    })
-  }, [block.id, onChange, isUpdating])
+    // Prevent unnecessary updates if content hasn't changed
+    if (text !== block.text || html !== block.richText) {
+      onChange(block.id, {
+        text,
+        richText: html,
+      })
+    }
+  }, [block.id, onChange, isUpdating, block.text, block.richText])
+
+  // Initialize content when block changes (only on mount or when block ID changes)
+  useEffect(() => {
+    if (editorRef.current && !isUpdating) {
+      setIsUpdating(true)
+      
+      // Only update if content is different to prevent unnecessary re-renders
+      const currentText = editorRef.current.textContent || ''
+      const currentHtml = editorRef.current.innerHTML || ''
+      
+      if (block.richText && currentHtml !== block.richText) {
+        editorRef.current.innerHTML = block.richText
+      } else if (!block.richText && currentText !== (block.text || '')) {
+        editorRef.current.textContent = block.text || ''
+      }
+      
+      // Set placeholder if empty
+      if (!block.text || block.text.trim() === '') {
+        editorRef.current.setAttribute('data-placeholder', placeholder)
+      } else {
+        editorRef.current.removeAttribute('data-placeholder')
+      }
+      
+      setIsUpdating(false)
+    }
+  }, [block.id, placeholder, isUpdating]) // Keep dependencies minimal to prevent re-renders
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     // Remove placeholder immediately when user starts typing any printable character
@@ -393,10 +422,13 @@ export function SimplifiedRichTextEditor({
         onPaste={handlePaste}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        className={`min-h-[1.5rem] focus:outline-none ${className}`}
+        className={`min-h-[1.5rem] focus:outline-none bg-white ${className}`}
         style={{
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
+          minHeight: '1.5rem',
+          padding: '0.5rem',
+          borderRadius: '0.375rem',
         }}
         data-block-id={block.id}
       />

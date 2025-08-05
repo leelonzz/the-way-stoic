@@ -24,7 +24,7 @@ interface UseTabVisibilityReturn extends TabVisibilityState {
 
 // Global state to ensure single event listener
 let globalVisibilityState: TabVisibilityState = {
-  isVisible: !document.hidden,
+  isVisible: typeof document !== 'undefined' ? !document.hidden : true,
   lastVisibilityChange: Date.now(),
   wasHiddenDuration: 0
 };
@@ -34,6 +34,8 @@ let globalListenerAttached = false;
 let hiddenStartTime: number | null = null;
 
 const handleGlobalVisibilityChange = async (): Promise<void> => {
+  if (typeof document === 'undefined') return;
+  
   const wasVisible = globalVisibilityState.isVisible;
   const isVisible = !document.hidden;
   const now = Date.now();
@@ -109,6 +111,8 @@ const handleGlobalVisibilityChange = async (): Promise<void> => {
 };
 
 const attachGlobalListener = (): void => {
+  if (typeof document === 'undefined') return;
+  
   if (!globalListenerAttached) {
     document.addEventListener('visibilitychange', handleGlobalVisibilityChange);
     globalListenerAttached = true;
@@ -117,6 +121,8 @@ const attachGlobalListener = (): void => {
 };
 
 const detachGlobalListener = (): void => {
+  if (typeof document === 'undefined') return;
+  
   if (globalListenerAttached && globalCallbacks.size === 0) {
     document.removeEventListener('visibilitychange', handleGlobalVisibilityChange);
     globalListenerAttached = false;

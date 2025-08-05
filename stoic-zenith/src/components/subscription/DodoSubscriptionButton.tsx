@@ -4,38 +4,44 @@ import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useDodo } from '@/components/providers/DodoProvider'
 import { useToast } from '@/hooks/use-toast'
+import { useAuthContext } from '@/components/auth/AuthProvider'
+import { Loader2, Zap } from 'lucide-react'
 
 interface DodoSubscriptionButtonProps {
-  customerId: string
   productId: string
   productName: string
-  price: number
-  currency: string
   className?: string
   onSuccess?: (subscription: any) => void
   onError?: (error: Error) => void
 }
 
 export function DodoSubscriptionButton({
-  customerId,
   productId,
   productName,
-  price,
-  currency,
   className,
   onSuccess,
   onError,
 }: DodoSubscriptionButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const { createSubscription, isLoaded } = useDodo()
+  const { createSubscription, isLoading: dodoLoading } = useDodo()
   const { toast } = useToast()
+  const { user, profile } = useAuthContext()
 
   const handleSubscribe = async () => {
-    if (!isLoaded) {
+    if (!user) {
       toast({
-        title: 'Error',
-        description: 'Dodo Payments is not loaded yet',
+        title: 'Sign in required',
+        description: 'Please sign in to upgrade your plan',
         variant: 'destructive',
+      })
+      return
+    }
+
+    if (dodoLoading) {
+      toast({
+        title: 'Please wait',
+        description: 'Dodo Payments is loading...',
+        variant: 'default',
       })
       return
     }
@@ -43,22 +49,28 @@ export function DodoSubscriptionButton({
     setIsLoading(true)
 
     try {
-      const subscription = await createSubscription({
-        customer_id: customerId,
-        product_id: productId,
-        metadata: {
-          product_name: productName,
-          price: price,
-          currency: currency,
-        },
-      })
+      const result = await createSubscription(
+        productId,
+        user.id,
+        {
+          email: user.email || '',
+          name: profile?.full_name || user.email?.split('@')[0] || 'Customer',
+          billingAddress: {
+            street: '',
+            city: '',
+            state: '',
+            zipcode: '',
+            country: 'US'
+          }
+        }
+      )
 
-      toast({
-        title: 'Success',
-        description: `Successfully subscribed to ${productName}`,
-      })
+      // Redirect to checkout URL
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl
+      }
 
-      onSuccess?.(subscription)
+      onSuccess?.(result)
     } catch (error) {
       console.error('Subscription error:', error)
       
@@ -75,13 +87,32 @@ export function DodoSubscriptionButton({
   }
 
   return (
-    <Button
-      onClick={handleSubscribe}
-      disabled={!isLoaded || isLoading}
-      className={className}
-    >
-      {isLoading ? 'Processing...' : `Subscribe to ${productName}`}
-    </Button>
+    <div className="space-y-2">
+      <Button
+        onClick={handleSubscribe}
+        disabled={dodoLoading || isLoading || !user}
+        className={`w-full bg-cta hover:bg-cta/90 text-white ${className || ''}`}
+        size="lg"
+      >
+        {(isLoading || dodoLoading) ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          <>
+            <Zap className="mr-2 h-4 w-4" />
+            Begin Practice
+          </>
+        )}
+      </Button>
+      
+      {!user && (
+        <p className="text-xs text-stone text-center">
+          Please sign in to subscribe
+        </p>
+      )}
+    </div>
   )
 }
 

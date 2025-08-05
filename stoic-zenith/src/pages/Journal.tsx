@@ -1,610 +1,274 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
 import { JournalNavigation } from '@/components/journal/JournalNavigation';
 import { EntryList } from '@/components/journal/EntryList';
 import { JournalEntry } from '@/components/journal/types';
-import { createJournalEntry } from '@/lib/journal';
-
-// Entry cache for performance optimization
-const entryCache = new Map<string, JournalEntry>();
-const CACHE_SIZE_LIMIT = 50; // Keep last 50 accessed entries
+import { journalManager } from '@/lib/journal';
 
 export default function Journal(): JSX.Element {
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [entryListLoading, setEntryListLoading] = useState(false);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'pending' | 'error'>('synced');
 
-
-
-  const handleCreateEntry = (): void => {
-    // Create entry immediately in UI for instant response (0ms delay)
+  // INSTANT ENTRY CREATION (0ms delay)
+  const handleCreateEntry = useCallback(async (): Promise<void> => {
+    console.log('🔄 Creating new entry...');
     const now = new Date();
     const today = format(now, 'yyyy-MM-dd');
 
-    // Generate temporary ID for immediate UI update
-    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-
-    // Create local entry immediately for instant UI response
-    const newEntry: JournalEntry = {
-      id: tempId,
-      date: today,
-      blocks: [{
-        id: `${tempId}-initial`,
-        type: 'paragraph',
-        text: '',
-        createdAt: now
-      }],
-      createdAt: now,
-      updatedAt: now
-    };
-
-    // Update UI immediately - no waiting, no loading states
-    setSelectedEntry(newEntry);
-    setRefreshKey(prev => prev + 1);
-
-    // Create in database in background without blocking UI
-    createJournalEntry({
-      entry_date: today,
-      entry_type: 'general',
-      excited_about: '',
-      make_today_great: '',
-    }).then(supabaseEntry => {
-      // Update with real ID from database
-      const updatedEntry: JournalEntry = {
-        ...newEntry,
-        id: supabaseEntry.id,
-        blocks: newEntry.blocks.map(block => ({
-          ...block,
-          id: block.id.replace(tempId, supabaseEntry.id)
-        })),
-        createdAt: new Date(supabaseEntry.created_at),
-        updatedAt: new Date(supabaseEntry.updated_at)
-      };
-
-      setSelectedEntry(updatedEntry);
-      setRefreshKey(prev => prev + 1);
-
-    }).catch(error => {
-      console.error('Failed to sync entry to database:', error);
-      // Entry is already created locally, so user can continue working
-      // Show subtle notification without interrupting workflow
+    try {
+      // Create entry immediately using the real-time manager
+      const newEntry = await journalManager.createEntryImmediately(today, 'general');
+      console.log('✅ Entry created:', newEntry);
+      
+      // Update UI immediately - no waiting, no loading states
+      setSelectedEntry(newEntry);
+      
+      // Update entries list immediately
+      setEntries(prev => {
+        console.log('📝 Updating entries list, current count:', prev.length);
+        return [newEntry, ...prev];
+      });
+      
+      // Focus the editor after a short delay to ensure it's rendered
+      setTimeout(() => {
+        const editorElement = document.querySelector('[contenteditable="true"]') as HTMLElement;
+        if (editorElement) {
+          editorElement.focus();
+          console.log('🎯 Editor focused');
+        } else {
+          console.log('❌ Editor element not found');
+        }
+      }, 100);
+      
+      // Show success feedback
+      toast({
+        title: "Entry created",
+        description: "Your new journal entry is ready to write in.",
+        variant: "default",
+      });
+      
+    } catch (error) {
+      console.error('❌ Failed to create entry:', error);
       toast({
         title: "Entry created locally",
         description: "Your entry is saved locally and will sync when connection is restored.",
         variant: "default",
       });
-    });
-  };
-
-  const handleSelectEntry = (entry: JournalEntry): void => {
-    // Add entry to cache for instant future access
-    entryCache.set(entry.id, entry);
-    
-    // Maintain cache size limit (LRU-style)
-    if (entryCache.size > CACHE_SIZE_LIMIT) {
-      const firstKey = entryCache.keys().next().value;
-      entryCache.delete(firstKey);
     }
-    
-    // INSTANT UI UPDATE - Switch to new entry immediately (0ms delay)
-    setSelectedEntry(entry);
-    
-    // Save previous entry in background if exists - NO BLOCKING
-    if (selectedEntry && selectedEntry.id !== entry.id) {
-      console.log('🔄 Background save for previous entry:', selectedEntry.id);
-      
-      // Update cache with latest changes
-      entryCache.set(selectedEntry.id, selectedEntry);
-      
-      // Save to localStorage immediately (synchronous, always succeeds)
-      try {
-        const entryIdKey = `journal-entry-${selectedEntry.id}`;
-        const dateKey = `journal-${selectedEntry.date}`;
-        const entryWithScopedBlocks = {
-          ...selectedEntry,
-          blocks: selectedEntry.blocks.map(block => ({
-            ...block,
-            id: block.id.startsWith(`${selectedEntry.id}-`) ? block.id : `${selectedEntry.id}-${block.id}`
-          }))
-        };
-        localStorage.setItem(entryIdKey, JSON.stringify(entryWithScopedBlocks));
-        localStorage.setItem(dateKey, entryIdKey);
-        console.log('✅ Previous entry saved to localStorage');
-      } catch (localStorageError) {
-        console.error('❌ Failed to save to localStorage:', localStorageError);
-        // Don't block UI with toast during entry switching
-      }
-      
-      // Background Supabase save (fully async, non-blocking)
-      (async () => {
-        try {
-          const { safeUpdateJournalEntry } = await import('@/lib/journal');
-          const result = await safeUpdateJournalEntry(selectedEntry.id, selectedEntry.blocks);
-          
-          if (result.success) {
-            console.log('✅ Background Supabase save completed for:', selectedEntry.id);
-            setSyncStatus('synced');
-          } else {
-            console.warn('⚠️ Background save failed:', result.error);
-            setSyncStatus('error');
-          }
-        } catch (error) {
-          console.error('❌ Background save error:', error);
-          setSyncStatus('error');
-        }
-      })();
-    }
-  };
-
-  const handleDeleteEntry = (entryId: string): void => {
-    // Remove from cache
-    entryCache.delete(entryId);
-    
-    // Clear selected entry if it's the one being deleted
-    if (selectedEntry?.id === entryId) {
-      setSelectedEntry(null);
-    }
-
-    // Remove from entries list
-    setEntries(prev => prev.filter(entry => entry.id !== entryId));
-
-    // Refresh entry list
-    setRefreshKey(prev => prev + 1);
-  };
-
-  const handleEntryUpdate = (updatedEntry: JournalEntry): void => {
-    // Update cache with latest changes
-    entryCache.set(updatedEntry.id, updatedEntry);
-    
-    setSelectedEntry(updatedEntry);
-
-    // Standardize localStorage key usage - use entry ID as primary key
-    const entryIdKey = `journal-entry-${updatedEntry.id}`;
-    try {
-      const serializedEntry = JSON.stringify({
-        ...updatedEntry,
-        // Ensure blocks have proper IDs scoped to this entry
-        blocks: updatedEntry.blocks.map(block => ({
-          ...block,
-          id: block.id.startsWith(`${updatedEntry.id}-`) ? block.id : `${updatedEntry.id}-${block.id}`
-        }))
-      });
-      localStorage.setItem(entryIdKey, serializedEntry);
-      
-      // Keep date key for backward compatibility but make it reference the entry ID key
-      const dateKey = `journal-${updatedEntry.date}`;
-      localStorage.setItem(dateKey, entryIdKey);
-    } catch (error) {
-      console.error('Failed to save entry to localStorage:', error);
-    }
-
-    // Update entries list if this entry is in it
-    setEntries(prev => {
-      const existingIndex = prev.findIndex(e => e.id === updatedEntry.id);
-      if (existingIndex >= 0) {
-        const newEntries = [...prev];
-        newEntries[existingIndex] = updatedEntry;
-        return newEntries;
-      } else {
-        return [updatedEntry, ...prev];
-      }
-    });
-
-    // Trigger background save to Supabase for non-temporary entries
-    if (!updatedEntry.id.startsWith('temp-') && !updatedEntry.id.startsWith('recovery-')) {
-      // Save to Supabase in the background without blocking the UI
-      (async () => {
-        try {
-          const { safeUpdateJournalEntry } = await import('@/lib/journal');
-          const result = await safeUpdateJournalEntry(updatedEntry.id, updatedEntry.blocks);
-          
-          if (result.success) {
-            console.log('✅ Background save to Supabase successful for entry:', updatedEntry.id);
-            setSyncStatus('synced');
-          } else {
-            console.warn('⚠️ Background save to Supabase failed for entry:', updatedEntry.id, result.error);
-            setSyncStatus('error');
-            // Don't show toast for background saves to avoid spamming user
-          }
-        } catch (error) {
-          console.error('❌ Unexpected error during background save for entry:', updatedEntry.id, error);
-          setSyncStatus('error');
-        }
-      })();
-    }
-  };
-
-  // Load today's entry on mount if it exists
-  useEffect(() => {
-    const loadTodaysEntry = async () => {
-      const today = format(new Date(), 'yyyy-MM-dd');
-
-      // First check localStorage for unsaved changes using new standardized approach
-      const dateKey = `journal-${today}`;
-      const dateKeyValue = localStorage.getItem(dateKey);
-
-      // Check if date key points to entry ID key (new format) or contains entry data (old format)
-      if (dateKeyValue) {
-        try {
-          if (dateKeyValue.startsWith('journal-entry-')) {
-            // New format: date key points to entry ID key
-            const actualEntry = localStorage.getItem(dateKeyValue);
-            if (actualEntry) {
-              const parsedEntry = JSON.parse(actualEntry) as JournalEntry;
-              setSelectedEntry(parsedEntry);
-              setIsLoading(false);
-              return;
-            }
-          } else {
-            // Old format: date key contains entry data directly
-            const parsedEntry = JSON.parse(dateKeyValue) as JournalEntry;
-            // Migrate to new format
-            const entryIdKey = `journal-entry-${parsedEntry.id}`;
-            const updatedEntry = {
-              ...parsedEntry,
-              blocks: parsedEntry.blocks.map(block => ({
-                ...block,
-                id: block.id.startsWith(`${parsedEntry.id}-`) ? block.id : `${parsedEntry.id}-${block.id}`
-              }))
-            };
-            localStorage.setItem(entryIdKey, JSON.stringify(updatedEntry));
-            localStorage.setItem(dateKey, entryIdKey);
-            setSelectedEntry(updatedEntry);
-            setIsLoading(false);
-            return;
-          }
-        } catch (error) {
-          console.warn('Failed to parse local entry:', error);
-
-          // Enhanced recovery: Try to salvage data before clearing
-          try {
-            const rawData = localStorage.getItem(dateKey);
-            if (rawData) {
-              // Try to extract any readable text content
-              const textMatches = rawData.match(/"text":"([^"]*?)"/g);
-              if (textMatches && textMatches.length > 0) {
-                console.log('🔄 Attempting to recover text content from corrupted entry...');
-
-                // Create a recovery entry with extracted text
-                const recoveredText = textMatches
-                  .map(match => match.replace(/"text":"/, '').replace(/"$/, ''))
-                  .join('\n\n');
-
-                if (recoveredText.trim()) {
-                  toast({
-                    title: "Data Recovery",
-                    description: `Recovered ${recoveredText.length} characters from corrupted entry. Please review and save.`,
-                    variant: "default",
-                  });
-
-                  // Create a recovery entry with the extracted text
-                  const now = new Date();
-                  const recoveryEntryId = `recovery-${Date.now()}`;
-                  const recoveredBlock = {
-                    id: `${recoveryEntryId}-recovered-block`,
-                    type: 'paragraph' as const,
-                    text: recoveredText,
-                    createdAt: now
-                  };
-
-                  const recoveredEntry: JournalEntry = {
-                    id: recoveryEntryId,
-                    date: today,
-                    blocks: [recoveredBlock],
-                    createdAt: now,
-                    updatedAt: now
-                  };
-
-                  setSelectedEntry(recoveredEntry);
-                  handleEntryUpdate(recoveredEntry);
-                }
-              }
-            }
-          } catch (recoveryError) {
-            console.warn('Data recovery failed:', recoveryError);
-          }
-
-          // Clear corrupted data
-          localStorage.removeItem(dateKey);
-        }
-      }
-
-      // If no local entry, try to load from Supabase
-      try {
-        const { getJournalEntryAsRichText } = await import('@/lib/journal');
-        const supabaseEntry = await getJournalEntryAsRichText(today);
-
-        if (supabaseEntry) {
-          // Save using standardized format
-          const entryIdKey = `journal-entry-${supabaseEntry.id}`;
-          const entryWithScopedBlocks = {
-            ...supabaseEntry,
-            blocks: supabaseEntry.blocks.map(block => ({
-              ...block,
-              id: block.id.startsWith(`${supabaseEntry.id}-`) ? block.id : `${supabaseEntry.id}-${block.id}`
-            }))
-          };
-          localStorage.setItem(entryIdKey, JSON.stringify(entryWithScopedBlocks));
-          localStorage.setItem(dateKey, entryIdKey);
-          setSelectedEntry(entryWithScopedBlocks);
-        }
-      } catch (error) {
-        console.warn('Failed to load entry from Supabase:', error);
-      }
-
-      setIsLoading(false);
-    };
-
-    loadTodaysEntry();
   }, []);
 
-  // Save current entry when component unmounts
-  useEffect(() => {
-    return () => {
-      if (selectedEntry) {
-        console.log('🔄 Saving entry on component unmount');
-        const entryIdKey = `journal-entry-${selectedEntry.id}`;
-        const dateKey = `journal-${selectedEntry.date}`;
-        const entryWithScopedBlocks = {
-          ...selectedEntry,
-          blocks: selectedEntry.blocks.map(block => ({
-            ...block,
-            id: block.id.startsWith(`${selectedEntry.id}-`) ? block.id : `${selectedEntry.id}-${block.id}`
-          }))
-        };
-        localStorage.setItem(entryIdKey, JSON.stringify(entryWithScopedBlocks));
-        localStorage.setItem(dateKey, entryIdKey);
+  // INSTANT ENTRY DELETION (immediate UI feedback)
+  const handleDeleteEntry = useCallback(async (entryId: string): Promise<void> => {
+    try {
+      // Remove from UI immediately
+      setSelectedEntry(null);
+      setEntries(prev => prev.filter(entry => entry.id !== entryId));
+      
+      // Delete using real-time manager (background operation)
+      await journalManager.deleteEntryImmediately(entryId);
+      
+      toast({
+        title: "Entry deleted",
+        description: "Your journal entry has been removed.",
+        variant: "default",
+      });
+      
+    } catch (error) {
+      console.error('Failed to delete entry:', error);
+      toast({
+        title: "Entry deleted locally",
+        description: "Entry removed from local storage. Will sync when connection is restored.",
+        variant: "default",
+      });
+    }
+  }, []);
+
+  // REAL-TIME ENTRY UPDATE (as users type)
+  const handleEntryUpdate = useCallback(async (updatedEntry: JournalEntry): Promise<void> => {
+    try {
+      // Update UI immediately
+      setSelectedEntry(updatedEntry);
+      setEntries(prev => 
+        prev.map(entry => 
+          entry.id === updatedEntry.id ? updatedEntry : entry
+        )
+      );
+      
+      // Save using real-time manager (background operation)
+      await journalManager.updateEntryImmediately(updatedEntry.id, updatedEntry.blocks);
+      
+      // Update sync status
+      setSyncStatus('synced');
+      
+    } catch (error) {
+      console.error('Failed to update entry:', error);
+      setSyncStatus('error');
+      
+      toast({
+        title: "Saved locally",
+        description: "Your changes are saved locally and will sync when connection is restored.",
+        variant: "default",
+      });
+    }
+  }, []);
+
+  // Load entries with instant access
+  const loadEntries = useCallback(async (): Promise<void> => {
+    try {
+      setIsLoading(true);
+      
+      // Get entries from real-time manager (localStorage first, then database)
+      const allEntries = await journalManager.getAllEntries();
+      setEntries(allEntries);
+      
+      // Load today's entry if no entry is selected
+      if (!selectedEntry) {
+        const today = format(new Date(), 'yyyy-MM-dd');
+        const todaysEntry = allEntries.find(entry => entry.date === today);
         
-        // Try to save to Supabase in the background
-        if (!selectedEntry.id.startsWith('temp-') && !selectedEntry.id.startsWith('recovery-')) {
-          (async () => {
-            try {
-              const { safeUpdateJournalEntry } = await import('@/lib/journal');
-              const result = await safeUpdateJournalEntry(selectedEntry.id, selectedEntry.blocks);
-              
-              if (result.success) {
-                console.log('✅ Entry saved to Supabase on component unmount');
-              } else {
-                console.warn('⚠️ Failed to save entry to Supabase on component unmount:', result.error);
-              }
-            } catch (error) {
-              console.error('❌ Unexpected error saving entry on component unmount:', error);
-            }
-          })();
+        if (todaysEntry) {
+          setSelectedEntry(todaysEntry);
+        } else {
+          // Create today's entry if it doesn't exist
+          const newEntry = await journalManager.createEntryImmediately(today, 'general');
+          setSelectedEntry(newEntry);
+          setEntries(prev => [newEntry, ...prev]);
         }
       }
-    };
+      
+      setSyncStatus('synced');
+      
+    } catch (error) {
+      console.error('Failed to load entries:', error);
+      setSyncStatus('error');
+      
+      toast({
+        title: "Loading from local storage",
+        description: "Using cached entries. Will sync when connection is restored.",
+        variant: "default",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }, [selectedEntry]);
 
-  // Real-time sync with Supabase subscriptions
+  // Handle entry selection with instant feedback
+  const handleSelectEntry = useCallback(async (entry: JournalEntry): Promise<void> => {
+    // Switch immediately - no loading states
+    setSelectedEntry(entry);
+    
+    // Update sync status
+    setSyncStatus('synced');
+  }, []);
+
+  // Load entries on mount
   useEffect(() => {
-    let subscription: ReturnType<typeof import('@/integrations/supabase/client').supabase.channel> | null = null;
+    loadEntries();
+  }, [loadEntries]);
 
-    const setupRealtimeSync = async () => {
-      try {
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) return;
-
-        // Subscribe to changes in journal_entries table for the current user
-        subscription = supabase
-          .channel(`journal_entries_changes_${user.id}`, {
-            config: {
-              broadcast: { self: false },
-              presence: { key: user.id }
-            }
-          })
-          .on(
-            'postgres_changes',
-            {
-              event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-              schema: 'public',
-              table: 'journal_entries',
-              filter: `user_id=eq.${user.id}`
-            },
-            async (payload) => {
-              console.log('Real-time update received:', payload);
-
-              // Handle different types of changes
-              if (payload.eventType === 'UPDATE' && selectedEntry) {
-                const updatedEntry = payload.new;
-
-                // Check if this update is for the currently selected entry
-                if (updatedEntry.id === selectedEntry.id) {
-                  try {
-                    const { getJournalEntryAsRichText } = await import('@/lib/journal');
-                    const serverEntry = await getJournalEntryAsRichText(selectedEntry.date);
-
-                    if (serverEntry) {
-                      const serverTime = new Date(serverEntry.updatedAt);
-                      const localTime = new Date(selectedEntry.updatedAt);
-
-                      console.log('Real-time sync comparison:', {
-                        serverTime: serverTime.toISOString(),
-                        localTime: localTime.toISOString(),
-                        serverNewer: serverTime > localTime,
-                        serverBlocks: serverEntry.blocks.length,
-                        localBlocks: selectedEntry.blocks.length
-                      });
-
-                      if (serverTime > localTime) {
-                        console.log('Real-time sync: Server has newer version, updating local entry');
-                        const entryIdKey = `journal-entry-${serverEntry.id}`;
-                        const dateKey = `journal-${serverEntry.date}`;
-                        const entryWithScopedBlocks = {
-                          ...serverEntry,
-                          blocks: serverEntry.blocks.map(block => ({
-                            ...block,
-                            id: block.id.startsWith(`${serverEntry.id}-`) ? block.id : `${serverEntry.id}-${block.id}`
-                          }))
-                        };
-                        localStorage.setItem(entryIdKey, JSON.stringify(entryWithScopedBlocks));
-                        localStorage.setItem(dateKey, entryIdKey);
-                        setSelectedEntry(entryWithScopedBlocks);
-                        setSyncStatus('synced');
-                      } else {
-                        console.log('Real-time sync: Local version is newer or same, keeping local changes');
-                        setSyncStatus('synced');
-                      }
-                    }
-                  } catch (error) {
-                    console.warn('Real-time sync failed:', error);
-                    setSyncStatus('error');
-                  }
-                }
-              }
-
-              // Refresh entry list for INSERT/DELETE events
-              if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-                setRefreshKey(prev => prev + 1);
-              }
-            }
-          )
-          .subscribe((status) => {
-            console.log('Real-time subscription status:', status);
-            if (status === 'SUBSCRIBED') {
-              setSyncStatus('synced');
-              console.log('✅ Real-time sync established');
-            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-              setSyncStatus('error');
-              console.warn('❌ Real-time sync failed:', status);
-
-              // Retry connection after a delay
-              setTimeout(() => {
-                console.log('🔄 Retrying real-time connection...');
-                setupRealtimeSync();
-              }, 5000);
-            } else if (status === 'CLOSED') {
-              setSyncStatus('pending');
-              console.log('🔄 Real-time connection closed, will retry...');
-            }
-          });
-
-      } catch (error) {
-        console.error('Failed to setup real-time sync:', error);
-        setSyncStatus('error');
-      }
-    };
-
-    setupRealtimeSync();
-
-    return () => {
-      if (subscription) {
-        subscription.unsubscribe();
-      }
-    };
-  }, [selectedEntry]);
-
-  // Save current entry before page unload and on page visibility change
+  // Setup real-time sync status updates
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (selectedEntry) {
-        console.log('🔄 Saving entry before page unload');
-        const entryIdKey = `journal-entry-${selectedEntry.id}`;
-        const dateKey = `journal-${selectedEntry.date}`;
-        const entryWithScopedBlocks = {
-          ...selectedEntry,
-          blocks: selectedEntry.blocks.map(block => ({
-            ...block,
-            id: block.id.startsWith(`${selectedEntry.id}-`) ? block.id : `${selectedEntry.id}-${block.id}`
-          }))
-        };
-        localStorage.setItem(entryIdKey, JSON.stringify(entryWithScopedBlocks));
-        localStorage.setItem(dateKey, entryIdKey);
-      }
+    const updateSyncStatus = (): void => {
+      // Check if there are pending syncs
+      const hasPendingSyncs = journalManager['syncQueue'].size > 0;
+      setSyncStatus(hasPendingSyncs ? 'pending' : 'synced');
     };
 
-    const handleVisibilityChange = async () => {
-      if (document.hidden && selectedEntry) {
-        console.log('🔄 Saving entry on page visibility change (page hidden)');
-        
-        // Save to localStorage immediately
-        const entryIdKey = `journal-entry-${selectedEntry.id}`;
-        const dateKey = `journal-${selectedEntry.date}`;
-        const entryWithScopedBlocks = {
-          ...selectedEntry,
-          blocks: selectedEntry.blocks.map(block => ({
-            ...block,
-            id: block.id.startsWith(`${selectedEntry.id}-`) ? block.id : `${selectedEntry.id}-${block.id}`
-          }))
-        };
-        localStorage.setItem(entryIdKey, JSON.stringify(entryWithScopedBlocks));
-        localStorage.setItem(dateKey, entryIdKey);
-        
-        // Try to save to Supabase in the background
-        if (!selectedEntry.id.startsWith('temp-') && !selectedEntry.id.startsWith('recovery-')) {
-          try {
-            const { safeUpdateJournalEntry } = await import('@/lib/journal');
-            const result = await safeUpdateJournalEntry(selectedEntry.id, selectedEntry.blocks);
-            
-            if (result.success) {
-              console.log('✅ Entry saved to Supabase on page visibility change');
-            } else {
-              console.warn('⚠️ Failed to save entry to Supabase on page visibility change:', result.error);
-            }
-          } catch (error) {
-            console.error('❌ Unexpected error saving entry on page visibility change:', error);
-          }
-        }
-      }
+    // Update sync status every second
+    const interval = setInterval(updateSyncStatus, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle before unload to ensure data is saved
+  useEffect(() => {
+    const handleBeforeUnload = (): void => {
+      // Trigger immediate sync before page unload
+      journalManager['syncPendingChanges']?.();
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  // Handle visibility change to sync when tab becomes visible
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    
+    const handleVisibilityChange = async (): Promise<void> => {
+      if (!document.hidden) {
+        // Sync when tab becomes visible
+        try {
+          await journalManager['syncPendingChanges']?.();
+          setSyncStatus('synced');
+        } catch (error) {
+          console.warn('Background sync failed:', error);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [selectedEntry]);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-stone-50">
+        <div className="text-center p-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-800 mx-auto mb-4"></div>
+          <p className="text-stone-600">Loading your journal...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-full flex bg-stone-50 animate-fade-in">
-      {/* Left Panel - Entry List (Fixed width, responsive) */}
-      <div className="w-80 min-w-80 bg-white border-r border-stone-200 flex-shrink-0 hidden lg:flex">
+    <div className="h-full flex bg-stone-50">
+      {/* Entry List Sidebar */}
+      <div className="w-80 border-r border-stone-200 bg-white">
         <EntryList
-          key={refreshKey}
+          entries={entries}
           selectedEntry={selectedEntry}
           onSelectEntry={handleSelectEntry}
           onCreateEntry={handleCreateEntry}
-          className="flex-1"
-          isParentLoading={isLoading}
-          onLoadingStateChange={setEntryListLoading}
-          entries={entries}
+          onDeleteEntry={handleDeleteEntry}
           onEntriesChange={setEntries}
+          syncStatus={syncStatus}
         />
       </div>
 
-      {/* Right Panel - Content (Full remaining width/height) */}
-      <div className="flex-1 min-w-0 bg-white flex flex-col">
-        {(isLoading || entryListLoading) ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="animate-pulse text-stone-500 font-inknut">
-              <div className="h-6 bg-stone-200 rounded w-32 mx-auto mb-2"></div>
-              <div className="h-4 bg-stone-100 rounded w-48 mx-auto"></div>
-            </div>
-          </div>
-        ) : selectedEntry ? (
+      {/* Journal Editor */}
+      <div className="flex-1 flex flex-col">
+        {selectedEntry ? (
           <JournalNavigation
-            className="flex-1"
             entry={selectedEntry}
             onEntryUpdate={handleEntryUpdate}
             onCreateEntry={handleCreateEntry}
             onDeleteEntry={handleDeleteEntry}
+            syncStatus={syncStatus}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-stone-500 font-inknut mb-4">No entry selected</div>
+            <div className="text-center p-8">
+              <h2 className="text-2xl font-semibold text-stone-700 mb-4">
+                Welcome to your Journal
+              </h2>
+              <p className="text-stone-600 mb-6">
+                Select an entry from the sidebar or create a new one to start writing.
+              </p>
               <button
                 onClick={handleCreateEntry}
-                className="px-4 py-2 bg-stone-800 text-white rounded-lg hover:bg-stone-700 transition-colors"
+                className="px-6 py-3 bg-stone-800 text-white rounded-lg hover:bg-stone-700 transition-colors"
               >
                 Create New Entry
               </button>

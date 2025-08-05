@@ -86,59 +86,61 @@ html {
           dangerouslySetInnerHTML={{
             __html: `
             // Font loading detection
-            window.fontLoadingDebug = {
-              inknutLoaded: false,
-              editingStates: new Map()
-            };
+            if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+              window.fontLoadingDebug = {
+                inknutLoaded: false,
+                editingStates: new Map()
+              };
 
-            // Detect when Inknut Antiqua is loaded
-            if ('fonts' in document) {
-              document.fonts.ready.then(() => {
-                // Try different font check variations
-                const fontCheck1 = document.fonts.check('16px "Inknut Antiqua"');
-                const fontCheck2 = document.fonts.check('16px Inknut Antiqua');
-                
-                const loaded = fontCheck1 || fontCheck2;
-                window.fontLoadingDebug.inknutLoaded = loaded;
-                
-                if (loaded) {
+              // Detect when Inknut Antiqua is loaded
+              if ('fonts' in document) {
+                document.fonts.ready.then(() => {
+                  // Try different font check variations
+                  const fontCheck1 = document.fonts.check('16px "Inknut Antiqua"');
+                  const fontCheck2 = document.fonts.check('16px Inknut Antiqua');
+                  
+                  const loaded = fontCheck1 || fontCheck2;
+                  window.fontLoadingDebug.inknutLoaded = loaded;
+                  
+                  if (loaded) {
+                    document.documentElement.classList.add('inknut-loaded');
+                    window.dispatchEvent(new CustomEvent('inknut-font-loaded'));
+                  } else {
+                    // Wait a bit more and try again
+                    setTimeout(() => {
+                      const retryCheck = document.fonts.check('16px "Inknut Antiqua"') || document.fonts.check('16px Inknut Antiqua');
+                      if (retryCheck) {
+                        window.fontLoadingDebug.inknutLoaded = true;
+                        document.documentElement.classList.add('inknut-loaded');
+                        window.dispatchEvent(new CustomEvent('inknut-font-loaded'));
+                      }
+                    }, 1000);
+                  }
+                });
+              }
+
+              // Legacy font loading detection
+              const testSpan = document.createElement('span');
+              testSpan.style.fontFamily = '"Inknut Antiqua", serif';
+              testSpan.style.fontSize = '16px';
+              testSpan.style.position = 'absolute';
+              testSpan.style.visibility = 'hidden';
+              testSpan.textContent = 'Test';
+              document.body.appendChild(testSpan);
+
+              const checkFontLoad = () => {
+                const computedStyle = window.getComputedStyle(testSpan);
+                if (computedStyle.fontFamily.includes('Inknut')) {
+                  window.fontLoadingDebug.inknutLoaded = true;
                   document.documentElement.classList.add('inknut-loaded');
                   window.dispatchEvent(new CustomEvent('inknut-font-loaded'));
+                  document.body.removeChild(testSpan);
                 } else {
-                  // Wait a bit more and try again
-                  setTimeout(() => {
-                    const retryCheck = document.fonts.check('16px "Inknut Antiqua"') || document.fonts.check('16px Inknut Antiqua');
-                    if (retryCheck) {
-                      window.fontLoadingDebug.inknutLoaded = true;
-                      document.documentElement.classList.add('inknut-loaded');
-                      window.dispatchEvent(new CustomEvent('inknut-font-loaded'));
-                    }
-                  }, 1000);
+                  setTimeout(checkFontLoad, 100);
                 }
-              });
+              };
+              setTimeout(checkFontLoad, 100);
             }
-
-            // Legacy font loading detection
-            const testSpan = document.createElement('span');
-            testSpan.style.fontFamily = '"Inknut Antiqua", serif';
-            testSpan.style.fontSize = '16px';
-            testSpan.style.position = 'absolute';
-            testSpan.style.visibility = 'hidden';
-            testSpan.textContent = 'Test';
-            document.body.appendChild(testSpan);
-
-            const checkFontLoad = () => {
-              const computedStyle = window.getComputedStyle(testSpan);
-              if (computedStyle.fontFamily.includes('Inknut')) {
-                window.fontLoadingDebug.inknutLoaded = true;
-                document.documentElement.classList.add('inknut-loaded');
-                window.dispatchEvent(new CustomEvent('inknut-font-loaded'));
-                document.body.removeChild(testSpan);
-              } else {
-                setTimeout(checkFontLoad, 100);
-              }
-            };
-            setTimeout(checkFontLoad, 100);
           `,
           }}
         />

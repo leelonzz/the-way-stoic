@@ -873,6 +873,7 @@ export function EnhancedRichTextEditor({
     return (
       <div key={block.id} data-block-id={block.id} className={blockClassName}>
         <SimplifiedRichTextEditor
+          key={block.id} // Stable key to prevent re-mounting
           block={block}
           onChange={updateBlock}
           onKeyDown={handleBlockKeyDown}

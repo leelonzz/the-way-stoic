@@ -5,7 +5,8 @@ import { Settings, Bell, Link, Zap, Check, Star } from 'lucide-react';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { SubscriptionButton } from '@/components/subscription/SubscriptionButton';
+
+import { DodoSubscriptionButton } from '@/components/subscription/DodoSubscriptionButton';
 import {
   Card,
   CardContent,
@@ -379,11 +380,10 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                             ))}
                           </ul>
 
-                          {plan.name === 'Philosopher' ? (
-                            <SubscriptionButton
-                              planType="philosopher"
-                              planName={plan.name}
-                              planPrice={plan.price}
+{plan.name === 'Philosopher' ? (
+                            <DodoSubscriptionButton
+                              productId="pdt_1xvwazO5L41SzZeMegxyk"
+                              productName="The Stoic Way"
                               onSuccess={(subscriptionId) => {
                                 console.log('Subscription successful:', subscriptionId);
                                 // Handle successful subscription

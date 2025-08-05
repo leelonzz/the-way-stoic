@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import DodoPayments from 'dodopayments'
 
 interface CreateSubscriptionRequest {
   productId: string
@@ -19,7 +20,14 @@ interface CreateSubscriptionRequest {
   cancelUrl?: string
 }
 
-// We'll use the MCP tools instead of manual API calls
+// Initialize Dodo client with correct configuration
+const environment = process.env.NEXT_PUBLIC_DODO_ENVIRONMENT || 'test'
+
+const dodoClient = new DodoPayments({
+  bearerToken: process.env.DODO_PAYMENTS_API_KEY || '',
+  // Note: DodoPayments SDK uses the same base URL for both test and live environments
+  // The environment is determined by the API key used
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,38 +41,70 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create subscription using MCP tools directly
-    // Note: In a real implementation, you would import and use the MCP tools here
-    // For now, we'll simulate the MCP call structure
-    const subscriptionData = {
-      billing: customerData.billingAddress,
+    if (!process.env.DODO_PAYMENTS_API_KEY) {
+      console.error('DODO_PAYMENTS_API_KEY is not configured')
+      return NextResponse.json(
+        { error: 'Subscription service not configured' },
+        { status: 500 }
+      )
+    }
+
+    console.log('Creating subscription with Dodo SDK:', {
+      productId,
+      userId,
+      environment
+    })
+
+    // Create subscription using Dodo Payments SDK
+    const subscription = await dodoClient.subscriptions.create({
+      billing: {
+        city: customerData.billingAddress.city,
+        country: customerData.billingAddress.country as any,
+        state: customerData.billingAddress.state,
+        street: customerData.billingAddress.street,
+        zipcode: customerData.billingAddress.zipcode,
+      },
       customer: {
         email: customerData.email,
         name: customerData.name,
         phone_number: customerData.phone,
+        create_new_customer: true,
       },
       product_id: productId,
       quantity: 1,
-      return_url: returnUrl,
+      return_url: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/subscription/success`,
       payment_link: true,
-    }
-
-    // This simulates what the MCP tools would return
-    const subscription = {
-      subscriptionId: `sub_${Date.now()}`,
-      checkoutUrl: `https://checkout.dodopayments.com/${Date.now()}`,
-      status: 'pending',
-      customer: {
-        customer_id: `cus_${Date.now()}`,
-        email: customerData.email,
-        name: customerData.name,
+      metadata: {
+        user_id: userId,
       },
-      payment_id: `pay_${Date.now()}`,
-    }
+    })
 
-    return NextResponse.json(subscription)
+    return NextResponse.json({
+      subscriptionId: subscription.subscription_id,
+      checkoutUrl: subscription.payment_link || '',
+      status: 'pending',
+      customer: subscription.customer,
+      payment_id: subscription.payment_id,
+    })
   } catch (error) {
     console.error('Dodo subscription creation error:', error)
+    
+    // Handle authentication errors specifically
+    if (error instanceof Error && error.message.includes('401')) {
+      return NextResponse.json(
+        { 
+          error: 'Dodo Payments authentication failed', 
+          details: 'Please verify your API keys and account setup',
+          troubleshooting: {
+            step1: 'Check DODO_PAYMENTS_API_KEY in environment variables',
+            step2: 'Verify account is activated in Dodo dashboard',
+            step3: 'Ensure product exists in your Dodo account'
+          }
+        },
+        { status: 401 }
+      )
+    }
+    
     return NextResponse.json(
       { error: 'Failed to create subscription', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

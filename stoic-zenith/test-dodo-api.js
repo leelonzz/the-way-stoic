@@ -1,9 +1,9 @@
 // Test script to verify Dodo Payments API connection
 // Using built-in fetch (Node.js 18+)
 
-const API_KEY = 'oxKiND9nnyQCKyU3.pg48JLHmF9Ho3aWQyNZ3wJaiqIlNDtWAbMebXV3oBClbqikJ';
+const API_KEY = 'klPFIqBanpNmi1Ok.pCgH0tQpzpTii1zPYuyL-s4qjvUcsyatXhSR6A695LW7J_u_';
 const ENVIRONMENT = 'test';
-const BASE_URL = 'https://api-test.dodopayments.com';
+const BASE_URL = 'https://test.dodopayments.com';
 const PRODUCT_ID = 'pdt_1xvwazO5L41SzZeMegxyk';
 
 async function testDodoAPI() {

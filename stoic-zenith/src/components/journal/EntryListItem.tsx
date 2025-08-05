@@ -5,32 +5,23 @@ import { JournalEntry } from './types';
 import { JournalEntryResponse, convertSupabaseToBlocks } from '@/lib/journal';
 
 interface EntryListItemProps {
-  entry: JournalEntryResponse & { preview?: string };
+  entry: JournalEntry & { preview?: string };
   isSelected: boolean;
-  onSelect: (entry: JournalEntry) => void;
-  formatEntryDate: (date: string) => string;
+  onSelect: () => void;
+  onDelete?: (entryId: string) => void;
+  dateLabel: string;
 }
 
 export const EntryListItem = memo(({ 
   entry, 
   isSelected, 
-  onSelect, 
-  formatEntryDate 
+  onSelect,
+  onDelete,
+  dateLabel
 }: EntryListItemProps) => {
   const handleClick = () => {
-    // Convert Supabase entry to local JournalEntry format using proper conversion
-    const blocks = convertSupabaseToBlocks(entry);
-
-    const localEntry: JournalEntry = {
-      id: entry.id,
-      date: entry.entry_date,
-      blocks: blocks,
-      createdAt: new Date(entry.created_at),
-      updatedAt: new Date(entry.updated_at)
-    };
-    
     // INSTANT selection - no await, no try/catch needed
-    onSelect(localEntry);
+    onSelect();
   };
 
   return (
@@ -54,11 +45,11 @@ export const EntryListItem = memo(({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm font-inknut font-medium text-stone-800">
-              {formatEntryDate(entry.entry_date)}
+              {dateLabel}
             </span>
             <div className="flex items-center gap-2">
               <span className="text-xs font-inknut text-stone-500">
-                {format(new Date(entry.created_at), 'h:mm a')}
+                {entry.createdAt ? format(entry.createdAt, 'h:mm a') : ''}
               </span>
             </div>
           </div>
