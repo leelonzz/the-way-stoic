@@ -7,6 +7,10 @@ import { EntryList } from '@/components/journal/EntryList';
 import { JournalEntry } from '@/components/journal/types';
 import { createJournalEntry } from '@/lib/journal';
 
+// Entry cache for performance optimization
+const entryCache = new Map<string, JournalEntry>();
+const CACHE_SIZE_LIMIT = 50; // Keep last 50 accessed entries
+
 export default function Journal(): JSX.Element {
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -77,13 +81,28 @@ export default function Journal(): JSX.Element {
     });
   };
 
-  const handleSelectEntry = async (entry: JournalEntry): Promise<void> => {
-    // If there's a currently selected entry, save it before switching
+  const handleSelectEntry = (entry: JournalEntry): void => {
+    // Add entry to cache for instant future access
+    entryCache.set(entry.id, entry);
+    
+    // Maintain cache size limit (LRU-style)
+    if (entryCache.size > CACHE_SIZE_LIMIT) {
+      const firstKey = entryCache.keys().next().value;
+      entryCache.delete(firstKey);
+    }
+    
+    // INSTANT UI UPDATE - Switch to new entry immediately (0ms delay)
+    setSelectedEntry(entry);
+    
+    // Save previous entry in background if exists - NO BLOCKING
     if (selectedEntry && selectedEntry.id !== entry.id) {
-      console.log('🔄 Saving current entry before switching to:', entry.id);
+      console.log('🔄 Background save for previous entry:', selectedEntry.id);
       
+      // Update cache with latest changes
+      entryCache.set(selectedEntry.id, selectedEntry);
+      
+      // Save to localStorage immediately (synchronous, always succeeds)
       try {
-        // Save current entry to localStorage immediately
         const entryIdKey = `journal-entry-${selectedEntry.id}`;
         const dateKey = `journal-${selectedEntry.date}`;
         const entryWithScopedBlocks = {
@@ -95,27 +114,37 @@ export default function Journal(): JSX.Element {
         };
         localStorage.setItem(entryIdKey, JSON.stringify(entryWithScopedBlocks));
         localStorage.setItem(dateKey, entryIdKey);
-        
-        // Try to save to Supabase in the background
-        try {
-          const { updateJournalEntryFromBlocks } = await import('@/lib/journal');
-          await updateJournalEntryFromBlocks(selectedEntry.id, selectedEntry.blocks);
-          console.log('✅ Current entry saved to Supabase before switch');
-        } catch (supabaseError) {
-          console.warn('⚠️ Failed to save current entry to Supabase before switch:', supabaseError);
-          // Continue with switch even if Supabase save fails
-        }
-      } catch (error) {
-        console.error('❌ Failed to save current entry before switch:', error);
-        // Continue with switch even if save fails
+        console.log('✅ Previous entry saved to localStorage');
+      } catch (localStorageError) {
+        console.error('❌ Failed to save to localStorage:', localStorageError);
+        // Don't block UI with toast during entry switching
       }
+      
+      // Background Supabase save (fully async, non-blocking)
+      (async () => {
+        try {
+          const { safeUpdateJournalEntry } = await import('@/lib/journal');
+          const result = await safeUpdateJournalEntry(selectedEntry.id, selectedEntry.blocks);
+          
+          if (result.success) {
+            console.log('✅ Background Supabase save completed for:', selectedEntry.id);
+            setSyncStatus('synced');
+          } else {
+            console.warn('⚠️ Background save failed:', result.error);
+            setSyncStatus('error');
+          }
+        } catch (error) {
+          console.error('❌ Background save error:', error);
+          setSyncStatus('error');
+        }
+      })();
     }
-    
-    // Switch to the new entry
-    setSelectedEntry(entry);
   };
 
   const handleDeleteEntry = (entryId: string): void => {
+    // Remove from cache
+    entryCache.delete(entryId);
+    
     // Clear selected entry if it's the one being deleted
     if (selectedEntry?.id === entryId) {
       setSelectedEntry(null);
@@ -129,6 +158,9 @@ export default function Journal(): JSX.Element {
   };
 
   const handleEntryUpdate = (updatedEntry: JournalEntry): void => {
+    // Update cache with latest changes
+    entryCache.set(updatedEntry.id, updatedEntry);
+    
     setSelectedEntry(updatedEntry);
 
     // Standardize localStorage key usage - use entry ID as primary key
@@ -168,12 +200,20 @@ export default function Journal(): JSX.Element {
       // Save to Supabase in the background without blocking the UI
       (async () => {
         try {
-          const { updateJournalEntryFromBlocks } = await import('@/lib/journal');
-          await updateJournalEntryFromBlocks(updatedEntry.id, updatedEntry.blocks);
-          console.log('✅ Background save to Supabase successful for entry:', updatedEntry.id);
+          const { safeUpdateJournalEntry } = await import('@/lib/journal');
+          const result = await safeUpdateJournalEntry(updatedEntry.id, updatedEntry.blocks);
+          
+          if (result.success) {
+            console.log('✅ Background save to Supabase successful for entry:', updatedEntry.id);
+            setSyncStatus('synced');
+          } else {
+            console.warn('⚠️ Background save to Supabase failed for entry:', updatedEntry.id, result.error);
+            setSyncStatus('error');
+            // Don't show toast for background saves to avoid spamming user
+          }
         } catch (error) {
-          console.warn('⚠️ Background save to Supabase failed for entry:', updatedEntry.id, error);
-          // Don't show error to user since localStorage save worked
+          console.error('❌ Unexpected error during background save for entry:', updatedEntry.id, error);
+          setSyncStatus('error');
         }
       })();
     }
@@ -324,11 +364,16 @@ export default function Journal(): JSX.Element {
         if (!selectedEntry.id.startsWith('temp-') && !selectedEntry.id.startsWith('recovery-')) {
           (async () => {
             try {
-              const { updateJournalEntryFromBlocks } = await import('@/lib/journal');
-              await updateJournalEntryFromBlocks(selectedEntry.id, selectedEntry.blocks);
-              console.log('✅ Entry saved to Supabase on component unmount');
+              const { safeUpdateJournalEntry } = await import('@/lib/journal');
+              const result = await safeUpdateJournalEntry(selectedEntry.id, selectedEntry.blocks);
+              
+              if (result.success) {
+                console.log('✅ Entry saved to Supabase on component unmount');
+              } else {
+                console.warn('⚠️ Failed to save entry to Supabase on component unmount:', result.error);
+              }
             } catch (error) {
-              console.warn('⚠️ Failed to save entry to Supabase on component unmount:', error);
+              console.error('❌ Unexpected error saving entry on component unmount:', error);
             }
           })();
         }
@@ -338,7 +383,7 @@ export default function Journal(): JSX.Element {
 
   // Real-time sync with Supabase subscriptions
   useEffect(() => {
-    let subscription: any = null;
+    let subscription: ReturnType<typeof import('@/integrations/supabase/client').supabase.channel> | null = null;
 
     const setupRealtimeSync = async () => {
       try {
@@ -495,11 +540,16 @@ export default function Journal(): JSX.Element {
         // Try to save to Supabase in the background
         if (!selectedEntry.id.startsWith('temp-') && !selectedEntry.id.startsWith('recovery-')) {
           try {
-            const { updateJournalEntryFromBlocks } = await import('@/lib/journal');
-            await updateJournalEntryFromBlocks(selectedEntry.id, selectedEntry.blocks);
-            console.log('✅ Entry saved to Supabase on page visibility change');
+            const { safeUpdateJournalEntry } = await import('@/lib/journal');
+            const result = await safeUpdateJournalEntry(selectedEntry.id, selectedEntry.blocks);
+            
+            if (result.success) {
+              console.log('✅ Entry saved to Supabase on page visibility change');
+            } else {
+              console.warn('⚠️ Failed to save entry to Supabase on page visibility change:', result.error);
+            }
           } catch (error) {
-            console.warn('⚠️ Failed to save entry to Supabase on page visibility change:', error);
+            console.error('❌ Unexpected error saving entry on page visibility change:', error);
           }
         }
       }

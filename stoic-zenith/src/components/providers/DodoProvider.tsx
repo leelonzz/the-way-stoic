@@ -1,134 +1,136 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useCallback, useState } from 'react'
 
 interface DodoContextType {
-  isLoaded: boolean
-  createSubscription: (data: CreateSubscriptionData) => Promise<any>
-  getSubscriptions: (customerId?: string) => Promise<any>
-  createProduct: (data: CreateProductData) => Promise<any>
-  getProducts: () => Promise<any>
+  createSubscription: (productId: string, userId: string, customerData: CustomerData) => Promise<{ subscriptionId: string; checkoutUrl: string }>
+  createPayment: (productId: string, userId: string, customerData: CustomerData) => Promise<{ paymentId: string; checkoutUrl: string }>
+  isLoading: boolean
+  error: string | null
 }
 
-interface CreateSubscriptionData {
-  customer_id: string
-  product_id: string
-  payment_method_id?: string
-  trial_end?: number
-  metadata?: Record<string, any>
-}
-
-interface CreateProductData {
+interface CustomerData {
+  email: string
   name: string
-  description?: string
-  price: number
-  currency: string
-  type: 'one_time' | 'subscription'
-  metadata?: Record<string, any>
+  phone?: string
+  billingAddress: {
+    street: string
+    city: string
+    state: string
+    zipcode: string
+    country: string
+  }
 }
 
 const DodoContext = createContext<DodoContextType | undefined>(undefined)
 
 export function DodoProvider({ children }: { children: React.ReactNode }) {
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    // Initialize Dodo Payments
-    const apiKey = process.env.NEXT_PUBLIC_DODO_API_KEY
-    if (!apiKey) {
-      console.error('Dodo Payments API key not configured')
-      return
-    }
+  const createSubscription = useCallback(async (
+    productId: string,
+    userId: string,
+    customerData: CustomerData
+  ) => {
+    setIsLoading(true)
+    setError(null)
 
-    setIsLoaded(true)
-  }, [])
-
-  const createSubscription = async (data: CreateSubscriptionData) => {
     try {
       const response = await fetch('/api/dodo/subscriptions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          productId,
+          userId,
+          customerData,
+          returnUrl: `${window.location.origin}/subscription/success`,
+          cancelUrl: `${window.location.origin}/subscription/cancel`,
+        }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create subscription')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create subscription')
       }
 
-      return await response.json()
-    } catch (error) {
-      console.error('Error creating subscription:', error)
-      throw error
-    }
-  }
+      const data = await response.json()
 
-  const getSubscriptions = async (customerId?: string) => {
-    try {
-      const url = customerId 
-        ? `/api/dodo/subscriptions?customer_id=${customerId}`
-        : '/api/dodo/subscriptions'
-      
-      const response = await fetch(url)
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch subscriptions')
+      if (!data.checkoutUrl) {
+        throw new Error('No checkout URL received from Dodo Payments')
       }
 
-      return await response.json()
-    } catch (error) {
-      console.error('Error fetching subscriptions:', error)
-      throw error
+      return {
+        subscriptionId: data.subscriptionId,
+        checkoutUrl: data.checkoutUrl,
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
+      setError(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      setIsLoading(false)
     }
-  }
+  }, [])
 
-  const createProduct = async (data: CreateProductData) => {
+  const createPayment = useCallback(async (
+    productId: string,
+    userId: string,
+    customerData: CustomerData
+  ) => {
+    setIsLoading(true)
+    setError(null)
+
     try {
-      const response = await fetch('/api/dodo/products', {
+      const response = await fetch('/api/dodo/payments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          productId,
+          userId,
+          customerData,
+          returnUrl: `${window.location.origin}/payment/success`,
+          cancelUrl: `${window.location.origin}/payment/cancel`,
+        }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create product')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create payment')
       }
 
-      return await response.json()
-    } catch (error) {
-      console.error('Error creating product:', error)
-      throw error
-    }
-  }
+      const data = await response.json()
 
-  const getProducts = async () => {
-    try {
-      const response = await fetch('/api/dodo/products')
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch products')
+      if (!data.checkoutUrl) {
+        throw new Error('No checkout URL received from Dodo Payments')
       }
 
-      return await response.json()
-    } catch (error) {
-      console.error('Error fetching products:', error)
-      throw error
+      return {
+        paymentId: data.paymentId,
+        checkoutUrl: data.checkoutUrl,
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
+      setError(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      setIsLoading(false)
     }
-  }
+  }, [])
 
-  const value: DodoContextType = {
-    isLoaded,
+  const contextValue: DodoContextType = {
     createSubscription,
-    getSubscriptions,
-    createProduct,
-    getProducts,
+    createPayment,
+    isLoading,
+    error,
   }
 
   return (
-    <DodoContext.Provider value={value}>
+    <DodoContext.Provider value={contextValue}>
       {children}
     </DodoContext.Provider>
   )
@@ -140,4 +142,4 @@ export function useDodo() {
     throw new Error('useDodo must be used within a DodoProvider')
   }
   return context
-} 
+}

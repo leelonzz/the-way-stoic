@@ -209,13 +209,59 @@ export function convertSupabaseToBlocks(entry: JournalEntryResponse & { rich_tex
   return blocks;
 }
 
-// Update journal entry with rich text blocks
+// Update journal entry with rich text blocks with retry logic
 export async function updateJournalEntryFromBlocks(
   id: string, 
-  blocks: JournalBlock[]
+  blocks: JournalBlock[],
+  retryCount = 0
 ): Promise<JournalEntryResponse> {
-  const supabaseData = convertBlocksToSupabaseFormat(blocks);
-  return updateJournalEntry(id, supabaseData);
+  const maxRetries = 3;
+  const retryDelay = 1000 * (retryCount + 1); // Progressive delay: 1s, 2s, 3s
+  
+  try {
+    const supabaseData = convertBlocksToSupabaseFormat(blocks);
+    const result = await updateJournalEntry(id, supabaseData);
+    
+    // Validate the save by checking if the response is valid
+    if (!result || !result.id) {
+      throw new Error('Invalid save response from server');
+    }
+    
+    console.log(`✅ Journal entry ${id} saved successfully`);
+    return result;
+  } catch (error) {
+    console.warn(`⚠️ Save attempt ${retryCount + 1} failed for entry ${id}:`, error);
+    
+    if (retryCount < maxRetries) {
+      console.log(`🔄 Retrying save for entry ${id} in ${retryDelay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+      return updateJournalEntryFromBlocks(id, blocks, retryCount + 1);
+    } else {
+      console.error(`❌ Failed to save entry ${id} after ${maxRetries + 1} attempts`);
+      throw new Error(`Failed to save journal entry after ${maxRetries + 1} attempts: ${error.message}`);
+    }
+  }
+}
+
+// Safe save function that handles temporary/recovery entries
+export async function safeUpdateJournalEntry(
+  id: string, 
+  blocks: JournalBlock[]
+): Promise<{ success: boolean; error?: string }> {
+  // Skip Supabase save for temporary or recovery entries
+  if (id.startsWith('temp-') || id.startsWith('recovery-')) {
+    console.log(`📝 Skipping Supabase save for temporary entry: ${id}`);
+    return { success: true };
+  }
+  
+  try {
+    await updateJournalEntryFromBlocks(id, blocks);
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`❌ Safe save failed for entry ${id}:`, errorMessage);
+    return { success: false, error: errorMessage };
+  }
 }
 
 // Get journal entry and convert to rich text format

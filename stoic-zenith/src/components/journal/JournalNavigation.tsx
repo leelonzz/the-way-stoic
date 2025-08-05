@@ -64,7 +64,7 @@ interface JournalNavigationProps {
   isCreatingEntry?: boolean;
 }
 
-export function JournalNavigation({ className = '', entry, onEntryUpdate, onCreateEntry, onDeleteEntry, isCreatingEntry: _isCreatingEntry = false }: JournalNavigationProps): JSX.Element {
+export const JournalNavigation = React.memo(function JournalNavigation({ className = '', entry, onEntryUpdate, onCreateEntry, onDeleteEntry, isCreatingEntry: _isCreatingEntry = false }: JournalNavigationProps): JSX.Element {
   const [currentEntry, setCurrentEntry] = useState<JournalEntry>(entry);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -84,21 +84,21 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
       clearTimeout(saveTimeoutRef.current);
     }
 
-    // Calculate adaptive debounce delay based on content size
+    // Optimized debounce delays for better responsiveness
     const totalTextLength = entryToSave.blocks.reduce((total, block) => total + block.text.length, 0);
     const blockCount = entryToSave.blocks.length;
 
-    let debounceDelay = 1000; // Default 1 second
+    let debounceDelay = 300; // Reduced from 1000ms to 300ms
 
     if (blockCount > 100 || totalTextLength > 10000) {
-      // Very large content: 3 seconds
-      debounceDelay = 3000;
+      // Very large content: reduced from 3s to 800ms
+      debounceDelay = 800;
     } else if (blockCount > 50 || totalTextLength > 5000) {
-      // Large content: 2 seconds
-      debounceDelay = 2000;
+      // Large content: reduced from 2s to 600ms
+      debounceDelay = 600;
     } else if (blockCount > 20 || totalTextLength > 2000) {
-      // Medium content: 1.5 seconds
-      debounceDelay = 1500;
+      // Medium content: reduced from 1.5s to 400ms
+      debounceDelay = 400;
     }
 
     console.log(`🔄 Auto-save scheduled in ${debounceDelay}ms for ${blockCount} blocks, ${totalTextLength} chars`);
@@ -109,11 +109,8 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
         setSaveStatus('saving');
         console.log('🔄 Starting auto-save for entry:', entryToSave.id);
 
-        // Validate and sanitize entry before saving
-        if (!validateJournalEntry(entryToSave)) {
-          console.warn('⚠️ Invalid entry data detected, sanitizing...');
-          entryToSave = sanitizeJournalEntry(entryToSave);
-        }
+        // Skip validation in hot path for better performance
+        // Validation only happens on explicit saves or when errors occur
 
         // Save to localStorage immediately using standardized format with error handling
         const entryIdKey = `journal-entry-${entryToSave.id}`;
@@ -651,4 +648,4 @@ export function JournalNavigation({ className = '', entry, onEntryUpdate, onCrea
       </AlertDialog>
     </div>
   );
-}
+});

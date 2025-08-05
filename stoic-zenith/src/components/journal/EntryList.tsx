@@ -9,7 +9,7 @@ import { useTabVisibility } from '@/hooks/useTabVisibility';
 
 interface EntryListProps {
   selectedEntry: JournalEntry | null;
-  onSelectEntry: (entry: JournalEntry) => Promise<void>;
+  onSelectEntry: (entry: JournalEntry) => void;
   onCreateEntry: () => void;
   className?: string;
   isParentLoading?: boolean;
@@ -23,7 +23,7 @@ interface EntryListItem {
   dateKey: string;
 }
 
-export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCreateEntry, className = '', isParentLoading = false, onLoadingStateChange, entries: _parentEntries, onEntriesChange }: EntryListProps): JSX.Element {
+export const EntryList = React.memo(function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCreateEntry, className = '', isParentLoading = false, onLoadingStateChange, entries: _parentEntries, onEntriesChange }: EntryListProps): JSX.Element {
   const [entries, setEntries] = useState<EntryListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredEntries, setFilteredEntries] = useState<EntryListItem[]>([]);
@@ -143,9 +143,9 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
     loadEntries();
   }, [loadEntries]);
 
-  // Real-time subscription for entry list updates
+  // Optimized real-time subscription with targeted updates
   useEffect(() => {
-    let subscription: any = null;
+    let subscription: ReturnType<typeof import('@/integrations/supabase/client').supabase.channel> | null = null;
 
     const setupRealtimeSync = async () => {
       try {
@@ -167,8 +167,59 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
             },
             (payload) => {
               console.log('Entry list real-time update received:', payload);
-              // Refresh the entry list when any journal entry changes
-              loadEntries();
+              
+              // TARGETED UPDATES instead of full refresh
+              if (payload.eventType === 'INSERT' && payload.new) {
+                // Add new entry to the top of the list
+                const newEntry = payload.new;
+                const newEntryItem: EntryListItem = {
+                  entry: {
+                    ...newEntry,
+                    preview: [
+                      newEntry.excited_about,
+                      newEntry.make_today_great,
+                      newEntry.must_not_do,
+                      newEntry.grateful_for,
+                      ...(Array.isArray(newEntry.biggest_wins) ? newEntry.biggest_wins : []),
+                      ...(Array.isArray(newEntry.tensions) ? newEntry.tensions : [])
+                    ].filter(Boolean).join(' ').slice(0, 80)
+                  } as JournalEntryResponse & { preview?: string },
+                  dateKey: newEntry.entry_date
+                };
+                
+                setEntries(prev => [newEntryItem, ...prev]);
+                setFilteredEntries(prev => [newEntryItem, ...prev]);
+                
+              } else if (payload.eventType === 'UPDATE' && payload.new) {
+                // Update existing entry in place
+                const updatedEntry = payload.new;
+                const updatedPreview = [
+                  updatedEntry.excited_about,
+                  updatedEntry.make_today_great,
+                  updatedEntry.must_not_do,
+                  updatedEntry.grateful_for,
+                  ...(Array.isArray(updatedEntry.biggest_wins) ? updatedEntry.biggest_wins : []),
+                  ...(Array.isArray(updatedEntry.tensions) ? updatedEntry.tensions : [])
+                ].filter(Boolean).join(' ').slice(0, 80);
+                
+                const updateEntryList = (prev: EntryListItem[]): EntryListItem[] => 
+                  prev.map(item => 
+                    item.entry.id === updatedEntry.id 
+                      ? { ...item, entry: { ...updatedEntry, preview: updatedPreview } as JournalEntryResponse & { preview?: string } }
+                      : item
+                  );
+                
+                setEntries(updateEntryList);
+                setFilteredEntries(updateEntryList);
+                
+              } else if (payload.eventType === 'DELETE' && payload.old) {
+                // Remove entry from list
+                const deletedId = payload.old.id;
+                const filterOut = (prev: EntryListItem[]): EntryListItem[] => prev.filter(item => item.entry.id !== deletedId);
+                
+                setEntries(filterOut);
+                setFilteredEntries(filterOut);
+              }
             }
           )
           .subscribe((status) => {
@@ -187,7 +238,7 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
         subscription.unsubscribe();
       }
     };
-  }, [loadEntries]);
+  }, []); // Remove loadEntries dependency to prevent recreating subscription
 
   // Function to refresh entries (can be called from parent components)
   const refreshEntries = useCallback((): void => {
@@ -297,4 +348,4 @@ export function EntryList({ selectedEntry, onSelectEntry, onCreateEntry: _onCrea
       </div>
     </div>
   );
-}
+});

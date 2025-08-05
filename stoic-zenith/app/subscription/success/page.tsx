@@ -18,8 +18,8 @@ export default function SubscriptionSuccessPage() {
 
   const fetchSubscriptionDetails = useCallback(async () => {
     try {
-      const response = await fetch(`/api/paypal/subscriptions?subscriptionId=${subscriptionId}`);
-      
+      const response = await fetch(`/api/dodo/subscriptions?subscriptionId=${subscriptionId}`);
+
       if (!response.ok) {
         throw new Error('Failed to fetch subscription details');
       }
