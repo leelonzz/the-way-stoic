@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import DodoPayments from 'dodopayments'
 
 interface CreatePaymentRequest {
   productId: string
@@ -19,10 +20,14 @@ interface CreatePaymentRequest {
   cancelUrl?: string
 }
 
+const dodoClient = new DodoPayments({
+  bearerToken: process.env.DODO_SECRET_KEY || '',
+})
+
 export async function POST(request: NextRequest) {
   try {
     const body: CreatePaymentRequest = await request.json()
-    const { productId, userId, customerData, returnUrl } = body
+    const { productId, userId, customerData, returnUrl, cancelUrl } = body
 
     if (!productId || !userId || !customerData) {
       return NextResponse.json(
@@ -31,37 +36,44 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create customer first
-    const customerResponse = await fetch('/api/dodo/customers', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    if (!process.env.DODO_SECRET_KEY) {
+      console.error('DODO_SECRET_KEY is not configured')
+      return NextResponse.json(
+        { error: 'Payment service not configured' },
+        { status: 500 }
+      )
+    }
+
+    // Create payment using Dodo Payments SDK
+    const payment = await dodoClient.payments.create({
+      payment_link: true,
+      billing: {
+        city: customerData.billingAddress.city,
+        country: customerData.billingAddress.country as any, // Dodo uses specific country codes
+        state: customerData.billingAddress.state,
+        street: customerData.billingAddress.street,
+        zipcode: customerData.billingAddress.zipcode,
       },
-      body: JSON.stringify({
+      customer: {
         email: customerData.email,
         name: customerData.name,
-        phone_number: customerData.phone,
-      }),
+        create_new_customer: true,
+      },
+      product_cart: [{
+        product_id: productId,
+        quantity: 1,
+      }],
+      return_url: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/payment/success`,
+      metadata: {
+        user_id: userId,
+      },
     })
 
-    if (!customerResponse.ok) {
-      throw new Error('Failed to create customer')
-    }
-
-    const customer = await customerResponse.json()
-
-    // For now, return a mock payment response
-    // In a real implementation, this would use the MCP tools to create a payment
-    const mockPayment = {
-      paymentId: `pay_${Date.now()}`,
-      checkoutUrl: `https://checkout.dodopayments.com/payment/${Date.now()}`,
+    return NextResponse.json({
+      paymentId: payment.payment_id,
+      checkoutUrl: payment.payment_link || '',
       status: 'pending',
-      customer_id: customer.customer_id,
-      product_id: productId,
-      return_url: returnUrl,
-    }
-
-    return NextResponse.json(mockPayment)
+    })
   } catch (error) {
     console.error('Dodo payment creation error:', error)
     return NextResponse.json(
