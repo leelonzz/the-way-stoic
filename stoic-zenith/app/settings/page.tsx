@@ -11,7 +11,7 @@ import { AccountSettings } from "@/components/settings/AccountSettings";
 import { PreferencesSettings } from "@/components/settings/PreferencesSettings";
 import { useProfile } from '@/hooks/useProfile';
 import { useAuthContext } from '@/components/auth/AuthProvider';
-import { Hourglass } from '@/components/ui/Hourglass';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { User } from 'lucide-react';
 
 const queryClient = new QueryClient();
@@ -49,7 +49,7 @@ function SettingsContent() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-4">
-          <Hourglass size="md" className="mx-auto" />
+          <LoadingSpinner size="md" className="mx-auto" />
           <p className="text-stone">Loading settings...</p>
         </div>
       </div>

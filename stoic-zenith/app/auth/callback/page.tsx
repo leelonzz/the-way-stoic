@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/integrations/supabase/client';
 import { Brain } from 'lucide-react';
-import { Hourglass } from '@/components/ui/Hourglass';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -76,7 +76,7 @@ export default function AuthCallback() {
           </p>
         </div>
         
-        <Hourglass size="sm" className="mx-auto" />
+        <LoadingSpinner size="sm" className="mx-auto" />
       </div>
     </div>
   );

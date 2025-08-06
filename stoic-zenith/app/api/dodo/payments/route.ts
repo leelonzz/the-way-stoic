@@ -29,10 +29,10 @@ const dodoClient = new DodoPayments({
   // The environment is determined by the API key used
 })
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body: CreatePaymentRequest = await request.json()
-    const { productId, userId, customerData, returnUrl, cancelUrl } = body
+    const { productId, userId, customerData, returnUrl } = body
 
     if (!productId || !userId || !customerData) {
       return NextResponse.json(
@@ -111,21 +111,19 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url)
     const paymentId = searchParams.get('paymentId')
 
     if (paymentId) {
-      // Return mock payment details
+      // Return mock payment details for now
       const mockPayment = {
         payment: {
           id: paymentId,
           status: 'completed',
-          product_id: 'pdt_1xvwazO5L41SzZeMegxyk',
-          customer_id: 'cust_123',
-          amount: 1400,
-          currency: 'USD',
+          amount: 1499,
+          currency: 'usd',
           created_at: new Date().toISOString(),
         }
       }

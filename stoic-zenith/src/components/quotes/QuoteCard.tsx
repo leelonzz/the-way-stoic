@@ -26,17 +26,23 @@ export function QuoteCard({
 
   const handleSaveToggle = async () => {
     if (!onSave || !onUnsave) return;
-    
+
     setIsLoading(true);
     try {
-      const success = isSaved 
+      const success = isSaved
         ? await onUnsave(quote.id)
         : await onSave(quote.id);
-        
+
       if (success) {
         toast({
           title: isSaved ? "Quote removed" : "Quote saved",
           description: isSaved ? "Removed from your collection" : "Added to your collection",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: isSaved ? "Failed to remove quote" : "Failed to save quote",
+          variant: "destructive"
         });
       }
     } finally {

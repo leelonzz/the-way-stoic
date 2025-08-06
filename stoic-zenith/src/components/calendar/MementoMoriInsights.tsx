@@ -86,7 +86,7 @@ export function MementoMoriInsights({
 
         <Card className="bg-white/80 animate-fade-in">
           <CardContent className="p-4 text-center">
-            <div className="text-3xl font-bold text-hero mb-1">
+            <div className="text-3xl font-bold text-cta mb-1">
               {data.daysRemaining.toLocaleString()}
             </div>
             <div className="text-sm text-stone/70">Days Remaining</div>

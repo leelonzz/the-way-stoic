@@ -1189,7 +1189,7 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
 
       <div
         ref={editorRef}
-        className="flex-1 p-6 bg-white focus:ring-0 outline-none overflow-y-auto transition-all duration-200 min-h-full"
+        className="flex-1 p-6 bg-white focus:ring-0 outline-none overflow-y-auto transition-all duration-200 min-h-full journal-editor-scroll"
         style={{
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',

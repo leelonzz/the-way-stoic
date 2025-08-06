@@ -22,8 +22,9 @@ export function ClientProviders({ children }: ClientProvidersProps): JSX.Element
         staleTime: 5 * 60 * 1000, // 5 minutes
         gcTime: 10 * 60 * 1000, // 10 minutes
         retry: 2,
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: true, // Enable refetch on window focus
         refetchOnReconnect: 'always',
+        refetchOnMount: 'always', // Always refetch when component mounts
       },
       mutations: {
         retry: 1,

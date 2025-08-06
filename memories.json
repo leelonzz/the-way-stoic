@@ -3756,7 +3756,173 @@
       "lastAccessed": "2025-08-05T07:46:09.019Z",
       "lastVerified": "2025-08-05T07:46:09.019Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1754444051331_ovelmv19h",
+      "content": "Journal duplicate entries bug analysis:\n\nRoot cause: The `updateEntryImmediately` function in journal.ts was creating new entries instead of just updating existing ones. This happened because:\n\n1. When typing in a new entry, `handleBlocksChange` is called on every keystroke\n2. Each call to `updateEntryImmediately` was checking if entry exists in localStorage\n3. Due to race conditions between entry creation and first update, the entry might not be found\n4. When entry not found, the original code created a new entry (lines 201-207), causing duplicates\n\nCritical fix needed:\n- Remove entry creation logic from `updateEntryImmediately` \n- This function should ONLY update existing entries\n- New entries should ONLY be created through `createEntryImmediately`\n- Add proper error handling when entry not found instead of creating new one\n\nAdditional improvements:\n- Add entry creation tracking to prevent race conditions\n- Improve error messages to help debug missing entries\n- Ensure proper synchronization between creation and first update",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "bug-fix",
+        "journal",
+        "duplicate-entries",
+        "race-condition"
+      ],
+      "timestamp": "2025-08-06T01:34:11.331Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-06T01:34:11.331Z",
+      "lastVerified": "2025-08-06T01:34:11.331Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754444270704_g2nnf1fjg",
+      "content": "Journal duplicate entries bug has been FIXED:\n\n✅ Root cause resolved: The `updateEntryImmediately` function in journal.ts (lines 176-276) now properly throws an error when entry is not found instead of creating duplicate entries.\n\n✅ Current implementation:\n- Entry creation logic completely removed from updateEntryImmediately\n- Proper error handling with descriptive messages \n- Race condition handling with entryCreationInProgress tracking\n- New entries ONLY created through createEntryImmediately function\n\n✅ Testing: Development server running successfully on port 3001, no compilation errors\n\nThe fix ensures only one entry is created when typing begins, with all subsequent keystrokes updating the existing entry rather than creating duplicates.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "testing",
+        "bug-fix",
+        "journal",
+        "duplicate-entries",
+        "completed"
+      ],
+      "timestamp": "2025-08-06T01:37:50.704Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-06T01:37:50.704Z",
+      "lastVerified": "2025-08-06T01:37:50.704Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754444578419_9ui8p25hn",
+      "content": "Journal Security Issue - User Data Isolation Bug:\n\nCRITICAL SECURITY ISSUE: Journal entries are shared across all user accounts due to missing user isolation in localStorage.\n\nRoot Causes:\n1. localStorage keys are hardcoded without user-specific prefixing:\n   - 'journal_entries_cache' and 'journal_deleted_entries' are shared by all users\n   - No user ID is included in the storage keys\n\n2. RealTimeJournalManager has no user context:\n   - Constructor doesn't accept or store user ID\n   - No authentication checks in localStorage operations\n   - Database operations correctly use auth.getUser() but localStorage doesn't\n\n3. Current impact:\n   - User A's journal entries are visible to User B\n   - Deleted entries tracking is shared across users\n   - Privacy violation and data leakage\n\nFix Required:\n- Add user ID to localStorage keys (e.g., `journal_entries_cache_${userId}`)\n- Pass user context to RealTimeJournalManager\n- Clear old non-user-specific data on migration\n- Add authentication checks before localStorage operations",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "authentication",
+        "database",
+        "security",
+        "bug",
+        "journal",
+        "user-isolation",
+        "localStorage",
+        "privacy"
+      ],
+      "timestamp": "2025-08-06T01:42:58.419Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-06T01:42:58.419Z",
+      "lastVerified": "2025-08-06T01:42:58.419Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754445038526_dcqje2755",
+      "content": "Journal User Isolation Security Fix - COMPLETED:\n\nSuccessfully implemented user-specific localStorage isolation for journal entries.\n\nChanges made:\n1. Modified RealTimeJournalManager to accept and store userId\n2. Changed from singleton to per-user instances using Map<userId, instance>\n3. Updated localStorage keys to include userId:\n   - `journal_entries_cache_${userId}`\n   - `journal_deleted_entries_${userId}`\n4. Added data migration to clear old shared data\n5. Updated Journal.tsx to:\n   - Get current user ID from Supabase auth\n   - Pass userId to journal manager\n   - Handle user changes/logout\n   - Clear entries when user switches\n\nSecurity improvements:\n- Each user's journal entries are now completely isolated\n- No more data leakage between users\n- Old shared localStorage data is automatically cleared\n- Anonymous users get their own isolated storage\n\nBuild error fixed: Removed duplicate export of RealTimeJournalManager class",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "security",
+        "bug-fix",
+        "journal",
+        "user-isolation",
+        "localStorage",
+        "completed"
+      ],
+      "timestamp": "2025-08-06T01:50:38.526Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-06T01:50:38.526Z",
+      "lastVerified": "2025-08-06T01:50:38.526Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754445417794_9s101ij2b",
+      "content": "Journal Auto-Save Broken After User Isolation Fix:\n\nRoot Cause:\n1. JournalNavigation.tsx imports `journalManager` directly (line 25), which is the anonymous instance without user context\n2. EntryList.tsx also imports `journalManager` directly (line 8)\n3. The anonymous instance uses different localStorage keys than the user-specific instance:\n   - Anonymous: 'journal_entries_cache_anonymous'\n   - User-specific: 'journal_entries_cache_${userId}'\n\nImpact:\n- Auto-save writes to anonymous storage but Journal.tsx reads from user-specific storage\n- Data appears to be lost because it's saved to the wrong location\n- Delete operations also affect wrong storage\n\nComponents affected:\n- JournalNavigation.tsx: Lines 107, 111, 161, 165, 168 use journalManager\n- EntryList.tsx: Also imports and uses journalManager\n\nFix needed:\n- Pass the user-specific journal manager instance as a prop from Journal.tsx to child components\n- Update JournalNavigation and EntryList to use the passed instance instead of importing directly",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "bug",
+        "journal",
+        "auto-save",
+        "user-isolation",
+        "localStorage"
+      ],
+      "timestamp": "2025-08-06T01:56:57.794Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-06T01:56:57.794Z",
+      "lastVerified": "2025-08-06T01:56:57.794Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754445671957_ka4ir5b6h",
+      "content": "Journal Auto-Save Fixed:\n\nSuccessfully fixed the auto-save functionality that was broken after implementing user isolation.\n\nChanges made:\n1. Updated JournalNavigation.tsx:\n   - Removed direct import of journalManager\n   - Added journalManager prop to component interface\n   - Now uses the user-specific instance passed from parent\n\n2. Updated EntryList.tsx:\n   - Removed direct import of journalManager\n   - Added journalManager prop to component interface\n   - Now uses the user-specific instance passed from parent\n\n3. Updated Journal.tsx:\n   - Passes getManager() as journalManager prop to both child components\n   - Ensures consistent user-specific instance across all components\n\nResult:\n- Auto-save now correctly uses user-specific localStorage keys\n- Data is saved to the right location (journal_entries_cache_${userId})\n- Each user's data remains properly isolated\n- No more data appearing \"lost\" due to storage key mismatches",
+      "type": "code",
+      "tags": [
+        "code",
+        "bug-fix",
+        "journal",
+        "auto-save",
+        "user-isolation",
+        "completed"
+      ],
+      "timestamp": "2025-08-06T02:01:11.957Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-06T02:01:11.957Z",
+      "lastVerified": "2025-08-06T02:01:11.957Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754445840901_6yeg740yn",
+      "content": "Journal Page Glitch When Switching Accounts:\n\nRoot Cause Analysis:\n1. Race condition between userId initialization and loadEntries()\n2. loadEntries is called on mount (line 272) but userId might still be null\n3. getManager() is called with null userId, creating anonymous manager\n4. When userId is later set by initializeUser(), entries are already loaded with wrong manager\n5. The auth state change listener clears entries but loadEntries isn't called again\n\nSequence of events:\n1. Component mounts → userId is null\n2. loadEntries() runs immediately → uses anonymous manager\n3. initializeUser() runs async → sets userId later\n4. Entries loaded with anonymous manager show for all users\n5. Auth state change clears entries but doesn't reload\n\nThe glitch happens because:\n- Initial load uses anonymous storage\n- All users see the same anonymous entries briefly\n- Entries are cleared but not reloaded when user is identified",
+      "type": "general",
+      "tags": [
+        "general",
+        "bug",
+        "journal",
+        "race-condition",
+        "user-switching",
+        "initialization"
+      ],
+      "timestamp": "2025-08-06T02:04:00.901Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-06T02:04:00.901Z",
+      "lastVerified": "2025-08-06T02:04:00.901Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754445973253_e740nsgh2",
+      "content": "Journal Page Glitch When Switching Accounts - FIXED:\n\nSuccessfully eliminated the glitchy behavior that showed shared journal entries to all users when navigating to the journal page from different accounts.\n\nRoot cause was a race condition in initialization:\n- Component mounted with userId=null\n- loadEntries() ran immediately using anonymous manager\n- All users briefly saw the same anonymous entries\n- initializeUser() set userId later but didn't reload entries\n\nChanges implemented:\n1. Added isInitialized state to track when user context is ready\n2. Delayed loadEntries() until after initialization is complete\n3. Enhanced auth state change handler to:\n   - Clear old data immediately\n   - Update userId \n   - Reload entries with correct user-specific manager\n4. Updated loading state to show \"Initializing journal...\" vs \"Loading your journal...\"\n\nResult:\n- No more glitchy display of wrong entries\n- Smooth user switching without data leakage\n- Proper loading states during initialization\n- Each user sees only their own entries from the start\n- Clean, secure user isolation maintained",
+      "type": "solution",
+      "tags": [
+        "solution",
+        "bug-fix",
+        "journal",
+        "user-switching",
+        "race-condition",
+        "initialization",
+        "completed"
+      ],
+      "timestamp": "2025-08-06T02:06:13.253Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-06T02:06:13.253Z",
+      "lastVerified": "2025-08-06T02:06:13.253Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754446124066_k9dwiogei",
+      "content": "Journal Loading State Issue - Blinky/Annoying Loading Screen:\n\nThe issue is caused by multiple sequential loading states:\n1. First: \"Initializing journal...\" - while getting user auth state\n2. Second: \"Loading your journal...\" - while loading entries from localStorage/DB\n\nSequence of events:\n- Page mounts → isLoading=true, isInitialized=false\n- Shows \"Initializing journal...\" spinner\n- User auth completes → isInitialized=true\n- Then loadEntries() starts → shows \"Loading your journal...\" spinner\n- Finally renders the journal\n\nThis creates a \"blinky\" experience with two sequential loading states.\n\nThe getAllEntries() method is actually fast (reads from localStorage synchronously) but the visual transition between two loading states creates the annoying flickering effect.\n\nSolution needed:\n- Optimize to show content faster by leveraging localStorage being synchronous\n- Reduce or eliminate the double loading state\n- Consider showing skeleton UI instead of spinner\n- Pre-load data or use optimistic rendering",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "ux",
+        "loading-state",
+        "journal",
+        "performance",
+        "user-experience"
+      ],
+      "timestamp": "2025-08-06T02:08:44.066Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-06T02:08:44.066Z",
+      "lastVerified": "2025-08-06T02:08:44.066Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-05T07:46:09.019Z"
+  "lastUpdated": "2025-08-06T02:08:44.066Z"
 }

@@ -68,7 +68,7 @@ export function CachedPage({
     }
   }, [pageKey, updateScrollPosition])
 
-  // Handle refresh on focus
+  // Handle refresh on focus and navigation
   useEffect(() => {
     if (!refreshOnFocus) return
 
@@ -85,8 +85,32 @@ export function CachedPage({
       }
     }
 
+    // Also handle navigation-based refresh for quote-related pages
+    const handleNavigationRefresh = () => {
+      const isQuotePage = pageKey === 'home' || pageKey === 'quotes' || pageKey.includes('quote')
+      if (isQuotePage) {
+        const cached = getCachedPage(pageKey)
+        if (cached) {
+          const cacheAge = Date.now() - cached.timestamp
+          // Clear cache for quote pages if older than 2 minutes
+          if (cacheAge > 2 * 60 * 1000) {
+            debugLog('Quote page cache too old, clearing for fresh data')
+            clearPageCache(pageKey)
+            setShowCached(false)
+            setIsLoading(true)
+          }
+        }
+      }
+    }
+
     window.addEventListener('focus', handleFocus)
-    return () => window.removeEventListener('focus', handleFocus)
+    // Listen for navigation events
+    window.addEventListener('popstate', handleNavigationRefresh)
+
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('popstate', handleNavigationRefresh)
+    }
   }, [pageKey, refreshOnFocus, maxAge, getCachedPage, clearPageCache])
 
   // Initialize page cache state on mount

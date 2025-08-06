@@ -29,10 +29,10 @@ const dodoClient = new DodoPayments({
   // The environment is determined by the API key used
 })
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body: CreateSubscriptionRequest = await request.json()
-    const { productId, userId, customerData, returnUrl, cancelUrl } = body
+    const { productId, userId, customerData, returnUrl } = body
 
     if (!productId || !userId || !customerData) {
       return NextResponse.json(
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url)
     const subscriptionId = searchParams.get('subscriptionId')

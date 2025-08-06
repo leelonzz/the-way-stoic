@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 
 interface TabVisibilityState {
   isVisible: boolean;
@@ -9,11 +10,13 @@ interface TabVisibilityState {
 interface TabVisibilityCallbacks {
   onVisible?: (state: TabVisibilityState) => void | Promise<void>;
   onHidden?: (state: TabVisibilityState) => void | Promise<void>;
+  onNavigationReturn?: (state: TabVisibilityState) => void | Promise<void>;
 }
 
 interface UseTabVisibilityOptions {
   refreshThreshold?: number; // milliseconds
   enableLogging?: boolean;
+  trackNavigation?: boolean; // Track SPA navigation
 }
 
 interface UseTabVisibilityReturn extends TabVisibilityState {
@@ -29,7 +32,14 @@ let globalVisibilityState: TabVisibilityState = {
   wasHiddenDuration: 0
 };
 
-let globalCallbacks = new Map<string, TabVisibilityCallbacks>();
+// Global navigation tracking state
+const globalNavigationState = {
+  lastPathname: '',
+  lastNavigationTime: Date.now(),
+  isNavigationReturn: false
+};
+
+const globalCallbacks = new Map<string, TabVisibilityCallbacks>();
 let globalListenerAttached = false;
 let hiddenStartTime: number | null = null;
 
@@ -43,16 +53,13 @@ const handleGlobalVisibilityChange = async (): Promise<void> => {
   // Calculate how long the tab was hidden
   let wasHiddenDuration = 0;
   if (!isVisible && wasVisible) {
-    // Tab became hidden - reset duration and start tracking
+    // Tab became hidden - start tracking
     hiddenStartTime = now;
-    wasHiddenDuration = 0; // Reset to 0 when becoming hidden
+    wasHiddenDuration = 0;
   } else if (isVisible && !wasVisible && hiddenStartTime) {
     // Tab became visible - calculate actual hidden duration
     wasHiddenDuration = now - hiddenStartTime;
     hiddenStartTime = null;
-  } else if (isVisible && wasVisible) {
-    // Tab was already visible - reset duration to 0
-    wasHiddenDuration = 0;
   }
 
   globalVisibilityState = {
@@ -61,15 +68,11 @@ const handleGlobalVisibilityChange = async (): Promise<void> => {
     wasHiddenDuration
   };
 
-  console.log('🔍 [TabVisibility] Global visibility change:', {
+  console.log('🔍 [TabVisibility] Visibility change:', {
     wasVisible,
     isVisible,
     wasHiddenDuration: Math.round(wasHiddenDuration / 1000),
-    callbacksCount: globalCallbacks.size,
-    hiddenStartTime,
-    changeType: !isVisible && wasVisible ? 'BECAME_HIDDEN' :
-                isVisible && !wasVisible ? 'BECAME_VISIBLE' :
-                'NO_CHANGE'
+    callbacksCount: globalCallbacks.size
   });
 
   // Execute callbacks based on visibility change
@@ -78,13 +81,13 @@ const handleGlobalVisibilityChange = async (): Promise<void> => {
   for (const [id, callbacks] of globalCallbacks.entries()) {
     try {
       if (isVisible && !wasVisible && callbacks.onVisible) {
-        console.log(`🔍 [TabVisibility] Executing onVisible callback for: ${id}`);
+        console.log(`🔍 [TabVisibility] Executing onVisible for: ${id}`);
         const result = callbacks.onVisible(globalVisibilityState);
         if (result instanceof Promise) {
           callbackPromises.push(result);
         }
       } else if (!isVisible && wasVisible && callbacks.onHidden) {
-        console.log(`🔍 [TabVisibility] Executing onHidden callback for: ${id}`);
+        console.log(`🔍 [TabVisibility] Executing onHidden for: ${id}`);
         const result = callbacks.onHidden(globalVisibilityState);
         if (result instanceof Promise) {
           callbackPromises.push(result);
@@ -99,11 +102,7 @@ const handleGlobalVisibilityChange = async (): Promise<void> => {
   if (callbackPromises.length > 0) {
     try {
       await Promise.all(callbackPromises);
-      console.log(`✅ [TabVisibility] All ${callbackPromises.length} async callbacks completed`);
-
-      // Note: wasHiddenDuration is NOT reset here anymore - it will be reset
-      // by the next visibility change or when callbacks need to check it again.
-      // This allows shouldRefresh to work correctly on subsequent tab switches.
+      console.log(`✅ [TabVisibility] All ${callbackPromises.length} callbacks completed`);
     } catch (error) {
       console.error('❌ [TabVisibility] Error in async callbacks:', error);
     }
@@ -122,7 +121,7 @@ const attachGlobalListener = (): void => {
 
 const detachGlobalListener = (): void => {
   if (typeof document === 'undefined') return;
-  
+
   if (globalListenerAttached && globalCallbacks.size === 0) {
     document.removeEventListener('visibilitychange', handleGlobalVisibilityChange);
     globalListenerAttached = false;
@@ -130,22 +129,69 @@ const detachGlobalListener = (): void => {
   }
 };
 
+// Handle navigation changes for SPA routing
+const handleNavigationChange = async (pathname: string): Promise<void> => {
+  const now = Date.now();
+  const wasOnDifferentPage = globalNavigationState.lastPathname !== '' &&
+                            globalNavigationState.lastPathname !== pathname;
+
+  if (wasOnDifferentPage) {
+    // User returned to this page from a different page
+    const timeSinceLastNavigation = now - globalNavigationState.lastNavigationTime;
+
+    console.log('🔍 [TabVisibility] Navigation return detected:', {
+      from: globalNavigationState.lastPathname,
+      to: pathname,
+      timeSinceLastNavigation: Math.round(timeSinceLastNavigation / 1000),
+      registeredCallbacks: Array.from(globalCallbacks.keys())
+    });
+
+    // Create a synthetic visibility state for navigation return
+    const syntheticState: TabVisibilityState = {
+      isVisible: true,
+      lastVisibilityChange: now,
+      wasHiddenDuration: timeSinceLastNavigation
+    };
+
+    // Trigger onNavigationReturn callbacks
+    for (const [id, callbacks] of globalCallbacks.entries()) {
+      if (callbacks.onNavigationReturn) {
+        try {
+          await callbacks.onNavigationReturn(syntheticState);
+        } catch (error) {
+          console.error(`[TabVisibility] Error in onNavigationReturn callback for ${id}:`, error);
+        }
+      }
+    }
+  }
+
+  globalNavigationState.lastPathname = pathname;
+  globalNavigationState.lastNavigationTime = now;
+};
+
 export function useTabVisibility(
   options: UseTabVisibilityOptions = {}
 ): UseTabVisibilityReturn {
-  const { refreshThreshold = 2000, enableLogging = true } = options; // Default 2 seconds
+  const { refreshThreshold = 2000, enableLogging = true, trackNavigation = true } = options;
   const [state, setState] = useState<TabVisibilityState>(globalVisibilityState);
   const callbackIdRef = useRef<string>(`tab-visibility-${Date.now()}-${Math.random()}`);
+  const pathname = usePathname();
+  const lastPathnameRef = useRef<string>('');
 
-  // Update local state when global state changes - simplified approach
+  // Track navigation changes
   useEffect(() => {
-    // Update local state immediately
+    if (trackNavigation && pathname !== lastPathnameRef.current) {
+      handleNavigationChange(pathname);
+      lastPathnameRef.current = pathname;
+    }
+  }, [pathname, trackNavigation]);
+
+  // Update local state when global state changes
+  useEffect(() => {
     setState({ ...globalVisibilityState });
 
-    // Set up interval to sync state regularly (as backup)
     const syncInterval = setInterval(() => {
       setState(prevState => {
-        // Only update if state actually changed
         if (prevState.isVisible !== globalVisibilityState.isVisible ||
             prevState.lastVisibilityChange !== globalVisibilityState.lastVisibilityChange ||
             prevState.wasHiddenDuration !== globalVisibilityState.wasHiddenDuration) {
@@ -153,7 +199,7 @@ export function useTabVisibility(
         }
         return prevState;
       });
-    }, 100); // Check every 100ms
+    }, 100);
 
     return () => {
       clearInterval(syncInterval);
@@ -183,11 +229,11 @@ export function useTabVisibility(
     const timeSinceLastRefresh = Date.now() - lastRefreshTime;
     const timeSinceVisibilityChange = Date.now() - state.lastVisibilityChange;
 
-    // Refresh if:
-    // 1. Tab just became visible (within last 3 seconds) AND was hidden for any duration
+    // Simplified refresh logic:
+    // 1. Tab just became visible AND was hidden for more than 1 second
     // 2. It's been more than the threshold since last refresh
     const justBecameVisible = state.isVisible && timeSinceVisibilityChange < 3000;
-    const wasActuallyHidden = state.wasHiddenDuration > 0;
+    const wasActuallyHidden = state.wasHiddenDuration > 1000; // At least 1 second
     const timeThresholdExceeded = timeSinceLastRefresh > refreshThreshold;
 
     const shouldRefreshNow = (justBecameVisible && wasActuallyHidden) || timeThresholdExceeded;
@@ -197,7 +243,7 @@ export function useTabVisibility(
       wasActuallyHidden,
       timeThresholdExceeded,
       shouldRefreshNow,
-      wasHiddenDuration: state.wasHiddenDuration,
+      wasHiddenDuration: Math.round(state.wasHiddenDuration / 1000),
       timeSinceVisibilityChange: Math.round(timeSinceVisibilityChange / 1000),
       timeSinceLastRefresh: Math.round(timeSinceLastRefresh / 1000)
     });

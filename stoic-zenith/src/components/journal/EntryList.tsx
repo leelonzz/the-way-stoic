@@ -5,7 +5,7 @@ import { EntryListItem } from './EntryListItem';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { JournalEntry } from './types';
-import { journalManager } from '@/lib/journal';
+import type { RealTimeJournalManager } from '@/lib/journal';
 import { useTabVisibility } from '@/hooks/useTabVisibility';
 import { toast } from '@/components/ui/use-toast';
 
@@ -21,6 +21,7 @@ interface EntryListProps {
   onEntriesChange?: (entries: JournalEntry[]) => void;
   syncStatus?: 'synced' | 'pending' | 'error';
   onRetrySync?: () => void;
+  journalManager: RealTimeJournalManager;
 }
 
 interface EntryListItemData {
@@ -39,7 +40,8 @@ export const EntryList = React.memo(function EntryList({
   entries: parentEntries,
   onEntriesChange,
   syncStatus = 'synced',
-  onRetrySync
+  onRetrySync,
+  journalManager
 }: EntryListProps): JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -187,9 +189,9 @@ export const EntryList = React.memo(function EntryList({
   };
 
   return (
-    <div className={`flex flex-col h-full ${className}`}>
-      {/* Header */}
-      <div className="p-4 border-b border-stone-200">
+    <div className={`flex flex-col h-full overflow-hidden ${className}`}>
+      {/* Header - Fixed at top */}
+      <div className="flex-shrink-0 p-4 border-b border-stone-200 bg-white">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-stone-800">Journal Entries</h2>
           <Button
@@ -204,7 +206,7 @@ export const EntryList = React.memo(function EntryList({
             New Entry
           </Button>
         </div>
-        
+
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 h-4 w-4" />
@@ -239,8 +241,8 @@ export const EntryList = React.memo(function EntryList({
         </div>
       </div>
 
-      {/* Entries List */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Entries List - Scrollable content area */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 journal-entry-list-scroll">
         {isLoading ? (
           <div className="p-4 text-center">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-stone-800 mx-auto mb-2"></div>

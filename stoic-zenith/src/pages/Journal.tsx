@@ -1,32 +1,191 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
 import { JournalNavigation } from '@/components/journal/JournalNavigation';
 import { EntryList } from '@/components/journal/EntryList';
 import { JournalEntry } from '@/components/journal/types';
-import { journalManager } from '@/lib/journal';
+import { getJournalManager, RealTimeJournalManager } from '@/lib/journal';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Journal(): JSX.Element {
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'pending' | 'error'>('synced');
   const [isCreatingEntry, setIsCreatingEntry] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [lastCreateTime, setLastCreateTime] = useState<number>(0);
+  const journalManagerRef = useRef<RealTimeJournalManager | null>(null);
+
+  // Get or create journal manager with user context
+  const getManager = useCallback(() => {
+    if (!journalManagerRef.current || journalManagerRef.current !== getJournalManager(userId)) {
+      journalManagerRef.current = getJournalManager(userId);
+      // Ensure the manager has the correct userId
+      if (journalManagerRef.current && userId) {
+        journalManagerRef.current.setUserId(userId);
+      }
+    }
+    return journalManagerRef.current;
+  }, [userId]);
+
+  // Load entries immediately on mount with current manager
+  const loadEntries = useCallback(async (): Promise<void> => {
+    try {
+      // Get entries from real-time manager (localStorage first, then database)
+      const allEntries = await getManager().getAllEntries();
+      setEntries(allEntries);
+
+      // Auto-select today's entry if no entry is currently selected
+      if (!selectedEntry && allEntries.length > 0) {
+        const today = format(new Date(), 'yyyy-MM-dd');
+        const todaysEntry = allEntries.find(entry => entry.date === today);
+
+        if (todaysEntry) {
+          setSelectedEntry(todaysEntry);
+          console.log('📅 Auto-selected today\'s entry');
+        } else {
+          // Select the most recent entry
+          const mostRecent = allEntries[0]; // entries are sorted by date desc
+          setSelectedEntry(mostRecent);
+          console.log('📅 Auto-selected most recent entry');
+        }
+      }
+
+      setSyncStatus('synced');
+
+    } catch (error) {
+      console.error('Failed to load entries:', error);
+      setSyncStatus('error');
+
+      toast({
+        title: "Loading from local storage",
+        description: "Using cached entries. Will sync when connection is restored.",
+        variant: "default",
+      });
+    }
+  }, [selectedEntry, getManager]);
+
+  // Initialize user context and load entries immediately
+  useEffect(() => {
+    const initializeUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserId(user.id);
+          console.log('📝 Journal initialized for user:', user.id);
+
+          // Ensure the manager gets the user context and retry any pending syncs
+          const manager = getManager();
+          if (manager) {
+            manager.setUserId(user.id);
+            // Small delay to ensure setUserId completes before retry
+            setTimeout(() => {
+              manager.retryAuthSync().catch(error => {
+                console.error('❌ Initial auth sync retry failed:', error);
+              });
+            }, 100);
+          }
+        } else {
+          console.log('📝 Journal initialized for anonymous user');
+        }
+      } catch (error) {
+        console.error('Failed to get user:', error);
+      }
+    };
+
+    // Start loading entries immediately with anonymous manager
+    loadEntries();
+    initializeUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const newUserId = session?.user?.id || null;
+      console.log(`🔄 Auth state changed: ${event}, newUserId: ${newUserId}, currentUserId: ${userId}`);
+
+      if (newUserId !== userId) {
+        console.log('🔄 User changed, switching journal for:', newUserId || 'anonymous');
+
+        // Clear old data immediately
+        setEntries([]);
+        setSelectedEntry(null);
+        setSyncStatus('pending');
+
+        // Update user ID
+        setUserId(newUserId);
+
+        // Clear the current manager reference to force recreation with new userId
+        journalManagerRef.current = null;
+
+        // If this is initial authentication (not user switching), retry sync for existing entries
+        if (newUserId && !userId) {
+          console.log('🔐 Initial authentication detected, retrying sync for existing entries');
+          setTimeout(async () => {
+            try {
+              await getManager().retryAuthSync();
+              console.log('✅ Auth sync retry completed');
+            } catch (error) {
+              console.error('❌ Auth sync retry failed:', error);
+            }
+          }, 500);
+        }
+
+        // Reload entries with new manager after a short delay
+        setTimeout(async () => {
+          try {
+            console.log('🔄 Reloading entries for new user...');
+            await loadEntries();
+            setSyncStatus('synced');
+            console.log('✅ Journal reloaded for new user');
+          } catch (error) {
+            console.error('Failed to reload entries for new user:', error);
+            setSyncStatus('error');
+          }
+        }, 200);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // INSTANT ENTRY CREATION (0ms delay) with duplicate prevention
   const handleCreateEntry = useCallback(async (): Promise<void> => {
+    const now = Date.now();
+
     // Prevent duplicate entries if already creating
     if (isCreatingEntry) {
       console.log('🚫 Entry creation already in progress, ignoring duplicate request');
       return;
     }
 
+    // Prevent rapid-fire entry creation (debounce 1 second)
+    if (now - lastCreateTime < 1000) {
+      console.log('🚫 Entry creation too soon after last creation, ignoring duplicate request');
+      return;
+    }
+
+    // Check if current selected entry is empty - if so, focus it instead of creating new
+    if (selectedEntry && selectedEntry.blocks.length === 1 &&
+        selectedEntry.blocks[0].text === '') {
+      console.log('🎯 Current entry is empty, focusing it instead of creating new');
+      setTimeout(() => {
+        const editorElement = document.querySelector('[contenteditable="true"]') as HTMLElement;
+        if (editorElement) {
+          editorElement.focus();
+        }
+      }, 100);
+      return;
+    }
+
     console.log('🔄 Creating new entry...');
     setIsCreatingEntry(true);
+    setLastCreateTime(now);
 
-    const now = new Date();
-    const today = format(now, 'yyyy-MM-dd');
+    const currentDate = new Date();
+    const today = format(currentDate, 'yyyy-MM-dd');
 
     try {
       // Always create a new entry - allow multiple entries per day
@@ -34,7 +193,7 @@ export default function Journal(): JSX.Element {
       console.log('🔄 Creating new entry for date:', today);
 
       // Create entry immediately using the real-time manager
-      const newEntry = await journalManager.createEntryImmediately(today, 'general');
+      const newEntry = await getManager().createEntryImmediately(today, 'general');
       console.log('✅ Entry created:', newEntry);
 
       // Update UI immediately - no waiting, no loading states
@@ -83,7 +242,7 @@ export default function Journal(): JSX.Element {
     } finally {
       setIsCreatingEntry(false);
     }
-  }, [isCreatingEntry, entries, selectedEntry]);
+  }, [isCreatingEntry, entries, selectedEntry, getManager]);
 
   // INSTANT ENTRY DELETION (immediate UI feedback)
   const handleDeleteEntry = useCallback(async (entryId: string): Promise<void> => {
@@ -95,7 +254,7 @@ export default function Journal(): JSX.Element {
       setEntries(prev => prev.filter(entry => entry.id !== entryId));
 
       // Delete using real-time manager (background operation)
-      await journalManager.deleteEntryImmediately(entryId);
+      await getManager().deleteEntryImmediately(entryId);
 
       toast({
         title: "Entry deleted",
@@ -114,7 +273,7 @@ export default function Journal(): JSX.Element {
         variant: "default",
       });
     }
-  }, [entries, selectedEntry]);
+  }, [entries, selectedEntry, getManager]);
 
   // REAL-TIME ENTRY UPDATE (as users type)
   const handleEntryUpdate = useCallback(async (updatedEntry: JournalEntry): Promise<void> => {
@@ -133,8 +292,8 @@ export default function Journal(): JSX.Element {
         }
       });
 
-      // CRITICAL FIX: Handle both updating existing entries AND adding new entries
-      // This prevents duplicate entries when users start typing in new entries
+      // CRITICAL FIX: Only update existing entries, NEVER add new ones
+      // New entries should ONLY be added through handleCreateEntry to prevent duplicates
       setEntries(prev => {
         const existingIndex = prev.findIndex(entry => entry.id === updatedEntry.id);
 
@@ -145,10 +304,9 @@ export default function Journal(): JSX.Element {
             entry.id === updatedEntry.id ? updatedEntry : entry
           );
         } else {
-          // Add new entry (this happens when user starts typing in a new entry)
-          console.log(`📝 Adding new entry to list: ${updatedEntry.id}`);
-          // Add to beginning for chronological order (newest first)
-          return [updatedEntry, ...prev];
+          // CRITICAL: Do NOT add new entries here - this was causing duplicates
+          console.log(`⚠️ Ignoring update for non-existent entry: ${updatedEntry.id} (prevents duplicates)`);
+          return prev;
         }
       });
 
@@ -171,47 +329,6 @@ export default function Journal(): JSX.Element {
     }
   }, []);
 
-  // Load entries with instant access
-  const loadEntries = useCallback(async (): Promise<void> => {
-    try {
-      setIsLoading(true);
-
-      // Get entries from real-time manager (localStorage first, then database)
-      const allEntries = await journalManager.getAllEntries();
-      setEntries(allEntries);
-
-      // Auto-select today's entry if no entry is currently selected
-      if (!selectedEntry && allEntries.length > 0) {
-        const today = format(new Date(), 'yyyy-MM-dd');
-        const todaysEntry = allEntries.find(entry => entry.date === today);
-
-        if (todaysEntry) {
-          setSelectedEntry(todaysEntry);
-          console.log('📅 Auto-selected today\'s entry');
-        } else {
-          // Select the most recent entry
-          const mostRecent = allEntries[0]; // entries are sorted by date desc
-          setSelectedEntry(mostRecent);
-          console.log('📅 Auto-selected most recent entry');
-        }
-      }
-
-      setSyncStatus('synced');
-
-    } catch (error) {
-      console.error('Failed to load entries:', error);
-      setSyncStatus('error');
-
-      toast({
-        title: "Loading from local storage",
-        description: "Using cached entries. Will sync when connection is restored.",
-        variant: "default",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedEntry]);
-
   // Handle entry selection with instant feedback
   const handleSelectEntry = useCallback(async (entry: JournalEntry): Promise<void> => {
     // Switch immediately - no loading states
@@ -221,15 +338,10 @@ export default function Journal(): JSX.Element {
     setSyncStatus('synced');
   }, []);
 
-  // Load entries on mount
-  useEffect(() => {
-    loadEntries();
-  }, [loadEntries]);
-
   // Setup real-time sync status updates
   useEffect(() => {
     const updateSyncStatus = (): void => {
-      const status = journalManager.getSyncStatus();
+      const status = getManager().getSyncStatus();
 
       if (status.hasErrors) {
         setSyncStatus('error');
@@ -250,7 +362,7 @@ export default function Journal(): JSX.Element {
   useEffect(() => {
     const handleBeforeUnload = (): void => {
       // Trigger immediate sync before page unload
-      journalManager['syncPendingChanges']?.();
+      getManager()['syncPendingChanges']?.();
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -268,7 +380,7 @@ export default function Journal(): JSX.Element {
       if (!document.hidden) {
         // Sync when tab becomes visible
         try {
-          await journalManager.forcSync();
+          await getManager().forcSync();
           setSyncStatus('synced');
         } catch (error) {
           console.warn('Background sync failed:', error);
@@ -288,7 +400,7 @@ export default function Journal(): JSX.Element {
   const handleRetrySync = useCallback(async (): Promise<void> => {
     try {
       setSyncStatus('pending');
-      await journalManager.forcSync();
+      await getManager().forcSync();
       setSyncStatus('synced');
       toast({
         title: "Sync successful",
@@ -304,23 +416,27 @@ export default function Journal(): JSX.Element {
         variant: "destructive",
       });
     }
-  }, []);
+  }, [getManager]);
 
+  // Only show loading state for actual async operations (database sync)
+  // Since localStorage reads are synchronous, we don't need a loading state for initial load
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center bg-stone-50">
         <div className="text-center p-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-800 mx-auto mb-4"></div>
-          <p className="text-stone-600">Loading your journal...</p>
+          <p className="text-stone-600">
+            Syncing your journal...
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex bg-stone-50">
+    <div className="h-screen flex bg-stone-50">
       {/* Entry List Sidebar */}
-      <div className="w-80 border-r border-stone-200 bg-white">
+      <div className="w-80 border-r border-stone-200 bg-white flex flex-col h-full">
         <EntryList
           entries={entries}
           selectedEntry={selectedEntry}
@@ -330,11 +446,12 @@ export default function Journal(): JSX.Element {
           onEntriesChange={setEntries}
           syncStatus={syncStatus}
           onRetrySync={handleRetrySync}
+          journalManager={getManager()}
         />
       </div>
 
       {/* Journal Editor */}
-      <div className="flex-1 flex flex-col bg-white">
+      <div className="flex-1 flex flex-col bg-white h-full">
         {selectedEntry ? (
           <JournalNavigation
             entry={selectedEntry}
@@ -342,6 +459,7 @@ export default function Journal(): JSX.Element {
             onCreateEntry={handleCreateEntry}
             onDeleteEntry={handleDeleteEntry}
             syncStatus={syncStatus}
+            journalManager={getManager()}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center bg-white">

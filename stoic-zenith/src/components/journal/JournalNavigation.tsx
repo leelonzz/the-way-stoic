@@ -22,7 +22,7 @@ import {
 import { EnhancedRichTextEditor } from './EnhancedRichTextEditor';
 import { SafeEditorWrapper } from './SafeEditorWrapper';
 import { JournalEntry, JournalBlock } from './types';
-import { journalManager } from '@/lib/journal';
+import type { RealTimeJournalManager } from '@/lib/journal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { toast } from '@/components/ui/use-toast';
 
@@ -34,6 +34,7 @@ interface JournalNavigationProps {
   onDeleteEntry?: (entryId: string) => void;
   isCreatingEntry?: boolean;
   syncStatus?: 'synced' | 'pending' | 'error';
+  journalManager: RealTimeJournalManager;
 }
 
 export const JournalNavigation = React.memo(function JournalNavigation({
@@ -43,7 +44,8 @@ export const JournalNavigation = React.memo(function JournalNavigation({
   onCreateEntry,
   onDeleteEntry,
   isCreatingEntry: _isCreatingEntry = false,
-  syncStatus = 'synced'
+  syncStatus = 'synced',
+  journalManager
 }: JournalNavigationProps): JSX.Element {
   const [currentEntry, setCurrentEntry] = useState<JournalEntry>(entry);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -254,9 +256,9 @@ export const JournalNavigation = React.memo(function JournalNavigation({
   }, [entry.id, onEntryUpdate]); // Remove currentEntry dependency since we use ref
 
   return (
-    <div className={`flex flex-col h-full ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-stone-200 bg-white">
+    <div className={`flex flex-col h-full overflow-hidden ${className}`}>
+      {/* Header - Fixed at top */}
+      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-stone-200 bg-white">
         <div className="flex items-center gap-4">
           <div>
             <h1 className="text-xl font-semibold text-stone-800">
@@ -266,7 +268,7 @@ export const JournalNavigation = React.memo(function JournalNavigation({
               {format(selectedDate, 'EEEE')}
             </p>
           </div>
-          
+
           {/* Sync Status */}
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${
@@ -311,7 +313,7 @@ export const JournalNavigation = React.memo(function JournalNavigation({
                   New Entry
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => setShowDeleteDialog(true)}
                 className="text-red-600"
               >
@@ -323,8 +325,8 @@ export const JournalNavigation = React.memo(function JournalNavigation({
         </div>
       </div>
 
-      {/* Editor */}
-      <div className="flex-1 overflow-hidden bg-white" style={{ backgroundColor: '#ffffff' }}>
+      {/* Editor - Scrollable content area */}
+      <div className="flex-1 overflow-hidden bg-white min-h-0" style={{ backgroundColor: '#ffffff' }}>
         <ErrorBoundary>
           <SafeEditorWrapper>
             <EnhancedRichTextEditor

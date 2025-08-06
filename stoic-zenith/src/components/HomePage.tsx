@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -7,7 +7,7 @@ import { useAuthContext } from '@/components/auth/AuthProvider'
 
 function HomePage(): JSX.Element {
   const { user } = useAuthContext()
-  const { getDailyQuote, loading } = useQuotes(user)
+  const { getDailyQuote, loading, error, forceRefresh } = useQuotes(user)
   
   const currentHour = new Date().getHours()
   const greeting =
@@ -18,6 +18,34 @@ function HomePage(): JSX.Element {
         : 'Good Evening'
 
   const dailyQuote = getDailyQuote()
+
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 [HomePage] Quote state:', {
+      hasQuote: !!dailyQuote,
+      quoteId: dailyQuote?.id,
+      loading,
+      error
+    });
+  }, [dailyQuote, loading, error]);
+
+  // Handle error state with retry button
+  if (error) {
+    return (
+      <div className="min-h-screen p-6 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-inknut text-ink">Unable to load quotes</h1>
+          <p className="text-red-600">{error}</p>
+          <Button 
+            onClick={forceRefresh}
+            className="bg-stone text-white hover:bg-stone/80"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen p-6" style={{ background: 'transparent' }}>
