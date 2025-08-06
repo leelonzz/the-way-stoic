@@ -74,7 +74,7 @@ Create or update your `.env.local` file:
 
 ```env
 # These are already in your Supabase client configuration
-NEXT_PUBLIC_SUPABASE_URL=https://xzindyqvzwbaeerlcbyx.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 
 # Add these if you need them for additional configuration

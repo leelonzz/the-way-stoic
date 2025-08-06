@@ -71,7 +71,7 @@ const restoreCursorPosition = (element: HTMLElement, position: { start: number; 
   }
 }
 
-export function SimplifiedRichTextEditor({
+export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEditor({
   block,
   onChange,
   onKeyDown,
@@ -232,9 +232,20 @@ export function SimplifiedRichTextEditor({
     if (editorRef.current && !isUpdating) {
       const content = block.richText || block.text || ''
       const currentContent = editorRef.current.innerHTML
+      const currentText = editorRef.current.textContent || ''
+
+      // Content integrity check - prevent overwriting with shorter content during active editing
+      const isFocused = editorRef.current.contains(document.activeElement)
+      const hasSignificantContentReduction = currentText.length > 50 && content.length < currentText.length * 0.5
+
+      if (hasSignificantContentReduction && isFocused) {
+        console.warn(`🚨 SimplifiedRichTextEditor: Preventing content overwrite during active editing`)
+        console.warn(`Current: ${currentText.length} chars, Incoming: ${content.length} chars`)
+        return
+      }
 
       // Only update if content actually changed and we're not currently editing
-      if (currentContent !== content && !editorRef.current.contains(document.activeElement)) {
+      if (currentContent !== content && !isFocused) {
         setIsUpdating(true)
         editorRef.current.innerHTML = content
 
@@ -481,4 +492,4 @@ export function SimplifiedRichTextEditor({
       `}</style>
     </div>
   )
-}
+})

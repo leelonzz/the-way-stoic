@@ -7,7 +7,7 @@ import { useAuthContext } from '@/components/auth/AuthProvider'
 
 function HomePage(): JSX.Element {
   const { user } = useAuthContext()
-  const { getDailyQuote, loading, debugCacheStatus } = useQuotes(user)
+  const { getDailyQuote, loading } = useQuotes(user)
   
   const currentHour = new Date().getHours()
   const greeting =

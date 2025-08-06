@@ -208,27 +208,17 @@ export function RichTextEditor({
     [blocks, showCommandMenu, addBlock, deleteBlock, focusBlock, updateBlock]
   )
 
-  // Debounced input handler for better performance
-  const debouncedUpdateBlock = useCallback(
-    (() => {
-      let timeoutId: NodeJS.Timeout
-      return (blockId: string, updates: Partial<JournalBlock>) => {
-        clearTimeout(timeoutId)
-        timeoutId = setTimeout(() => {
-          updateBlock(blockId, updates)
-        }, 150) // 150ms debounce
-      }
-    })(),
-    [updateBlock]
-  )
-
+  // CRITICAL FIX: Remove debouncing to prevent content loss
   const handleInput = useCallback(
     (e: React.FormEvent<HTMLDivElement>, blockId: string): void => {
       const target = e.currentTarget
       const text = target.textContent || ''
 
-      // Immediate visual update for responsive feel
-      debouncedUpdateBlock(blockId, { text })
+      console.log(`📝 RichTextEditor input: blockId=${blockId}, length=${text.length}`);
+
+      // IMMEDIATE update - no debouncing that could cause content loss
+      updateBlock(blockId, { text })
+      console.log(`✅ RichTextEditor block updated immediately: ${blockId}, content length: ${text.length}`);
 
       // Handle slash commands and splash commands
       const isSlashCommand = text.startsWith('/')
@@ -265,7 +255,7 @@ export function RichTextEditor({
         setSearchQuery(searchQuery)
       }
     },
-    [debouncedUpdateBlock, showCommandMenu]
+    [updateBlock, showCommandMenu]
   )
 
   const handleImageUpload = useCallback(
@@ -279,19 +269,29 @@ export function RichTextEditor({
           const reader = new FileReader()
           reader.onload = (e): void => {
             const imageUrl = e.target?.result as string
+
+            // Update the current block to be an image block
             updateBlock(blockId, {
               type: 'image',
               imageUrl,
               imageAlt: file.name,
               text: file.name,
             })
+
+            // Add a new paragraph block after the image for continued text editing
+            const newBlockId = addBlock(blockId)
+
+            // Focus the new paragraph block after a short delay to ensure DOM updates
+            setTimeout(() => {
+              focusBlock(newBlockId, 0)
+            }, 100) // Increased timeout to ensure DOM updates are complete
           }
           reader.readAsDataURL(file)
         }
       }
       input.click()
     },
-    [updateBlock]
+    [updateBlock, addBlock, focusBlock]
   )
 
   const handleCommandSelect = useCallback(

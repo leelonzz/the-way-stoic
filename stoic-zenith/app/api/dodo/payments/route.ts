@@ -24,7 +24,7 @@ interface CreatePaymentRequest {
 const environment = process.env.NEXT_PUBLIC_DODO_ENVIRONMENT || 'test'
 
 const dodoClient = new DodoPayments({
-  bearerToken: process.env.DODO_PAYMENTS_API_KEY || '',
+  bearerToken: process.env.NEXT_PUBLIC_DODO_API_KEY || '',
   // Note: DodoPayments SDK uses the same base URL for both test and live environments
   // The environment is determined by the API key used
 })
@@ -41,8 +41,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!process.env.DODO_PAYMENTS_API_KEY) {
-      console.error('DODO_PAYMENTS_API_KEY is not configured')
+    if (!process.env.NEXT_PUBLIC_DODO_API_KEY) {
+      console.error('NEXT_PUBLIC_DODO_API_KEY is not configured')
       return NextResponse.json(
         { error: 'Payment service not configured' },
         { status: 500 }
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
           error: 'Dodo Payments authentication failed', 
           details: 'Please verify your API keys and account setup',
           troubleshooting: {
-            step1: 'Check DODO_PAYMENTS_API_KEY in environment variables',
+            step1: 'Check NEXT_PUBLIC_DODO_API_KEY in environment variables',
             step2: 'Verify account is activated in Dodo dashboard',
             step3: 'Ensure product exists in your Dodo account'
           }

@@ -21,7 +21,7 @@ interface EnhancedRichTextEditorProps {
   onChange: (blocks: JournalBlock[]) => void
 }
 
-export function EnhancedRichTextEditor({
+export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor({
   blocks,
   onChange,
 }: EnhancedRichTextEditorProps): JSX.Element {
@@ -102,6 +102,134 @@ export function EnhancedRichTextEditor({
     },
     [blocks, onChange]
   )
+
+  // Helper function to focus a block and position cursor
+  const focusBlock = useCallback((blockId: string, position: 'start' | 'end' = 'start') => {
+    setTimeout(() => {
+      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`) as HTMLElement
+      if (!blockElement) return
+
+      const block = blocks.find(b => b.id === blockId)
+      if (!block) return
+
+      // For image blocks, focus the block element itself (it's now focusable)
+      if (block.type === 'image') {
+        blockElement.focus()
+        return
+      }
+
+      // For text blocks, focus the contenteditable element
+      const contentEditable = blockElement.querySelector('[contenteditable]') as HTMLElement
+      if (contentEditable) {
+        contentEditable.focus()
+
+        // Position cursor
+        const range = document.createRange()
+        const selection = window.getSelection()
+
+        if (position === 'end') {
+          // Place cursor at the end
+          range.selectNodeContents(contentEditable)
+          range.collapse(false)
+        } else {
+          // Place cursor at the start
+          range.setStart(contentEditable, 0)
+          range.collapse(true)
+        }
+
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+      }
+    }, 10)
+  }, [blocks])
+
+  // Helper function to handle clicks on image blocks
+  const handleImageBlockClick = useCallback((blockId: string, e: MouseEvent) => {
+    e.preventDefault()
+
+    // Get the image block element
+    const blockElement = document.querySelector(`[data-block-id="${blockId}"]`) as HTMLElement
+    if (!blockElement) return
+
+    // Determine if click is in the bottom half of the image (after image)
+    const rect = blockElement.getBoundingClientRect()
+    const clickY = e.clientY
+    const blockCenterY = rect.top + rect.height / 2
+
+    if (clickY > blockCenterY) {
+      // Click in bottom half - create new block after image
+      const newBlockId = addBlock(blockId)
+      focusBlock(newBlockId, 'start')
+    } else {
+      // Click in top half - focus previous block or create one before
+      const blockIndex = blocks.findIndex(b => b.id === blockId)
+      if (blockIndex > 0) {
+        const prevBlock = blocks[blockIndex - 1]
+        focusBlock(prevBlock.id, 'end')
+      } else {
+        // Create a new block before the image
+        const newBlock = createNewBlock()
+        const newBlocks = [newBlock, ...blocks]
+        onChange(newBlocks)
+        focusBlock(newBlock.id, 'start')
+      }
+    }
+  }, [blocks, addBlock, focusBlock, onChange])
+
+  // Helper function to handle clicks in empty areas
+  const handleEmptyAreaClick = useCallback((e: MouseEvent) => {
+    e.preventDefault()
+
+    // Find the closest block to the click position
+    const editorRect = editorRef.current?.getBoundingClientRect()
+    if (!editorRect) return
+
+    const clickY = e.clientY
+    let closestBlock: JournalBlock | null = null
+    let closestDistance = Infinity
+    let insertAfter = true
+
+    // Find the closest block
+    blocks.forEach(block => {
+      const blockElement = document.querySelector(`[data-block-id="${block.id}"]`) as HTMLElement
+      if (!blockElement) return
+
+      const blockRect = blockElement.getBoundingClientRect()
+      const blockCenterY = blockRect.top + blockRect.height / 2
+      const distance = Math.abs(clickY - blockCenterY)
+
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestBlock = block
+        // If click is above the block center, insert before; otherwise after
+        insertAfter = clickY > blockCenterY
+      }
+    })
+
+    if (closestBlock) {
+      if (insertAfter) {
+        // Create new block after the closest block
+        const newBlockId = addBlock(closestBlock.id)
+        focusBlock(newBlockId, 'start')
+      } else {
+        // Create new block before the closest block
+        const blockIndex = blocks.findIndex(b => b.id === closestBlock!.id)
+        const newBlock = createNewBlock()
+        const newBlocks = [
+          ...blocks.slice(0, blockIndex),
+          newBlock,
+          ...blocks.slice(blockIndex)
+        ]
+        onChange(newBlocks)
+        focusBlock(newBlock.id, 'start')
+      }
+    } else if (blocks.length === 0) {
+      // No blocks exist, create the first one
+      const newBlock = createNewBlock()
+      onChange([newBlock])
+      focusBlock(newBlock.id, 'start')
+    }
+  }, [blocks, addBlock, focusBlock, onChange])
 
   const deleteBlock = useCallback(
     (blockId: string) => {
@@ -264,6 +392,26 @@ export function EnhancedRichTextEditor({
       // Only handle if clicking on text content, not UI elements
       if (target.closest('button') || target.closest('.command-menu')) return
 
+      // Check if clicking on a block element (including image blocks)
+      const blockElement = target.closest('[data-block-id]') as HTMLElement
+      if (!blockElement) {
+        // Handle clicks in empty areas of the editor
+        handleEmptyAreaClick(e)
+        return
+      }
+
+      // Get the block ID and block data
+      const blockId = blockElement.getAttribute('data-block-id')
+      const block = blocks.find(b => b.id === blockId)
+      if (!block) return
+
+      // Handle image block clicks
+      if (block.type === 'image') {
+        handleImageBlockClick(blockId, e)
+        return
+      }
+
+      // Handle text block clicks (existing logic)
       const contentEditable = target.closest('[contenteditable]') as HTMLElement
       if (!contentEditable) return
 
@@ -661,6 +809,14 @@ export function EnhancedRichTextEditor({
       // Handle Enter key for new blocks (but not when command menu is open)
       if (e.key === 'Enter' && !e.shiftKey && !showCommandMenu) {
         e.preventDefault()
+
+        // For image blocks, create a new text block after them
+        if (block.type === 'image') {
+          const newBlockId = addBlock(blockId)
+          focusBlock(newBlockId, 'start')
+          return
+        }
+
         const newBlockId = addBlock(blockId)
 
         // Focus the new block and ensure it's ready for input
@@ -679,6 +835,27 @@ export function EnhancedRichTextEditor({
             selection?.addRange(range)
           }
         }, 10)
+        return
+      }
+
+      // Handle arrow key navigation for image blocks
+      if (block.type === 'image' && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        e.preventDefault()
+        const blockIndex = blocks.findIndex(b => b.id === blockId)
+
+        if (e.key === 'ArrowUp' && blockIndex > 0) {
+          // Move to previous block
+          const prevBlock = blocks[blockIndex - 1]
+          focusBlock(prevBlock.id, 'end')
+        } else if (e.key === 'ArrowDown' && blockIndex < blocks.length - 1) {
+          // Move to next block
+          const nextBlock = blocks[blockIndex + 1]
+          focusBlock(nextBlock.id, 'start')
+        } else if (e.key === 'ArrowDown' && blockIndex === blocks.length - 1) {
+          // At last block, create new block
+          const newBlockId = addBlock(blockId)
+          focusBlock(newBlockId, 'start')
+        }
         return
       }
 
@@ -802,6 +979,38 @@ export function EnhancedRichTextEditor({
     ]
   )
 
+  const handleImageUpload = useCallback(
+    (blockId: string): void => {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'image/*'
+      input.onchange = (e): void => {
+        const file = (e.target as HTMLInputElement).files?.[0]
+        if (file) {
+          // Validate file size (max 10MB)
+          if (file.size > 10 * 1024 * 1024) {
+            console.warn('File too large, max 10MB allowed')
+            return
+          }
+
+          const reader = new FileReader()
+          reader.onload = (e): void => {
+            const imageUrl = e.target?.result as string
+            updateBlock(blockId, {
+              type: 'image',
+              imageUrl,
+              imageAlt: file.name,
+              text: file.name,
+            })
+          }
+          reader.readAsDataURL(file)
+        }
+      }
+      input.click()
+    },
+    [updateBlock]
+  )
+
   const handleCommandSelect = useCallback(
     (command: CommandOption): void => {
       if (!activeBlockId) return
@@ -818,53 +1027,91 @@ export function EnhancedRichTextEditor({
         element.textContent = ''
       }
 
-      updateBlock(activeBlockId, {
-        type: command.type,
-        level: command.level as 1 | 2 | 3,
-        text: '',
-        richText: '',
-      })
+      // Handle image upload specially
+      if (command.type === 'image') {
+        updateBlock(activeBlockId, { text: '' })
+        handleImageUpload(activeBlockId)
+      } else {
+        updateBlock(activeBlockId, {
+          type: command.type,
+          level: command.level as 1 | 2 | 3,
+          text: '',
+          richText: '',
+        })
+      }
 
       setShowCommandMenu(false)
       setActiveBlockId(null)
 
-      // Focus the transformed block
-      setTimeout(() => {
-        const element = document.querySelector(
-          `[data-block-id="${blockIdToFocus}"] [contenteditable]`
-        ) as HTMLElement
-        if (element) {
-          element.focus()
-          // Place cursor at the beginning
-          const range = document.createRange()
-          const selection = window.getSelection()
-          if (element.firstChild) {
-            range.setStart(element.firstChild, 0)
-          } else {
-            range.setStart(element, 0)
+      // Focus the transformed block (skip for image as it doesn't need text focus)
+      if (command.type !== 'image') {
+        setTimeout(() => {
+          const element = document.querySelector(
+            `[data-block-id="${blockIdToFocus}"] [contenteditable]`
+          ) as HTMLElement
+          if (element) {
+            element.focus()
+            // Place cursor at the beginning
+            const range = document.createRange()
+            const selection = window.getSelection()
+            if (element.firstChild) {
+              range.setStart(element.firstChild, 0)
+            } else {
+              range.setStart(element, 0)
+            }
+            range.collapse(true)
+            selection?.removeAllRanges()
+            selection?.addRange(range)
           }
-          range.collapse(true)
-          selection?.removeAllRanges()
-          selection?.addRange(range)
-        }
-      }, 50) // Increased timeout to ensure DOM updates are complete
+        }, 50) // Increased timeout to ensure DOM updates are complete
+      }
     },
-    [activeBlockId, updateBlock]
+    [activeBlockId, updateBlock, handleImageUpload]
   )
 
   const renderBlock = (block: JournalBlock, index: number): JSX.Element => {
     const blockClassName = getBlockClassName(block, isEditing)
 
     // For image blocks, render differently
-    if (block.type === 'image' && block.imageUrl) {
+    if (block.type === 'image') {
       return (
-        <div key={block.id} data-block-id={block.id} className={blockClassName}>
-          <img
-            src={block.imageUrl}
-            alt={block.imageAlt || 'Uploaded image'}
-            className="max-w-full h-auto rounded-lg shadow-sm"
-            draggable={false}
-          />
+        <div
+          key={block.id}
+          data-block-id={block.id}
+          className={`${blockClassName} relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 rounded-lg`}
+          title="Click above image to add text before, click below to add text after"
+          tabIndex={0}
+          onKeyDown={(e) => handleBlockKeyDown(e.nativeEvent, block.id)}
+        >
+          {block.imageUrl ? (
+            <div className="relative">
+              <img
+                src={block.imageUrl}
+                alt={block.imageAlt || 'Uploaded image'}
+                className="max-w-full h-auto rounded-lg shadow-sm"
+                draggable={false}
+              />
+              {/* Visual indicators for click areas */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-0 left-0 right-0 h-1/2 group-hover:bg-blue-100 group-hover:bg-opacity-20 transition-colors rounded-t-lg" />
+                <div className="absolute bottom-0 left-0 right-0 h-1/2 group-hover:bg-green-100 group-hover:bg-opacity-20 transition-colors rounded-b-lg" />
+              </div>
+              {/* Hover hints */}
+              <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                Click here to add text before
+              </div>
+              <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                Click here to add text after
+              </div>
+            </div>
+          ) : (
+            <div
+              className="border-2 border-dashed border-stone-300 rounded-lg p-8 text-center cursor-pointer hover:border-stone-400 transition-colors"
+              onClick={() => handleImageUpload(block.id)}
+            >
+              <p className="text-stone-500">Click to upload an image</p>
+            </div>
+          )}
         </div>
       )
     }
@@ -915,7 +1162,7 @@ export function EnhancedRichTextEditor({
   }, [blocks])
 
   return (
-    <div className="relative">
+    <div className="relative bg-white h-full">
       <style>{`
         .font-conditional.editing-mode {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
@@ -942,14 +1189,31 @@ export function EnhancedRichTextEditor({
 
       <div
         ref={editorRef}
-        className="flex-1 p-6 bg-white focus:ring-0 outline-none overflow-y-auto transition-all duration-200"
+        className="flex-1 p-6 bg-white focus:ring-0 outline-none overflow-y-auto transition-all duration-200 min-h-full"
         style={{
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
           userSelect: 'text',
+          backgroundColor: '#ffffff',
+        }}
+        onClick={(e) => {
+          // Handle clicks on the editor container itself (empty areas)
+          if (e.target === e.currentTarget) {
+            handleEmptyAreaClick(e.nativeEvent)
+          }
         }}
       >
         {blocks.map((block, index) => renderBlock(block, index))}
+
+        {/* Add some padding at the bottom to make it easier to click after the last block */}
+        <div className="h-32 w-full" onClick={(e) => {
+          e.preventDefault()
+          if (blocks.length > 0) {
+            const lastBlock = blocks[blocks.length - 1]
+            const newBlockId = addBlock(lastBlock.id)
+            focusBlock(newBlockId, 'start')
+          }
+        }} />
       </div>
 
       {/* Command Menu */}
@@ -965,4 +1229,4 @@ export function EnhancedRichTextEditor({
       />
     </div>
   )
-}
+})

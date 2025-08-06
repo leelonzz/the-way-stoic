@@ -82,7 +82,7 @@ import { SubscriptionButton } from '@/components/subscription/SubscriptionButton
 import { DodoSubscriptionButton } from '@/components/DodoSubscriptionButton'
 
 <DodoSubscriptionButton
-  productId="pdt_1xvwazO5L41SzZeMegxyk"
+  productId="your_product_id_here"
   userId={user.id}
   customerData={{
     email: user.email,
@@ -99,74 +99,3 @@ import { DodoSubscriptionButton } from '@/components/DodoSubscriptionButton'
   onError={(error) => console.error('Error:', error)}
 />
 ```
-
-### Step 4: Test the Integration
-1. Start your development server
-2. Navigate to a page with the subscription button
-3. Click the button to test the flow
-4. Verify the checkout URL is generated correctly
-
-## 🧪 Testing with MCP Tools
-
-I've already tested the integration using the MCP tools and successfully created a test subscription:
-
-- **Subscription ID**: `sub_tiVTpL2Dp6h1F8PiCVjNS`
-- **Checkout URL**: `https://checkout.dodopayments.com/84nNiuoB`
-- **Customer ID**: `cus_zvGE6hm2kVyEjuAJp3Ree`
-
-## 🔗 Key Integration Points
-
-### Customer Data Structure
-```typescript
-interface CustomerData {
-  email: string
-  name: string
-  phone?: string
-  billingAddress: {
-    street: string
-    city: string
-    state: string
-    zipcode: string
-    country: string
-  }
-}
-```
-
-### Subscription Flow
-1. User clicks subscription button
-2. DodoProvider creates subscription via API
-3. User redirects to Dodo Payments checkout
-4. After payment, user returns to success page
-5. Webhook confirms subscription activation
-
-## 🎯 Benefits of Migration
-
-1. **Global Reach**: Accept payments from 100+ countries
-2. **Multi-Currency**: Automatic currency conversion
-3. **Tax Compliance**: Handles taxes and regulations automatically
-4. **Digital Products**: Built-in license key management
-5. **Analytics**: Comprehensive reporting and insights
-6. **Developer Experience**: Clean API and comprehensive documentation
-
-## 🚨 Important Notes
-
-1. **Test Environment**: Currently configured for test environment
-2. **Webhook Setup**: Configure webhook endpoints in Dodo dashboard
-3. **Database Updates**: May need to update subscription tables
-4. **Error Handling**: Comprehensive error handling is implemented
-
-## 📚 Resources
-
-- [Dodo Payments Documentation](https://docs.dodopayments.com)
-- [API Reference](https://docs.dodopayments.com/api-reference)
-- [Discord Community](https://discord.gg/bYqAp4ayYh)
-
-## 🔄 Rollback Plan
-
-If you need to rollback to PayPal:
-1. Revert environment variables
-2. Replace DodoProvider with PayPalProvider
-3. Replace DodoSubscriptionButton with SubscriptionButton
-4. Revert API route changes
-
-Your Dodo Payments integration is ready! 🚀

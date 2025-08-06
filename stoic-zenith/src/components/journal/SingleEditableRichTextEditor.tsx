@@ -463,21 +463,19 @@ export function SingleEditableRichTextEditor({
       // Clean the text by removing zero-width spaces and other invisible characters
       const cleanText = text.replace(/[\u200B-\u200D\uFEFF]/g, '')
 
-      // Performance optimization: Throttle input updates for large content
-      if (blocks.length > 50 || cleanText.length > 1000) {
-        // Clear existing throttle
-        if (inputThrottleRef.current) {
-          clearTimeout(inputThrottleRef.current)
-        }
+      // CRITICAL FIX: Always update immediately to prevent content loss
+      // Remove throttling that could cause truncation issues
+      console.log(`📝 Input detected: blockId=${blockId}, length=${cleanText.length}, total blocks=${blocks.length}`);
 
-        // Throttle updates for large content to improve performance
-        inputThrottleRef.current = setTimeout(() => {
-          updateBlock(blockId, { text: cleanText })
-        }, 100) // 100ms throttle for large content
-      } else {
-        // Update immediately for smaller content
-        updateBlock(blockId, { text: cleanText })
+      // Clear any existing throttle to prevent conflicts
+      if (inputThrottleRef.current) {
+        clearTimeout(inputThrottleRef.current)
+        inputThrottleRef.current = null
       }
+
+      // Always update immediately - no delays that could cause content loss
+      updateBlock(blockId, { text: cleanText })
+      console.log(`✅ Block updated immediately: ${blockId}, content length: ${cleanText.length}`);
 
       // Enhanced slash command and splash command debugging
       const isSlashCommand = cleanText.startsWith('/')
@@ -542,19 +540,29 @@ export function SingleEditableRichTextEditor({
           const reader = new FileReader()
           reader.onload = (e): void => {
             const imageUrl = e.target?.result as string
+
+            // Update the current block to be an image block
             updateBlock(blockId, {
               type: 'image',
               imageUrl,
               imageAlt: file.name,
               text: file.name,
             })
+
+            // Add a new paragraph block after the image for continued text editing
+            const newBlockId = addBlock(blockId)
+
+            // Focus the new paragraph block after a short delay to ensure DOM updates
+            setTimeout(() => {
+              focusBlock(newBlockId, 0)
+            }, 100) // Increased timeout to ensure DOM updates are complete
           }
           reader.readAsDataURL(file)
         }
       }
       input.click()
     },
-    [updateBlock]
+    [updateBlock, addBlock, focusBlock]
   )
 
   const handleCommandSelect = useCallback(

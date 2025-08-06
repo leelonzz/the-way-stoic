@@ -102,7 +102,6 @@ export function useQuotes(user: User | null): {
   reloadCount: number;
   maxReloads: number;
   canReload: boolean;
-  debugCacheStatus: () => void;
   isRefetching: boolean;
 } {
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -421,11 +420,6 @@ export function useQuotes(user: User | null): {
     return dailyQuote;
   };
 
-  // Debug function to check cache status
-  const debugCacheStatus = (): void => {
-    // Debug function removed - no longer needed
-  };
-
   const saveQuote = async (quoteId: string, notes?: string): Promise<boolean> => {
     if (!user) return false;
 
@@ -691,7 +685,6 @@ export function useQuotes(user: User | null): {
       }
     },
     refreshDailyQuote: refreshDailyQuote,
-    debugCacheStatus,
     reloadCount,
     maxReloads,
     canReload,

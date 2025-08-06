@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { Search, Plus } from 'lucide-react';
 import { EntryListItem } from './EntryListItem';
@@ -20,6 +20,7 @@ interface EntryListProps {
   entries?: JournalEntry[];
   onEntriesChange?: (entries: JournalEntry[]) => void;
   syncStatus?: 'synced' | 'pending' | 'error';
+  onRetrySync?: () => void;
 }
 
 interface EntryListItemData {
@@ -27,73 +28,106 @@ interface EntryListItemData {
   dateKey: string;
 }
 
-export const EntryList = React.memo(function EntryList({ 
-  selectedEntry, 
-  onSelectEntry, 
-  onCreateEntry, 
+export const EntryList = React.memo(function EntryList({
+  selectedEntry,
+  onSelectEntry,
+  onCreateEntry,
   onDeleteEntry,
-  className = '', 
-  isParentLoading: _isParentLoading = false, 
-  onLoadingStateChange, 
-  entries: _parentEntries, 
+  className = '',
+  isParentLoading: _isParentLoading = false,
+  onLoadingStateChange,
+  entries: parentEntries,
   onEntriesChange,
-  syncStatus = 'synced'
+  syncStatus = 'synced',
+  onRetrySync
 }: EntryListProps): JSX.Element {
-  const [entries, setEntries] = useState<EntryListItemData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredEntries, setFilteredEntries] = useState<EntryListItemData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Use centralized tab visibility management
   const tabVisibility = useTabVisibility({ refreshThreshold: 2000 });
 
+  // Convert parent entries to EntryListItemData format
+  const processEntries = useCallback((journalEntries: JournalEntry[]): EntryListItemData[] => {
+    // Filter out entries that appear to be test/debug entries with timestamp text
+    // But allow empty entries to be deletable
+    const filteredJournalEntries = journalEntries.filter(entry => {
+      const timestampPattern = /^Entry created at \d{1,2}:\d{2}:\d{2}$/;
+      const isTimestampEntry = entry.blocks.some(block =>
+        timestampPattern.test(block.text || '')
+      );
+
+      // Allow empty entries (they should be deletable)
+      // Only filter out timestamp-only entries
+      return !isTimestampEntry;
+    });
+
+    // Sort entries by creation timestamp in descending order (newest first)
+    const sortedEntries = filteredJournalEntries.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return sortedEntries.map(entry => {
+      // Generate preview from journal entry blocks
+      const contentParts = entry.blocks
+        .map(block => block.text)
+        .filter(Boolean);
+
+      const preview = contentParts.join(' ').slice(0, 80);
+
+      return {
+        entry: {
+          ...entry,
+          preview
+        },
+        dateKey: entry.date
+      };
+    });
+  }, []);
+
+  // Use parent entries if provided, otherwise load from manager
+  const entries = useMemo(() => {
+    if (parentEntries && parentEntries.length >= 0) {
+      return processEntries(parentEntries);
+    }
+    return [];
+  }, [parentEntries, processEntries]);
+
+  // Filter entries based on search query
+  const filteredEntries = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return entries;
+    }
+
+    return entries.filter(({ entry }) =>
+      entry.preview?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      entry.date.includes(searchQuery) ||
+      entry.blocks.some(block =>
+        block.text?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }, [entries, searchQuery]);
+
   const loadEntries = useCallback(async () => {
+    // Only load entries if parent doesn't provide them
+    if (parentEntries !== undefined) {
+      return;
+    }
+
     if (!onLoadingStateChange) {
       setIsLoading(true);
     } else {
       onLoadingStateChange(true);
     }
-    
+
     try {
       // Use the real-time manager to get entries
       const journalEntries = await journalManager.getAllEntries();
+      const _processedEntries = processEntries(journalEntries);
 
-      // Filter out entries that appear to be test/debug entries with timestamp text
-      // But allow empty entries to be deletable
-      const filteredJournalEntries = journalEntries.filter(entry => {
-        const timestampPattern = /^Entry created at \d{1,2}:\d{2}:\d{2}$/;
-        const isTimestampEntry = entry.blocks.some(block => 
-          timestampPattern.test(block.text || '')
-        );
-
-        // Allow empty entries (they should be deletable)
-        // Only filter out timestamp-only entries
-        return !isTimestampEntry;
-      });
-
-      const entryItems: EntryListItemData[] = filteredJournalEntries.map(entry => {
-        // Generate preview from journal entry blocks
-        const contentParts = entry.blocks
-          .map(block => block.text)
-          .filter(Boolean);
-
-        const preview = contentParts.join(' ').slice(0, 80);
-
-        return {
-          entry: {
-            ...entry,
-            preview
-          },
-          dateKey: entry.date
-        };
-      });
-      
-      setEntries(entryItems);
-      setFilteredEntries(entryItems);
-      
       // Update parent with entries
-      onEntriesChange?.(filteredJournalEntries);
-      
+      onEntriesChange?.(journalEntries);
+
     } catch (error) {
       console.error('Failed to load entries:', error);
       toast({
@@ -108,7 +142,7 @@ export const EntryList = React.memo(function EntryList({
         onLoadingStateChange(false);
       }
     }
-  }, [onLoadingStateChange, onEntriesChange]);
+  }, [onLoadingStateChange, onEntriesChange, parentEntries, processEntries]);
 
   // Load entries on mount and when tab becomes visible
   useEffect(() => {
@@ -119,18 +153,6 @@ export const EntryList = React.memo(function EntryList({
 
   const handleSearch = (query: string): void => {
     setSearchQuery(query);
-    if (!query.trim()) {
-      setFilteredEntries(entries);
-    } else {
-      const filtered = entries.filter(({ entry }) =>
-        entry.preview?.toLowerCase().includes(query.toLowerCase()) ||
-        entry.date.includes(query) ||
-        entry.blocks.some(block => 
-          block.text?.toLowerCase().includes(query.toLowerCase())
-        )
-      );
-      setFilteredEntries(filtered);
-    }
   };
 
   const formatEntryDate = (dateStr: string): string => {
@@ -152,9 +174,13 @@ export const EntryList = React.memo(function EntryList({
 
   const handleDeleteEntry = async (entryId: string): Promise<void> => {
     try {
-      await onDeleteEntry?.(entryId);
-      // Refresh entries after deletion
-      await loadEntries();
+      if (onDeleteEntry) {
+        await onDeleteEntry(entryId);
+      }
+      // Refresh entries after deletion only if we're managing our own entries
+      if (parentEntries === undefined) {
+        await loadEntries();
+      }
     } catch (error) {
       console.error('Failed to delete entry:', error);
     }
@@ -202,6 +228,14 @@ export const EntryList = React.memo(function EntryList({
              syncStatus === 'pending' ? 'Syncing...' :
              'Sync failed'}
           </span>
+          {syncStatus === 'error' && onRetrySync && (
+            <button
+              onClick={onRetrySync}
+              className="text-xs text-blue-600 hover:text-blue-800 underline ml-1"
+            >
+              Retry
+            </button>
+          )}
         </div>
       </div>
 
