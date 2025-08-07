@@ -6,9 +6,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
-import { useQuotes } from '@/hooks/useQuotes'
+import { useCachedQuotes } from '@/hooks/useCachedQuotes'
 import { useAuthContext } from '@/components/auth/AuthProvider'
-import type { Quote as QuoteType } from '@/hooks/useQuotes'
+import type { Quote as QuoteType } from '@/hooks/useCachedQuotes'
 import { MinimalLoadingScreen } from '@/components/ui/loading-spinner'
 
 interface DailyStoicQuoteCardProps {
@@ -358,7 +358,7 @@ export function DailyStoicWisdom(): JSX.Element {
     maxReloads,
     canReload,
     isRefetching
-  } = useQuotes(user)
+  } = useCachedQuotes(user)
 
   const dailyQuote = getDailyQuote()
   
@@ -383,14 +383,10 @@ export function DailyStoicWisdom(): JSX.Element {
     setCurrentDailyQuote(quote)
   }, [getDailyQuote])
 
-  // Show toast when refetching due to tab visibility
+  // Only show toast when manually refreshing, not on automatic refetch
   useEffect(() => {
-    if (isRefetching) {
-      toast({
-        title: "Refreshing quotes...",
-        description: "Loading latest quotes from the database",
-      })
-    }
+    // Remove automatic toast on refetch to reduce UI noise
+    // Users will only see toast when manually refreshing quotes
   }, [isRefetching, toast])
 
   const handleRefreshDailyQuote = async (): Promise<void> => {
@@ -494,8 +490,8 @@ export function DailyStoicWisdom(): JSX.Element {
     return refreshedQuotes.get(originalQuote.id) || originalQuote
   }
 
-  // Show loading screen for initial load or refetching
-  if (loading || isRefetching) {
+  // Show loading screen only for initial load or when no quotes exist
+  if (loading || (isRefetching && quotes.length === 0)) {
     return <MinimalLoadingScreen />
   }
 

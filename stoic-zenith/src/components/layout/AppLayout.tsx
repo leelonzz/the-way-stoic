@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { AppSidebar } from './AppSidebar';
+import { useNavigationMonitor } from '@/hooks/useNavigationMonitor';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -8,6 +9,9 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children, fullWidth = false }: AppLayoutProps) {
+  // Initialize navigation monitoring
+  useNavigationMonitor()
+
   return (
     <div className="flex min-h-screen bg-hero">
       <AppSidebar />

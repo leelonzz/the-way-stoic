@@ -35,18 +35,9 @@ export default function AuthCallback() {
           return;
         }
 
-        console.log('📋 Session data:', {
-          hasSession: !!data.session,
-          hasUser: !!data.session?.user,
-          email: data.session?.user?.email,
-          expires: data.session?.expires_in
-        });
-
         if (data.session) {
-          console.log('✅ Auth callback successful:', data.session.user.email);
           router.push('/');
         } else {
-          console.log('⚠️ No session found, redirecting to login');
           router.push('/');
         }
       } catch (error) {

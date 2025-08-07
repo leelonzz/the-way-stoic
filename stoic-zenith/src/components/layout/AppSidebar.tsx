@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ProfileModal } from '@/components/profile/ProfileModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { handleNavigationPrefetch } from '@/lib/prefetch';
+import { useNavigationState } from '@/hooks/useNavigationState';
 
 const navigationItems = [
   {
@@ -51,9 +52,14 @@ export function AppSidebar(): JSX.Element {
   const { isAuthenticated, user, profile } = useAuthContext();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { isPathLikelyCached, prefetchPage } = useNavigationState();
 
   const handleMouseEnter = (href: string): void => {
-    handleNavigationPrefetch(href, queryClient, user?.id);
+    // Only prefetch if not already cached
+    if (!isPathLikelyCached(href)) {
+      handleNavigationPrefetch(href, queryClient, user?.id);
+      prefetchPage(href);
+    }
   };
   
   return (
@@ -95,11 +101,12 @@ export function AppSidebar(): JSX.Element {
             <Link
               key={item.name}
               href={item.href}
+              prefetch={true} // Enable Next.js prefetch
               onMouseEnter={() => handleMouseEnter(item.href)}
               className={`
                 flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200
-                ${isActive 
-                  ? 'bg-primary text-white shadow-lg' 
+                ${isActive
+                  ? 'bg-primary text-white shadow-lg'
                   : 'text-sage hover:bg-parchment/50 hover:text-stone'
                 }
               `}

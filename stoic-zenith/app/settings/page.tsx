@@ -1,11 +1,9 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { NavigationOptimizedCachedPage } from "@/components/layout/NavigationOptimizedCachedPage";
 import { SettingsSidebar } from "@/components/settings/SettingsSidebar";
 import { AccountSettings } from "@/components/settings/AccountSettings";
 import { PreferencesSettings } from "@/components/settings/PreferencesSettings";
@@ -13,8 +11,6 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { User } from 'lucide-react';
-
-const queryClient = new QueryClient();
 
 type SettingsSection = 'account' | 'preferences' | 'appearance' | 'notifications';
 
@@ -121,16 +117,51 @@ function SettingsContent() {
   );
 }
 
+function SettingsSkeleton() {
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="mb-10">
+        <div className="h-8 bg-stone/10 rounded w-48 mb-3"></div>
+        <div className="h-5 bg-stone/10 rounded w-64"></div>
+      </div>
+      <div className="flex gap-10 min-h-[600px]">
+        <div className="w-72 flex-shrink-0">
+          <div className="space-y-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-12 bg-stone/10 rounded"></div>
+            ))}
+          </div>
+        </div>
+        <div className="flex-1 bg-white/30 rounded-xl border border-stone/5">
+          <div className="p-6 space-y-4">
+            <div className="h-6 bg-stone/10 rounded w-32"></div>
+            <div className="h-4 bg-stone/10 rounded w-48"></div>
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-10 bg-stone/10 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AppLayout>
+    <ProtectedRoute>
+      <AppLayout>
+        <NavigationOptimizedCachedPage
+          pageKey="settings"
+          fallback={<SettingsSkeleton />}
+          preserveOnNavigation={true}
+          refreshOnlyWhenStale={false} // Settings rarely change
+          maxAge={60 * 60 * 1000} // 1 hour - settings don't change frequently
+        >
           <SettingsContent />
-        </AppLayout>
-      </TooltipProvider>
-    </QueryClientProvider>
+        </NavigationOptimizedCachedPage>
+      </AppLayout>
+    </ProtectedRoute>
   );
 }

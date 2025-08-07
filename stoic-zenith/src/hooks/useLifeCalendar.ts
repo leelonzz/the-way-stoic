@@ -175,7 +175,7 @@ export function useLifeCalendar(user: User | null) {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.all(user?.id || '') });
       
       setError(null);
-      console.log('✅ Preferences updated and cache refreshed');
+      // Preferences updated and cache refreshed
     },
     onError: (err) => {
       console.error('❌ Update mutation error:', err);

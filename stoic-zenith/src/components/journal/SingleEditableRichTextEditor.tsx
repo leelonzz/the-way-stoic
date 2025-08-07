@@ -465,7 +465,7 @@ export function SingleEditableRichTextEditor({
 
       // CRITICAL FIX: Always update immediately to prevent content loss
       // Remove throttling that could cause truncation issues
-      console.log(`📝 Input detected: blockId=${blockId}, length=${cleanText.length}, total blocks=${blocks.length}`);
+
 
       // Clear any existing throttle to prevent conflicts
       if (inputThrottleRef.current) {
@@ -475,7 +475,6 @@ export function SingleEditableRichTextEditor({
 
       // Always update immediately - no delays that could cause content loss
       updateBlock(blockId, { text: cleanText })
-      console.log(`✅ Block updated immediately: ${blockId}, content length: ${cleanText.length}`);
 
       // Enhanced slash command and splash command debugging
       const isSlashCommand = cleanText.startsWith('/')

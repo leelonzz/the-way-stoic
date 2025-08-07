@@ -23,7 +23,7 @@ const WeekSquare = memo(({
   weekData: ReturnType<LifeCalendarGridProps['getWeekData']>; 
   weekNumber: number; 
 }) => (
-  <TooltipProvider>
+  <TooltipProvider delayDuration={200}>
     <Tooltip>
       <TooltipTrigger asChild>
         <div

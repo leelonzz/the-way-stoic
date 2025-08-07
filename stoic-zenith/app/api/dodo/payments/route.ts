@@ -1,24 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import DodoPayments from 'dodopayments'
+import { withCSRF } from '@/lib/csrf'
+import { paymentRateLimit } from '@/lib/rateLimiting'
+import { z } from 'zod'
 
-interface CreatePaymentRequest {
-  productId: string
-  userId: string
-  customerData: {
-    email: string
-    name: string
-    phone?: string
-    billingAddress: {
-      street: string
-      city: string
-      state: string
-      zipcode: string
-      country: string
-    }
-  }
-  returnUrl?: string
-  cancelUrl?: string
-}
+const CreatePaymentSchema = z.object({
+  productId: z.string().min(1, 'Product ID is required').max(100),
+  userId: z.string().min(1, 'User ID is required').max(100),
+  customerData: z.object({
+    email: z.string().email('Invalid email format').max(255),
+    name: z.string().min(1, 'Name is required').max(255),
+    phone: z.string().max(20).optional(),
+    billingAddress: z.object({
+      street: z.string().min(1, 'Street is required').max(255),
+      city: z.string().min(1, 'City is required').max(100),
+      state: z.string().min(1, 'State is required').max(100),
+      zipcode: z.string().min(1, 'Zipcode is required').max(20),
+      country: z.string().min(2, 'Country is required').max(2)
+    })
+  }),
+  returnUrl: z.string().url('Invalid return URL').optional(),
+  cancelUrl: z.string().url('Invalid cancel URL').optional()
+})
+
+type CreatePaymentRequest = z.infer<typeof CreatePaymentSchema>
 
 // Initialize Dodo client with correct configuration
 const environment = process.env.NEXT_PUBLIC_DODO_ENVIRONMENT || 'test'
@@ -29,17 +34,26 @@ const dodoClient = new DodoPayments({
   // The environment is determined by the API key used
 })
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export const POST = paymentRateLimit(withCSRF(async (request: NextRequest): Promise<NextResponse> => {
   try {
-    const body: CreatePaymentRequest = await request.json()
-    const { productId, userId, customerData, returnUrl } = body
-
-    if (!productId || !userId || !customerData) {
+    const rawBody = await request.json()
+    
+    // Validate input with zod
+    const parseResult = CreatePaymentSchema.safeParse(rawBody)
+    if (!parseResult.success) {
       return NextResponse.json(
-        { error: 'productId, userId, and customerData are required' },
+        { 
+          error: 'Invalid input data', 
+          details: parseResult.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        },
         { status: 400 }
       )
     }
+
+    const { productId, userId, customerData, returnUrl } = parseResult.data
 
     if (!process.env.NEXT_PUBLIC_DODO_API_KEY) {
       console.error('NEXT_PUBLIC_DODO_API_KEY is not configured')
@@ -109,7 +123,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       { status: 500 }
     )
   }
-}
+}))
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {

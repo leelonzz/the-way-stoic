@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import {
   Hash,
   Type,
@@ -122,6 +122,59 @@ const getIcon = (iconType: string): JSX.Element => {
   }
 }
 
+// Function to score how well a command matches the search query
+const getMatchScore = (command: CommandOption, query: string): number => {
+  const lowerQuery = query.toLowerCase()
+  const lowerLabel = command.label.toLowerCase()
+  const lowerShortcut = command.shortcut.toLowerCase()
+  const lowerDescription = command.description.toLowerCase()
+
+  // Exact matches get highest score
+  if (lowerLabel === lowerQuery || lowerShortcut === lowerQuery) {
+    return 1000
+  }
+
+  // Label starts with query gets high score
+  if (lowerLabel.startsWith(lowerQuery)) {
+    return 900
+  }
+
+  // Shortcut starts with query gets high score
+  if (lowerShortcut.startsWith(lowerQuery)) {
+    return 850
+  }
+
+  // Special handling for common abbreviations
+  if (lowerQuery === 'h1' && command.id === 'h1') return 950
+  if (lowerQuery === 'h2' && command.id === 'h2') return 950
+  if (lowerQuery === 'h3' && command.id === 'h3') return 950
+  if (lowerQuery === 'bullet' && command.id === 'bullet') return 950
+  if (lowerQuery === 'numbered' && command.id === 'numbered') return 950
+  if (lowerQuery === 'head 1' && command.id === 'h1') return 940
+  if (lowerQuery === 'head 2' && command.id === 'h2') return 940
+  if (lowerQuery === 'head 3' && command.id === 'h3') return 940
+  if (lowerQuery === 'heading 1' && command.id === 'h1') return 940
+  if (lowerQuery === 'heading 2' && command.id === 'h2') return 940
+  if (lowerQuery === 'heading 3' && command.id === 'h3') return 940
+
+  // Label contains query gets medium score
+  if (lowerLabel.includes(lowerQuery)) {
+    return 500
+  }
+
+  // Shortcut contains query gets medium score
+  if (lowerShortcut.includes(lowerQuery)) {
+    return 450
+  }
+
+  // Description contains query gets lower score
+  if (lowerDescription.includes(lowerQuery)) {
+    return 200
+  }
+
+  return 0
+}
+
 export function CommandMenu({
   isOpen,
   position,
@@ -130,19 +183,37 @@ export function CommandMenu({
   onClose,
 }: CommandMenuProps): JSX.Element | null {
   const [selectedIndex, setSelectedIndex] = useState(0)
-  
 
+  // Memoize filtered and sorted commands
+  const filteredCommands = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return COMMANDS
+    }
 
-  const filteredCommands = COMMANDS.filter(
-    command =>
-      command.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      command.shortcut.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+    const filtered = COMMANDS.filter(
+      command =>
+        command.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        command.shortcut.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        command.description.toLowerCase().includes(searchQuery.toLowerCase())
+    )
 
-  // Reset selection when commands change
-  useEffect(() => {
-    setSelectedIndex(0)
+    const sorted = filtered.sort((a, b) => {
+      // Sort by match score (highest first)
+      const scoreA = getMatchScore(a, searchQuery)
+      const scoreB = getMatchScore(b, searchQuery)
+      return scoreB - scoreA
+    })
+
+    return sorted
   }, [searchQuery])
+
+  // Update selection to best match when filtered commands change
+  useEffect(() => {
+    if (filteredCommands.length > 0) {
+      // Always select the first (best matching) command
+      setSelectedIndex(0)
+    }
+  }, [filteredCommands])
 
   // Handle keyboard navigation
   useEffect((): (() => void) | undefined => {

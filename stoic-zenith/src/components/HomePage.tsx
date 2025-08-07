@@ -1,13 +1,17 @@
 import React, { useEffect } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { useQuotes } from '@/hooks/useQuotes'
+import { useCachedQuotes } from '@/hooks/useCachedQuotes'
 import { useAuthContext } from '@/components/auth/AuthProvider'
+import { useCachedJournalStats } from '@/hooks/useCachedJournalStats'
 
 function HomePage(): JSX.Element {
+  const router = useRouter()
   const { user } = useAuthContext()
-  const { getDailyQuote, loading, error, forceRefresh } = useQuotes(user)
+  const { getDailyQuote, loading, error, forceRefresh, quotes, isCached } = useCachedQuotes(user)
+  const { stats: journalStats, loading: journalLoading, isCached: journalCached } = useCachedJournalStats()
   
   const currentHour = new Date().getHours()
   const greeting =
@@ -25,9 +29,11 @@ function HomePage(): JSX.Element {
       hasQuote: !!dailyQuote,
       quoteId: dailyQuote?.id,
       loading,
-      error
+      error,
+      quotesCount: quotes.length,
+      shouldShowLoading: loading && quotes.length === 0
     });
-  }, [dailyQuote, loading, error]);
+  }, [dailyQuote, loading, error, quotes.length]);
 
   // Handle error state with retry button
   if (error) {
@@ -70,7 +76,7 @@ function HomePage(): JSX.Element {
           }}
         >
           <CardContent className="py-8 px-12 text-center">
-            {loading ? (
+            {loading && quotes.length === 0 ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone"></div>
               </div>
@@ -102,28 +108,50 @@ function HomePage(): JSX.Element {
           <Card
             className="rounded-[27px] shadow-lg cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105"
             style={{
-              backgroundColor: '#8FB069',
+              backgroundColor: '#f4eee6',
             }}
             onClick={() => (window.location.href = '/journal')}
           >
-            <CardContent className="p-8 h-full flex flex-col justify-center items-center text-center">
-              <div
-                className="text-8xl font-inknut font-normal mb-2"
-                style={{ color: '#100804' }}
-              >
-                7
+            <CardContent className="p-6 h-full flex flex-col">
+              {/* Top section with icon */}
+              <div className="flex justify-start items-start mb-6">
+                <Image
+                  src="/images/book-icon.svg"
+                  alt="Book icon"
+                  width={40}
+                  height={40}
+                />
               </div>
-              <div
-                className="text-3xl font-inknut font-normal"
-                style={{ color: '#100804' }}
-              >
-                Journal
-              </div>
-              <div
-                className="text-lg font-sans font-normal"
-                style={{ color: '#000000' }}
-              >
-                daily
+
+              {/* Streak display */}
+              <div className="flex-1 flex flex-col justify-center items-center">
+                <div className="text-5xl font-bold text-gray-900 mb-2">
+                  {journalLoading ? (
+                    <div className="animate-pulse">...</div>
+                  ) : (
+                    journalStats.currentStreak
+                  )}
+                </div>
+                <div className="text-gray-500 text-lg mb-6">day streak</div>
+
+                {/* Weekly progress */}
+                <div className="flex gap-3">
+                  {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
+                    <div key={index} className="flex flex-col items-center gap-2">
+                      <div className="w-8 h-8 flex items-center justify-center">
+                        {journalStats.weeklyProgress[index] ? (
+                          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                            <circle cx="16" cy="16" r="14" fill="#4CAF50"/>
+                            <path d="M10 16L14 20L22 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gray-200"></div>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-500">{day}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -203,7 +231,8 @@ function HomePage(): JSX.Element {
                   }}
                   onClick={e => {
                     e.stopPropagation()
-                    window.location.href = '/journal'
+                    // Use Next.js router for client-side navigation
+                    router.push('/journal')
                   }}
                 >
                   Start your day

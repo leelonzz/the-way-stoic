@@ -1,6 +1,5 @@
 import React, { memo } from 'react';
-import { format } from 'date-fns';
-import { Calendar } from 'lucide-react';
+import { Calendar, Trash2 } from 'lucide-react';
 import { JournalEntry } from './types';
 
 interface EntryListItemProps {
@@ -11,11 +10,11 @@ interface EntryListItemProps {
   dateLabel: string;
 }
 
-export const EntryListItem = memo(({ 
-  entry, 
-  isSelected, 
+export const EntryListItem = memo(({
+  entry,
+  isSelected,
   onSelect,
-  onDelete: _onDelete,
+  onDelete,
   dateLabel
 }: EntryListItemProps) => {
   const handleClick = (): void => {
@@ -23,11 +22,19 @@ export const EntryListItem = memo(({
     onSelect();
   };
 
+  const handleDelete = (e: React.MouseEvent): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(entry.id);
+    }
+  };
+
   return (
     <button
       onClick={handleClick}
       className={`
-        w-full p-3 mb-2 text-left rounded-lg transition-all duration-200
+        group w-full p-3 mb-2 text-left rounded-lg transition-all duration-200
         hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-orange-400
         ${isSelected ? 'bg-orange-50 border border-orange-200' : 'border border-transparent'}
       `}
@@ -46,13 +53,17 @@ export const EntryListItem = memo(({
             <span className="text-sm font-inknut font-medium text-stone-800">
               {dateLabel}
             </span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-inknut text-stone-500">
-                {entry.createdAt ? format(entry.createdAt, 'h:mm a') : ''}
-              </span>
-            </div>
+            {onDelete && (
+              <button
+                onClick={handleDelete}
+                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-red-50 rounded text-red-500 hover:text-red-700"
+                title="Delete entry"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            )}
           </div>
-          
+
           {entry.preview && (
             <p className="text-sm font-inknut text-stone-600 line-clamp-2 leading-relaxed">
               {entry.preview}

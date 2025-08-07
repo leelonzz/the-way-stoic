@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react'
 import { JournalBlock } from './types'
 import { Bold, Italic, Underline, Strikethrough, Link as LinkIcon } from 'lucide-react'
+import { sanitizeHtml } from './richTextUtils'
 
 interface SimplifiedRichTextEditorProps {
   block: JournalBlock
@@ -8,6 +9,7 @@ interface SimplifiedRichTextEditorProps {
   onKeyDown?: (e: KeyboardEvent, blockId: string) => void
   className?: string
   placeholder?: string
+  showPlaceholder?: boolean // NEW PROP
 }
 
 // Utility functions for cursor management
@@ -76,7 +78,8 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
   onChange,
   onKeyDown,
   className = '',
-  placeholder = 'Type something...'
+  placeholder = 'Type something...',
+  showPlaceholder = true, // default true for backward compatibility
 }: SimplifiedRichTextEditorProps): JSX.Element {
   const editorRef = useRef<HTMLDivElement>(null)
   const [isUpdating, setIsUpdating] = useState(false)
@@ -120,7 +123,7 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
       const currentHtml = editorRef.current.innerHTML || ''
       
       if (block.richText && currentHtml !== block.richText) {
-        editorRef.current.innerHTML = block.richText
+        editorRef.current.innerHTML = sanitizeHtml(block.richText)
       } else if (!block.richText && currentText !== (block.text || '')) {
         editorRef.current.textContent = block.text || ''
       }
@@ -247,7 +250,7 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
       // Only update if content actually changed and we're not currently editing
       if (currentContent !== content && !isFocused) {
         setIsUpdating(true)
-        editorRef.current.innerHTML = content
+        editorRef.current.innerHTML = sanitizeHtml(content)
 
         // Restore cursor position if we have one saved
         if (cursorPositionRef.current) {
@@ -272,21 +275,21 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
       const hasNoContent = !editorRef.current.textContent || editorRef.current.textContent.trim() === ''
       const isFocused = editorRef.current.contains(document.activeElement)
 
-      // Only show placeholder if block is empty AND not currently focused
-      if (isEmpty && hasNoContent && !isFocused) {
+      // Only show placeholder if showPlaceholder is true, block is empty, and not focused
+      if (showPlaceholder && isEmpty && hasNoContent && !isFocused) {
         editorRef.current.setAttribute('data-placeholder', placeholder)
       } else {
         editorRef.current.removeAttribute('data-placeholder')
       }
     }
-  }, [block.text, placeholder, isUpdating])
+  }, [block.text, placeholder, isUpdating, showPlaceholder])
 
   // Initialize content on mount
   useEffect(() => {
     if (editorRef.current && !editorRef.current.innerHTML) {
       const content = block.richText || block.text || ''
       if (content) {
-        editorRef.current.innerHTML = content
+        editorRef.current.innerHTML = sanitizeHtml(content)
       }
     }
   }, []) // Only run on mount

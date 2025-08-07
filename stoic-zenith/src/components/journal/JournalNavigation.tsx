@@ -51,6 +51,9 @@ export const JournalNavigation = React.memo(function JournalNavigation({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const debouncedSaveRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingBlocksRef = useRef<JournalBlock[] | null>(null);
+  const isSavingRef = useRef<boolean>(false);
 
   // Use ref to store the latest entry state to prevent stale closures
   const currentEntryRef = useRef<JournalEntry>(entry);
@@ -62,19 +65,38 @@ export const JournalNavigation = React.memo(function JournalNavigation({
 
   const selectedDate = new Date(currentEntry.date);
 
+  // Debounced save function to prevent duplicate saves
+  const debouncedSave = useCallback(async (entryId: string, blocks: JournalBlock[]) => {
+    // Prevent concurrent saves
+    if (isSavingRef.current) {
+      // Queue the blocks for next save
+      pendingBlocksRef.current = blocks;
+      return;
+    }
+
+    isSavingRef.current = true;
+    try {
+      await journalManager.updateEntryImmediately(entryId, blocks);
+      
+      // Check if there are pending blocks to save
+      if (pendingBlocksRef.current) {
+        const nextBlocks = pendingBlocksRef.current;
+        pendingBlocksRef.current = null;
+        // Recursively save pending blocks
+        await debouncedSave(entryId, nextBlocks);
+      }
+    } finally {
+      isSavingRef.current = false;
+    }
+  }, [journalManager]);
+
   // REAL-TIME AUTO-SAVE (as users type) with debounced parent updates
   const handleBlocksChange = useCallback(async (blocks: JournalBlock[]): Promise<void> => {
     try {
       const totalChars = blocks.reduce((sum, b) => sum + (b.text?.length || 0), 0);
-      console.log(`📝 Content change detected: ${blocks.length} blocks, total chars: ${totalChars}`);
 
       // CRITICAL: Always use the latest entry state from ref to prevent stale closures
       const latestEntry = currentEntryRef.current;
-
-      // DEBUG: Log entry information to help debug the issue
-      console.log(`🔍 DEBUG: Entry ID being used: ${latestEntry.id}`);
-      console.log(`🔍 DEBUG: Entry prop ID: ${entry.id}`);
-      console.log(`🔍 DEBUG: Current entry state ID: ${currentEntry.id}`);
 
       // SAFETY CHECK: Ensure we have a valid entry with an ID
       if (!latestEntry || !latestEntry.id) {
@@ -104,20 +126,25 @@ export const JournalNavigation = React.memo(function JournalNavigation({
       // Update local UI immediately (this won't cause re-render of editor)
       setCurrentEntry(updatedEntry);
 
-      // Save using real-time manager (background operation) - CRITICAL: This must complete
-      console.log(`💾 About to save entry with ID: ${updatedEntry.id}`);
-      await journalManager.updateEntryImmediately(updatedEntry.id, blocks);
-      console.log(`💾 Content saved to localStorage: ${updatedEntry.id}`);
-
-      // Verify save integrity
-      const savedEntry = journalManager.getFromLocalStorage(updatedEntry.id);
-      if (savedEntry) {
-        const savedTotalChars = savedEntry.blocks.reduce((sum, b) => sum + (b.text?.length || 0), 0);
-        if (savedTotalChars !== totalChars) {
-          console.error(`🚨 SAVE INTEGRITY ERROR: Content mismatch after save!`);
-          console.error(`Expected: ${totalChars} chars, Saved: ${savedTotalChars} chars`);
-        }
+      // Cancel any pending debounced save
+      if (debouncedSaveRef.current) {
+        clearTimeout(debouncedSaveRef.current);
       }
+
+      // Debounce the actual save operation (200ms delay)
+      debouncedSaveRef.current = setTimeout(async () => {
+        await debouncedSave(updatedEntry.id, blocks);
+        
+        // Verify save integrity AFTER the save completes
+        const savedEntry = journalManager.getFromLocalStorage(updatedEntry.id);
+        if (savedEntry) {
+          const savedTotalChars = savedEntry.blocks.reduce((sum, b) => sum + (b.text?.length || 0), 0);
+          if (savedTotalChars !== totalChars) {
+            console.error(`🚨 SAVE INTEGRITY ERROR: Content mismatch after save!`);
+            console.error(`Expected: ${totalChars} chars, Saved: ${savedTotalChars} chars`);
+          }
+        }
+      }, 200);
 
       // Update save time
       setLastSaveTime(new Date());
@@ -134,7 +161,6 @@ export const JournalNavigation = React.memo(function JournalNavigation({
           blocks,
           updatedAt: new Date()
         };
-        console.log(`📤 Sending debounced update to parent: ${finalEntry.id}`);
         onEntryUpdate(finalEntry);
       }, 300); // 300ms debounce for parent updates
 
@@ -146,29 +172,21 @@ export const JournalNavigation = React.memo(function JournalNavigation({
         variant: "default",
       });
     }
-  }, [onEntryUpdate]); // Remove currentEntry from dependencies since we use ref
+  }, [onEntryUpdate, journalManager, debouncedSave]); // Added debouncedSave to dependencies
 
   // INSTANT ENTRY DELETION (immediate UI feedback)
   const handleDeleteEntry = useCallback(async (): Promise<void> => {
     const entryId = currentEntry.id;
     const isTemporary = entryId.startsWith('temp-');
 
-    console.log(`🗑️ Deleting entry from JournalNavigation: ${entryId} (temporary: ${isTemporary})`);
+
 
     try {
       // Close dialog first
       setShowDeleteDialog(false);
 
-      // Check if entry exists before deletion
-      const existsBefore = journalManager.entryExists(entryId);
-      console.log(`📋 Entry exists before deletion: ${existsBefore}`);
-
       // Delete using real-time manager
       await journalManager.deleteEntryImmediately(entryId);
-
-      // Verify deletion
-      const existsAfter = journalManager.entryExists(entryId);
-      console.log(`📋 Entry exists after deletion: ${existsAfter}`);
 
       // Call parent delete handler immediately
       onDeleteEntry?.(entryId);
@@ -195,12 +213,8 @@ export const JournalNavigation = React.memo(function JournalNavigation({
 
     // Case 1: Different entry ID - always update (switching entries)
     if (entry.id !== currentEntryFromRef.id) {
-      console.log(`📝 Switching to different entry: ${currentEntryFromRef.id} -> ${entry.id}`);
-      console.log(`🔍 DEBUG: New entry details:`, { id: entry.id, date: entry.date, blocksCount: entry.blocks.length });
-
       // CRITICAL: Cancel any pending debounced updates from the previous entry
       if (saveTimeoutRef.current) {
-        console.log(`🚫 Cancelling pending update for previous entry: ${currentEntryFromRef.id}`);
         clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
       }
@@ -220,11 +234,10 @@ export const JournalNavigation = React.memo(function JournalNavigation({
     const hasContentDifference = JSON.stringify(entry.blocks) !== JSON.stringify(currentEntryFromRef.blocks);
 
     if (parentUpdatedAt > currentUpdatedAt + 1000 && !saveTimeoutRef.current && hasContentDifference) {
-      console.log(`📝 Updating entry from parent (parent newer): ${entry.id}`);
-      console.log(`📊 Parent blocks: ${entry.blocks.length}, Current blocks: ${currentEntryFromRef.blocks.length}`);
+
       setCurrentEntry(entry);
     } else if (hasContentDifference) {
-      console.log(`📝 Ignoring parent update - local changes take precedence: ${entry.id}`);
+
     }
   }, [entry]);
 
@@ -236,7 +249,7 @@ export const JournalNavigation = React.memo(function JournalNavigation({
         clearTimeout(saveTimeoutRef.current);
         // Execute the pending update immediately to prevent content loss
         const latestEntry = currentEntryRef.current;
-        console.log(`🚨 Component unmounting, executing pending update for: ${latestEntry.id}`);
+
         onEntryUpdate(latestEntry);
       }
     };
@@ -249,7 +262,7 @@ export const JournalNavigation = React.memo(function JournalNavigation({
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
         const latestEntry = currentEntryRef.current;
-        console.log(`🔄 Entry changing, executing pending update for: ${latestEntry.id}`);
+
         onEntryUpdate(latestEntry);
       }
     };
@@ -270,7 +283,7 @@ export const JournalNavigation = React.memo(function JournalNavigation({
           </div>
 
           {/* Sync Status */}
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${
               syncStatus === 'synced' ? 'bg-green-500' :
               syncStatus === 'pending' ? 'bg-yellow-500' :
@@ -281,16 +294,16 @@ export const JournalNavigation = React.memo(function JournalNavigation({
                syncStatus === 'pending' ? 'Syncing...' :
                'Sync failed'}
             </span>
-          </div>
+          </div> */}
         </div>
 
         <div className="flex items-center gap-2">
           {/* Save Status */}
-          {lastSaveTime && (
+          {/* {lastSaveTime && (
             <span className="text-xs text-stone-500">
               Last saved: {format(lastSaveTime, 'h:mm a')}
             </span>
-          )}
+          )} */}
 
           {/* Actions */}
           <DropdownMenu>
@@ -305,7 +318,7 @@ export const JournalNavigation = React.memo(function JournalNavigation({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('🔄 Dropdown New Entry clicked');
+
                     onCreateEntry();
                   }}
                 >

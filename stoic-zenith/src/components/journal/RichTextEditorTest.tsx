@@ -51,7 +51,7 @@ export function RichTextEditorTest(): JSX.Element {
 
   const handleBlocksChange = (newBlocks: JournalBlock[]) => {
     setBlocks(newBlocks)
-    console.log('Blocks updated:', newBlocks)
+
   }
 
   return (

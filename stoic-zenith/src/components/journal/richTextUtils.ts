@@ -1,27 +1,20 @@
 import { RichTextContent, RichTextMark } from './types'
+import DOMPurify from 'dompurify'
 
-// HTML sanitization for rich text content
+// Secure HTML sanitization using DOMPurify
 export function sanitizeHtml(html: string): string {
-  // Create a temporary div to parse HTML
-  const temp = document.createElement('div')
-  temp.innerHTML = html
-
-  // Remove script tags and other dangerous elements
-  const dangerousElements = temp.querySelectorAll('script, iframe, object, embed, form, input, button')
-  dangerousElements.forEach(el => el.remove())
-
-  // Remove dangerous attributes
-  const allElements = temp.querySelectorAll('*')
-  allElements.forEach(el => {
-    const attributes = Array.from(el.attributes)
-    attributes.forEach(attr => {
-      if (attr.name.startsWith('on') || attr.name === 'style') {
-        el.removeAttribute(attr.name)
-      }
-    })
+  // Configure DOMPurify with allowed tags and attributes for rich text
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'code', 
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'ul', 'ol', 'li', 'blockquote', 'a'
+    ],
+    ALLOWED_ATTR: ['href', 'target', 'rel'],
+    ALLOW_DATA_ATTR: false,
+    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
+    FORBID_ATTR: ['onclick', 'onload', 'onerror', 'style', 'javascript:']
   })
-
-  return temp.innerHTML
 }
 
 // Convert plain text to rich text with formatting
@@ -97,7 +90,8 @@ export function toggleInlineFormatting(
 ): string {
   // Convert HTML to plain text for offset calculation
   const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = html
+  const sanitizedHtml = sanitizeHtml(html)
+  tempDiv.innerHTML = sanitizedHtml
   const plainText = tempDiv.textContent || ''
 
   if (hasFormatting(html, format)) {
@@ -126,7 +120,8 @@ export function createLink(text: string, url: string, title?: string): string {
 // Extract links from HTML
 export function extractLinks(html: string): Array<{ text: string; url: string; title?: string }> {
   const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = html
+  const sanitizedHtml = sanitizeHtml(html)
+  tempDiv.innerHTML = sanitizedHtml
   const links = tempDiv.querySelectorAll('a')
   
   return Array.from(links).map(link => ({
@@ -154,7 +149,8 @@ export function richTextToHtml(content: RichTextContent[]): string {
 // Convert HTML to rich text content structure
 export function htmlToRichText(html: string): RichTextContent[] {
   const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = sanitizeHtml(html)
+  const sanitizedHtml = sanitizeHtml(html)
+  tempDiv.innerHTML = sanitizedHtml
   
   return parseNodeToRichText(tempDiv)
 }
@@ -248,7 +244,8 @@ export function richTextToPlainText(content: RichTextContent[]): string {
 // Preserve typography by filtering font-related styles
 export function preserveTypography(html: string): string {
   const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = html
+  const sanitizedHtml = sanitizeHtml(html)
+  tempDiv.innerHTML = sanitizedHtml
 
   // Remove font-family, font-size, and color styles to preserve design consistency
   const allElements = tempDiv.querySelectorAll('*')

@@ -27,7 +27,6 @@ export default function TestDodoPage() {
   const handleSubscriptionSuccess = (data: { subscriptionId: string; checkoutUrl: string }) => {
     setTestResult(`Success! Subscription ID: ${data.subscriptionId}`)
     setIsSuccess(true)
-    console.log('Subscription created successfully:', data)
   }
 
   const handleSubscriptionError = (error: string) => {
@@ -59,7 +58,6 @@ export default function TestDodoPage() {
       const data = await response.json()
       setTestResult(`API Test Success! Subscription ID: ${data.subscriptionId}`)
       setIsSuccess(true)
-      console.log('API test successful:', data)
     } catch (error) {
       setTestResult(`API Test Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
       setIsSuccess(false)

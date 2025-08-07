@@ -214,11 +214,8 @@ export function RichTextEditor({
       const target = e.currentTarget
       const text = target.textContent || ''
 
-      console.log(`📝 RichTextEditor input: blockId=${blockId}, length=${text.length}`);
-
       // IMMEDIATE update - no debouncing that could cause content loss
       updateBlock(blockId, { text })
-      console.log(`✅ RichTextEditor block updated immediately: ${blockId}, content length: ${text.length}`);
 
       // Handle slash commands and splash commands
       const isSlashCommand = text.startsWith('/')

@@ -46,6 +46,7 @@ export interface JournalEntry {
   preview?: string
   createdAt: Date
   updatedAt: Date
+  lastAccessedAt?: Date
 }
 
 export interface CommandOption {

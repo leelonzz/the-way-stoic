@@ -33,6 +33,8 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
   const editorRef = useRef<HTMLDivElement>(null)
   const editingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const selectionManagerRef = useRef<SelectionManager | null>(null)
+  const onChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const pendingChangesRef = useRef<JournalBlock[] | null>(null)
 
   const createNewBlock = (
     type: JournalBlock['type'] = 'paragraph',
@@ -75,14 +77,91 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
     }
   }, [blocks.length, onChange])
 
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (onChangeTimeoutRef.current) {
+        clearTimeout(onChangeTimeoutRef.current)
+      }
+      if (editingTimeoutRef.current) {
+        clearTimeout(editingTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Debounced onChange to prevent rapid fire updates
+  const debouncedOnChange = useCallback(
+    (newBlocks: JournalBlock[]) => {
+      // Update local state immediately
+      pendingChangesRef.current = newBlocks;
+      
+      // Cancel any pending onChange call
+      if (onChangeTimeoutRef.current) {
+        clearTimeout(onChangeTimeoutRef.current);
+      }
+      
+      // Debounce the actual onChange call (50ms for responsiveness)
+      onChangeTimeoutRef.current = setTimeout(() => {
+        if (pendingChangesRef.current) {
+          onChange(pendingChangesRef.current);
+          pendingChangesRef.current = null;
+        }
+      }, 50);
+    },
+    [onChange]
+  );
+
   const updateBlock = useCallback(
     (blockId: string, updates: Partial<JournalBlock>) => {
       const newBlocks = blocks.map(block =>
         block.id === blockId ? { ...block, ...updates } : block
       )
-      onChange(newBlocks)
+      debouncedOnChange(newBlocks)
+
+      // Handle slash command detection when text changes
+      if (updates.text !== undefined) {
+        const text = updates.text
+        const isSlashCommand = text.startsWith('/')
+        const isSplashCommand = text.startsWith('splash')
+
+        if ((isSlashCommand || isSplashCommand) && !showCommandMenu) {
+          // Show command menu
+          const blockElement = document.querySelector(`[data-block-id="${blockId}"]`)
+          if (blockElement) {
+            const rect = blockElement.getBoundingClientRect()
+            setCommandMenuPosition({
+              x: rect.left,
+              y: rect.bottom + 5,
+            })
+
+            // Extract search query based on trigger type
+            let searchQuery = ''
+            if (isSlashCommand) {
+              searchQuery = text.slice(1)
+            } else if (isSplashCommand) {
+              searchQuery = text.slice(6) // Remove "splash" (6 characters)
+            }
+
+            setSearchQuery(searchQuery)
+            setActiveBlockId(blockId)
+            setShowCommandMenu(true)
+          }
+        } else if (!isSlashCommand && !isSplashCommand && showCommandMenu) {
+          // Hide command menu
+          setShowCommandMenu(false)
+        } else if ((isSlashCommand || isSplashCommand) && showCommandMenu) {
+          // Update search query based on trigger type
+          let searchQuery = ''
+          if (isSlashCommand) {
+            searchQuery = text.slice(1)
+          } else if (isSplashCommand) {
+            searchQuery = text.slice(6) // Remove "splash" (6 characters)
+          }
+          setSearchQuery(searchQuery)
+        }
+      }
     },
-    [blocks, onChange]
+    [blocks, debouncedOnChange, showCommandMenu]
   )
 
   const addBlock = useCallback(
@@ -97,10 +176,10 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
         block,
         ...blocks.slice(afterIndex + 1),
       ]
-      onChange(newBlocks)
+      debouncedOnChange(newBlocks)
       return block.id
     },
-    [blocks, onChange]
+    [blocks, debouncedOnChange]
   )
 
   // Helper function to focus a block and position cursor
@@ -237,7 +316,7 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
 
       const blockIndex = blocks.findIndex(b => b.id === blockId)
       const newBlocks = blocks.filter(b => b.id !== blockId)
-      onChange(newBlocks)
+      debouncedOnChange(newBlocks)
 
       // Focus previous or next block
       const targetIndex = blockIndex > 0 ? blockIndex - 1 : 0
@@ -259,7 +338,7 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
         }, 10)
       }
     },
-    [blocks, onChange]
+    [blocks, debouncedOnChange]
   )
 
   const selectAllContent = useCallback(() => {
@@ -1069,54 +1148,13 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
     [activeBlockId, updateBlock, handleImageUpload]
   )
 
+  // Compute if all blocks are empty
+  const allBlocksEmpty = blocks.every(block => !block.text || block.text.trim() === '')
+
   const renderBlock = (block: JournalBlock, index: number): JSX.Element => {
     const blockClassName = getBlockClassName(block, isEditing)
-
-    // For image blocks, render differently
-    if (block.type === 'image') {
-      return (
-        <div
-          key={block.id}
-          data-block-id={block.id}
-          className={`${blockClassName} relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 rounded-lg`}
-          title="Click above image to add text before, click below to add text after"
-          tabIndex={0}
-          onKeyDown={(e) => handleBlockKeyDown(e.nativeEvent, block.id)}
-        >
-          {block.imageUrl ? (
-            <div className="relative">
-              <img
-                src={block.imageUrl}
-                alt={block.imageAlt || 'Uploaded image'}
-                className="max-w-full h-auto rounded-lg shadow-sm"
-                draggable={false}
-              />
-              {/* Visual indicators for click areas */}
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-0 left-0 right-0 h-1/2 group-hover:bg-blue-100 group-hover:bg-opacity-20 transition-colors rounded-t-lg" />
-                <div className="absolute bottom-0 left-0 right-0 h-1/2 group-hover:bg-green-100 group-hover:bg-opacity-20 transition-colors rounded-b-lg" />
-              </div>
-              {/* Hover hints */}
-              <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-                Click here to add text before
-              </div>
-              <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-                Click here to add text after
-              </div>
-            </div>
-          ) : (
-            <div
-              className="border-2 border-dashed border-stone-300 rounded-lg p-8 text-center cursor-pointer hover:border-stone-400 transition-colors"
-              onClick={() => handleImageUpload(block.id)}
-            >
-              <p className="text-stone-500">Click to upload an image</p>
-            </div>
-          )}
-        </div>
-      )
-    }
-
-    // For text blocks, use simplified rich text editor for better reliability
+    // Only pass showPlaceholder to the first block
+    const showPlaceholder = index === 0 && allBlocksEmpty
     return (
       <div key={block.id} data-block-id={block.id} className={blockClassName}>
         <SimplifiedRichTextEditor
@@ -1125,6 +1163,7 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
           onChange={updateBlock}
           onKeyDown={handleBlockKeyDown}
           placeholder={getPlaceholderForBlockType(block.type, index)}
+          showPlaceholder={showPlaceholder}
         />
       </div>
     )

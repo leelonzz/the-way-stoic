@@ -17,7 +17,12 @@ export function createBlockElement(block: JournalBlock): HTMLElement {
   // Handle special block types
   if (block.type === 'image' && block.imageUrl) {
     element = document.createElement('div')
-    element.innerHTML = `<img src="${block.imageUrl}" alt="${block.imageAlt || 'Uploaded image'}" class="max-w-full h-auto rounded-lg shadow-sm" draggable="false" />`
+    const img = document.createElement('img')
+    img.src = block.imageUrl
+    img.alt = block.imageAlt || 'Uploaded image'
+    img.className = 'max-w-full h-auto rounded-lg shadow-sm'
+    img.draggable = false
+    element.appendChild(img)
   } else {
     element = document.createElement('div')
     element.textContent = block.text
@@ -45,7 +50,7 @@ export function getBlockClassName(
   isEditing: boolean = false
 ): string {
   const baseClasses =
-    'block-element outline-none min-h-[1.5rem] leading-relaxed cursor-text'
+    'block-element outline-none min-h-[1.5rem] leading-[1.15] cursor-text'
 
   // Conditional font class based on editing state
   const fontClass = isEditing
@@ -55,30 +60,30 @@ export function getBlockClassName(
   switch (block.type) {
     case 'heading': {
       const headingClasses = {
-        1: 'text-3xl font-bold text-stone-800 mb-6 leading-tight',
-        2: 'text-2xl font-semibold text-stone-800 mb-4 leading-tight',
-        3: 'text-xl font-medium text-stone-800 mb-3 leading-tight',
+        1: 'text-3xl font-bold text-stone-800 mb-2 leading-tight',
+        2: 'text-2xl font-semibold text-stone-800 mb-1 leading-tight',
+        3: 'text-xl font-medium text-stone-800 mb-1 leading-tight',
       }
       return `${baseClasses} ${fontClass} ${headingClasses[block.level || 1]}`
     }
 
     case 'bullet-list':
-      return `${baseClasses} ${fontClass} mb-3 text-base text-stone-700 leading-relaxed pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-stone-600 before:select-none`
+      return `${baseClasses} ${fontClass} mb-1 text-base text-stone-700 leading-[1.15] pl-6 relative before:content-['•'] before:absolute before:left-0 before:text-stone-600 before:select-none`
 
     case 'numbered-list':
-      return `${baseClasses} ${fontClass} mb-3 text-base text-stone-700 leading-relaxed pl-6 relative before:content-[attr(data-list-number)'.'] before:absolute before:left-0 before:text-stone-600 before:select-none before:font-medium`
+      return `${baseClasses} ${fontClass} mb-1 text-base text-stone-700 leading-[1.15] pl-6 relative before:content-[attr(data-list-number)'.'] before:absolute before:left-0 before:text-stone-600 before:select-none before:font-medium`
 
     case 'quote':
-      return `${baseClasses} ${fontClass} border-l-4 border-stone-300 pl-4 mb-4 italic text-stone-600 text-base leading-relaxed`
+      return `${baseClasses} ${fontClass} border-l-4 border-stone-300 pl-4 mb-1 italic text-stone-600 text-base leading-[1.15]`
 
     case 'code':
-      return `${baseClasses} bg-stone-100 rounded-lg p-4 mb-4 font-mono text-sm text-stone-800 leading-relaxed`
+      return `${baseClasses} bg-stone-100 rounded-lg p-4 mb-1 font-mono text-sm text-stone-800 leading-[1.15]`
 
     case 'image':
-      return `${baseClasses} mb-4`
+      return `${baseClasses} mb-1`
 
     default:
-      return `${baseClasses} ${fontClass} mb-4 text-base text-stone-700 leading-relaxed`
+      return `${baseClasses} ${fontClass} mb-1 text-base text-stone-700 leading-[1.15]`
   }
 }
 

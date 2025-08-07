@@ -1,11 +1,9 @@
 'use client'
 
 import React from 'react';
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { NavigationOptimizedCachedPage } from "@/components/layout/NavigationOptimizedCachedPage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Settings, BarChart3, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
@@ -15,8 +13,6 @@ import { ProfileSettings } from '@/components/profile/ProfileSettings';
 import { ProfileStats } from '@/components/profile/ProfileStats';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-
-const queryClient = new QueryClient();
 
 function ProfileContent() {
   const { user } = useAuthContext();
@@ -136,16 +132,61 @@ function ProfileContent() {
   );
 }
 
+function ProfileSkeleton() {
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="mb-10">
+        <div className="h-8 bg-stone/10 rounded w-48 mb-3"></div>
+        <div className="h-5 bg-stone/10 rounded w-64"></div>
+      </div>
+
+      <div className="space-y-6">
+        {/* Profile Header Skeleton */}
+        <div className="bg-white/30 rounded-xl p-6 border border-stone/5">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-stone/10 rounded-full"></div>
+            <div className="space-y-2">
+              <div className="h-6 bg-stone/10 rounded w-32"></div>
+              <div className="h-4 bg-stone/10 rounded w-48"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="space-y-4">
+          <div className="flex space-x-1 bg-white/50 rounded-lg p-1">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 bg-stone/10 rounded flex-1"></div>
+            ))}
+          </div>
+          <div className="bg-white/30 rounded-xl p-6 border border-stone/5 min-h-[400px]">
+            <div className="space-y-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-4 bg-stone/10 rounded w-full"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AppLayout>
+    <ProtectedRoute>
+      <AppLayout>
+        <NavigationOptimizedCachedPage
+          pageKey="profile"
+          fallback={<ProfileSkeleton />}
+          preserveOnNavigation={true}
+          refreshOnlyWhenStale={true}
+          maxAge={30 * 60 * 1000} // 30 minutes - profile data may change occasionally
+          navigationRefreshThreshold={10 * 60 * 1000} // 10 minutes
+        >
           <ProfileContent />
-        </AppLayout>
-      </TooltipProvider>
-    </QueryClientProvider>
+        </NavigationOptimizedCachedPage>
+      </AppLayout>
+    </ProtectedRoute>
   );
 }

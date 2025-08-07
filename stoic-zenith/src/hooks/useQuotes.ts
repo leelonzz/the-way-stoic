@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { useTabVisibility } from './useTabVisibility';
 import { usePathname } from 'next/navigation';
+import { useNavigationCachedQuery } from './useCacheAwareQuery';
 
 export interface Quote {
   id: string;
@@ -119,12 +120,21 @@ export function useQuotes(user: User | null): {
   const [cachedDate, setCachedDate] = useState<string>('');
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
 
-  // Use centralized tab visibility management
-  const tabVisibility = useTabVisibility({ refreshThreshold: 2000 }); // 2 seconds
-  
+  // Use centralized tab visibility management with longer threshold
+  const tabVisibility = useTabVisibility({ refreshThreshold: 30000 }); // 30 seconds
+
   // Track navigation to trigger refetch on quote pages
   const pathname = usePathname();
   const [lastPathname, setLastPathname] = useState<string>('');
+
+  // Add mutex/lock mechanism to prevent overlapping refetch operations
+  const refetchLockRef = useRef<boolean>(false);
+  const lastRefetchTimeRef = useRef<number>(0);
+  const REFETCH_DEBOUNCE_MS = 2000; // 2 seconds minimum between refetches
+
+  // Add loading timeout to prevent stuck loading states
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const MAX_LOADING_TIME = 10000; // 10 seconds max loading time
   
   const maxReloads = 10;
   const canReload = reloadCount < maxReloads;
@@ -286,14 +296,38 @@ export function useQuotes(user: User | null): {
   }, [user]);
 
   const refetchQuotes = useCallback(async () => {
-    if (isRefetching) {
-      console.log('🔍 [useQuotes] Refetch already in progress, skipping');
-      return; // Prevent multiple simultaneous refetches
+    // Check if refetch is already in progress using ref-based lock
+    if (refetchLockRef.current) {
+      console.log('⏭️ [useQuotes] Refetch already in progress (ref lock), skipping...');
+      return;
+    }
+
+    // Check debounce timing
+    const now = Date.now();
+    const timeSinceLastRefetch = now - lastRefetchTimeRef.current;
+    if (timeSinceLastRefetch < REFETCH_DEBOUNCE_MS) {
+      console.log(`⏭️ [useQuotes] Refetch debounced, ${REFETCH_DEBOUNCE_MS - timeSinceLastRefetch}ms remaining`);
+      return;
     }
 
     try {
+      // Set both locks
+      refetchLockRef.current = true;
+      lastRefetchTimeRef.current = now;
       setIsRefetching(true);
-      console.log('🔄 [useQuotes] Starting refetch due to tab visibility change...');
+
+      // Set loading timeout to prevent stuck states
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+      loadingTimeoutRef.current = setTimeout(() => {
+        console.warn('⚠️ [useQuotes] Loading timeout reached, forcing reset');
+        refetchLockRef.current = false;
+        setIsRefetching(false);
+        setLoading(false);
+      }, MAX_LOADING_TIME);
+
+      console.log('🔄 [useQuotes] Starting refetch with mutex lock...');
 
       await fetchQuotes();
       console.log('✅ [useQuotes] fetchQuotes completed');
@@ -309,128 +343,108 @@ export function useQuotes(user: User | null): {
     } catch (error) {
       console.error('❌ [useQuotes] Error during refetch:', error);
     } finally {
+      // Clear timeout and release both locks
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+      refetchLockRef.current = false;
       setIsRefetching(false);
-      console.log('🔍 [useQuotes] Refetch process finished');
+      console.log('🔍 [useQuotes] Refetch process finished, locks released');
     }
-  }, [isRefetching, fetchQuotes, fetchSavedQuotes, fetchUserQuotes, user]);
+  }, [fetchQuotes, fetchSavedQuotes, fetchUserQuotes, user]); // Removed isRefetching from dependencies
 
-  // Register tab visibility callbacks with centralized system
+  // Create refs to avoid dependency issues in callbacks
+  const quotesRef = useRef(quotes);
+  const lastFetchTimeRef2 = useRef(lastFetchTime);
+
+  // Update refs when values change
   useEffect(() => {
-    // Create unique callback ID to prevent conflicts between multiple useQuotes instances
-    const callbackId = `useQuotes-${pathname}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    quotesRef.current = quotes;
+  }, [quotes]);
+
+  useEffect(() => {
+    lastFetchTimeRef2.current = lastFetchTime;
+  }, [lastFetchTime]);
+
+  // Register tab visibility callbacks with centralized system (prevent duplicates)
+  useEffect(() => {
+    // Use single, consistent callback ID to prevent multiple registrations
+    const callbackId = 'useQuotes-main';
 
     tabVisibility.registerCallbacks(callbackId, {
       onVisible: async (state) => {
-        const hasNoQuotes = quotes.length === 0;
-        const shouldRefreshData = tabVisibility.shouldRefresh(lastFetchTime);
+        // Use refs to get current values without causing dependency issues
+        const hasNoQuotes = quotesRef.current.length === 0;
+        const timeSinceLastFetch = Date.now() - lastFetchTimeRef2.current;
+        const dataIsStale = timeSinceLastFetch > 300000; // 5 minutes
+        const wasHiddenLongEnough = state.wasHiddenDuration > 30000; // 30 seconds
+        const isQuotePage = pathname === '/' || pathname === '/quotes';
 
         console.log('🔍 [useQuotes] Tab became visible, checking refresh conditions:', {
           callbackId,
           pathname,
           hasNoQuotes,
-          shouldRefreshData,
+          dataIsStale,
+          wasHiddenLongEnough,
+          isQuotePage,
           wasHiddenDuration: Math.round(state.wasHiddenDuration / 1000),
-          quotesLength: quotes.length,
-          lastFetchTime: new Date(lastFetchTime).toLocaleTimeString()
+          dataAgeMinutes: Math.round(timeSinceLastFetch / 60000),
+          quotesLength: quotesRef.current.length
         });
 
-        // Always refetch if no quotes are loaded
+        // Only refetch if no quotes are loaded
         if (hasNoQuotes) {
           console.log('✅ [useQuotes] TRIGGERING REFETCH: no quotes loaded');
           await refetchQuotes();
         }
-        // Refetch if shouldRefresh logic determines it's needed
-        else if (shouldRefreshData) {
-          console.log('✅ [useQuotes] TRIGGERING REFETCH: time threshold exceeded');
+        // Only refetch if on quote page, data is stale AND was hidden for significant time
+        else if (isQuotePage && dataIsStale && wasHiddenLongEnough) {
+          console.log('✅ [useQuotes] TRIGGERING REFETCH: quote page with stale data after 30+ seconds');
           await refetchQuotes();
         } else {
           console.log('⏭️ [useQuotes] No refetch needed:', {
-            quotesCount: quotes.length,
-            wasHiddenDuration: Math.round(state.wasHiddenDuration / 1000)
+            quotesCount: quotesRef.current.length,
+            wasHiddenDuration: Math.round(state.wasHiddenDuration / 1000),
+            dataAgeMinutes: Math.round(timeSinceLastFetch / 60000),
+            isQuotePage,
+            reason: !hasNoQuotes && (!isQuotePage ? 'Not quote page' : !dataIsStale ? 'Data fresh' : 'Short hide duration')
           });
         }
       },
       onHidden: () => {
         console.log('🔍 [useQuotes] Tab became hidden');
-      },
-      onNavigationReturn: async (state) => {
-        const hasNoQuotes = quotes.length === 0;
-        const shouldRefreshData = tabVisibility.shouldRefresh(lastFetchTime);
-        const isQuotePage = pathname === '/' || pathname === '/quotes';
-
-        console.log('🔍 [useQuotes] Navigation return detected, checking refresh conditions:', {
-          callbackId,
-          hasNoQuotes,
-          shouldRefreshData,
-          isQuotePage,
-          timeSinceNavigation: Math.round(state.wasHiddenDuration / 1000),
-          quotesLength: quotes.length,
-          pathname
-        });
-
-        // Always refetch if no quotes are loaded
-        if (hasNoQuotes && isQuotePage) {
-          console.log(`✅ [useQuotes] TRIGGERING REFETCH: no quotes loaded on quote page (${callbackId})`);
-          await refetchQuotes();
-        }
-        // Refetch if returning to quote page and data is stale
-        else if (isQuotePage && shouldRefreshData) {
-          console.log(`✅ [useQuotes] TRIGGERING REFETCH: returning to quote page with stale data (${callbackId})`);
-          await refetchQuotes();
-        }
-        // Refetch if returning to quote page after significant time (30+ seconds)
-        else if (isQuotePage && state.wasHiddenDuration > 30000) {
-          console.log(`✅ [useQuotes] TRIGGERING REFETCH: returning to quote page after 30+ seconds (${callbackId})`);
-          await refetchQuotes();
-        }
-        // Also refetch if returning to quote page after any navigation (more aggressive)
-        else if (isQuotePage && state.wasHiddenDuration > 5000) {
-          console.log(`✅ [useQuotes] TRIGGERING REFETCH: returning to quote page after navigation (${callbackId})`);
-          await refetchQuotes();
-        } else {
-          console.log(`⏭️ [useQuotes] No navigation refetch needed (${callbackId}):`, {
-            quotesCount: quotes.length,
-            timeSinceNavigation: Math.round(state.wasHiddenDuration / 1000),
-            isQuotePage
-          });
-        }
       }
+      // Removed onNavigationReturn to prevent duplicate refetch triggers
     });
 
     return () => {
       tabVisibility.unregisterCallbacks(callbackId);
     };
-  }, [tabVisibility, quotes.length, lastFetchTime, refetchQuotes, pathname]);
+  }, [tabVisibility, pathname, refetchQuotes]); // Only essential dependencies
 
 
 
-  // Memoized daily quote calculation
+  // Memoized daily quote calculation with improved caching
   const dailyQuote = useMemo(() => {
-    // If no quotes available, return the first fallback quote
-    if (quotes.length === 0) {
-      console.log('No quotes available for daily quote, using fallback');
-      return FALLBACK_QUOTES[0];
-    }
-    
-    // Get today's date in YYYY-MM-DD format
+    // Get today's date in YYYY-MM-DD format first
     const today = new Date();
     const todayString = today.toISOString().split('T')[0];
     
-    // Check if we have a cached quote for today
-    if (cachedDailyQuote && cachedDate === todayString) {
-      console.log('Using cached daily quote for today:', cachedDate);
-      return cachedDailyQuote;
-    }
-    
-    // Check localStorage for cached quote
+    // Always check localStorage FIRST for today's quote
     if (typeof window !== 'undefined') {
       try {
         const storedQuoteData = localStorage.getItem(`daily-quote-${todayString}`);
         if (storedQuoteData) {
           const storedQuote = JSON.parse(storedQuoteData);
-          console.log('Using localStorage cached daily quote for today:', todayString);
-          setCachedDailyQuote(storedQuote);
-          setCachedDate(todayString);
+          console.log('✅ Using cached daily quote from localStorage:', todayString);
+          
+          // Update state cache to match localStorage
+          if (cachedDate !== todayString) {
+            setCachedDailyQuote(storedQuote);
+            setCachedDate(todayString);
+          }
+          
           return storedQuote;
         }
       } catch (error) {
@@ -438,24 +452,37 @@ export function useQuotes(user: User | null): {
       }
     }
     
-    // Calculate new daily quote
+    // Check if we have a cached quote for today in state
+    if (cachedDailyQuote && cachedDate === todayString) {
+      console.log('✅ Using state cached daily quote for today:', cachedDate);
+      return cachedDailyQuote;
+    }
+    
+    // If no quotes available, return the first fallback quote
+    if (quotes.length === 0) {
+      console.log('No quotes available for daily quote, using fallback');
+      return FALLBACK_QUOTES[0];
+    }
+    
+    // Calculate new daily quote only when needed
     const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
     const selectedQuote = quotes[dayOfYear % quotes.length];
     
-    // Cache the quote and date in both state and localStorage
+    // Cache the quote and date in both state and localStorage immediately
     setCachedDailyQuote(selectedQuote);
     setCachedDate(todayString);
     
-    // Store in localStorage for persistence across sessions
+    // Store in localStorage with 24-hour persistence
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(`daily-quote-${todayString}`, JSON.stringify(selectedQuote));
+        console.log('💾 Daily quote cached to localStorage for 24h persistence');
       } catch (error) {
         console.warn('Failed to cache quote in localStorage:', error);
       }
     }
     
-    console.log('New daily quote calculated and cached:', {
+    console.log('🆕 New daily quote calculated and cached:', {
       dayOfYear,
       totalQuotes: quotes.length,
       selectedQuoteIndex: dayOfYear % quotes.length,
@@ -467,7 +494,6 @@ export function useQuotes(user: User | null): {
   }, [quotes, cachedDailyQuote, cachedDate]);
 
   const getDailyQuote = (): Quote | null => {
-    console.log('getDailyQuote called - returning cached quote:', dailyQuote?.id);
     return dailyQuote;
   };
 
@@ -665,21 +691,23 @@ export function useQuotes(user: User | null): {
       // Cleanup old cached quotes first
       cleanupOldCachedQuotes();
       
-      // Only show loading if we don't have any quotes yet
+      // Only fetch if we don't have quotes yet
       if (quotes.length === 0) {
         setLoading(true);
+        await fetchQuotes();
+        setLoading(false);
       }
       
-      await fetchQuotes();
+      // Always fetch user-specific data when user changes
       if (user) {
         await fetchSavedQuotes();
         await fetchUserQuotes();
       }
-      setLoading(false);
     };
 
     loadData();
-  }, [user, fetchQuotes, fetchSavedQuotes, fetchUserQuotes, cleanupOldCachedQuotes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Only depend on user changes to prevent unnecessary refetches
 
   // Load quota on mount and when user changes
   useEffect(() => {
@@ -687,27 +715,38 @@ export function useQuotes(user: User | null): {
     setReloadCount(currentQuota);
   }, [loadQuotaFromStorage]);
 
-  // Handle navigation to quote pages
+  // Handle navigation to quote pages with reduced aggression
   useEffect(() => {
+    // Skip on initial mount or if we're already loading
+    if (!lastPathname || loading) {
+      setLastPathname(pathname);
+      return;
+    }
+    
     const isQuotePage = pathname === '/' || pathname === '/quotes';
     const wasQuotePage = lastPathname === '/' || lastPathname === '/quotes';
     
-    // If navigating to a quote page and we have no quotes, refetch
-    if (isQuotePage && quotes.length === 0) {
-      console.log('🔍 [useQuotes] Navigating to quote page with no quotes, triggering refetch');
-      refetchQuotes();
-    }
-    // If navigating from a non-quote page to a quote page, consider refetching
-    else if (isQuotePage && !wasQuotePage && quotes.length > 0) {
-      const timeSinceLastFetch = Date.now() - lastFetchTime;
-      if (timeSinceLastFetch > 30000) { // 30 seconds
-        console.log('🔍 [useQuotes] Navigating to quote page after 30s, triggering refetch');
+    // Only check for refetch if actually navigating (not initial mount)
+    if (isQuotePage && pathname !== lastPathname) {
+      // Only refetch if navigating to a quote page with no quotes loaded
+      if (quotes.length === 0 && !loading) {
+        console.log('🔍 [useQuotes] Navigating to quote page with no quotes, triggering refetch');
         refetchQuotes();
+      }
+      // Only refetch if navigating to quote page and data is genuinely old (5+ minutes)
+      else if (!wasQuotePage && quotes.length > 0) {
+        const timeSinceLastFetch = Date.now() - lastFetchTime;
+        if (timeSinceLastFetch > 300000) { // 5 minutes
+          console.log('🔍 [useQuotes] Navigating to quote page with 5+ minute old data, triggering refetch');
+          refetchQuotes();
+        } else {
+          console.log('🔍 [useQuotes] Navigation to quote page - data is fresh, skipping refetch');
+        }
       }
     }
     
     setLastPathname(pathname);
-  }, [pathname, lastPathname, quotes.length, lastFetchTime, refetchQuotes]);
+  }, [pathname, lastPathname, quotes.length, lastFetchTime, loading, refetchQuotes]);
 
   const refreshDailyQuote = (): Quote | null => {
     if (!canReload) {
@@ -763,6 +802,19 @@ export function useQuotes(user: User | null): {
 
     return selectedQuote;
   };
+
+  // Cleanup effect to prevent memory leaks and stuck states
+  useEffect(() => {
+    return () => {
+      // Clear any pending timeouts
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+      // Reset locks
+      refetchLockRef.current = false;
+    };
+  }, []);
 
   return {
     quotes,

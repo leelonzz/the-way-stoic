@@ -45,7 +45,7 @@ async function retryOperation<T>(
       
       // Exponential backoff
       const delay = baseDelay * Math.pow(2, attempt);
-      console.log(`🔄 Retrying operation (attempt ${attempt + 1}/${maxRetries + 1}) in ${delay}ms...`);
+
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
@@ -56,9 +56,6 @@ async function retryOperation<T>(
 export const authHelpers = {
   async signInWithGoogle() {
     try {
-      console.log('🔐 Starting Google OAuth sign-in...');
-      console.log('Redirect URL:', `${window.location.origin}/auth/callback`);
-      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google' as Provider,
         options: {
@@ -80,7 +77,7 @@ export const authHelpers = {
         throw error;
       }
       
-      console.log('✅ Google OAuth initiated successfully:', data);
+
       return data;
     } catch (error) {
       console.error('❌ Unexpected error during Google sign-in:', error);
@@ -109,8 +106,6 @@ export const authHelpers = {
 
   async getCurrentSession() {
     try {
-      console.log('🔍 Fetching current session...');
-      
       // For returning users, we can be more optimistic
       const wasAuthenticated = typeof window !== 'undefined' && localStorage.getItem('was-authenticated') === 'true';
       
@@ -127,14 +122,8 @@ export const authHelpers = {
       }
       
       if (session) {
-        console.log('✅ Session retrieved successfully:', {
-          userId: session.user?.id,
-          email: session.user?.email,
-          expiresAt: new Date(session.expires_at * 1000).toLocaleString(),
-          hasRefreshToken: !!session.refresh_token
-        });
+        // Session found
       } else {
-        console.log('ℹ️ No active session found');
         // Clear authentication marker if no session found
         if (typeof window !== 'undefined') {
           localStorage.removeItem('was-authenticated');
@@ -155,7 +144,6 @@ export const authHelpers = {
   async getUserProfile(userId: string): Promise<UserProfile | null> {
     return retryOperation(async () => {
       try {
-        console.log('🔄 Fetching user profile for:', userId);
         
         const { data, error } = await supabase
           .from('profiles')
@@ -166,7 +154,6 @@ export const authHelpers = {
         if (error) {
           if (error.code === 'PGRST116') {
             // Profile doesn't exist, create one
-            console.log('📝 Profile not found, creating new profile...');
             return await this.createUserProfile(userId);
           }
           console.warn('Profile fetch error, using fallback:', error);
@@ -185,7 +172,7 @@ export const authHelpers = {
           return null;
         }
 
-        console.log('✅ Profile fetched successfully:', data);
+
         return data;
       } catch (error) {
         console.error('Get user profile error:', error);
@@ -236,7 +223,7 @@ export const authHelpers = {
           return null;
         }
 
-        console.log('✅ User profile created successfully:', data);
+
         return data;
       } catch (error) {
         console.error('Create user profile error:', error);
@@ -263,7 +250,7 @@ export const authHelpers = {
           return null;
         }
 
-        console.log('✅ User profile updated successfully:', data);
+
         return data;
       } catch (error) {
         console.error('Update user profile error:', error);

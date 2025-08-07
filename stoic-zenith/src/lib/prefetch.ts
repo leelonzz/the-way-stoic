@@ -107,19 +107,52 @@ export const prefetchJournal = async (queryClient: QueryClient, userId?: string)
 
 // Navigation prefetch handler
 export const handleNavigationPrefetch = (
-  href: string, 
-  queryClient: QueryClient, 
+  href: string,
+  queryClient: QueryClient,
   userId?: string
 ): void => {
-  switch (true) {
-    case href.includes('/quotes'):
-      prefetchQuotes(queryClient)
-      break
-    case href.includes('/calendar'):
+  // Use setTimeout to avoid blocking the main thread
+  setTimeout(() => {
+    switch (true) {
+      case href.includes('/quotes'):
+        prefetchQuotes(queryClient)
+        break
+      case href.includes('/calendar'):
+        prefetchCalendar(queryClient, userId)
+        break
+      case href.includes('/journal'):
+        prefetchJournal(queryClient, userId)
+        break
+      case href === '/': // Home page
+        // Prefetch home page data (quotes for daily quote)
+        prefetchQuotes(queryClient)
+        break
+      case href.includes('/mentors'):
+        // Mentors page is mostly static, no specific prefetch needed
+        break
+    }
+  }, 0)
+}
+
+// Prefetch all critical pages on app initialization
+export const prefetchCriticalPages = async (
+  queryClient: QueryClient,
+  userId?: string
+): Promise<void> => {
+  // Prefetch the most commonly accessed pages
+  const prefetchPromises = [
+    prefetchQuotes(queryClient), // For home and quotes pages
+  ]
+
+  if (userId) {
+    prefetchPromises.push(
+      prefetchJournal(queryClient, userId),
       prefetchCalendar(queryClient, userId)
-      break
-    case href.includes('/journal'):
-      prefetchJournal(queryClient, userId)
-      break
+    )
   }
+
+  // Run all prefetches in parallel but don't block app initialization
+  Promise.allSettled(prefetchPromises).catch(error => {
+    console.warn('Some prefetch operations failed:', error)
+  })
 }

@@ -2,8 +2,14 @@
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { NavigationOptimizedCachedPage } from '@/components/layout/NavigationOptimizedCachedPage';
+import { JournalSkeleton } from '@/components/journal/JournalSkeleton';
 import Journal from "@/pages/Journal"
 import { ErrorBoundary } from 'react-error-boundary'
+import { prefetchJournal } from '@/lib/prefetch'
+import { useAuthContext } from '@/components/auth/AuthProvider'
+import { useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 
 function ErrorFallback({ resetErrorBoundary }: { resetErrorBoundary: () => void }): JSX.Element {
   return (
@@ -26,16 +32,41 @@ function ErrorFallback({ resetErrorBoundary }: { resetErrorBoundary: () => void 
   );
 }
 
+// Component to handle prefetching
+function JournalWithPrefetch(): JSX.Element {
+  const { user } = useAuthContext();
+  const queryClient = useQueryClient();
+
+  // Prefetch journal data when component mounts
+  useEffect(() => {
+    if (user?.id) {
+      prefetchJournal(queryClient, user.id).catch(error => {
+      });
+    }
+  }, [user?.id, queryClient]);
+
+  return <Journal />;
+}
+
 export default function JournalPage(): JSX.Element {
   return (
     <ProtectedRoute>
       <AppLayout fullWidth>
-        <ErrorBoundary
-          FallbackComponent={ErrorFallback}
-          onReset={() => window.location.reload()}
+        <NavigationOptimizedCachedPage
+          pageKey="journal"
+          fallback={<JournalSkeleton />}
+          preserveOnNavigation={true}
+          refreshOnlyWhenStale={true}
+          maxAge={30 * 60 * 1000} // 30 minutes - longer cache for seamless navigation
+          navigationRefreshThreshold={30 * 60 * 1000} // 30 minutes - keep journal cached
         >
-          <Journal />
-        </ErrorBoundary>
+          <ErrorBoundary
+            FallbackComponent={ErrorFallback}
+            onReset={() => window.location.reload()}
+          >
+            <JournalWithPrefetch />
+          </ErrorBoundary>
+        </NavigationOptimizedCachedPage>
       </AppLayout>
     </ProtectedRoute>
   );

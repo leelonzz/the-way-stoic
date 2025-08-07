@@ -3,7 +3,7 @@
 import React from 'react';
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { CachedPage } from '@/components/layout/CachedPage'
+import { NavigationOptimizedCachedPage } from '@/components/layout/NavigationOptimizedCachedPage'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar as CalendarIcon, BarChart3, Settings } from 'lucide-react';
 import { useLifeCalendar } from '@/hooks/useLifeCalendar';
@@ -157,14 +157,16 @@ export default function CalendarPage(): JSX.Element {
   return (
     <ProtectedRoute>
       <AppLayout>
-        <CachedPage 
+        <NavigationOptimizedCachedPage 
           pageKey="calendar" 
           fallback={<CalendarSkeleton />}
-          refreshOnFocus={true}
-          maxAge={15 * 60 * 1000} // 15 minutes - calendar data may change
+          preserveOnNavigation={true}
+          refreshOnlyWhenStale={true}
+          maxAge={30 * 60 * 1000} // 30 minutes - balanced for navigation
+          navigationRefreshThreshold={20 * 60 * 1000} // 20 minutes for calendar data
         >
           <CalendarContent />
-        </CachedPage>
+        </NavigationOptimizedCachedPage>
       </AppLayout>
     </ProtectedRoute>
   );

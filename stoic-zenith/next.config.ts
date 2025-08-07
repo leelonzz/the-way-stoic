@@ -1,6 +1,26 @@
 import type { NextConfig } from 'next'
 
+// Conditional bundle analyzer import to avoid TypeScript issues
+let withBundleAnalyzer: any = (config: NextConfig) => config;
+if (process.env.ANALYZE === 'true') {
+  try {
+    withBundleAnalyzer = require('@next/bundle-analyzer')({
+      enabled: true,
+    });
+  } catch (e) {
+    console.warn('Bundle analyzer not available:', e);
+  }
+}
+
 const nextConfig: NextConfig = {
+  // Experimental features for better navigation performance
+  experimental: {
+    // Configure router cache behavior for Next.js 15
+    staleTimes: {
+      dynamic: 30, // Cache dynamic pages for 30 seconds (good for navigation)
+      static: 300, // Cache static pages for 5 minutes
+    },
+  },
   turbopack: {
     rules: {
       '*.svg': {
@@ -15,6 +35,44 @@ const nextConfig: NextConfig = {
   },
   typescript: {
     ignoreBuildErrors: false,
+  },
+  // Performance optimizations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+  // Bundle optimization
+  webpack: (config: any, { dev, isServer }: { dev: boolean; isServer: boolean }) => {
+    // Optimize bundle splitting
+    if (!dev && !isServer) {
+      config.optimization.splitChunks = {
+        ...config.optimization.splitChunks,
+        cacheGroups: {
+          ...config.optimization.splitChunks.cacheGroups,
+          // Separate vendor chunks
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+            priority: 10,
+          },
+          // Separate journal-specific chunks
+          journal: {
+            test: /[\\/]src[\\/](components[\\/]journal|pages[\\/]Journal|lib[\\/]journal)/,
+            name: 'journal',
+            chunks: 'all',
+            priority: 20,
+          },
+          // Common UI components
+          common: {
+            test: /[\\/]src[\\/]components[\\/](ui|layout)/,
+            name: 'common',
+            chunks: 'all',
+            priority: 15,
+          },
+        },
+      };
+    }
+    return config;
   },
   headers: async () => {
     return [
@@ -55,4 +113,4 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+export default withBundleAnalyzer(nextConfig)

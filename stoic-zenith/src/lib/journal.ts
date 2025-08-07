@@ -45,6 +45,7 @@ export class RealTimeJournalManager {
   private syncInterval: NodeJS.Timeout | null = null;
   private pendingSaves: Set<string> = new Set();
   private entryCreationInProgress: Set<string> = new Set(); // Track entries being created to prevent duplicates
+  private updateMutex: Map<string, Promise<void>> = new Map(); // Mutex for preventing concurrent updates
   private maxRetries = 3;
   private retryDelay = 1000; // Start with 1 second
   private editProtectionWindow = 10000; // 10 seconds protection window
@@ -63,9 +64,6 @@ export class RealTimeJournalManager {
 
   static getInstance(userId?: string | null): RealTimeJournalManager {
     // Always require explicit userId - no anonymous fallback for journal entries
-    if (!userId) {
-      console.warn('⚠️ Journal manager requested without userId - this may cause persistence issues');
-    }
 
     const key = userId || 'anonymous';
 
@@ -82,6 +80,14 @@ export class RealTimeJournalManager {
     }
 
     return instance;
+  }
+
+  // Validate user context before critical operations
+  private validateUserContext(operation: string): void {
+    if (!this.userId) {
+      console.error(`❌ ${operation} attempted without user context - this will cause data loss!`);
+      throw new Error(`Cannot ${operation} without authenticated user context. Please ensure user is logged in.`);
+    }
   }
 
   // Update storage keys based on current userId
@@ -141,24 +147,79 @@ export class RealTimeJournalManager {
     }
   }
 
-  // Migrate old non-user-specific data
+  // Migrate old non-user-specific data and anonymous entries
   private migrateOldData(): void {
     if (typeof window === 'undefined') return;
-    
+
     try {
       // Check if old keys exist
       const oldEntries = localStorage.getItem('journal_entries_cache');
       const oldDeleted = localStorage.getItem('journal_deleted_entries');
-      
+
       if (oldEntries || oldDeleted) {
         console.log('🔄 Migrating old journal data to user-specific storage...');
-        
+
         // Clear old data to prevent sharing between users
         localStorage.removeItem('journal_entries_cache');
         localStorage.removeItem('journal_deleted_entries');
         localStorage.removeItem('journal_entries_cache_backup');
-        
+
         console.log('✅ Old shared journal data cleared for security');
+      }
+
+      // Migrate anonymous entries to user-specific storage when user logs in
+      if (this.userId) {
+        const anonymousEntries = localStorage.getItem('journal_entries_cache_anonymous');
+        const anonymousDeleted = localStorage.getItem('journal_deleted_entries_anonymous');
+
+        if (anonymousEntries) {
+          console.log('🔄 Migrating anonymous entries to user-specific storage...');
+
+          try {
+            const entries = JSON.parse(anonymousEntries) as JournalEntry[];
+            const currentUserEntries = this.getAllFromLocalStorage();
+
+            // Merge anonymous entries with user entries, avoiding duplicates
+            const mergedEntries = [...currentUserEntries];
+            entries.forEach(anonymousEntry => {
+              const exists = mergedEntries.some(userEntry =>
+                userEntry.date === anonymousEntry.date &&
+                Math.abs(new Date(userEntry.createdAt).getTime() - new Date(anonymousEntry.createdAt).getTime()) < 60000 // Within 1 minute
+              );
+
+              if (!exists) {
+                mergedEntries.push(anonymousEntry);
+                console.log(`📥 Migrated anonymous entry: ${anonymousEntry.id} (${anonymousEntry.date})`);
+              }
+            });
+
+            // Save merged entries to user-specific storage
+            localStorage.setItem(this.localStorageKey, JSON.stringify(mergedEntries));
+
+            // Clear anonymous storage after successful migration
+            localStorage.removeItem('journal_entries_cache_anonymous');
+            console.log(`✅ Migrated ${entries.length} anonymous entries to user storage`);
+          } catch (parseError) {
+            console.warn('Failed to parse anonymous entries for migration:', parseError);
+          }
+        }
+
+        if (anonymousDeleted) {
+          try {
+            const deletedEntries = JSON.parse(anonymousDeleted) as string[];
+            const currentDeleted = this.getDeletedEntries();
+
+            // Merge deleted entries
+            const mergedDeleted = new Set([...currentDeleted, ...deletedEntries]);
+            localStorage.setItem(this.deletedEntriesKey, JSON.stringify([...mergedDeleted]));
+
+            // Clear anonymous deleted entries
+            localStorage.removeItem('journal_deleted_entries_anonymous');
+            console.log(`✅ Migrated ${deletedEntries.length} anonymous deleted entries`);
+          } catch (parseError) {
+            console.warn('Failed to parse anonymous deleted entries for migration:', parseError);
+          }
+        }
       }
     } catch (error) {
       console.warn('Failed to migrate old journal data:', error);
@@ -196,13 +257,29 @@ export class RealTimeJournalManager {
 
   // INSTANT ENTRY CREATION (0ms delay)
   async createEntryImmediately(date: string, _type: 'morning' | 'evening' | 'general' = 'general'): Promise<JournalEntry> {
+    // Validate user context for critical create operations
+    this.validateUserContext('create journal entry');
+
+    // Allow multiple entries per day - no duplicate prevention
+    const existingEntries = this.getAllFromLocalStorage();
+
     const now = new Date();
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
+    // Check if an entry creation is already in progress with the same tempId
+    const creationKey = `creating-${tempId}`;
+    if (this.entryCreationInProgress.has(creationKey)) {
+      console.log(`⏳ Entry creation already in progress for ${tempId}, skipping...`);
+      return null as any; // This shouldn't happen with unique tempId
+    }
+
     // Mark entry creation as in progress to prevent race conditions
     this.entryCreationInProgress.add(tempId);
+    this.entryCreationInProgress.add(creationKey);
 
     try {
+      // No duplicate checking - allow multiple entries per day
+
       // Create entry immediately in memory and localStorage
       const newEntry: JournalEntry = {
         id: tempId,
@@ -231,8 +308,9 @@ export class RealTimeJournalManager {
       // Clear the creation flag after a short delay to allow for any immediate updates
       setTimeout(() => {
         this.entryCreationInProgress.delete(tempId);
-        console.log(`🧹 Cleared creation flag for: ${tempId}`);
-      }, 200);
+        this.entryCreationInProgress.delete(creationKey);
+        console.log(`🧹 Cleared creation flags for: ${tempId}`);
+      }, 500);
     }
   }
 
@@ -276,10 +354,36 @@ export class RealTimeJournalManager {
 
   // REAL-TIME AUTO-SAVE (as users type)
   async updateEntryImmediately(entryId: string, blocks: JournalBlock[]): Promise<void> {
+    // Validate user context for critical save operations
+    this.validateUserContext('save journal entry');
+
+    // MUTEX: Prevent concurrent updates to the same entry
+    const existingUpdate = this.updateMutex.get(entryId);
+    if (existingUpdate) {
+      console.log(`⏳ Update already in progress for ${entryId}, waiting...`);
+      try {
+        await existingUpdate;
+      } catch (error) {
+        console.warn(`Previous update failed for ${entryId}, proceeding with new update`);
+      }
+    }
+
+    // Create new update promise and store it in mutex
+    const updatePromise = this.performUpdate(entryId, blocks);
+    this.updateMutex.set(entryId, updatePromise);
+
+    try {
+      await updatePromise;
+    } finally {
+      // Clean up mutex after update completes
+      this.updateMutex.delete(entryId);
+    }
+  }
+
+  // Extracted update logic to separate method for mutex handling
+  private async performUpdate(entryId: string, blocks: JournalBlock[]): Promise<void> {
     const now = new Date();
     const totalChars = blocks.reduce((sum, block) => sum + (block.text?.length || 0), 0);
-
-    console.log(`💾 updateEntryImmediately called: ${entryId}, ${blocks.length} blocks, ${totalChars} chars`);
 
     // Log content state before processing
     this.logContentState(entryId, blocks, 'INPUT');
@@ -311,7 +415,6 @@ export class RealTimeJournalManager {
       }
     }
 
-    console.log(`📝 Updating existing entry: ${entryId}, previous blocks: ${entry.blocks.length}`);
     // Log previous state for comparison
     this.logContentState(entryId, entry.blocks, 'PREVIOUS');
 
@@ -329,7 +432,6 @@ export class RealTimeJournalManager {
 
     while (saveAttempts < maxSaveAttempts && !saveSuccessful) {
       saveAttempts++;
-      console.log(`💾 Save attempt ${saveAttempts}/${maxSaveAttempts} for ${entryId}`);
 
       // Save to localStorage immediately (no delay)
       this.saveToLocalStorage(updatedEntry);
@@ -338,11 +440,9 @@ export class RealTimeJournalManager {
       const verifyEntry = this.getFromLocalStorage(entryId);
       if (verifyEntry) {
         const verifyChars = verifyEntry.blocks.reduce((sum, block) => sum + (block.text?.length || 0), 0);
-        console.log(`🔍 Verification attempt ${saveAttempts}: ${entryId} has ${verifyEntry.blocks.length} blocks, ${verifyChars} chars`);
 
         if (verifyChars === totalChars && verifyEntry.blocks.length === blocks.length) {
           saveSuccessful = true;
-          console.log(`✅ Save verified successfully on attempt ${saveAttempts}: ${entryId}`);
           this.logContentState(entryId, verifyEntry.blocks, 'SAVED');
         } else {
           console.error(`🚨 SAVE VERIFICATION FAILED (attempt ${saveAttempts}): Expected ${totalChars} chars/${blocks.length} blocks, got ${verifyChars} chars/${verifyEntry.blocks.length} blocks`);
@@ -551,7 +651,6 @@ export class RealTimeJournalManager {
         throw new Error(`Save verification failed - character count mismatch: expected ${expectedChars}, got ${savedChars}`);
       }
 
-      console.log(`✅ localStorage save verified: ${entry.id}, ${savedChars} chars`);
 
     } catch (error) {
       console.error('🚨 CRITICAL: LocalStorage save failed:', error);
@@ -635,7 +734,6 @@ export class RealTimeJournalManager {
       if (entry.id.startsWith('temp-')) {
         // Check if the temp entry was deleted while syncing
         if (this.isEntryDeleted(entryId)) {
-          console.log(`🗑️ Temp entry ${entryId} was deleted during sync, skipping database creation`);
           this.syncQueue.delete(entryId);
           return;
         }
@@ -648,7 +746,6 @@ export class RealTimeJournalManager {
         );
 
         if (duplicateEntry) {
-          console.log(`🚫 Duplicate entry detected in database, skipping creation: ${entryId}`);
           // Remove the temp entry and use the existing database entry
           this.removeFromLocalStorage(entryId);
           const convertedEntry = this.convertSupabaseToEntry(duplicateEntry);
@@ -662,7 +759,6 @@ export class RealTimeJournalManager {
 
         // Check again if entry was deleted after database creation
         if (this.isEntryDeleted(entryId)) {
-          console.log(`🗑️ Temp entry ${entryId} was deleted after database creation, deleting from database`);
           this.deleteFromDatabase(supabaseEntry.id).catch(error => {
             console.warn(`Failed to delete newly created entry ${supabaseEntry.id}:`, error);
           });
@@ -679,16 +775,13 @@ export class RealTimeJournalManager {
 
         // Remove from sync queue
         this.syncQueue.delete(entryId);
-        console.log(`✅ Successfully synced new entry ${entryId} -> ${supabaseEntry.id}`);
       } else {
         // Update existing entry
         await this.updateInDatabase(entry);
         this.syncQueue.delete(entryId);
-        console.log(`✅ Successfully synced updated entry ${entryId}`);
       }
     } catch (error) {
       const { retryCount } = queueItem;
-      console.warn(`❌ Sync failed for entry ${entryId} (attempt ${retryCount + 1}):`, error);
 
       if (retryCount < this.maxRetries) {
         // Increment retry count and keep in queue
@@ -697,11 +790,9 @@ export class RealTimeJournalManager {
           retryCount: retryCount + 1,
           timestamp: Date.now() + (this.retryDelay * Math.pow(2, retryCount)) // Exponential backoff
         });
-        console.log(`🔄 Will retry sync for entry ${entryId} in ${this.retryDelay * Math.pow(2, retryCount)}ms`);
       } else {
         // Max retries reached, remove from queue but keep in localStorage
         this.syncQueue.delete(entryId);
-        console.error(`💥 Max retries reached for entry ${entryId}, giving up sync`);
       }
     }
   }
@@ -748,7 +839,6 @@ export class RealTimeJournalManager {
 
     tempEntries.forEach(entry => {
       if (!this.syncQueue.has(entry.id)) {
-        console.log(`🔄 Found orphaned temp entry, adding to sync queue: ${entry.id}`);
         this.syncQueue.set(entry.id, {
           entry,
           timestamp: Date.now(),
@@ -759,7 +849,6 @@ export class RealTimeJournalManager {
 
     const pendingCount = this.syncQueue.size;
     if (pendingCount > 0) {
-      console.log(`🔄 Retrying sync for ${pendingCount} entries after authentication`);
       await this.syncPendingChanges();
     }
   }
@@ -819,7 +908,6 @@ export class RealTimeJournalManager {
   // Active editing protection
   private markAsActivelyEdited(entryId: string): void {
     this.activelyEditedEntries.set(entryId, Date.now());
-    console.log(`📝 Marked entry as actively edited: ${entryId}`);
   }
 
   private isActivelyEdited(entryId: string): boolean {
@@ -861,7 +949,6 @@ export class RealTimeJournalManager {
       log.splice(0, log.length - 20);
     }
 
-    console.log(`📊 Content integrity log [${operation}]: ${entryId} - ${blockCount} blocks, ${charCount} chars`);
 
     // Check for content loss
     if (log.length > 1) {
@@ -891,7 +978,6 @@ export class RealTimeJournalManager {
       return false;
     }
 
-    console.log(`✅ INTEGRITY PASS: ${entryId} - ${savedChars} chars verified`);
     return true;
   }
 
@@ -1149,46 +1235,64 @@ export class RealTimeJournalManager {
   }
 }
 
-// Legacy functions for backward compatibility
-export async function createJournalEntry(data: CreateJournalEntryData): Promise<JournalEntryResponse> {
-  const manager = RealTimeJournalManager.getInstance();
+// Legacy functions for backward compatibility - DEPRECATED: Use RealTimeJournalManager directly with userId
+export async function createJournalEntry(data: CreateJournalEntryData, userId?: string): Promise<JournalEntryResponse> {
+  // Get current user if not provided
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated - cannot create journal entry without user context');
+    }
+    userId = user.id;
+  }
+
+  const manager = RealTimeJournalManager.getInstance(userId);
   const entry = await manager.createEntryImmediately(data.entry_date, data.entry_type);
-  
+
   // Wait for background sync to complete
   await new Promise(resolve => setTimeout(resolve, 100));
-  
+
   // Return the synced entry
   const syncedEntry = await manager.getEntry(data.entry_date, data.entry_type);
   if (!syncedEntry) {
     throw new Error('Failed to create journal entry');
   }
-  
+
   const response: JournalEntryResponse = {
     id: syncedEntry.id,
-    user_id: 'temp',
+    user_id: userId,
     entry_date: syncedEntry.date,
-    entry_type: 'general',
+    entry_type: data.entry_type,
     created_at: syncedEntry.createdAt.toISOString(),
     updated_at: syncedEntry.updatedAt.toISOString(),
-    excited_about: '',
-    make_today_great: '',
-    must_not_do: '',
-    grateful_for: '',
-    biggest_wins: [],
-    tensions: [],
+    excited_about: data.excited_about || '',
+    make_today_great: data.make_today_great || '',
+    must_not_do: data.must_not_do || '',
+    grateful_for: data.grateful_for || '',
+    biggest_wins: data.biggest_wins || [],
+    tensions: data.tensions || [],
     mood_rating: undefined,
     tags: []
   };
   return response;
 }
 
-export async function getJournalEntries(limit: number = 10): Promise<JournalEntryResponse[]> {
-  const manager = RealTimeJournalManager.getInstance();
+export async function getJournalEntries(limit: number = 10, userId?: string): Promise<JournalEntryResponse[]> {
+  // Get current user if not provided
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated - cannot get journal entries without user context');
+    }
+    userId = user.id;
+  }
+
+  const manager = RealTimeJournalManager.getInstance(userId);
   const entries = await manager.getAllEntries();
-  
+
   return entries.slice(0, limit).map(entry => ({
     id: entry.id,
-    user_id: 'temp',
+    user_id: userId,
     entry_date: entry.date,
     entry_type: 'general',
     created_at: entry.createdAt.toISOString(),
@@ -1196,37 +1300,55 @@ export async function getJournalEntries(limit: number = 10): Promise<JournalEntr
   })) as JournalEntryResponse[];
 }
 
-export async function getJournalEntryByDate(date: string, type?: 'morning' | 'evening'): Promise<JournalEntryResponse | null> {
-  const manager = RealTimeJournalManager.getInstance();
+export async function getJournalEntryByDate(date: string, type?: 'morning' | 'evening', userId?: string): Promise<JournalEntryResponse | null> {
+  // Get current user if not provided
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated - cannot get journal entry without user context');
+    }
+    userId = user.id;
+  }
+
+  const manager = RealTimeJournalManager.getInstance(userId);
   const entry = await manager.getEntry(date, type);
-  
+
   if (!entry) return null;
-  
+
   return {
     id: entry.id,
-    user_id: 'temp',
+    user_id: userId,
     entry_date: entry.date,
-    entry_type: 'general',
+    entry_type: type || 'general',
     created_at: entry.createdAt.toISOString(),
     updated_at: entry.updatedAt.toISOString()
   } as JournalEntryResponse;
 }
 
-export async function updateJournalEntry(id: string, data: Partial<CreateJournalEntryData> & { rich_text_content?: JournalBlock[] }): Promise<JournalEntryResponse> {
-  const manager = RealTimeJournalManager.getInstance();
-  
+export async function updateJournalEntry(id: string, data: Partial<CreateJournalEntryData> & { rich_text_content?: JournalBlock[] }, userId?: string): Promise<JournalEntryResponse> {
+  // Get current user if not provided
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated - cannot update journal entry without user context');
+    }
+    userId = user.id;
+  }
+
+  const manager = RealTimeJournalManager.getInstance(userId);
+
   if (data.rich_text_content) {
     await manager.updateEntryImmediately(id, data.rich_text_content);
   }
-  
+
   const entry = manager.getFromLocalStorage(id);
   if (!entry) {
     throw new Error('Entry not found');
   }
-  
+
   return {
     id: entry.id,
-    user_id: 'temp',
+    user_id: userId,
     entry_date: entry.date,
     entry_type: 'general',
     created_at: entry.createdAt.toISOString(),
@@ -1249,23 +1371,32 @@ export function convertBlocksToSupabaseFormat(blocks: JournalBlock[]): Partial<C
   };
 }
 
-export function convertSupabaseToBlocks(entry: JournalEntryResponse & { rich_text_content?: JournalBlock[] }): JournalBlock[] {
-  const manager = RealTimeJournalManager.getInstance();
+export function convertSupabaseToBlocks(entry: JournalEntryResponse & { rich_text_content?: JournalBlock[] }, userId?: string | null): JournalBlock[] {
+  const manager = RealTimeJournalManager.getInstance(userId);
   return manager.convertSupabaseToBlocks(entry);
 }
 
-export async function updateJournalEntryFromBlocks(id: string, blocks: JournalBlock[]): Promise<JournalEntryResponse> {
-  const manager = RealTimeJournalManager.getInstance();
+export async function updateJournalEntryFromBlocks(id: string, blocks: JournalBlock[], userId?: string): Promise<JournalEntryResponse> {
+  // Get current user if not provided
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated - cannot update journal entry without user context');
+    }
+    userId = user.id;
+  }
+
+  const manager = RealTimeJournalManager.getInstance(userId);
   await manager.updateEntryImmediately(id, blocks);
-  
+
   const entry = manager.getFromLocalStorage(id);
   if (!entry) {
     throw new Error('Entry not found');
   }
-  
+
   return {
     id: entry.id,
-    user_id: 'temp',
+    user_id: userId,
     entry_date: entry.date,
     entry_type: 'general',
     created_at: entry.createdAt.toISOString(),
@@ -1273,9 +1404,18 @@ export async function updateJournalEntryFromBlocks(id: string, blocks: JournalBl
   } as JournalEntryResponse;
 }
 
-export async function safeUpdateJournalEntry(id: string, blocks: JournalBlock[]): Promise<{ success: boolean; error?: string }> {
+export async function safeUpdateJournalEntry(id: string, blocks: JournalBlock[], userId?: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const manager = RealTimeJournalManager.getInstance();
+    // Get current user if not provided
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated - cannot update journal entry without user context');
+      }
+      userId = user.id;
+    }
+
+    const manager = RealTimeJournalManager.getInstance(userId);
     await manager.updateEntryImmediately(id, blocks);
     return { success: true };
   } catch (error) {
@@ -1284,23 +1424,47 @@ export async function safeUpdateJournalEntry(id: string, blocks: JournalBlock[])
   }
 }
 
-export async function getJournalEntryAsRichText(date: string): Promise<JournalEntry | null> {
-  const manager = RealTimeJournalManager.getInstance();
+export async function getJournalEntryAsRichText(date: string, userId?: string): Promise<JournalEntry | null> {
+  // Get current user if not provided
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated - cannot get journal entry without user context');
+    }
+    userId = user.id;
+  }
+
+  const manager = RealTimeJournalManager.getInstance(userId);
   return await manager.getEntry(date);
 }
 
-export async function deleteJournalEntry(id: string): Promise<void> {
-  const manager = RealTimeJournalManager.getInstance();
+export async function deleteJournalEntry(id: string, userId?: string): Promise<void> {
+  // Get current user if not provided
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated - cannot delete journal entry without user context');
+    }
+    userId = user.id;
+  }
+
+  const manager = RealTimeJournalManager.getInstance(userId);
   await manager.deleteEntryImmediately(id);
 }
 
-export async function getJournalStats(): Promise<{
+export async function getJournalStats(userId?: string | null): Promise<{
   totalEntries: number;
   morningEntries: number;
   eveningEntries: number;
   currentStreak: number;
 }> {
-  const manager = RealTimeJournalManager.getInstance();
+  // Get current user if not provided
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    userId = user?.id || null;
+  }
+  
+  const manager = RealTimeJournalManager.getInstance(userId);
   const entries = await manager.getAllEntries();
   
   const totalEntries = entries.length;
@@ -1341,5 +1505,5 @@ export async function getJournalStats(): Promise<{
 // call RealTimeJournalManager.getInstance(userId) with the current user's ID
 export const getJournalManager = (userId?: string | null) => RealTimeJournalManager.getInstance(userId);
 
-// Legacy export for backward compatibility - will use anonymous instance
-export const journalManager = RealTimeJournalManager.getInstance();
+// Legacy export removed - use getJournalManager(userId) instead
+// export const journalManager = RealTimeJournalManager.getInstance();

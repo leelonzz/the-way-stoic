@@ -33,9 +33,7 @@ export function CachedPage({
 
   // Debug logging for development
   const debugLog = (message: string, data?: unknown): void => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[CachedPage:${pageKey}] ${message}`, data || '')
-    }
+    // Removed console logging to clean up debug messages
   }
 
   // Save scroll position when component unmounts or page changes

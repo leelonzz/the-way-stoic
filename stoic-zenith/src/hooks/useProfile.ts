@@ -40,7 +40,7 @@ export function useProfile(user: User | null) {
     const now = Date.now();
     
     if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_DURATION) {
-      console.log('📦 Using cached profile');
+      // Using cached profile
       setProfile(cached.data);
       return;
     }

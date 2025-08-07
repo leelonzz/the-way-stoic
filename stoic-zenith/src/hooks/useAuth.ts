@@ -203,20 +203,19 @@ export const useAuth = (): AuthState & {
     setError(null)
 
     try {
-      console.log('🚪 Signing out user...')
 
-      // Clear all cached data
+      // Clear all cached data immediately
       const userId = authState.user?.id
       if (userId) {
         localStorage.removeItem(`profile-${userId}`)
         localStorage.removeItem(`calendar-${userId}`)
       }
+      // Clear authentication marker immediately
       localStorage.removeItem('was-authenticated')
+      // Dispatch custom event for same-tab listeners
+      window.dispatchEvent(new Event('localStorageChanged'))
 
-      await authHelpers.signOut()
-      console.log('✅ Sign out successful')
-
-      // Clear auth state
+      // Clear auth state immediately to prevent loading state
       setAuthState({
         user: null,
         session: null,
@@ -224,11 +223,47 @@ export const useAuth = (): AuthState & {
         loading: false,
         error: null,
       })
+
+      // Then sign out from Supabase
+      await authHelpers.signOut()
     } catch (error) {
       console.error('❌ Sign out error:', error)
       setError(error instanceof Error ? error.message : 'Failed to sign out')
+      // Even if sign out fails, clear the auth state
+      setAuthState({
+        user: null,
+        session: null,
+        profile: null,
+        loading: false,
+        error: null,
+      })
     }
   }, [setLoading, setError, authState.user?.id])
+
+  // Listen for localStorage changes (cross-tab and same-tab)
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (
+        (event && event.key === 'was-authenticated') ||
+        event.type === 'localStorageChanged'
+      ) {
+        // Force re-check of auth state
+        setAuthState({
+          user: null,
+          session: null,
+          profile: null,
+          loading: false,
+          error: null,
+        })
+      }
+    }
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('localStorageChanged', handleStorageChange)
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('localStorageChanged', handleStorageChange)
+    }
+  }, [])
 
   const refreshProfile = useCallback(async () => {
     if (!authState.user) return
@@ -272,12 +307,10 @@ export const useAuth = (): AuthState & {
 
     const initializeAuth = async (): Promise<void> => {
       try {
-        console.log('🔄 Initializing authentication...')
 
         // Check if user was previously authenticated
         const wasAuthenticated =
           localStorage.getItem('was-authenticated') === 'true'
-        console.log('👤 Was previously authenticated:', wasAuthenticated)
 
         // Always start with loading true to prevent login screen flash
         setAuthState(prev => ({ ...prev, loading: true }))
@@ -294,22 +327,17 @@ export const useAuth = (): AuthState & {
         } catch (error) {
           console.warn('Session fetch failed:', error)
           session = null
+          // Clear authentication marker on session fetch failure
+          localStorage.removeItem('was-authenticated')
         }
 
-        console.log(
-          '📋 Current session:',
-          session ? 'Found' : 'None',
-          session?.user?.email
-        )
 
         if (mounted && mountedRef.current) {
           if (session?.user) {
-            console.log('✅ Found valid session, updating auth state')
             // Mark user as authenticated for future page loads
             localStorage.setItem('was-authenticated', 'true')
             await updateAuthState(session.user, session)
           } else {
-            console.log('❌ No valid session found, user not authenticated')
             // Clear authentication marker
             localStorage.removeItem('was-authenticated')
             setAuthState({
@@ -346,11 +374,6 @@ export const useAuth = (): AuthState & {
     const {
       data: { subscription },
     } = authHelpers.onAuthStateChange(async (event, session) => {
-      console.log(
-        '🔄 Auth state changed:',
-        event,
-        session?.user?.email || 'No user'
-      )
 
       if (mounted && mountedRef.current) {
         try {
@@ -358,8 +381,8 @@ export const useAuth = (): AuthState & {
             localStorage.setItem('was-authenticated', 'true')
             await updateAuthState(session.user, session)
           } else {
-            // Only clear auth state if it's a sign out event
-            if (event === 'SIGNED_OUT') {
+            // Clear auth state for any sign out related events
+            if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || !session) {
               localStorage.removeItem('was-authenticated')
               setAuthState({
                 user: null,
@@ -372,6 +395,15 @@ export const useAuth = (): AuthState & {
           }
         } catch (error) {
           console.error('Auth state change error:', error)
+          // Clear auth state on error to prevent stuck states
+          localStorage.removeItem('was-authenticated')
+          setAuthState({
+            user: null,
+            session: null,
+            profile: null,
+            loading: false,
+            error: null,
+          })
         }
       }
     })

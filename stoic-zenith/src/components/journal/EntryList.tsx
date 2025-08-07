@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { format, isToday, isYesterday, parseISO } from 'date-fns';
+import { format, isToday, isYesterday, differenceInDays, startOfDay } from 'date-fns';
 import { Search, Plus } from 'lucide-react';
 import { EntryListItem } from './EntryListItem';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,13 @@ interface EntryListProps {
 interface EntryListItemData {
   entry: JournalEntry & { preview?: string };
   dateKey: string;
+}
+
+interface GroupedEntries {
+  groupName: string;
+  entries: EntryListItemData[];
+  order: number;
+  groupType: 'today' | 'yesterday' | 'previous7days' | 'previous30days' | 'older';
 }
 
 export const EntryList = React.memo(function EntryList({
@@ -87,6 +94,91 @@ export const EntryList = React.memo(function EntryList({
     });
   }, []);
 
+  // Group entries by date ranges
+  const groupEntriesByDateRange = useCallback((entries: EntryListItemData[]): GroupedEntries[] => {
+    const now = new Date();
+    const today = startOfDay(now);
+
+    const groups: Record<string, GroupedEntries> = {};
+
+    entries.forEach(({ entry, dateKey }) => {
+      const entryDate = startOfDay(entry.createdAt);
+      const daysDiff = differenceInDays(today, entryDate);
+
+      let groupName: string;
+      let groupType: GroupedEntries['groupType'];
+      let order: number;
+
+      if (isToday(entry.createdAt)) {
+        groupName = 'Today';
+        groupType = 'today';
+        order = 0;
+      } else if (isYesterday(entry.createdAt)) {
+        groupName = 'Yesterday';
+        groupType = 'yesterday';
+        order = 1;
+      } else if (daysDiff >= 2 && daysDiff <= 7) {
+        groupName = 'Previous 7 Days';
+        groupType = 'previous7days';
+        order = 2;
+      } else if (daysDiff >= 8 && daysDiff <= 30) {
+        groupName = 'Previous 30 Days';
+        groupType = 'previous30days';
+        order = 3;
+      } else {
+        // Group older entries by month
+        groupName = format(entry.createdAt, 'MMMM yyyy');
+        groupType = 'older';
+        // Order by year and month (newer first)
+        const year = entry.createdAt.getFullYear();
+        const month = entry.createdAt.getMonth();
+        order = 1000 - (year * 12 + month);
+      }
+
+      if (!groups[groupName]) {
+        groups[groupName] = {
+          groupName,
+          entries: [],
+          order,
+          groupType
+        };
+      }
+
+      groups[groupName].entries.push({ entry, dateKey });
+    });
+
+    // Sort entries within each group (most recent first)
+    Object.values(groups).forEach(group => {
+      group.entries.sort((a, b) =>
+        new Date(b.entry.createdAt).getTime() - new Date(a.entry.createdAt).getTime()
+      );
+    });
+
+    // Return groups sorted by order
+    return Object.values(groups).sort((a, b) => a.order - b.order);
+  }, []);
+
+  // Get appropriate date display format based on group type
+  const getDateDisplayForEntry = useCallback((entry: JournalEntry, groupType: GroupedEntries['groupType']): string => {
+    try {
+      switch (groupType) {
+        case 'today':
+        case 'yesterday':
+          return format(entry.createdAt, 'h:mm a');
+        case 'previous7days':
+          return format(entry.createdAt, 'EEEE');
+        case 'previous30days':
+        case 'older':
+          return format(entry.createdAt, 'MMM d, yyyy');
+        default:
+          return format(entry.createdAt, 'MMM d, yyyy');
+      }
+    } catch (error) {
+      console.warn('Invalid date format:', entry.createdAt, error);
+      return 'Unknown Date';
+    }
+  }, []);
+
   // Use parent entries if provided, otherwise load from manager
   const entries = useMemo(() => {
     if (parentEntries && parentEntries.length >= 0) {
@@ -110,6 +202,11 @@ export const EntryList = React.memo(function EntryList({
     );
   }, [entries, searchQuery]);
 
+  // Group filtered entries by date ranges
+  const groupedEntries = useMemo(() => {
+    return groupEntriesByDateRange(filteredEntries);
+  }, [filteredEntries, groupEntriesByDateRange]);
+
   const loadEntries = useCallback(async () => {
     // Only load entries if parent doesn't provide them
     if (parentEntries !== undefined) {
@@ -125,7 +222,6 @@ export const EntryList = React.memo(function EntryList({
     try {
       // Use the real-time manager to get entries
       const journalEntries = await journalManager.getAllEntries();
-      const _processedEntries = processEntries(journalEntries);
 
       // Update parent with entries
       onEntriesChange?.(journalEntries);
@@ -157,22 +253,7 @@ export const EntryList = React.memo(function EntryList({
     setSearchQuery(query);
   };
 
-  const formatEntryDate = (dateStr: string): string => {
-    try {
-      const date = parseISO(dateStr);
-      if (isToday(date)) {
-        return 'Today';
-      } else if (isYesterday(date)) {
-        return 'Yesterday';
-      } else {
-        return format(date, 'MMM d, yyyy');
-      }
-    } catch (error) {
-      console.warn('Invalid date format:', dateStr, error);
-      // Fallback to a safe date format
-      return 'Unknown Date';
-    }
-  };
+
 
   const handleDeleteEntry = async (entryId: string): Promise<void> => {
     try {
@@ -219,7 +300,7 @@ export const EntryList = React.memo(function EntryList({
         </div>
         
         {/* Sync Status */}
-        <div className="mt-2 flex items-center gap-2">
+        {/* <div className="mt-2 flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${
             syncStatus === 'synced' ? 'bg-green-500' :
             syncStatus === 'pending' ? 'bg-yellow-500' :
@@ -238,7 +319,7 @@ export const EntryList = React.memo(function EntryList({
               Retry
             </button>
           )}
-        </div>
+        </div> */}
       </div>
 
       {/* Entries List - Scrollable content area */}
@@ -254,15 +335,29 @@ export const EntryList = React.memo(function EntryList({
           </div>
         ) : (
           <div className="p-2">
-            {filteredEntries.map(({ entry, dateKey }) => (
-              <EntryListItem
-                key={entry.id}
-                entry={entry}
-                isSelected={selectedEntry?.id === entry.id}
-                onSelect={() => onSelectEntry(entry)}
-                onDelete={() => handleDeleteEntry(entry.id)}
-                dateLabel={formatEntryDate(dateKey)}
-              />
+            {groupedEntries.map((group) => (
+              <div key={group.groupName} className="mb-4">
+                {/* Group Header */}
+                <div className="px-2 py-2 mb-2">
+                  <h3 className="text-sm font-medium text-stone-500 uppercase tracking-wide">
+                    {group.groupName}
+                  </h3>
+                </div>
+
+                {/* Group Entries */}
+                <div className="space-y-1">
+                  {group.entries.map(({ entry }) => (
+                    <EntryListItem
+                      key={entry.id}
+                      entry={entry}
+                      isSelected={selectedEntry?.id === entry.id}
+                      onSelect={() => onSelectEntry(entry)}
+                      onDelete={() => handleDeleteEntry(entry.id)}
+                      dateLabel={getDateDisplayForEntry(entry, group.groupType)}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
