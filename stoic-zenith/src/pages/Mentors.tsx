@@ -1,6 +1,11 @@
+'use client'
+
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { useAuthContext } from '@/components/auth/AuthProvider'
+import { hasPhilosopherPlan } from '@/utils/subscription'
+import { MentorUpgradePrompt } from '@/components/mentors/MentorUpgradePrompt'
 
 const mentors = [
   {
@@ -52,12 +57,21 @@ const mentors = [
 
 export default function Mentors(): JSX.Element {
   const router = useRouter()
+  const { profile } = useAuthContext()
+
+  // Check if user has Philosopher plan access
+  const hasAccess = hasPhilosopherPlan(profile)
 
   const handleStartChat = (mentorName: string): void => {
     const mentor = mentors.find(m => m.name === mentorName)
     if (mentor) {
       router.push(`/mentors/${mentor.key}/chat`)
     }
+  }
+
+  // Show upgrade prompt for non-philosopher users
+  if (!hasAccess) {
+    return <MentorUpgradePrompt />
   }
 
   return (
