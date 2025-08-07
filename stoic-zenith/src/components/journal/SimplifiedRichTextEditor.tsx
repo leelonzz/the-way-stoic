@@ -88,11 +88,18 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
   const cursorPositionRef = useRef<{ start: number; end: number } | null>(null)
 
   const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-    if (isUpdating) return
+    console.log('🎯 SimplifiedRichTextEditor handleInput CALLED - isUpdating:', isUpdating, 'blockId:', block.id)
+
+    if (isUpdating) {
+      console.log('⏭️ Skipping handleInput - component is updating')
+      return
+    }
 
     const target = e.currentTarget
     const text = target.textContent || ''
     const html = target.innerHTML || ''
+
+    console.log('✏️ SimplifiedRichTextEditor handleInput - text length:', text.length, 'text preview:', text.substring(0, 50))
 
     // Immediately remove placeholder when user starts typing
     if (text.length > 0 && target.hasAttribute('data-placeholder')) {
@@ -106,10 +113,14 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
 
     // Prevent unnecessary updates if content hasn't changed
     if (text !== block.text || html !== block.richText) {
+      console.log('🔄 Calling onChange for block:', block.id, 'with text:', text.substring(0, 50))
+      console.log('📊 Content comparison - old text length:', block.text?.length || 0, 'new text length:', text.length)
       onChange(block.id, {
         text,
         richText: html,
       })
+    } else {
+      console.log('⏭️ Skipping onChange - no content change (text same:', text === block.text, 'html same:', html === block.richText, ')')
     }
   }, [block.id, onChange, isUpdating, block.text, block.richText])
 
@@ -219,16 +230,29 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
   }, [])
 
   const handleBlur = useCallback(() => {
-    // Re-evaluate placeholder when focus is lost
+    // Trigger immediate save on blur to ensure no data loss
     if (editorRef.current && !isUpdating) {
-      const isEmpty = !block.text || block.text.trim() === ''
-      const hasNoContent = !editorRef.current.textContent || editorRef.current.textContent.trim() === ''
+      const target = editorRef.current
+      const text = target.textContent || ''
+      const html = target.innerHTML || ''
+
+      // Force immediate save if content has changed
+      if (text !== block.text || html !== block.richText) {
+        onChange(block.id, {
+          text,
+          richText: html,
+        })
+      }
+
+      // Re-evaluate placeholder when focus is lost
+      const isEmpty = !text || text.trim() === ''
+      const hasNoContent = !text || text.trim() === ''
 
       if (isEmpty && hasNoContent) {
-        editorRef.current.setAttribute('data-placeholder', placeholder)
+        target.setAttribute('data-placeholder', placeholder)
       }
     }
-  }, [block.text, placeholder, isUpdating])
+  }, [block.id, block.text, block.richText, onChange, placeholder, isUpdating])
 
   // Update content when block changes externally
   useEffect(() => {
@@ -443,6 +467,7 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
           minHeight: '1.5rem',
           padding: '0.5rem',
           borderRadius: '0.375rem',
+          lineHeight: '1.8',
         }}
         data-block-id={block.id}
       />

@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     'Transform your daily practice with ancient Stoic wisdom. Build resilience, find clarity, and cultivate inner strength through guided reflection and timeless teachings.',
   generator: 'v0.dev',
   icons: {
-    icon: '/placeholder.svg',
+    icon: '/logo.png',
   },
 }
 
@@ -36,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/placeholder.svg" type="image/svg+xml" />
+        <link rel="icon" href="/logo.png" type="image/png" />
         <link
           rel="preload"
           href="https://fonts.googleapis.com/css2?family=Inknut+Antiqua:wght@300;400;500;600;700&display=swap"

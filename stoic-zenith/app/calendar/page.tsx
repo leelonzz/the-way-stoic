@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { NavigationOptimizedCachedPage } from '@/components/layout/NavigationOptimizedCachedPage'
@@ -124,10 +124,12 @@ function CalendarContent(): JSX.Element {
               </p>
             </div>
             
-            <LifeCalendarGrid 
-              data={lifeCalendarData} 
-              getWeekData={getWeekData} 
-            />
+            <Suspense fallback={<CalendarSkeleton />}>
+              <LifeCalendarGrid
+                data={lifeCalendarData}
+                getWeekData={getWeekData}
+              />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-6">
@@ -157,13 +159,13 @@ export default function CalendarPage(): JSX.Element {
   return (
     <ProtectedRoute>
       <AppLayout>
-        <NavigationOptimizedCachedPage 
-          pageKey="calendar" 
+        <NavigationOptimizedCachedPage
+          pageKey="calendar"
           fallback={<CalendarSkeleton />}
           preserveOnNavigation={true}
           refreshOnlyWhenStale={true}
-          maxAge={30 * 60 * 1000} // 30 minutes - balanced for navigation
-          navigationRefreshThreshold={20 * 60 * 1000} // 20 minutes for calendar data
+          maxAge={60 * 60 * 1000} // 60 minutes - longer cache for heavy calendar rendering
+          navigationRefreshThreshold={45 * 60 * 1000} // 45 minutes - calendar data doesn't change often
         >
           <CalendarContent />
         </NavigationOptimizedCachedPage>

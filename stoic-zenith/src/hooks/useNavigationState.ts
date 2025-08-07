@@ -73,15 +73,6 @@ export function useNavigationState() {
         lastNavigationTime: now
       }))
       
-      // Debug logging
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[NavigationState] Navigated to ${pathname}`, {
-          navigationTime,
-          cached: pageKey ? isPageCached(pageKey) : false,
-          totalNavigations: totalNavigationsRef.current,
-          cacheHitRate: (cacheHitsRef.current / totalNavigationsRef.current * 100).toFixed(1) + '%'
-        })
-      }
     }
   }, [pathname, navigationState.currentPath, navigationState.lastNavigationTime, isPageCached])
 
@@ -166,10 +157,6 @@ export function useNavigationState() {
   const prefetchPage = useCallback((path: string) => {
     // Use Next.js router prefetch
     router.prefetch(path)
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[NavigationState] Prefetching ${path}`)
-    }
   }, [router])
 
   // Clear navigation history

@@ -46,8 +46,8 @@ export const EntryList = React.memo(function EntryList({
   onLoadingStateChange,
   entries: parentEntries,
   onEntriesChange,
-  syncStatus = 'synced',
-  onRetrySync,
+  syncStatus: _syncStatus = 'synced',
+  onRetrySync: _onRetrySync,
   journalManager
 }: EntryListProps): JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
@@ -240,7 +240,7 @@ export const EntryList = React.memo(function EntryList({
         onLoadingStateChange(false);
       }
     }
-  }, [onLoadingStateChange, onEntriesChange, parentEntries, processEntries]);
+  }, [onLoadingStateChange, onEntriesChange, parentEntries, processEntries, journalManager]);
 
   // Load entries on mount and when tab becomes visible
   useEffect(() => {

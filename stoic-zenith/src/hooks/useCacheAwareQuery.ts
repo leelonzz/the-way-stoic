@@ -39,7 +39,6 @@ export function useCacheAwareQuery<TData>(
     const isFresh = cacheAge < cacheThreshold
     
     if (isFresh) {
-      console.log(`[CacheAwareQuery] Skipping query for ${pageKey} - using cached data (age: ${Math.round(cacheAge / 1000)}s)`)
       return true
     }
     

@@ -6,6 +6,9 @@ import { NavigationOptimizedCachedPage } from "@/components/layout/NavigationOpt
 import Mentors from "@/pages/Mentors";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
+// Force dynamic rendering to prevent static generation issues with AuthProvider
+export const dynamic = 'force-dynamic';
+
 function MentorsSkeleton() {
   return (
     <div className="max-w-6xl mx-auto p-6">

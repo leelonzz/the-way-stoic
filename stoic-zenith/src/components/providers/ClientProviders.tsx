@@ -9,7 +9,6 @@ import { DodoProvider } from '@/components/providers/DodoProvider'
 import { PageCacheProvider } from '@/components/providers/PageCacheProvider'
 import { PrefetchProvider } from '@/components/providers/PrefetchProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { NavigationDebugger } from '@/components/debug/NavigationDebugger'
 import { ReactNode, useState } from 'react'
 
 interface ClientProvidersProps {
@@ -72,7 +71,6 @@ export function ClientProviders({ children }: ClientProvidersProps): JSX.Element
                   maxAge={45 * 60 * 1000} // 45 minutes - balanced cache duration
                 >
                   {children}
-                  <NavigationDebugger />
                   <Toaster />
                   <Sonner />
                 </PageCacheProvider>

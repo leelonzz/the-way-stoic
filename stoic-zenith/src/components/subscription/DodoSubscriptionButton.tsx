@@ -10,6 +10,7 @@ import { Loader2, Zap } from 'lucide-react'
 interface DodoSubscriptionButtonProps {
   productId: string
   productName: string
+  buttonText?: string
   className?: string
   onSuccess?: (subscription: any) => void
   onError?: (error: Error) => void
@@ -18,6 +19,7 @@ interface DodoSubscriptionButtonProps {
 export function DodoSubscriptionButton({
   productId,
   productName,
+  buttonText = 'Begin Practice',
   className,
   onSuccess,
   onError,
@@ -102,7 +104,7 @@ export function DodoSubscriptionButton({
         ) : (
           <>
             <Zap className="mr-2 h-4 w-4" />
-            Begin Practice
+            {buttonText}
           </>
         )}
       </Button>

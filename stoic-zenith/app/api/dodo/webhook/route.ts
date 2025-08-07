@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Webhook } from 'standardwebhooks'
+import { supabase } from '@/integrations/supabase/client'
 
 interface DodoWebhookEvent {
   business_id: string
@@ -133,9 +134,35 @@ async function handlePaymentFailed(payment: PaymentEvent) {
 async function handleSubscriptionActive(subscription: SubscriptionEvent) {
   console.log('Subscription activated:', subscription.id)
 
-  // Update your database with subscription details
-  // Send welcome email
-  // etc.
+  try {
+    // Extract customer information to find the user
+    const customerId = (subscription as any).customer?.customer_id;
+    if (!customerId) {
+      console.error('No customer ID found in subscription event');
+      return;
+    }
+
+    // Update user profile with subscription details
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        subscription_status: 'active',
+        subscription_plan: 'philosopher',
+        subscription_id: subscription.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', customerId); // Assuming customer_id is the user ID
+
+    if (error) {
+      console.error('Failed to update user subscription status:', error);
+      throw error;
+    }
+
+    console.log(`✅ User ${customerId} subscription activated successfully`);
+  } catch (error) {
+    console.error('Error handling subscription activation:', error);
+    throw error;
+  }
 }
 
 async function handleSubscriptionOnHold(subscription: SubscriptionEvent) {

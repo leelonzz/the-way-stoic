@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { JournalEntry, JournalBlock } from '@/components/journal/types';
+import { FastSyncManager } from './fastSync';
 
 export interface CreateJournalEntryData {
   entry_date: string;
@@ -32,7 +33,7 @@ export interface JournalEntryResponse {
   rich_text_content?: JournalBlock[];
 }
 
-// Real-time journal manager with optimistic updates
+// Real-time journal manager with optimized sync
 export class RealTimeJournalManager {
   private static instances: Map<string, RealTimeJournalManager> = new Map();
   private userId: string | null = null;
@@ -50,15 +51,33 @@ export class RealTimeJournalManager {
   private retryDelay = 1000; // Start with 1 second
   private editProtectionWindow = 10000; // 10 seconds protection window
 
+  // Fast sync manager for optimized real-time editing
+  private fastSyncManager: FastSyncManager | null = null;
+  private useFastSync = true; // Enable fast sync by default
+  private creationMutex: Set<string> = new Set();
+  private metrics = { totalSaves: 0 }; // Track save count for logging
+  private lastCleanup: number = 0; // Track when we last cleaned up deleted entries
+
   private constructor(userId: string | null = null) {
     this.userId = userId;
     this.updateStorageKeys();
-    
+
+    // Initialize fast sync manager for optimized performance
+    if (this.useFastSync) {
+      try {
+        this.fastSyncManager = new FastSyncManager(userId);
+      } catch (error) {
+        this.useFastSync = false;
+      }
+    }
+
     // Only setup network listeners on client side
     if (typeof window !== 'undefined') {
       this.setupNetworkListeners();
       this.startBackgroundSync();
       this.migrateOldData();
+      // Validate deleted entries integrity on initialization
+      this.validateDeletedEntriesIntegrity();
     }
   }
 
@@ -75,7 +94,6 @@ export class RealTimeJournalManager {
 
     // Ensure the instance has the correct userId
     if (userId && instance.userId !== userId) {
-      console.log(`🔄 Updating journal manager userId from ${instance.userId} to ${userId}`);
       instance.setUserId(userId);
     }
 
@@ -112,6 +130,17 @@ export class RealTimeJournalManager {
       const pendingEntries = hadPendingEntries && !previousUserId ?
         Array.from(this.syncQueue.entries()) : [];
 
+      // Log user context change for debugging
+      console.log(`🔄 User context change: ${previousUserId || 'anonymous'} → ${userId || 'anonymous'}`);
+
+      // Preserve deleted entries across user context changes
+      let preservedDeletedEntries: Record<string, number> = {};
+      if (previousUserId && userId) {
+        // When switching between authenticated users, preserve deleted entries
+        preservedDeletedEntries = this.getDeletedEntriesWithTimestamps();
+        console.log(`💾 Preserving ${Object.keys(preservedDeletedEntries).length} deleted entries across user switch`);
+      }
+
       // Clear any pending operations for the old user (but preserve for first-time auth)
       if (previousUserId !== null) {
         // Only clear when switching between actual users, not on first auth
@@ -126,6 +155,21 @@ export class RealTimeJournalManager {
       this.userId = userId;
       this.updateStorageKeys();
 
+      // Restore preserved deleted entries after storage key update
+      if (Object.keys(preservedDeletedEntries).length > 0) {
+        try {
+          localStorage.setItem(this.deletedEntriesKey, JSON.stringify(preservedDeletedEntries));
+          console.log(`✅ Restored ${Object.keys(preservedDeletedEntries).length} deleted entries for new user context`);
+        } catch (error) {
+          console.warn('Failed to restore deleted entries:', error);
+        }
+      }
+
+      // Update fast sync manager with new userId
+      if (this.fastSyncManager) {
+        this.fastSyncManager.setUserId(userId);
+      }
+
       // Migrate data if needed
       if (typeof window !== 'undefined') {
         this.migrateOldData();
@@ -133,14 +177,12 @@ export class RealTimeJournalManager {
 
       // Restore and retry sync for entries created before authentication
       if (userId && !previousUserId && pendingEntries.length > 0) {
-        console.log(`🔄 Restoring ${pendingEntries.length} entries created before authentication`);
         pendingEntries.forEach(([entryId, queueItem]) => {
           this.syncQueue.set(entryId, queueItem);
         });
 
         // Trigger immediate sync for restored entries
         setTimeout(() => {
-          console.log(`🚀 Triggering sync for restored entries`);
           this.syncPendingChanges();
         }, 100);
       }
@@ -157,14 +199,10 @@ export class RealTimeJournalManager {
       const oldDeleted = localStorage.getItem('journal_deleted_entries');
 
       if (oldEntries || oldDeleted) {
-        console.log('🔄 Migrating old journal data to user-specific storage...');
-
         // Clear old data to prevent sharing between users
         localStorage.removeItem('journal_entries_cache');
         localStorage.removeItem('journal_deleted_entries');
         localStorage.removeItem('journal_entries_cache_backup');
-
-        console.log('✅ Old shared journal data cleared for security');
       }
 
       // Migrate anonymous entries to user-specific storage when user logs in
@@ -173,8 +211,7 @@ export class RealTimeJournalManager {
         const anonymousDeleted = localStorage.getItem('journal_deleted_entries_anonymous');
 
         if (anonymousEntries) {
-          console.log('🔄 Migrating anonymous entries to user-specific storage...');
-
+          // Parse anonymous entries
           try {
             const entries = JSON.parse(anonymousEntries) as JournalEntry[];
             const currentUserEntries = this.getAllFromLocalStorage();
@@ -189,7 +226,6 @@ export class RealTimeJournalManager {
 
               if (!exists) {
                 mergedEntries.push(anonymousEntry);
-                console.log(`📥 Migrated anonymous entry: ${anonymousEntry.id} (${anonymousEntry.date})`);
               }
             });
 
@@ -198,7 +234,6 @@ export class RealTimeJournalManager {
 
             // Clear anonymous storage after successful migration
             localStorage.removeItem('journal_entries_cache_anonymous');
-            console.log(`✅ Migrated ${entries.length} anonymous entries to user storage`);
           } catch (parseError) {
             console.warn('Failed to parse anonymous entries for migration:', parseError);
           }
@@ -215,7 +250,6 @@ export class RealTimeJournalManager {
 
             // Clear anonymous deleted entries
             localStorage.removeItem('journal_deleted_entries_anonymous');
-            console.log(`✅ Migrated ${deletedEntries.length} anonymous deleted entries`);
           } catch (parseError) {
             console.warn('Failed to parse anonymous deleted entries for migration:', parseError);
           }
@@ -247,40 +281,54 @@ export class RealTimeJournalManager {
   private startBackgroundSync(): void {
     if (typeof window === 'undefined') return;
     
+    // Skip immediate cleanup on startup to preserve recently deleted entries
+    // The periodic cleanup will handle truly old entries (>24h)
+    
     // Sync every 5 seconds in background
     this.syncInterval = setInterval(() => {
       if (this.isOnline && this.syncQueue.size > 0) {
         this.syncPendingChanges();
       }
+      
+      // Clean up old deleted entries every 30 minutes (less aggressive cleanup)
+      const now = Date.now();
+      if (!this.lastCleanup || (now - this.lastCleanup > 30 * 60 * 1000)) {
+        this.cleanupOldDeletedEntries();
+        this.lastCleanup = now;
+      }
     }, 5000);
   }
 
-  // INSTANT ENTRY CREATION (0ms delay)
-  async createEntryImmediately(date: string, _type: 'morning' | 'evening' | 'general' = 'general'): Promise<JournalEntry> {
+  // INSTANT ENTRY CREATION (0ms delay) - FIXED: No async delays, atomic creation
+  createEntryImmediately(date: string, _type: 'morning' | 'evening' | 'general' = 'general'): JournalEntry {
     // Validate user context for critical create operations
     this.validateUserContext('create journal entry');
 
-    // Allow multiple entries per day - no duplicate prevention
-    const existingEntries = this.getAllFromLocalStorage();
-
+    // Generate unique ID with microsecond precision to prevent duplicates
     const now = new Date();
-    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    const microTime = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+    const tempId = `temp-${microTime}-${Math.random().toString(36).substring(2, 11)}`;
 
-    // Check if an entry creation is already in progress with the same tempId
-    const creationKey = `creating-${tempId}`;
-    if (this.entryCreationInProgress.has(creationKey)) {
-      console.log(`⏳ Entry creation already in progress for ${tempId}, skipping...`);
-      return null as any; // This shouldn't happen with unique tempId
+    // CRITICAL: Check if creation is already in progress using stronger mutex
+    if (this.creationMutex.size > 0) {
+      // Return most recent entry instead of creating duplicate
+      const existingEntries = this.getAllFromLocalStorage();
+      if (existingEntries.length > 0) {
+        const mostRecent = existingEntries.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )[0];
+        return mostRecent;
+      }
     }
 
-    // Mark entry creation as in progress to prevent race conditions
-    this.entryCreationInProgress.add(tempId);
-    this.entryCreationInProgress.add(creationKey);
+    // Add to mutex BEFORE any operations
+    this.creationMutex.add(tempId);
 
     try {
-      // No duplicate checking - allow multiple entries per day
+      // Mark entry creation as in progress immediately
+      this.entryCreationInProgress.add(tempId);
 
-      // Create entry immediately in memory and localStorage
+      // Create entry object
       const newEntry: JournalEntry = {
         id: tempId,
         date,
@@ -294,90 +342,121 @@ export class RealTimeJournalManager {
         updatedAt: now
       };
 
-      // Save to localStorage immediately
+      // ATOMIC: Save to localStorage immediately - no delays
       this.saveToLocalStorage(newEntry);
+
+      // Verify save was successful immediately
+      const verifyEntry = this.getFromLocalStorage(tempId);
+      if (!verifyEntry) {
+        throw new Error(`Entry creation failed - not found in localStorage after save`);
+      }
 
       // Add to sync queue for background database creation
       this.syncQueue.set(tempId, { entry: newEntry, timestamp: Date.now(), retryCount: 0 });
 
-      console.log(`✅ Entry created successfully: ${tempId}`);
-
-      // Return immediately - no waiting
       return newEntry;
+
+    } catch (error) {
+      console.error(`🚨 Entry creation failed: ${tempId}`, error);
+      throw error;
     } finally {
-      // Clear the creation flag after a short delay to allow for any immediate updates
+      // Clear mutex immediately after creation
+      this.creationMutex.delete(tempId);
+      
+      // Clear creation flag after brief delay for any pending saves
       setTimeout(() => {
         this.entryCreationInProgress.delete(tempId);
-        this.entryCreationInProgress.delete(creationKey);
-        console.log(`🧹 Cleared creation flags for: ${tempId}`);
-      }, 500);
+      }, 100); // Reduced from 500ms to 100ms
     }
   }
 
   // INSTANT ENTRY DELETION (immediate UI feedback)
   async deleteEntryImmediately(entryId: string): Promise<void> {
-    console.log(`🗑️ Deleting entry immediately: ${entryId}`);
 
-    // Add to deleted entries list to prevent reappearing from database sync
+    // Validate user context before deletion
+    this.validateUserContext('delete journal entry');
+
+    // DEBUG: Check if entry exists before deletion
+    const entriesBeforeDeletion = this.getAllFromLocalStorageUnfiltered();
+    const entryExists = entriesBeforeDeletion.some(e => e.id === entryId);
+
+    // Add to deleted entries list with timestamp to prevent reappearing from database sync
     this.addToDeletedEntries(entryId);
-    console.log(`✅ Added to deleted entries list: ${entryId}`);
+    console.log(`✅ DELETION STEP 1: Added to deleted entries list: ${entryId} (user: ${this.userId})`);
 
     // Remove from localStorage immediately
     this.removeFromLocalStorage(entryId);
-    console.log(`✅ Removed from localStorage: ${entryId}`);
+    console.log(`✅ DELETION STEP 2: Removed from localStorage: ${entryId}`);
+
+    // DEBUG: Verify removal
+    const entriesAfterDeletion = this.getAllFromLocalStorageUnfiltered();
+    const entryStillExists = entriesAfterDeletion.some(e => e.id === entryId);
+    console.log(`🔍 DELETION VERIFY: Entry ${entryId} still exists after removal: ${entryStillExists} (${entriesAfterDeletion.length} total entries)`);
 
     // Remove from sync queue (important for temp entries)
     this.syncQueue.delete(entryId);
-    console.log(`✅ Removed from sync queue: ${entryId}`);
+    console.log(`✅ DELETION STEP 3: Removed from sync queue: ${entryId}`);
 
     // Only attempt database deletion for non-temporary entries
     if (this.isOnline && !entryId.startsWith('temp-')) {
       console.log(`🔄 Attempting database deletion for: ${entryId}`);
-      this.deleteFromDatabase(entryId).then(() => {
-        // Remove from deleted entries list after successful database deletion
-        this.removeFromDeletedEntries(entryId);
-        console.log(`✅ Database deletion successful, removed from deleted list: ${entryId}`);
-      }).catch(error => {
+      try {
+        await this.deleteFromDatabase(entryId);
+        console.log(`✅ Database deletion successful: ${entryId}`);
+        // Keep in deleted entries list for 7 days to handle database replication delays
+        // The cleanup will happen automatically via cleanupOldDeletedEntries
+      } catch (error) {
         console.warn(`❌ Database deletion failed for ${entryId}:`, error);
         // Keep in deleted entries list to prevent reappearing
-      });
+        console.log(`🛡️ Entry ${entryId} will remain in deleted list to prevent reappearing from database sync`);
+      }
     } else if (entryId.startsWith('temp-')) {
       console.log(`⚡ Skipping database deletion for temporary entry: ${entryId}`);
-      // For temp entries, we can remove from deleted list immediately since they don't exist in database
-      setTimeout(() => {
-        this.removeFromDeletedEntries(entryId);
-      }, 5000); // Keep for 5 seconds to prevent any race conditions
+      // For temp entries, keep in deleted list briefly to prevent race conditions
     }
 
-    console.log(`✅ Entry deletion completed: ${entryId}`);
+    // Verify deletion was properly recorded
+    const isStillDeleted = this.isEntryDeleted(entryId);
+    if (!isStillDeleted) {
+      console.error(`❌ CRITICAL: Entry ${entryId} not found in deleted list after deletion!`);
+      // Re-add to deleted entries as a safety measure
+      this.addToDeletedEntries(entryId);
+    }
+
+    console.log(`✅ Entry deletion completed: ${entryId} (deleted status: ${isStillDeleted})`);
   }
 
-  // REAL-TIME AUTO-SAVE (as users type)
+  // INSTANT SAVE (Google Docs style) - no blocking, no mutex
   async updateEntryImmediately(entryId: string, blocks: JournalBlock[]): Promise<void> {
     // Validate user context for critical save operations
     this.validateUserContext('save journal entry');
 
-    // MUTEX: Prevent concurrent updates to the same entry
-    const existingUpdate = this.updateMutex.get(entryId);
-    if (existingUpdate) {
-      console.log(`⏳ Update already in progress for ${entryId}, waiting...`);
-      try {
-        await existingUpdate;
-      } catch (error) {
-        console.warn(`Previous update failed for ${entryId}, proceeding with new update`);
-      }
+    // Simple immediate save without blocking
+    await this.performSimpleUpdate(entryId, blocks);
+  }
+
+  // Simple update method without mutex or complex verification
+  private async performSimpleUpdate(entryId: string, blocks: JournalBlock[]): Promise<void> {
+    const now = new Date();
+
+    // Get entry from localStorage
+    let entry = this.getFromLocalStorage(entryId);
+    if (!entry) {
+      throw new Error(`Entry ${entryId} not found`);
     }
 
-    // Create new update promise and store it in mutex
-    const updatePromise = this.performUpdate(entryId, blocks);
-    this.updateMutex.set(entryId, updatePromise);
+    // Update entry
+    const updatedEntry: JournalEntry = {
+      ...entry,
+      blocks,
+      updatedAt: now
+    };
 
-    try {
-      await updatePromise;
-    } finally {
-      // Clean up mutex after update completes
-      this.updateMutex.delete(entryId);
-    }
+    // Save to localStorage immediately
+    this.saveToLocalStorage(updatedEntry);
+
+    // Add to sync queue for background database update (non-blocking)
+    this.syncQueue.set(entryId, { entry: updatedEntry, timestamp: Date.now(), retryCount: 0 });
   }
 
   // Extracted update logic to separate method for mutex handling
@@ -385,8 +464,10 @@ export class RealTimeJournalManager {
     const now = new Date();
     const totalChars = blocks.reduce((sum, block) => sum + (block.text?.length || 0), 0);
 
-    // Log content state before processing
-    this.logContentState(entryId, blocks, 'INPUT');
+    // Log content state in development only
+    if (process.env.NODE_ENV === 'development' && (!this.useFastSync || !this.fastSyncManager)) {
+      this.logContentState(entryId, blocks, 'INPUT');
+    }
 
     // Mark entry as actively being edited to protect from sync overwrites
     this.markAsActivelyEdited(entryId);
@@ -397,20 +478,15 @@ export class RealTimeJournalManager {
     if (!entry) {
       // Check if entry creation is in progress (race condition handling)
       if (this.entryCreationInProgress.has(entryId)) {
-        console.log(`⏳ Entry creation in progress for ${entryId}, waiting briefly...`);
         // Wait a short time for the creation to complete
         await new Promise(resolve => setTimeout(resolve, 100));
         entry = this.getFromLocalStorage(entryId);
       }
 
       if (!entry) {
-        console.error(`🚨 CRITICAL ERROR: Entry ${entryId} not found in localStorage!`);
-        console.error(`🚨 updateEntryImmediately should only be called on existing entries.`);
-        console.error(`🚨 Use createEntryImmediately to create new entries first.`);
-        console.error(`🚨 Available entries:`, this.getAllFromLocalStorage().map(e => e.id));
-        console.error(`🚨 Entry creation in progress:`, Array.from(this.entryCreationInProgress));
-
-        // Throw an error to prevent silent failures and help debug the issue
+        if (process.env.NODE_ENV === 'development') {
+          console.error(`Entry ${entryId} not found in localStorage. Available entries:`, this.getAllFromLocalStorage().map(e => e.id));
+        }
         throw new Error(`Entry ${entryId} not found. Entries must be created with createEntryImmediately before updating.`);
       }
     }
@@ -425,56 +501,80 @@ export class RealTimeJournalManager {
       updatedAt: now
     };
 
-    // CRITICAL: Multiple save attempts with verification
-    let saveAttempts = 0;
-    const maxSaveAttempts = 3;
-    let saveSuccessful = false;
+    // Simplified save with basic verification
+    this.saveToLocalStorage(updatedEntry);
 
-    while (saveAttempts < maxSaveAttempts && !saveSuccessful) {
-      saveAttempts++;
-
-      // Save to localStorage immediately (no delay)
-      this.saveToLocalStorage(updatedEntry);
-
-      // Immediate verification
+    // Simple verification - only check if entry exists for fast sync
+    if (this.useFastSync && this.fastSyncManager) {
       const verifyEntry = this.getFromLocalStorage(entryId);
-      if (verifyEntry) {
-        const verifyChars = verifyEntry.blocks.reduce((sum, block) => sum + (block.text?.length || 0), 0);
-
-        if (verifyChars === totalChars && verifyEntry.blocks.length === blocks.length) {
-          saveSuccessful = true;
-          this.logContentState(entryId, verifyEntry.blocks, 'SAVED');
-        } else {
-          console.error(`🚨 SAVE VERIFICATION FAILED (attempt ${saveAttempts}): Expected ${totalChars} chars/${blocks.length} blocks, got ${verifyChars} chars/${verifyEntry.blocks.length} blocks`);
-
-          if (saveAttempts < maxSaveAttempts) {
-            // Wait a bit before retry
-            await new Promise(resolve => setTimeout(resolve, 10));
-          }
+      if (!verifyEntry) {
+        // One retry attempt
+        await new Promise(resolve => setTimeout(resolve, 10));
+        this.saveToLocalStorage(updatedEntry);
+        
+        const retryVerifyEntry = this.getFromLocalStorage(entryId);
+        if (!retryVerifyEntry) {
+          throw new Error(`Failed to save entry ${entryId}`);
         }
-      } else {
-        console.error(`🚨 SAVE FAILED (attempt ${saveAttempts}): Could not retrieve entry ${entryId} after saving`);
       }
     }
 
-    if (!saveSuccessful) {
-      console.error(`🚨 CRITICAL: Failed to save ${entryId} after ${maxSaveAttempts} attempts!`);
-      throw new Error(`Failed to save entry ${entryId} - content may be lost`);
+    // Final integrity check only in development
+    if (process.env.NODE_ENV === 'development') {
+      this.verifyContentIntegrity(entryId, blocks);
     }
-
-    // Final integrity check
-    this.verifyContentIntegrity(entryId, blocks);
 
     // Clear entry creation tracking since save was successful
     this.entryCreationInProgress.delete(entryId);
 
     // Add to sync queue for background database update
     this.syncQueue.set(entryId, { entry: updatedEntry, timestamp: Date.now(), retryCount: 0 });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Added entry to sync queue. Queue size:', this.syncQueue.size);
+    }
 
     // Trigger immediate sync for small changes
     if (blocks.length < 10) {
+      console.log('🚀 Triggering immediate sync for small change');
       setTimeout(() => this.syncEntry(entryId), 100);
+    } else {
+      console.log('⏳ Large change - will sync in background');
     }
+  }
+
+  // FAST REAL-TIME UPDATE (optimized for performance)
+  async updateEntryFast(entryId: string, blocks: JournalBlock[]): Promise<void> {
+    // Use fast sync manager if available, otherwise fall back to regular method
+    if (this.fastSyncManager && this.useFastSync) {
+      try {
+        // Increment save counter
+        this.metrics.totalSaves++;
+        
+        // Reduce logging frequency to minimize performance impact
+        if (this.metrics.totalSaves % 200 === 0) {
+          console.log(`🚀 FastSync active: ${this.metrics.totalSaves} saves completed`);
+        }
+        await this.fastSyncManager.updateEntryFast(entryId, blocks);
+        return;
+      } catch (error) {
+        console.warn('⚠️ Fast sync error (will retry without recovery):', error);
+        // Don't attempt recovery - it's too slow and causes the degradation
+        // Instead, just retry the FastSync operation once more
+        try {
+          await this.fastSyncManager.updateEntryFast(entryId, blocks);
+          return;
+        } catch (retryError) {
+          // Only fall back to legacy sync if retry also fails
+          console.warn('⚠️ Fast sync retry failed, using legacy sync for this save only');
+        }
+      }
+    } else {
+      console.log(`🐌 FastSync not available (manager: ${!!this.fastSyncManager}, enabled: ${this.useFastSync})`);
+    }
+
+    // Fallback to regular update method for this save only
+    // Don't permanently disable FastSync
+    return this.updateEntryImmediately(entryId, blocks);
   }
 
   // Get entry with fallback to localStorage
@@ -515,24 +615,20 @@ export class RealTimeJournalManager {
     // For authenticated users, ensure we load from database on first access
     if (this.isOnline && this.userId) {
       try {
-        console.log(`🔄 Loading entries from database for user: ${this.userId}`);
         await this.syncFromDatabase();
 
         // Get updated entries after sync
         localEntries = this.getAllFromLocalStorage();
         localEntries = this.removeDuplicateEntries(localEntries);
-        console.log(`✅ Loaded ${localEntries.length} entries from database`);
       } catch (error) {
         console.warn('Database sync failed, using localStorage only:', error);
       }
-    } else if (!this.userId) {
-      console.log('📝 No user authenticated, using localStorage only');
     }
 
     return localEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
-  // Remove duplicate entries (keep the most recent one for each ID)
+  // ENHANCED: Remove duplicate entries (keep the most recent one for each ID)
   private removeDuplicateEntries(entries: JournalEntry[]): JournalEntry[] {
     const uniqueEntries = new Map<string, JournalEntry>();
 
@@ -547,14 +643,51 @@ export class RealTimeJournalManager {
 
     // If we removed duplicates, update localStorage
     if (deduplicatedEntries.length < entries.length) {
-      console.log(`🧹 Removed ${entries.length - deduplicatedEntries.length} duplicate entries by ID`);
       localStorage.setItem(this.localStorageKey, JSON.stringify(deduplicatedEntries));
     }
 
+    // ENHANCED: Remove timestamp-based duplicates (entries created within same second)
+    const timestampDeduplicatedEntries = this.removeTimestampDuplicates(deduplicatedEntries);
+
     // Also remove entries with very similar content (likely duplicates from the bug)
-    const contentDeduplicatedEntries = this.removeSimilarContentEntries(deduplicatedEntries);
+    const contentDeduplicatedEntries = this.removeSimilarContentEntries(timestampDeduplicatedEntries);
 
     return contentDeduplicatedEntries;
+  }
+
+  // NEW: Remove entries created within the same second (likely rapid-click duplicates)
+  private removeTimestampDuplicates(entries: JournalEntry[]): JournalEntry[] {
+    const timestampGroups = new Map<number, JournalEntry[]>();
+
+    // Group entries by creation timestamp (rounded to seconds)
+    entries.forEach(entry => {
+      const timestampSeconds = Math.floor(new Date(entry.createdAt).getTime() / 1000);
+      if (!timestampGroups.has(timestampSeconds)) {
+        timestampGroups.set(timestampSeconds, []);
+      }
+      timestampGroups.get(timestampSeconds)!.push(entry);
+    });
+
+    const cleanedEntries: JournalEntry[] = [];
+    let duplicatesRemoved = 0;
+
+    // For each timestamp group, keep only the most recent entry
+    timestampGroups.forEach((groupEntries, timestamp) => {
+      if (groupEntries.length > 1) {
+        // Sort by creation time (microseconds) and keep the most recent
+        groupEntries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        cleanedEntries.push(groupEntries[0]);
+        duplicatesRemoved += groupEntries.length - 1;
+      } else {
+        cleanedEntries.push(groupEntries[0]);
+      }
+    });
+
+    if (duplicatesRemoved > 0) {
+      localStorage.setItem(this.localStorageKey, JSON.stringify(cleanedEntries));
+    }
+
+    return cleanedEntries;
   }
 
   // Remove entries with very similar content (likely duplicates from the bug)
@@ -582,7 +715,6 @@ export class RealTimeJournalManager {
         groupEntries.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
         cleanedEntries.push(groupEntries[0]);
         duplicatesRemoved += groupEntries.length - 1;
-        console.log(`🧹 Removed ${groupEntries.length - 1} duplicate entries with content: "${content.substring(0, 30)}..."`);
       } else {
         cleanedEntries.push(groupEntries[0]);
       }
@@ -597,86 +729,128 @@ export class RealTimeJournalManager {
     });
 
     if (duplicatesRemoved > 0) {
-      console.log(`🧹 Removed ${duplicatesRemoved} duplicate entries by content similarity`);
       localStorage.setItem(this.localStorageKey, JSON.stringify(cleanedEntries));
     }
 
     return cleanedEntries;
   }
 
-  // Local storage operations with backup mechanism
-  private saveToLocalStorage(entry: JournalEntry): void {
+  // ENHANCED: Local storage operations with comprehensive error recovery
+  saveToLocalStorage(entry: JournalEntry): void {
     if (typeof window === 'undefined') return;
 
     const backupKey = `${this.localStorageKey}_backup`;
+    const maxRetries = 3;
+    let retryCount = 0;
 
-    try {
-      // Get current entries
-      const entries = this.getAllFromLocalStorage();
-      const existingIndex = entries.findIndex(e => e.id === entry.id);
-
-      // Create backup before modifying
+    const attemptSave = (): void => {
       try {
-        localStorage.setItem(backupKey, JSON.stringify(entries));
-      } catch (backupError) {
-        console.warn('Backup creation failed:', backupError);
-      }
+        // Get current entries
+        const entries = this.getAllFromLocalStorage();
+        const existingIndex = entries.findIndex(e => e.id === entry.id);
 
-      // Update entries
-      if (existingIndex >= 0) {
-        entries[existingIndex] = entry;
-      } else {
-        entries.push(entry);
-      }
-
-      // Primary save attempt
-      localStorage.setItem(this.localStorageKey, JSON.stringify(entries));
-
-      // Verify the save immediately
-      const verification = localStorage.getItem(this.localStorageKey);
-      if (!verification) {
-        throw new Error('Save verification failed - no data found');
-      }
-
-      const parsedVerification = JSON.parse(verification);
-      const savedEntry = parsedVerification.find((e: JournalEntry) => e.id === entry.id);
-      if (!savedEntry) {
-        throw new Error('Save verification failed - entry not found');
-      }
-
-      const expectedChars = entry.blocks.reduce((sum, block) => sum + (block.text?.length || 0), 0);
-      const savedChars = savedEntry.blocks.reduce((sum, block) => sum + (block.text?.length || 0), 0);
-
-      if (savedChars !== expectedChars) {
-        throw new Error(`Save verification failed - character count mismatch: expected ${expectedChars}, got ${savedChars}`);
-      }
-
-
-    } catch (error) {
-      console.error('🚨 CRITICAL: LocalStorage save failed:', error);
-
-      // Attempt recovery from backup
-      try {
-        const backupData = localStorage.getItem(backupKey);
-        if (backupData) {
-          const backupEntries = JSON.parse(backupData);
-          console.log('🔄 Attempting recovery from backup...');
-
-          // Try to save again with backup data + new entry
-          const existingIndex = backupEntries.findIndex((e: JournalEntry) => e.id === entry.id);
-          if (existingIndex >= 0) {
-            backupEntries[existingIndex] = entry;
-          } else {
-            backupEntries.push(entry);
-          }
-
-          localStorage.setItem(this.localStorageKey, JSON.stringify(backupEntries));
-          console.log('✅ Recovery successful');
+        // Create backup before modifying
+        try {
+          localStorage.setItem(backupKey, JSON.stringify(entries));
+        } catch (backupError) {
+          console.warn('Backup creation failed:', backupError);
         }
-      } catch (recoveryError) {
-        console.error('🚨 CRITICAL: Recovery failed:', recoveryError);
-        throw new Error(`Failed to save entry ${entry.id}: ${error.message}`);
+
+        // Deep clone entry to prevent mutations during save
+        const entryToSave: JournalEntry = {
+          ...entry,
+          blocks: entry.blocks.map(block => ({
+            ...block,
+            text: block.text ? String(block.text) : block.text,
+            createdAt: new Date(block.createdAt)
+          })),
+          createdAt: new Date(entry.createdAt),
+          updatedAt: new Date(entry.updatedAt)
+        };
+
+        // Update entries
+        if (existingIndex >= 0) {
+          entries[existingIndex] = entryToSave;
+        } else {
+          entries.push(entryToSave);
+        }
+
+        // Primary save attempt with retry logic
+        localStorage.setItem(this.localStorageKey, JSON.stringify(entries));
+
+        // ENHANCED: Immediate verification with detailed checks
+        const verification = localStorage.getItem(this.localStorageKey);
+        if (!verification) {
+          throw new Error('Save verification failed - no data found');
+        }
+
+        const parsedVerification = JSON.parse(verification);
+        const savedEntry = parsedVerification.find((e: JournalEntry) => e.id === entry.id);
+        if (!savedEntry) {
+          throw new Error('Save verification failed - entry not found');
+        }
+
+        // Comprehensive content verification
+        const expectedChars = entry.blocks.reduce((sum, block) => sum + (block.text?.length || 0), 0);
+        const savedChars = savedEntry.blocks.reduce((sum, block) => sum + (block.text?.length || 0), 0);
+        const expectedBlocks = entry.blocks.length;
+        const savedBlocks = savedEntry.blocks.length;
+
+        if (savedChars !== expectedChars || savedBlocks !== expectedBlocks) {
+          throw new Error(`Save verification failed - content mismatch: expected ${expectedChars} chars/${expectedBlocks} blocks, got ${savedChars} chars/${savedBlocks} blocks`);
+        }
+
+        // Content integrity check
+        const contentMatch = JSON.stringify(entry.blocks) === JSON.stringify(savedEntry.blocks);
+        if (!contentMatch) {
+          throw new Error('Save verification failed - block content mismatch');
+        }
+
+      } catch (error) {
+        console.error(`🚨 Save attempt ${retryCount + 1} failed:`, error);
+
+        // Retry logic
+        if (retryCount < maxRetries - 1) {
+          retryCount++;
+          console.log(`🔄 Retrying save (attempt ${retryCount + 1}/${maxRetries})...`);
+          setTimeout(() => attemptSave(), 100 * retryCount); // Exponential backoff
+          return;
+        }
+
+        // Final failure - attempt recovery from backup
+        console.error('🚨 CRITICAL: All save attempts failed, attempting recovery');
+        this.attemptBackupRecovery(backupKey, entry);
+        throw error;
       }
+    };
+
+    attemptSave();
+  }
+
+  // NEW: Backup recovery mechanism
+  private attemptBackupRecovery(backupKey: string, failedEntry: JournalEntry): void {
+    try {
+      const backupData = localStorage.getItem(backupKey);
+      if (backupData) {
+        const backupEntries = JSON.parse(backupData);
+        console.log('🔄 Attempting recovery from backup...');
+
+        // Try to save again with backup data + new entry
+        const existingIndex = backupEntries.findIndex((e: JournalEntry) => e.id === failedEntry.id);
+        if (existingIndex >= 0) {
+          backupEntries[existingIndex] = failedEntry;
+        } else {
+          backupEntries.push(failedEntry);
+        }
+
+        localStorage.setItem(this.localStorageKey, JSON.stringify(backupEntries));
+        console.log('✅ Recovery successful');
+      } else {
+        console.warn('🚨 No backup data available for recovery');
+      }
+    } catch (recoveryError) {
+      console.error('🚨 CRITICAL: Recovery failed:', recoveryError);
+      throw new Error(`Failed to save entry ${failedEntry.id} and recovery failed: ${recoveryError.message}`);
     }
   }
 
@@ -697,20 +871,59 @@ export class RealTimeJournalManager {
     
     try {
       const data = localStorage.getItem(this.localStorageKey);
-      return data ? JSON.parse(data) : [];
+      const entries = data ? JSON.parse(data) : [];
+      
+      // Get deleted entries list for filtering
+      const deletedEntries = this.getDeletedEntriesWithTimestamps();
+      const deletedIds = Object.keys(deletedEntries);
+      
+      if (deletedIds.length > 0) {
+      }
+      
+      // Filter out any entries that are marked as deleted (extra safety)
+      const nonDeletedEntries = entries.filter((entry: JournalEntry) => {
+        const isDeleted = this.isEntryDeleted(entry.id);
+        if (isDeleted) {
+          const deletedAt = deletedEntries[entry.id];
+          const deletedTime = deletedAt ? new Date(deletedAt).toISOString() : 'unknown';
+        }
+        return !isDeleted;
+      });
+      
+      return nonDeletedEntries;
     } catch (error) {
       console.warn('LocalStorage getAll failed:', error);
       return [];
     }
   }
 
-  private removeFromLocalStorage(entryId: string): void {
-    if (typeof window === 'undefined') return;
+  private getAllFromLocalStorageUnfiltered(): JournalEntry[] {
+    if (typeof window === 'undefined') return [];
     
     try {
-      const entries = this.getAllFromLocalStorage();
+      const data = localStorage.getItem(this.localStorageKey);
+      const entries = data ? JSON.parse(data) : [];
+      return entries;
+    } catch (error) {
+      console.error('Error reading unfiltered journal entries from localStorage:', error);
+      return [];
+    }
+  }
+
+  private removeFromLocalStorage(entryId: string): void {
+    if (typeof window === 'undefined') return;
+
+    try {
+      // CRITICAL FIX: Use unfiltered entries to ensure we can actually remove deleted entries
+      const entries = this.getAllFromLocalStorageUnfiltered();
       const filteredEntries = entries.filter(entry => entry.id !== entryId);
+      const removedCount = entries.length - filteredEntries.length;
+
       localStorage.setItem(this.localStorageKey, JSON.stringify(filteredEntries));
+
+      if (removedCount === 0) {
+        console.warn(`⚠️ Entry ${entryId} was not found in localStorage for removal`);
+      }
     } catch (error) {
       console.warn('LocalStorage remove failed:', error);
     }
@@ -718,8 +931,12 @@ export class RealTimeJournalManager {
 
   // Background sync operations with retry logic
   private async syncEntry(entryId: string): Promise<void> {
+    console.log('🔄 syncEntry called for:', entryId);
     const queueItem = this.syncQueue.get(entryId);
-    if (!queueItem) return;
+    if (!queueItem) {
+      console.log('⚠️ No queue item found for:', entryId);
+      return;
+    }
 
     // Check if we have a valid user context before attempting sync
     if (!this.userId) {
@@ -728,6 +945,13 @@ export class RealTimeJournalManager {
       return;
     }
 
+    // Check network connectivity
+    if (!this.isOnline) {
+      console.log(`📱 Offline - queuing sync for ${entryId}`);
+      return;
+    }
+
+    console.log('🚀 Starting database sync for:', entryId);
     try {
       const { entry } = queueItem;
 
@@ -782,17 +1006,46 @@ export class RealTimeJournalManager {
       }
     } catch (error) {
       const { retryCount } = queueItem;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Log detailed error information
+      console.error(`❌ Sync failed for entry ${entryId} (attempt ${retryCount + 1}/${this.maxRetries}):`, errorMessage);
 
-      if (retryCount < this.maxRetries) {
-        // Increment retry count and keep in queue
+      // Check if it's a network error vs authentication error
+      const isNetworkError = errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('timeout');
+      const isAuthError = errorMessage.includes('auth') || errorMessage.includes('unauthorized') || errorMessage.includes('403') || errorMessage.includes('401');
+
+      if (retryCount < this.maxRetries && !isAuthError) {
+        // Increment retry count and keep in queue with exponential backoff
+        const backoffDelay = this.retryDelay * Math.pow(2, retryCount);
+        const nextRetryTime = Date.now() + backoffDelay;
+        
+        console.log(`🔄 Will retry sync for ${entryId} in ${Math.round(backoffDelay / 1000)}s`);
+        
         this.syncQueue.set(entryId, {
           ...queueItem,
           retryCount: retryCount + 1,
-          timestamp: Date.now() + (this.retryDelay * Math.pow(2, retryCount)) // Exponential backoff
+          timestamp: nextRetryTime
         });
+
+        // For network errors, also mark as offline temporarily
+        if (isNetworkError) {
+          this.isOnline = false;
+          // Re-check online status after delay
+          setTimeout(() => {
+            this.isOnline = navigator.onLine;
+          }, backoffDelay);
+        }
       } else {
-        // Max retries reached, remove from queue but keep in localStorage
+        // Max retries reached or auth error - remove from queue but keep in localStorage
+        console.error(`🚨 Giving up on sync for entry ${entryId} after ${retryCount + 1} attempts`);
         this.syncQueue.delete(entryId);
+        
+        // For auth errors, clear all pending syncs until re-auth
+        if (isAuthError) {
+          console.warn('🔐 Authentication error - clearing sync queue until re-auth');
+          this.syncQueue.clear();
+        }
       }
     }
   }
@@ -806,24 +1059,43 @@ export class RealTimeJournalManager {
   }
 
   // Public method to get sync status
-  public getSyncStatus(): { pending: number; hasErrors: boolean; isOnline: boolean } {
+  public getSyncStatus(): { pending: number; hasErrors: boolean; isOnline: boolean; queueEntries: string[] } {
     const pending = this.syncQueue.size;
     const hasErrors = Array.from(this.syncQueue.values()).some(item => item.retryCount >= this.maxRetries);
 
     return {
       pending,
       hasErrors,
-      isOnline: this.isOnline
+      isOnline: this.isOnline,
+      queueEntries: Array.from(this.syncQueue.keys())
     };
+  }
+
+  // Get sync queue size for debugging
+  public getSyncQueueSize(): number {
+    return this.syncQueue.size;
   }
 
   // Public method to force sync
   public async forcSync(): Promise<void> {
+    console.log('🔄 Force sync requested. Queue size:', this.syncQueue.size);
+
     if (!this.isOnline) {
+      console.error('❌ Cannot sync while offline');
       throw new Error('Cannot sync while offline');
     }
 
+    if (this.syncQueue.size === 0) {
+      console.log('✅ No entries to sync');
+      return;
+    }
+
+    const queueEntries = Array.from(this.syncQueue.keys());
+    console.log('🚀 Force syncing entries:', queueEntries);
+
     await this.syncPendingChanges();
+
+    console.log('✅ Force sync completed. Remaining queue size:', this.syncQueue.size);
   }
 
   // Public method to retry sync for entries that failed due to missing auth
@@ -859,14 +1131,14 @@ export class RealTimeJournalManager {
     return entries.some(entry => entry.id === entryId);
   }
 
-  // Deleted entries management
+  // Deleted entries management with timestamps
   private addToDeletedEntries(entryId: string): void {
     if (typeof window === 'undefined') return;
 
     try {
-      const deletedEntries = this.getDeletedEntries();
-      deletedEntries.add(entryId);
-      localStorage.setItem(this.deletedEntriesKey, JSON.stringify(Array.from(deletedEntries)));
+      const deletedEntries = this.getDeletedEntriesWithTimestamps();
+      deletedEntries[entryId] = Date.now();
+      localStorage.setItem(this.deletedEntriesKey, JSON.stringify(deletedEntries));
     } catch (error) {
       console.warn('Failed to add to deleted entries:', error);
     }
@@ -876,33 +1148,122 @@ export class RealTimeJournalManager {
     if (typeof window === 'undefined') return;
 
     try {
-      const deletedEntries = this.getDeletedEntries();
-      deletedEntries.delete(entryId);
-      localStorage.setItem(this.deletedEntriesKey, JSON.stringify(Array.from(deletedEntries)));
+      const deletedEntries = this.getDeletedEntriesWithTimestamps();
+      delete deletedEntries[entryId];
+      localStorage.setItem(this.deletedEntriesKey, JSON.stringify(deletedEntries));
     } catch (error) {
       console.warn('Failed to remove from deleted entries:', error);
     }
   }
 
-  private getDeletedEntries(): Set<string> {
-    if (typeof window === 'undefined') return new Set();
+  private getDeletedEntriesWithTimestamps(): Record<string, number> {
+    if (typeof window === 'undefined') return {};
 
     try {
       const stored = localStorage.getItem(this.deletedEntriesKey);
+      
       if (stored) {
-        const deletedArray = JSON.parse(stored) as string[];
-        return new Set(deletedArray);
+        const parsed = JSON.parse(stored);
+        
+        // Handle both old array format and new timestamp format
+        if (Array.isArray(parsed)) {
+          // Convert old array format to timestamp format
+          const timestamped: Record<string, number> = {};
+          parsed.forEach((entryId: string) => {
+            timestamped[entryId] = Date.now();
+          });
+          // Update storage with new format
+          localStorage.setItem(this.deletedEntriesKey, JSON.stringify(timestamped));
+          return timestamped;
+        } else if (typeof parsed === 'object' && parsed !== null) {
+          const deletedEntries = parsed as Record<string, number>;
+          return deletedEntries;
+        }
+      } else {
       }
     } catch (error) {
       console.warn('Failed to get deleted entries:', error);
     }
 
-    return new Set();
+    return {};
+  }
+
+  // Backward compatibility - returns Set for existing code
+  private getDeletedEntries(): Set<string> {
+    const deletedEntries = this.getDeletedEntriesWithTimestamps();
+    return new Set(Object.keys(deletedEntries));
   }
 
   private isEntryDeleted(entryId: string): boolean {
-    const deletedEntries = this.getDeletedEntries();
-    return deletedEntries.has(entryId);
+    const deletedEntries = this.getDeletedEntriesWithTimestamps();
+    return entryId in deletedEntries;
+  }
+
+  // Validate and repair deleted entries list integrity
+  private validateDeletedEntriesIntegrity(): void {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const deletedEntries = this.getDeletedEntriesWithTimestamps();
+      const deletedIds = Object.keys(deletedEntries);
+
+      if (deletedIds.length === 0) {
+        return;
+      }
+
+
+      let repairedCount = 0;
+      const now = Date.now();
+
+      // Validate timestamps and repair invalid entries
+      Object.keys(deletedEntries).forEach(entryId => {
+        const timestamp = deletedEntries[entryId];
+
+        if (!timestamp || typeof timestamp !== 'number' || timestamp > now) {
+          console.warn(`🔧 Repairing invalid timestamp for deleted entry: ${entryId} (was: ${timestamp})`);
+          deletedEntries[entryId] = now;
+          repairedCount++;
+        }
+      });
+
+      if (repairedCount > 0) {
+        localStorage.setItem(this.deletedEntriesKey, JSON.stringify(deletedEntries));
+      }
+
+    } catch (error) {
+      console.warn('Failed to validate deleted entries integrity:', error);
+    }
+  }
+
+  // Clean up old deleted entries (older than 7 days)
+  private cleanupOldDeletedEntries(): void {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const deletedEntries = this.getDeletedEntriesWithTimestamps();
+      const now = Date.now();
+      const cutoffTime = now - (7 * 24 * 60 * 60 * 1000); // 7 days ago
+      let cleanedCount = 0;
+
+
+      Object.keys(deletedEntries).forEach(entryId => {
+        const deletedAt = deletedEntries[entryId];
+        const deletedDate = new Date(deletedAt).toISOString();
+
+        if (deletedAt < cutoffTime) {
+          delete deletedEntries[entryId];
+          cleanedCount++;
+        } else {
+        }
+      });
+
+      if (cleanedCount > 0) {
+        localStorage.setItem(this.deletedEntriesKey, JSON.stringify(deletedEntries));
+      } else {
+      }
+    } catch (error) {
+      console.warn('Failed to cleanup old deleted entries:', error);
+    }
   }
 
   // Active editing protection
@@ -1009,8 +1370,6 @@ export class RealTimeJournalManager {
       rich_text_content: entry.blocks
     };
 
-    console.log(`💾 Creating entry in database for user ${user.id}, date ${entry.date}`);
-
     const { data: supabaseEntry, error } = await supabase
       .from('journal_entries')
       .insert(entryData)
@@ -1029,32 +1388,36 @@ export class RealTimeJournalManager {
       throw new Error(`Failed to create journal entry: ${error.message}`);
     }
 
-    console.log(`✅ Entry created in database with ID: ${supabaseEntry.id}`);
     return supabaseEntry as JournalEntryResponse;
   }
 
   private async updateInDatabase(entry: JournalEntry): Promise<JournalEntryResponse> {
-  const { data: { user } } = await supabase.auth.getUser();
+    console.log('📤 updateInDatabase called for entry:', entry.id, 'with', entry.blocks.length, 'blocks');
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
+    if (!user) {
+      console.error('❌ User not authenticated in updateInDatabase');
+      throw new Error('User not authenticated');
+    }
 
+    console.log('🔄 Updating database entry:', entry.id, 'for user:', user.id);
     const { data: supabaseEntry, error } = await supabase
-    .from('journal_entries')
+      .from('journal_entries')
       .update({
         rich_text_content: entry.blocks,
         updated_at: new Date().toISOString()
       })
       .eq('id', entry.id)
-    .eq('user_id', user.id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
-  if (error) {
+    if (error) {
+      console.error('❌ Database update failed for entry:', entry.id, 'Error:', error);
       throw new Error(`Failed to update journal entry: ${error.message}`);
-  }
+    }
 
+    console.log('✅ Successfully updated entry in database:', entry.id);
     return supabaseEntry as JournalEntryResponse;
 }
 
@@ -1106,20 +1469,32 @@ export class RealTimeJournalManager {
   }
 
   private async deleteFromDatabase(entryId: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    throw new Error('User not authenticated');
-  }
+    if (!user) {
+      console.error(`❌ Database delete failed: User not authenticated for entry ${entryId}`);
+      throw new Error('User not authenticated');
+    }
 
-    const { error } = await supabase
-    .from('journal_entries')
+    console.log(`🗑️ Attempting database deletion for entry: ${entryId} by user: ${user.id}`);
+
+    const { data, error } = await supabase
+      .from('journal_entries')
       .delete()
       .eq('id', entryId)
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .select(); // Return deleted rows to verify deletion
 
-  if (error) {
+    if (error) {
+      console.error(`❌ Database delete failed for ${entryId}:`, error);
       throw new Error(`Failed to delete journal entry: ${error.message}`);
+    }
+
+    // Verify deletion was successful
+    if (!data || data.length === 0) {
+      console.warn(`⚠️ No rows deleted for entry ${entryId} - entry may not exist in database`);
+    } else {
+      console.log(`✅ Database deletion confirmed for entry: ${entryId} (${data.length} row(s) deleted)`);
     }
   }
 
@@ -1142,22 +1517,44 @@ export class RealTimeJournalManager {
     }
 
     // Update localStorage with database entries
-    const localEntries = this.getAllFromLocalStorage();
+    // CRITICAL: Use unfiltered entries for merge comparison to properly track deleted entries
+    const localEntriesUnfiltered = this.getAllFromLocalStorageUnfiltered();
     const dbEntries = (entries || []).map(entry => this.convertSupabaseToEntry(entry as JournalEntryResponse));
 
-    // Filter out entries that have been deleted locally
-    const nonDeletedDbEntries = dbEntries.filter(entry => !this.isEntryDeleted(entry.id));
-    console.log(`🔄 Syncing ${nonDeletedDbEntries.length} entries from database (filtered out ${dbEntries.length - nonDeletedDbEntries.length} deleted entries)`);
+    // Filter out entries that have been deleted locally - CRITICAL for preventing restore
+    // Validate deleted entries integrity before sync
+    this.validateDeletedEntriesIntegrity();
 
-    // Merge and deduplicate, but protect actively edited entries
-    const mergedEntries = [...localEntries];
+    const deletedEntries = this.getDeletedEntriesWithTimestamps();
+    const deletedIds = Object.keys(deletedEntries);
+
+
+    const nonDeletedDbEntries = dbEntries.filter(entry => {
+      const isDeleted = this.isEntryDeleted(entry.id);
+      if (isDeleted) {
+        const deletedAt = deletedEntries[entry.id];
+        const deletedTime = deletedAt ? new Date(deletedAt).toISOString() : 'unknown';
+        const daysSinceDeleted = deletedAt ? Math.floor((Date.now() - deletedAt) / (24 * 60 * 60 * 1000)) : 'unknown';
+      }
+      return !isDeleted;
+    });
+
+    const filteredCount = dbEntries.length - nonDeletedDbEntries.length;
+
+    // Warn if we're filtering out a lot of entries (potential issue)
+    if (filteredCount > 10) {
+      console.warn(`⚠️ High number of deleted entries filtered (${filteredCount}). This might indicate a sync issue.`);
+    }
+
+    // Merge and deduplicate using UNFILTERED local entries for proper comparison
+    // This ensures deleted entries are recognized and not treated as "new"
+    const mergedEntries = [...localEntriesUnfiltered];
     nonDeletedDbEntries.forEach(dbEntry => {
       const existingIndex = mergedEntries.findIndex(e => e.id === dbEntry.id);
 
       if (existingIndex >= 0) {
         // Don't overwrite actively edited entries
         if (this.isActivelyEdited(dbEntry.id)) {
-          console.log(`🔒 Protecting actively edited entry from sync overwrite: ${dbEntry.id}`);
           return;
         }
 
@@ -1167,15 +1564,26 @@ export class RealTimeJournalManager {
 
         if (dbUpdatedAt > localUpdatedAt) {
           mergedEntries[existingIndex] = dbEntry;
-          console.log(`📥 Updated entry from database: ${dbEntry.id}`);
         }
       } else {
         mergedEntries.push(dbEntry);
-        console.log(`📥 Added database entry to localStorage: ${dbEntry.id}`);
       }
     });
 
-    localStorage.setItem(this.localStorageKey, JSON.stringify(mergedEntries));
+    // CRITICAL: Filter out deleted entries from final merged result before saving
+    const finalEntries = mergedEntries.filter(entry => {
+      const isDeleted = this.isEntryDeleted(entry.id);
+      if (isDeleted) {
+        const deletedEntries = this.getDeletedEntriesWithTimestamps();
+        const deletedAt = deletedEntries[entry.id];
+        const deletedTime = deletedAt ? new Date(deletedAt).toISOString() : 'unknown';
+      }
+      return !isDeleted;
+    });
+
+    const excludedCount = mergedEntries.length - finalEntries.length;
+
+    localStorage.setItem(this.localStorageKey, JSON.stringify(finalEntries));
   }
 
   private convertSupabaseToEntry(supabaseEntry: JournalEntryResponse): JournalEntry {
@@ -1227,10 +1635,57 @@ export class RealTimeJournalManager {
   return blocks;
 }
 
+  // Enable/disable fast sync for A/B testing
+  setFastSyncEnabled(enabled: boolean): void {
+    console.log(`🔧 Setting FastSync to: ${enabled ? 'ENABLED' : 'DISABLED'}`);
+    if (enabled && !this.fastSyncManager) {
+      this.fastSyncManager = new FastSyncManager(this.userId);
+      this.useFastSync = true;
+      console.log(`✅ FastSync initialized for user: ${this.userId}`);
+    } else if (!enabled && this.fastSyncManager) {
+      this.fastSyncManager.destroy();
+      this.fastSyncManager = null;
+      this.useFastSync = false;
+      console.log(`❌ FastSync disabled`);
+    }
+  }
+
+  // Check if fast sync is currently active
+  isFastSyncActive(): boolean {
+    return !!(this.fastSyncManager && this.useFastSync);
+  }
+
+  // Get performance metrics for monitoring
+  getPerformanceMetrics() {
+    if (this.fastSyncManager) {
+      return {
+        fastSync: this.fastSyncManager.getMetrics(),
+        syncQueueSize: this.syncQueue.size,
+        activeEdits: this.activelyEditedEntries.size,
+        pendingSaves: this.pendingSaves.size,
+        fastSyncEnabled: this.useFastSync
+      };
+    }
+
+    return {
+      fastSync: null,
+      syncQueueSize: this.syncQueue.size,
+      activeEdits: this.activelyEditedEntries.size,
+      pendingSaves: this.pendingSaves.size,
+      fastSyncEnabled: this.useFastSync
+    };
+  }
+
   // Cleanup
   destroy(): void {
     if (this.syncInterval) {
       clearInterval(this.syncInterval);
+    }
+
+    // Clean up fast sync manager
+    if (this.fastSyncManager) {
+      this.fastSyncManager.destroy();
+      this.fastSyncManager = null;
     }
   }
 }
@@ -1501,9 +1956,15 @@ export async function getJournalStats(userId?: string | null): Promise<{
 }
 
 // Export the manager getter for direct access
-// Note: This returns the anonymous instance. For user-specific access, 
+// Note: This returns the anonymous instance. For user-specific access,
 // call RealTimeJournalManager.getInstance(userId) with the current user's ID
 export const getJournalManager = (userId?: string | null) => RealTimeJournalManager.getInstance(userId);
+
+// Expose to window for debugging
+if (typeof window !== 'undefined') {
+  (window as any).RealTimeJournalManager = RealTimeJournalManager;
+  (window as any).getJournalManager = getJournalManager;
+}
 
 // Legacy export removed - use getJournalManager(userId) instead
 // export const journalManager = RealTimeJournalManager.getInstance();

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigationCachedQuery } from '@/hooks/useCacheAwareQuery';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 // import type { Tables } from '@/integrations/supabase/types';
@@ -127,26 +128,29 @@ export function useLifeCalendar(user: User | null) {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 
-  // Query for fetching preferences
+  // Cache-aware query for fetching preferences
   const {
     data: preferences,
     isLoading: loading,
     error: queryError,
     refetch
-  } = useQuery({
-    queryKey: QUERY_KEYS.preferences(user?.id || ''),
-    queryFn: () => fetchPreferences(user!.id),
-    enabled: !!user,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: (failureCount, error) => {
-      // Don't retry on 404 (no preferences found)
-      if (error && typeof error === 'object' && 'code' in error && error.code === 'PGRST116') {
-        return false;
+  } = useNavigationCachedQuery(
+    QUERY_KEYS.preferences(user?.id || ''),
+    () => fetchPreferences(user!.id),
+    {
+      enabled: !!user,
+      cacheThreshold: 10 * 60 * 1000, // 10 minutes cache threshold for calendar navigation
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: (failureCount, error) => {
+        // Don't retry on 404 (no preferences found)
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'PGRST116') {
+          return false;
+        }
+        return failureCount < 2;
       }
-      return failureCount < 2;
     }
-  });
+  );
 
   // Handle query errors and success
   useEffect(() => {

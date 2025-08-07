@@ -8,6 +8,9 @@ export interface UserProfile {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
+  subscription_status: string | null;
+  subscription_plan: string | null;
+  subscription_expires_at: string | null;
   created_at: string;
   updated_at: string;
 }

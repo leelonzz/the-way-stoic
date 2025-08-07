@@ -600,9 +600,9 @@ export function DailyStoicWisdom(): JSX.Element {
                     <SimplifiedQuoteCard
                       key={originalQuote.id}
                       quote={displayQuote}
-                      isSaved={isAuthenticated ? isQuoteSaved(displayQuote.id) : false}
-                      onSave={isAuthenticated ? saveQuote : undefined}
-                      onUnsave={isAuthenticated ? unsaveQuote : undefined}
+                      isSaved={isAuthenticated ? isQuoteSaved(originalQuote.id) : false}
+                      onSave={isAuthenticated ? (notes?: string) => saveQuote(originalQuote.id, notes) : undefined}
+                      onUnsave={isAuthenticated ? () => unsaveQuote(originalQuote.id) : undefined}
                       onRefresh={() => handleRefreshIndividualQuote(originalQuote.id)}
                       canReload={canReload}
                       reloadCount={reloadCount}
@@ -628,7 +628,8 @@ export function DailyStoicWisdom(): JSX.Element {
                       key={savedQuote.id}
                       quote={savedQuote.quote}
                       isSaved={true}
-                      onUnsave={unsaveQuote}
+                      onSave={(notes?: string) => saveQuote(savedQuote.quote.id, notes)}
+                      onUnsave={() => unsaveQuote(savedQuote.quote.id)}
                     />
                   ))
                 ) : (

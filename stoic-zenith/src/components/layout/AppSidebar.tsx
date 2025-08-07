@@ -9,6 +9,7 @@ import { useAuthContext } from '@/components/auth/AuthProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ProfileModal } from '@/components/profile/ProfileModal';
+import { getSubscriptionPlanDisplayName } from '@/utils/subscription';
 import { useQueryClient } from '@tanstack/react-query';
 import { handleNavigationPrefetch } from '@/lib/prefetch';
 import { useNavigationState } from '@/hooks/useNavigationState';
@@ -144,10 +145,9 @@ export function AppSidebar(): JSX.Element {
                 <p className="font-medium text-stone text-sm truncate">
                   {profile?.full_name || user.email?.split('@')[0] || 'User'}
                 </p>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-xs text-sage">Online</span>
-                </div>
+                <p className="text-xs text-sage truncate">
+                  {getSubscriptionPlanDisplayName(profile)}
+                </p>
               </div>
             </div>
           </Button>

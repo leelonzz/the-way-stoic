@@ -23,18 +23,6 @@ function HomePage(): JSX.Element {
 
   const dailyQuote = getDailyQuote()
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 [HomePage] Quote state:', {
-      hasQuote: !!dailyQuote,
-      quoteId: dailyQuote?.id,
-      loading,
-      error,
-      quotesCount: quotes.length,
-      shouldShowLoading: loading && quotes.length === 0
-    });
-  }, [dailyQuote, loading, error, quotes.length]);
-
   // Handle error state with retry button
   if (error) {
     return (
@@ -182,6 +170,7 @@ function HomePage(): JSX.Element {
                     src="/images/philosopher-image.png"
                     alt="Ancient philosopher"
                     fill
+                    sizes="(max-width: 768px) 100vw, 192px"
                     className="object-cover rounded-2xl"
                   />
                 </div>

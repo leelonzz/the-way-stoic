@@ -35,6 +35,7 @@ export default function Journal(): JSX.Element {
     handleSelectEntry: selectEntry,
     handleCreateEntry: createEntry,
     handleDeleteEntry: deleteEntry,
+    handleUpdateEntry: updateEntry,
     handleRetrySync: retrySync,
     journalManager
   } = useCachedJournal();
@@ -128,15 +129,14 @@ export default function Journal(): JSX.Element {
     };
   }, [userId]);
 
-  // Handle entry update for compatibility
+  // Handle entry update using cache-aware hook to update UI instantly
   const handleEntryUpdate = useCallback(async (updatedEntry: JournalEntry): Promise<void> => {
     try {
-      // Update using journal manager
-      await journalManager.updateEntryImmediately(updatedEntry.id, updatedEntry.blocks);
+      await updateEntry(updatedEntry.id, updatedEntry.blocks);
     } catch (error) {
       console.error('Failed to update entry:', error);
     }
-  }, [journalManager]);
+  }, [updateEntry]);
 
   // Show loading state while entries are loading
   if (isLoadingEntries) {

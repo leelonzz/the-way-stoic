@@ -12,16 +12,6 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        console.log('🔄 Processing auth callback...');
-        console.log('Current URL:', window.location.href);
-        console.log('URL params:', window.location.search);
-        
-        // Check for URL fragments (common in OAuth)
-        const urlParams = new URLSearchParams(window.location.search);
-        const fragment = window.location.hash;
-        console.log('URL fragment:', fragment);
-        console.log('URL search params:', Object.fromEntries(urlParams));
-        
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {

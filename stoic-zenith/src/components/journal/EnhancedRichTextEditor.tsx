@@ -33,8 +33,7 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
   const editorRef = useRef<HTMLDivElement>(null)
   const editingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const selectionManagerRef = useRef<SelectionManager | null>(null)
-  const onChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const pendingChangesRef = useRef<JournalBlock[] | null>(null)
+  const activeTimeoutsRef = useRef<Set<NodeJS.Timeout>>(new Set())
 
   const createNewBlock = (
     type: JournalBlock['type'] = 'paragraph',
@@ -80,33 +79,22 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
-      if (onChangeTimeoutRef.current) {
-        clearTimeout(onChangeTimeoutRef.current)
-      }
+      // Clear all active timeouts
+      const activeTimeouts = activeTimeoutsRef.current
+      activeTimeouts.forEach(timeout => clearTimeout(timeout))
+      activeTimeouts.clear()
+      
       if (editingTimeoutRef.current) {
         clearTimeout(editingTimeoutRef.current)
       }
     }
   }, [])
 
-  // Debounced onChange to prevent rapid fire updates
-  const debouncedOnChange = useCallback(
+  // Immediate onChange for instant UI updates (Google Docs style)
+  const immediateOnChange = useCallback(
     (newBlocks: JournalBlock[]) => {
-      // Update local state immediately
-      pendingChangesRef.current = newBlocks;
-      
-      // Cancel any pending onChange call
-      if (onChangeTimeoutRef.current) {
-        clearTimeout(onChangeTimeoutRef.current);
-      }
-      
-      // Debounce the actual onChange call (50ms for responsiveness)
-      onChangeTimeoutRef.current = setTimeout(() => {
-        if (pendingChangesRef.current) {
-          onChange(pendingChangesRef.current);
-          pendingChangesRef.current = null;
-        }
-      }, 50);
+      // Pass changes immediately - no debouncing
+      onChange(newBlocks)
     },
     [onChange]
   );
@@ -116,7 +104,7 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
       const newBlocks = blocks.map(block =>
         block.id === blockId ? { ...block, ...updates } : block
       )
-      debouncedOnChange(newBlocks)
+      immediateOnChange(newBlocks)
 
       // Handle slash command detection when text changes
       if (updates.text !== undefined) {
@@ -161,7 +149,7 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
         }
       }
     },
-    [blocks, debouncedOnChange, showCommandMenu]
+    [blocks, immediateOnChange, showCommandMenu]
   )
 
   const addBlock = useCallback(
@@ -176,15 +164,15 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
         block,
         ...blocks.slice(afterIndex + 1),
       ]
-      debouncedOnChange(newBlocks)
+      immediateOnChange(newBlocks)
       return block.id
     },
-    [blocks, debouncedOnChange]
+    [blocks, immediateOnChange]
   )
 
   // Helper function to focus a block and position cursor
   const focusBlock = useCallback((blockId: string, position: 'start' | 'end' = 'start') => {
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       const blockElement = document.querySelector(`[data-block-id="${blockId}"]`) as HTMLElement
       if (!blockElement) return
 
@@ -219,7 +207,9 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
         selection?.removeAllRanges()
         selection?.addRange(range)
       }
+      activeTimeoutsRef.current.delete(timeout)
     }, 10)
+    activeTimeoutsRef.current.add(timeout)
   }, [blocks])
 
   // Helper function to handle clicks on image blocks
@@ -316,7 +306,7 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
 
       const blockIndex = blocks.findIndex(b => b.id === blockId)
       const newBlocks = blocks.filter(b => b.id !== blockId)
-      debouncedOnChange(newBlocks)
+      immediateOnChange(newBlocks)
 
       // Focus previous or next block
       const targetIndex = blockIndex > 0 ? blockIndex - 1 : 0
@@ -338,7 +328,7 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
         }, 10)
       }
     },
-    [blocks, debouncedOnChange]
+    [blocks, immediateOnChange]
   )
 
   const selectAllContent = useCallback(() => {
@@ -885,35 +875,12 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
         return
       }
 
-      // Handle Enter key for new blocks (but not when command menu is open)
-      if (e.key === 'Enter' && !e.shiftKey && !showCommandMenu) {
+      // Handle Enter key - let it create line breaks within blocks (default behavior)
+      // Only handle Enter for image blocks to create new blocks after them
+      if (e.key === 'Enter' && !showCommandMenu && block.type === 'image') {
         e.preventDefault()
-
-        // For image blocks, create a new text block after them
-        if (block.type === 'image') {
-          const newBlockId = addBlock(blockId)
-          focusBlock(newBlockId, 'start')
-          return
-        }
-
         const newBlockId = addBlock(blockId)
-
-        // Focus the new block and ensure it's ready for input
-        setTimeout(() => {
-          const newElement = document.querySelector(
-            `[data-block-id="${newBlockId}"] [contenteditable]`
-          ) as HTMLElement
-          if (newElement) {
-            newElement.focus()
-            // Place cursor at the beginning
-            const range = document.createRange()
-            const selection = window.getSelection()
-            range.setStart(newElement, 0)
-            range.collapse(true)
-            selection?.removeAllRanges()
-            selection?.addRange(range)
-          }
-        }, 10)
+        focusBlock(newBlockId, 'start')
         return
       }
 
@@ -1097,30 +1064,36 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
       // Capture the activeBlockId before clearing it
       const blockIdToFocus = activeBlockId
 
-      // First, clear the DOM content to remove the "/" character immediately
-      const element = document.querySelector(
-        `[data-block-id="${activeBlockId}"] [contenteditable]`
-      ) as HTMLElement
-      if (element) {
-        element.innerHTML = ''
-        element.textContent = ''
-      }
+      // Close command menu first
+      setShowCommandMenu(false)
+      setActiveBlockId(null)
 
       // Handle image upload specially
       if (command.type === 'image') {
-        updateBlock(activeBlockId, { text: '' })
+        updateBlock(activeBlockId, { text: '', richText: '' })
         handleImageUpload(activeBlockId)
       } else {
-        updateBlock(activeBlockId, {
-          type: command.type,
-          level: command.level as 1 | 2 | 3,
-          text: '',
-          richText: '',
-        })
+        // Find current block and update it with new type
+        const currentBlock = blocks.find(b => b.id === activeBlockId)
+        if (currentBlock) {
+          // Create updated blocks array
+          const newBlocks = blocks.map(block => {
+            if (block.id === activeBlockId) {
+              return {
+                ...block,
+                type: command.type,
+                level: command.level as 1 | 2 | 3,
+                text: '',
+                richText: ''
+              }
+            }
+            return block
+          })
+          
+          // Update all blocks at once to trigger proper re-render
+          immediateOnChange(newBlocks)
+        }
       }
-
-      setShowCommandMenu(false)
-      setActiveBlockId(null)
 
       // Focus the transformed block (skip for image as it doesn't need text focus)
       if (command.type !== 'image') {
@@ -1129,23 +1102,23 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
             `[data-block-id="${blockIdToFocus}"] [contenteditable]`
           ) as HTMLElement
           if (element) {
+            // Clear any slash command text from the DOM
+            element.innerHTML = ''
+            element.textContent = ''
             element.focus()
+            
             // Place cursor at the beginning
             const range = document.createRange()
             const selection = window.getSelection()
-            if (element.firstChild) {
-              range.setStart(element.firstChild, 0)
-            } else {
-              range.setStart(element, 0)
-            }
+            range.setStart(element, 0)
             range.collapse(true)
             selection?.removeAllRanges()
             selection?.addRange(range)
           }
-        }, 50) // Increased timeout to ensure DOM updates are complete
+        }, 100) // Increased timeout to ensure DOM updates are complete
       }
     },
-    [activeBlockId, updateBlock, handleImageUpload]
+    [activeBlockId, blocks, immediateOnChange, handleImageUpload]
   )
 
   // Compute if all blocks are empty

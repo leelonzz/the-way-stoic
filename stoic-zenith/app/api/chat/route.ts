@@ -1,8 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateMentorResponse } from '@/lib/gemini';
+import { authenticateRequest, hasPhilosopherPlan } from '@/lib/auth-server';
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user and check subscription plan
+    const authenticatedUser = await authenticateRequest(request);
+
+    if (!authenticatedUser) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has philosopher plan access
+    if (!hasPhilosopherPlan(authenticatedUser.profile)) {
+      return NextResponse.json(
+        {
+          error: 'Philosopher plan required',
+          message: 'Upgrade to Philosopher plan to access mentor conversations'
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { mentorKey, message, conversationHistory } = body;
 

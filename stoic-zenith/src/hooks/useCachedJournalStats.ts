@@ -26,12 +26,9 @@ export function useCachedJournalStats() {
     async (): Promise<JournalEntry[]> => {
       if (!user?.id) return []
       
-      console.log('🔄 [CachedJournalStats] Loading entries from database for user:', user.id)
-      
       const manager = getJournalManager(user.id)
       const entries = await manager.getAllEntries()
       
-      console.log('✅ [CachedJournalStats] Loaded', entries.length, 'entries')
       return entries
     },
     {

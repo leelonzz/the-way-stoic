@@ -14,76 +14,94 @@ interface LifeCalendarGridProps {
   };
 }
 
-// Memoized week component for better performance
-const WeekSquare = memo(({ 
-  weekData, 
-  weekNumber 
-}: { 
-  weekIndex: number; 
-  weekData: ReturnType<LifeCalendarGridProps['getWeekData']>; 
-  weekNumber: number; 
-}) => (
-  <TooltipProvider delayDuration={200}>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div
-          className={`
-            w-3 h-3 rounded-sm border cursor-pointer transition-all duration-200 hover:scale-110
-            ${weekData.isCurrentWeek 
-              ? 'bg-cta border-cta shadow-lg ring-2 ring-cta/50' 
-              : weekData.isLived 
-                ? 'bg-stone border-stone/50' 
-                : 'bg-white border-stone/20 hover:bg-hero/20'
-            }
-          `}
-        />
-      </TooltipTrigger>
-      <TooltipContent>
-        <div className="text-sm">
-          <p className="font-semibold">
-            {weekData.isCurrentWeek ? 'Current Week' : `Week ${weekNumber}`}
-          </p>
-          <p>Year: {weekData.yearNumber + 1}</p>
-          <p>Age: {weekData.yearNumber}</p>
-          <p>Status: {weekData.isLived ? 'Lived' : 'Future'}</p>
-        </div>
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
-));
+// Optimized week component with reduced tooltip overhead
+const WeekSquare = memo(({
+  weekData,
+  weekNumber
+}: {
+  weekIndex: number;
+  weekData: ReturnType<LifeCalendarGridProps['getWeekData']>;
+  weekNumber: number;
+}) => {
+  // Pre-compute className for better performance
+  const className = useMemo(() => {
+    if (weekData.isCurrentWeek) {
+      return 'w-3 h-3 rounded-sm border cursor-pointer bg-cta border-cta shadow-lg ring-2 ring-cta/50';
+    } else if (weekData.isLived) {
+      return 'w-3 h-3 rounded-sm border cursor-pointer bg-stone border-stone/50';
+    } else {
+      return 'w-3 h-3 rounded-sm border cursor-pointer bg-white border-stone/20 hover:bg-hero/20 transition-colors duration-150';
+    }
+  }, [weekData.isCurrentWeek, weekData.isLived]);
+
+  // Only show tooltip for current week and every 52nd week (yearly markers) to reduce DOM overhead
+  const showTooltip = weekData.isCurrentWeek || weekNumber % 52 === 1;
+
+  if (showTooltip) {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={className} />
+          </TooltipTrigger>
+          <TooltipContent>
+            <div className="text-sm">
+              <p className="font-semibold">
+                {weekData.isCurrentWeek ? 'Current Week' : `Week ${weekNumber}`}
+              </p>
+              <p>Year: {weekData.yearNumber + 1}</p>
+              <p>Age: {weekData.yearNumber}</p>
+              <p>Status: {weekData.isLived ? 'Lived' : 'Future'}</p>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return <div className={className} />;
+});
 
 WeekSquare.displayName = 'WeekSquare';
 
-// Memoized year row component
-const YearRow = memo(({ 
-  yearIndex, 
-  totalWeeks, 
-  getWeekData 
-}: { 
-  yearIndex: number; 
-  totalWeeks: number; 
-  getWeekData: LifeCalendarGridProps['getWeekData']; 
+// Optimized year row component with better memoization
+const YearRow = memo(({
+  yearIndex,
+  totalWeeks,
+  getWeekData
+}: {
+  yearIndex: number;
+  totalWeeks: number;
+  getWeekData: LifeCalendarGridProps['getWeekData'];
 }) => {
   const weeks = useMemo(() => {
     const weekElements = [];
     const startWeek = yearIndex * 52;
-    
-    for (let week = 0; week < 52; week++) {
+    const endWeek = Math.min(startWeek + 52, totalWeeks);
+
+    // Pre-calculate all week data to avoid repeated function calls
+    const weekDataCache = [];
+    for (let week = 0; week < (endWeek - startWeek); week++) {
       const weekIndex = startWeek + week;
-      if (weekIndex >= totalWeeks) break;
-      
-      const weekData = getWeekData(weekIndex);
-      
+      weekDataCache.push({
+        weekIndex,
+        weekData: getWeekData(weekIndex),
+        weekNumber: week + 1
+      });
+    }
+
+    // Create elements from cached data
+    for (const { weekIndex, weekData, weekNumber } of weekDataCache) {
       weekElements.push(
         <WeekSquare
           key={weekIndex}
           weekIndex={weekIndex}
           weekData={weekData}
-          weekNumber={week + 1}
+          weekNumber={weekNumber}
         />
       );
     }
-    
+
     return weekElements;
   }, [yearIndex, totalWeeks, getWeekData]);
 
@@ -103,12 +121,12 @@ YearRow.displayName = 'YearRow';
 
 export const LifeCalendarGrid = memo(({ data, getWeekData }: LifeCalendarGridProps) => {
   const { totalWeeks, weeksLived, lifeExpectancy } = data;
-  
-  // Memoize year rows for better performance
+
+  // Memoize year rows with more stable dependencies
   const yearRows = useMemo(() => {
     const years = Math.ceil(totalWeeks / 52);
     const rows = [];
-    
+
     for (let year = 0; year < years; year++) {
       rows.push(
         <YearRow
@@ -119,11 +137,11 @@ export const LifeCalendarGrid = memo(({ data, getWeekData }: LifeCalendarGridPro
         />
       );
     }
-    
+
     return rows;
   }, [totalWeeks, getWeekData]);
 
-  // Memoize stats for better performance
+  // Memoize stats with stable dependencies
   const stats = useMemo(() => [
     { value: data.weeksLived, label: 'Weeks Lived', color: 'text-cta' },
     { value: totalWeeks - weeksLived, label: 'Weeks Remaining', color: 'text-stone' },

@@ -17,7 +17,7 @@ export function MementoMoriInsights({
     {
       icon: Clock,
       title: 'Time Perspective',
-      content: `You have approximately ${data.daysRemaining.toLocaleString()} days remaining. That&apos;s ${Math.floor(data.daysRemaining / 365)} years of potential experiences, growth, and impact.`,
+      content: `You have approximately ${data.daysRemaining.toLocaleString()} days remaining. That's ${Math.floor(data.daysRemaining / 365)} years of potential experiences, growth, and impact.`,
       color: 'text-cta',
     },
     {
@@ -25,12 +25,12 @@ export function MementoMoriInsights({
       title: "Life's Seasons",
       content:
         data.percentageLived < 25
-          ? 'You&apos;re in life&apos;s spring - time for growth, learning, and planting seeds for the future.'
+          ? "You're in life's spring - time for growth, learning, and planting seeds for the future."
           : data.percentageLived < 50
-            ? 'You&apos;re in life&apos;s summer - peak time for achievement, building, and making your mark.'
+            ? "You're in life's summer - peak time for achievement, building, and making your mark."
             : data.percentageLived < 75
-              ? 'You&apos;re in life&apos;s autumn - time for wisdom sharing, mentoring, and harvesting what you&apos;ve sown.'
-              : 'You&apos;re in life&apos;s winter - time for reflection, legacy building, and savoring life&apos;s essence.',
+              ? "You're in life's autumn - time for wisdom sharing, mentoring, and harvesting what you've sown."
+              : "You're in life's winter - time for reflection, legacy building, and savoring life's essence.",
       color: 'text-hero',
     },
     {
@@ -44,7 +44,7 @@ export function MementoMoriInsights({
       icon: Lightbulb,
       title: 'Stoic Wisdom',
       content:
-        'Marcus Aurelius reminded us: &apos;It is not death that a man should fear, but never beginning to live.&apos; Use this awareness to live more fully.',
+        'Marcus Aurelius reminded us: "It is not death that a man should fear, but never beginning to live." Use this awareness to live more fully.',
       color: 'text-ink',
     },
   ]
@@ -63,7 +63,7 @@ export function MementoMoriInsights({
       <Card className="bg-gradient-to-r from-cta/10 to-hero/10 border-cta/20 animate-fade-in">
         <CardContent className="p-6 text-center">
           <h3 className="text-xl font-serif text-ink mb-3">
-            Today&apos;s Reflection
+            Today's Reflection
           </h3>
           <p className="text-stone italic">{motivationalMessage}</p>
         </CardContent>

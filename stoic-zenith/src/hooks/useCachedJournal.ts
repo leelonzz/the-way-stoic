@@ -3,9 +3,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigationCachedQuery } from './useCacheAwareQuery'
 import { getJournalManager } from '@/lib/journal'
-import type { JournalEntry } from '@/components/journal/types'
+import type { JournalEntry, JournalBlock } from '@/components/journal/types'
 import { useAuthContext } from '@/components/auth/AuthProvider'
 import { useQueryClient } from '@tanstack/react-query'
+import { toast } from '@/components/ui/use-toast'
 
 /**
  * Cache-aware journal hook that prevents redundant database calls
@@ -23,43 +24,35 @@ export function useCachedJournal() {
     async (): Promise<JournalEntry[]> => {
       if (!user?.id) return []
       
-      console.log('🔄 [CachedJournal] Loading entries from database for user:', user.id)
-      
       const manager = getJournalManager(user.id)
       
-      // Try to get cached entries first
-      const syncStatus = manager.getSyncStatus()
-      const hasLocalData = manager.entryExists('') // Check if localStorage has data
+      // FORCE SYNC: Always sync from database first when user authenticates
+      // This ensures entries persist after clearing site data
+      setSyncStatus('syncing')
       
-      if (hasLocalData || syncStatus.pending > 0) {
-        console.log('📦 [CachedJournal] Found local data, loading from cache first')
+      try {
+        // Force sync from database first
+        await manager.retryAuthSync()
+        
+        // Get all entries (this will include database sync)
         const rawEntries = await manager.getAllEntries()
         
-        if (rawEntries.length > 0) {
-          console.log('✅ [CachedJournal] Loaded', rawEntries.length, 'entries from cache')
-          
-          // Background sync if online (non-blocking)
-          if (user.id && syncStatus.isOnline) {
-            setTimeout(async () => {
-              try {
-                await manager.forcSync()
-                console.log('🔄 [CachedJournal] Background sync completed')
-              } catch (error) {
-                console.warn('⚠️ [CachedJournal] Background sync failed:', error)
-              }
-            }, 100)
-          }
-          
+        setSyncStatus('synced')
+        return rawEntries
+      } catch (error) {
+        console.error('❌ [CachedJournal] Database sync failed:', error)
+        setSyncStatus('error')
+        
+        // Fallback to local data if sync fails
+        try {
+          const rawEntries = await manager.getAllEntries()
+          console.log('⚠️ [CachedJournal] Using local data after sync failure:', rawEntries.length, 'entries')
           return rawEntries
+        } catch (fallbackError) {
+          console.error('❌ [CachedJournal] Local fallback also failed:', fallbackError)
+          return []
         }
       }
-      
-      // No local data, must load from database
-      console.log('🌐 [CachedJournal] No local data, loading from database')
-      const rawEntries = await manager.getAllEntries()
-      console.log('✅ [CachedJournal] Loaded', rawEntries.length, 'entries from database')
-      
-      return rawEntries
     },
     {
       enabled: !!user?.id,
@@ -157,30 +150,43 @@ export function useCachedJournal() {
     recordEntryAccess(entry.id)
   }
 
-  // Create new entry function - INSTANT (0ms)
-  const handleCreateEntry = async () => {
+  // Create new entry function - INSTANT (0ms) - FIXED: Ensure localStorage before selection
+  const handleCreateEntry = () => {
     if (!user?.id) return
     
     try {
       const manager = getJournalManager(user.id)
       // Use full ISO timestamp to allow multiple entries per day
       const dateString = new Date().toISOString()
-      const newEntry = await manager.createEntryImmediately(dateString, 'general')
+      const newEntry = manager.createEntryImmediately(dateString, 'general')
       
-      if (newEntry) {
-        // Optimistically update the entries list immediately (0ms)
-        const currentEntries = entriesQuery.data || []
-        queryClient.setQueryData(['journal-entries', user.id], [newEntry, ...currentEntries])
-        
-        // Select the new entry immediately
-        setSelectedEntry(newEntry)
-        recordEntryAccess(newEntry.id)
-        
-        // Background refetch (non-blocking)
-        entriesQuery.refetch()
+      // CRITICAL: Verify entry exists in localStorage before proceeding
+      const verifyEntry = manager.getFromLocalStorage(newEntry.id)
+      if (!verifyEntry) {
+        console.error(`🚨 Entry not found in localStorage after creation: ${newEntry.id}`)
+        throw new Error('Entry creation failed - not persisted to localStorage')
       }
+      
+      // Optimistically update the entries list immediately (0ms)
+      const currentEntries = entriesQuery.data || []
+      queryClient.setQueryData(['journal-entries', user.id], [newEntry, ...currentEntries])
+      
+      // Select the new entry only after localStorage verification
+      setSelectedEntry(newEntry)
+      recordEntryAccess(newEntry.id)
+      
+      console.log(`✅ Entry created and selected: ${newEntry.id}`)
+      
+      // Background refetch (non-blocking)
+      entriesQuery.refetch()
+      
     } catch (error) {
       console.error('Failed to create entry:', error)
+      toast({
+        title: "Entry creation failed",
+        description: "Failed to create new entry. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -199,16 +205,74 @@ export function useCachedJournal() {
         setSelectedEntry(null)
       }
       
-      // Delete from storage and database in background
+      // Delete from storage and database - AWAIT to ensure persistence
       const manager = getJournalManager(user.id)
-      manager.deleteEntryImmediately(entryId)
+      await manager.deleteEntryImmediately(entryId)
       
-      // Background refetch to sync with database (non-blocking)
-      entriesQuery.refetch()
+      // Note: No immediate refetch needed - optimistic update already removed entry from UI
+      // Deleted entries list will prevent reappearing during future syncs
+      console.log(`✅ Entry ${entryId} deleted successfully - no refetch needed`)
     } catch (error) {
       console.error('Failed to delete entry:', error)
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete entry. Please try again.",
+        variant: "destructive",
+      })
       // Restore entries on error
       entriesQuery.refetch()
+    }
+  }
+
+  // Update entry function - REAL-TIME SYNC
+  const handleUpdateEntry = async (entryId: string, blocks: JournalBlock[]) => {
+    if (!user?.id) return
+    
+    try {
+      // Check if entry exists before trying to update
+      const manager = getJournalManager(user.id)
+      const existingEntry = manager.getFromLocalStorage(entryId)
+      
+      if (!existingEntry) {
+        console.warn(`⚠️ Cannot update entry ${entryId} - entry not found in localStorage. Skipping update.`)
+        return
+      }
+      
+      // Update in localStorage via journal manager
+      await manager.updateEntryImmediately(entryId, blocks)
+      
+      // Update React Query cache immediately for real-time UI update
+      const currentEntries = entriesQuery.data || []
+      const updatedEntry = {
+        ...currentEntries.find(e => e.id === entryId),
+        id: entryId,
+        blocks,
+        updatedAt: new Date()
+      } as JournalEntry
+      
+      const updatedEntries = currentEntries.map(entry => 
+        entry.id === entryId ? updatedEntry : entry
+      )
+      
+      // Update the cache instantly with structural change to trigger re-render
+      queryClient.setQueryData(['journal-entries', user.id], [...updatedEntries])
+      
+      // Also update selectedEntry if it's the one being edited
+      if (selectedEntry?.id === entryId) {
+        setSelectedEntry(updatedEntry)
+        setSelectedEntry({
+          ...selectedEntry,
+          blocks,
+          updatedAt: new Date()
+        })
+      }
+    } catch (error) {
+      console.error('Failed to update entry:', error)
+      toast({
+        title: "Save failed",
+        description: "Failed to save changes. Your content is preserved locally.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -241,6 +305,7 @@ export function useCachedJournal() {
     handleSelectEntry,
     handleCreateEntry,
     handleDeleteEntry,
+    handleUpdateEntry,
     handleRetrySync,
     setEntries: () => {}, // Placeholder for compatibility
     

@@ -6,6 +6,9 @@ export interface UserProfile {
   email: string;
   full_name?: string;
   avatar_url?: string;
+  subscription_status?: string;
+  subscription_plan?: string;
+  subscription_expires_at?: string;
   created_at: string;
   updated_at: string;
 }

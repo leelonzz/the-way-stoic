@@ -10,20 +10,22 @@ interface EntryListItemProps {
   dateLabel: string;
 }
 
-export const EntryListItem = memo(({
-  entry,
-  isSelected,
+export const EntryListItem = memo(({ 
+  entry, 
+  isSelected, 
   onSelect,
   onDelete,
   dateLabel
-}: EntryListItemProps) => {
-  const handleClick = (): void => {
-    // INSTANT selection - no await, no try/catch needed
+}: EntryListItemProps): JSX.Element => {
+  const handleClick = (e: React.MouseEvent): void => {
+    // Prevent click if clicking on delete button
+    if ((e.target as HTMLElement).closest('.delete-button')) {
+      return;
+    }
     onSelect();
   };
 
   const handleDelete = (e: React.MouseEvent): void => {
-    e.preventDefault();
     e.stopPropagation();
     if (onDelete) {
       onDelete(entry.id);
@@ -34,7 +36,7 @@ export const EntryListItem = memo(({
     <button
       onClick={handleClick}
       className={`
-        group w-full p-3 mb-2 text-left rounded-lg transition-all duration-200
+        w-full p-3 mb-2 text-left rounded-lg transition-all duration-200
         hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-orange-400
         ${isSelected ? 'bg-orange-50 border border-orange-200' : 'border border-transparent'}
       `}
@@ -56,14 +58,14 @@ export const EntryListItem = memo(({
             {onDelete && (
               <button
                 onClick={handleDelete}
-                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-red-50 rounded text-red-500 hover:text-red-700"
+                className="delete-button p-1 hover:bg-red-100 rounded transition-colors"
                 title="Delete entry"
               >
-                <Trash2 className="w-3 h-3" />
+                <Trash2 className="w-4 h-4 text-red-500" />
               </button>
             )}
           </div>
-
+          
           {entry.preview && (
             <p className="text-sm font-inknut text-stone-600 line-clamp-2 leading-relaxed">
               {entry.preview}

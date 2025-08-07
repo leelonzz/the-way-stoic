@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import { useNavigationCachedQuery } from './useCacheAwareQuery'
 import { supabase } from '@/integrations/supabase/client'
 import type { User } from '@supabase/supabase-js'
@@ -71,11 +71,13 @@ const FALLBACK_QUOTES: Quote[] = [
  * Prevents redundant API calls when navigating between cached pages
  */
 export function useCachedQuotes(user: User | null) {
+  const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([])
+  const [error, setError] = useState<string | null>(null)
+
   // Use cache-aware query for quotes
   const quotesQuery = useNavigationCachedQuery(
     ['quotes', 'all'],
     async (): Promise<Quote[]> => {
-      console.log('🔄 [CachedQuotes] Fetching quotes from Supabase...')
       
       const { data, error } = await supabase
         .from('quotes')
@@ -83,15 +85,12 @@ export function useCachedQuotes(user: User | null) {
         .order('created_at', { ascending: true })
 
       if (error) {
-        console.error('Supabase error:', error)
-        throw error
+        console.error('❌ [CachedQuotes] Supabase error:', error)
+        return FALLBACK_QUOTES
       }
-
-      console.log('✅ [CachedQuotes] Quotes fetched successfully:', data?.length || 0, 'quotes')
       
       // If no quotes from database, use fallback quotes
       if (!data || data.length === 0) {
-        console.log('📝 [CachedQuotes] No quotes from database, using fallback quotes')
         return FALLBACK_QUOTES
       }
 
@@ -113,19 +112,58 @@ export function useCachedQuotes(user: User | null) {
     }
   )
 
-  // Get daily quote with memoization
-  const getDailyQuote = useMemo(() => {
+  // Compute a deterministic quote of the day based on day-of-year and available quotes
+  const computedDailyQuote = useMemo(() => {
     const quotes = quotesQuery.data || FALLBACK_QUOTES
-    if (quotes.length === 0) return null
+    if (!quotes || quotes.length === 0) return null
 
-    // Calculate daily quote based on day of year
     const today = new Date()
     const dayOfYear = Math.floor(
       (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24)
     )
-    
     return quotes[dayOfYear % quotes.length]
   }, [quotesQuery.data])
+
+  // Persist a stable daily quote per day to avoid UI flicker on data refresh
+  const [selectedDailyQuote, setSelectedDailyQuote] = useState<Quote | null>(null)
+  useEffect(() => {
+    // Key per calendar day (YYYY-MM-DD)
+    const today = new Date()
+    const dayKey = today.toISOString().slice(0, 10)
+    const storageKey = `twstoic:daily-quote:${dayKey}`
+
+    try {
+      // If already selected for today (either from previous render or storage), use it
+      if (selectedDailyQuote) return
+
+      const stored = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
+      if (stored) {
+        const parsed: Quote = JSON.parse(stored)
+        setSelectedDailyQuote(parsed)
+        return
+      }
+
+      // Otherwise, if we have a computed quote (from either fallback or fetched data), lock it in for today
+      if (computedDailyQuote) {
+        setSelectedDailyQuote(computedDailyQuote)
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(computedDailyQuote))
+        } catch (e) {
+          // ignore storage errors (e.g., private mode)
+        }
+      }
+    } catch (e) {
+      // If parsing or storage access fails, just rely on computedDailyQuote as a fallback without persisting
+      if (computedDailyQuote && !selectedDailyQuote) {
+        setSelectedDailyQuote(computedDailyQuote)
+      }
+    }
+  }, [computedDailyQuote, selectedDailyQuote])
+
+  // Expose a stable daily quote
+  const getDailyQuote = useMemo(() => {
+    return selectedDailyQuote || computedDailyQuote
+  }, [selectedDailyQuote, computedDailyQuote])
 
   // Search quotes function
   const searchQuotes = useMemo(() => {
@@ -151,33 +189,215 @@ export function useCachedQuotes(user: User | null) {
     }
   }, [quotesQuery.data])
 
+  // Fetch saved quotes function
+  const fetchSavedQuotes = useCallback(async () => {
+    if (!user) return
+
+    try {
+      const { data, error } = await supabase
+        .from('saved_quotes')
+        .select(`
+          id,
+          quote_text,
+          author,
+          source,
+          tags,
+          saved_at,
+          personal_note,
+          collection_name,
+          is_favorite,
+          date_saved,
+          created_at,
+          updated_at
+        `)
+        .eq('user_id', user.id)
+        .order('saved_at', { ascending: false })
+
+      if (error) throw error
+
+      const transformedData = (data || []).map(item => ({
+        id: item.id,
+        quote_id: item.id,
+        notes: item.personal_note,
+        created_at: item.created_at,
+        quote: {
+          id: item.id,
+          text: item.quote_text,
+          author: item.author,
+          source: item.source,
+          category: 'general',
+          created_at: item.created_at,
+          mood_tags: item.tags || []
+        }
+      }))
+
+      setSavedQuotes(transformedData)
+      setError(null)
+    } catch (err) {
+      console.error('Failed to fetch saved quotes:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch saved quotes')
+    }
+  }, [user])
+
   // Force refresh function
   const forceRefresh = async () => {
-    console.log('🔄 [CachedQuotes] Force refresh requested')
     await quotesQuery.refetch()
+    if (user) {
+      await fetchSavedQuotes()
+    }
   }
+
+  // Fetch saved quotes when user changes
+  useEffect(() => {
+    if (user) {
+      fetchSavedQuotes()
+    } else {
+      setSavedQuotes([])
+      setError(null)
+    }
+  }, [user, fetchSavedQuotes])
 
   return {
     quotes: quotesQuery.data || FALLBACK_QUOTES,
-    savedQuotes: [], // TODO: Implement saved quotes with cache-aware query
+    savedQuotes: savedQuotes,
     userQuotes: [], // TODO: Implement user quotes with cache-aware query
     loading: quotesQuery.isLoading && !quotesQuery.data, // Don't show loading if we have cached data
-    error: quotesQuery.error?.message || null,
+    error: error, // Don't show quote fetching errors to user, only save/unsave errors
     isRefetching: quotesQuery.isFetching && !!quotesQuery.data, // Only show refetching if we have data
     getDailyQuote: () => getDailyQuote,
     searchQuotes,
     getQuotesByCategory,
     forceRefresh,
-    // Placeholder functions for compatibility
-    saveQuote: async (_quoteId: string, _notes?: string) => {
-      console.warn('saveQuote not implemented in cached version')
-      return false
+    // Implement save/unsave functions
+    saveQuote: async (quoteId: string, notes?: string) => {
+      if (!user) {
+        setError('User not authenticated')
+        return false
+      }
+
+      if (!user.id || typeof user.id !== 'string' || user.id.length < 10) {
+        setError('Invalid user session. Please log out and log back in.')
+        return false
+      }
+
+      try {
+        const quotes = quotesQuery.data || FALLBACK_QUOTES
+        const quote = quotes.find(q => q.id === quoteId)
+        if (!quote) {
+          console.warn('❌ Quote not found for saving:', quoteId)
+          return false
+        }
+
+        const alreadySaved = savedQuotes.some(saved => 
+          saved.quote.text === quote.text && saved.quote.author === quote.author
+        )
+        if (alreadySaved) {
+          setError('Quote already saved')
+          return false
+        }
+
+        const { error } = await supabase
+          .from('saved_quotes')
+          .insert({
+            user_id: user.id,
+            quote_text: quote.text,
+            author: quote.author,
+            source: quote.source,
+            tags: quote.mood_tags || [],
+            personal_note: notes,
+            is_favorite: false,
+            saved_at: new Date().toISOString()
+          })
+
+        if (error) {
+          console.error('Database error when saving quote:', error)
+          if (error.message.includes('Key is not present in table') ||
+              error.message.includes('violates foreign key constraint')) {
+            setError('User session is invalid. Please log out and log back in.')
+            return false
+          }
+          throw error
+        }
+
+        await fetchSavedQuotes()
+        setError(null)
+        return true
+      } catch (err) {
+        console.error('Failed to save quote:', err)
+        setError(err instanceof Error ? err.message : 'Failed to save quote')
+        return false
+      }
     },
-    unsaveQuote: async (_quoteId: string) => {
-      console.warn('unsaveQuote not implemented in cached version')
-      return false
+    unsaveQuote: async (quoteId: string) => {
+      if (!user) return false
+
+      try {
+        
+        // First, try to find the saved quote directly by its ID
+        let savedQuote = savedQuotes.find(saved => saved.id === quoteId)
+        
+        // If not found by saved quote ID, try to match by quote ID or content
+        if (!savedQuote) {
+          // Try to find by quote_id
+          savedQuote = savedQuotes.find(saved => saved.quote_id === quoteId)
+          
+          // If still not found, try to match by content (backward compatibility)
+          if (!savedQuote) {
+            const quotes = quotesQuery.data || FALLBACK_QUOTES
+            const quote = quotes.find(q => q.id === quoteId)
+            
+            if (quote) {
+              savedQuote = savedQuotes.find(saved => 
+                saved.quote.text === quote.text && saved.quote.author === quote.author
+              )
+            }
+          }
+        }
+        
+        if (!savedQuote) {
+          console.warn('❌ Saved quote not found for unsaving:', quoteId)
+          setError('Saved quote not found')
+          return false
+        }
+        
+
+        const { error } = await supabase
+          .from('saved_quotes')
+          .delete()
+          .eq('id', savedQuote.id)
+          .eq('user_id', user.id)
+
+        if (error) throw error
+        
+        await fetchSavedQuotes()
+        setError(null)
+        return true
+      } catch (err) {
+        console.error('Failed to unsave quote:', err)
+        setError(err instanceof Error ? err.message : 'Failed to unsave quote')
+        return false
+      }
     },
-    isQuoteSaved: (_quoteId: string) => false,
+    isQuoteSaved: (quoteId: string) => {
+      // First check if this quoteId is a saved quote ID directly
+      if (savedQuotes.some(saved => saved.id === quoteId)) {
+        return true
+      }
+      
+      // Check if this quoteId matches a saved quote's quote_id
+      if (savedQuotes.some(saved => saved.quote_id === quoteId)) {
+        return true
+      }
+      
+      // Fall back to content matching for backward compatibility
+      const quotes = quotesQuery.data || FALLBACK_QUOTES
+      const quote = quotes.find(q => q.id === quoteId)
+      if (!quote) return false
+      
+      return savedQuotes.some(saved => 
+        saved.quote.text === quote.text && saved.quote.author === quote.author
+      )
+    },
     createUserQuote: async (_quote: Omit<UserQuote, 'id' | 'created_at' | 'updated_at'>) => {
       console.warn('createUserQuote not implemented in cached version')
       return false
