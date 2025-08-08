@@ -1,44 +1,39 @@
 'use client'
+export const dynamic = 'force-dynamic'
 
-import React from 'react';
-import { AppLayout } from "@/components/layout/AppLayout";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { NavigationOptimizedCachedPage } from "@/components/layout/NavigationOptimizedCachedPage";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Settings, BarChart3, ExternalLink } from 'lucide-react';
-import Link from 'next/link';
-import { useProfile } from '@/hooks/useProfile';
-import { ProfileHeader } from '@/components/profile/ProfileHeader';
-import { ProfileSettings } from '@/components/profile/ProfileSettings';
-import { ProfileStats } from '@/components/profile/ProfileStats';
-import { useAuthContext } from '@/components/auth/AuthProvider';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import React from 'react'
+import { AppLayout } from '@/components/layout/AppLayout'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { NavigationOptimizedCachedPage } from '@/components/layout/NavigationOptimizedCachedPage'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { User, Settings, BarChart3, ExternalLink } from 'lucide-react'
+import Link from 'next/link'
+import { useProfile } from '@/hooks/useProfile'
+import { ProfileHeader } from '@/components/profile/ProfileHeader'
+import { ProfileStats } from '@/components/profile/ProfileStats'
+import { useAuthContext } from '@/components/auth/AuthProvider'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
-function ProfileContent() {
-  const { user } = useAuthContext();
-  const { 
-    profile, 
-    stats, 
-    loading, 
-    error, 
-    updateProfile, 
-    updateEmail, 
-    updatePassword, 
-    deleteAccount 
-  } = useProfile(user);
-  
-  const { isAuthenticated } = useAuthContext();
+function ProfileContent(): JSX.Element {
+  const { user } = useAuthContext()
+  const { profile, stats, loading, error } = useProfile(user)
+
+  const { isAuthenticated } = useAuthContext()
 
   if (!isAuthenticated) {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center py-20">
           <User className="w-16 h-16 text-stone/30 mx-auto mb-4" />
-          <h1 className="text-3xl font-serif text-ink mb-4">Profile & Settings</h1>
-          <p className="text-stone">Please sign in to view and manage your profile.</p>
+          <h1 className="text-3xl font-serif text-ink mb-4">
+            Profile & Settings
+          </h1>
+          <p className="text-stone">
+            Please sign in to view and manage your profile.
+          </p>
         </div>
       </div>
-    );
+    )
   }
 
   if (loading) {
@@ -49,23 +44,27 @@ function ProfileContent() {
           <p className="text-stone">Loading your profile...</p>
         </div>
       </div>
-    );
+    )
   }
 
   if (error || !profile) {
     return (
       <div className="text-center py-20">
         <h1 className="text-3xl font-serif text-ink">Profile & Settings</h1>
-        <p className="text-red-600 mt-4">Error: {error || 'Failed to load profile'}</p>
+        <p className="text-red-600 mt-4">
+          Error: {error || 'Failed to load profile'}
+        </p>
       </div>
-    );
+    )
   }
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
       <div className="text-center space-y-2">
         <h1 className="text-4xl font-serif text-ink">Your Profile</h1>
-        <p className="text-stone">Manage your account and track your progress</p>
+        <p className="text-stone">
+          Manage your account and track your progress
+        </p>
       </div>
 
       <ProfileHeader profile={profile} stats={stats} />
@@ -102,7 +101,8 @@ function ProfileContent() {
               <Settings className="w-16 h-16 text-stone/30 mx-auto" />
               <h3 className="text-xl font-serif text-ink">Account Settings</h3>
               <p className="text-stone/70">
-                Manage your account settings, preferences, and security options in the dedicated settings page.
+                Manage your account settings, preferences, and security options
+                in the dedicated settings page.
               </p>
               <Link href="/settings">
                 <button className="inline-flex items-center gap-2 px-4 py-2 bg-cta hover:bg-cta/90 text-white rounded-lg transition-colors">
@@ -119,20 +119,22 @@ function ProfileContent() {
           <div className="text-center py-12">
             <div className="max-w-md mx-auto space-y-4">
               <Settings className="w-16 h-16 text-stone/30 mx-auto" />
-              <h3 className="text-xl font-serif text-ink">Preferences Coming Soon</h3>
+              <h3 className="text-xl font-serif text-ink">
+                Preferences Coming Soon
+              </h3>
               <p className="text-stone/70">
-                Theme settings, notification preferences, and other customization options 
-                will be available here in a future update.
+                Theme settings, notification preferences, and other
+                customization options will be available here in a future update.
               </p>
             </div>
           </div>
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }
 
-function ProfileSkeleton() {
+function ProfileSkeleton(): JSX.Element {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-10">
@@ -155,13 +157,13 @@ function ProfileSkeleton() {
         {/* Tabs Skeleton */}
         <div className="space-y-4">
           <div className="flex space-x-1 bg-white/50 rounded-lg p-1">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3].map(i => (
               <div key={i} className="h-10 bg-stone/10 rounded flex-1"></div>
             ))}
           </div>
           <div className="bg-white/30 rounded-xl p-6 border border-stone/5 min-h-[400px]">
             <div className="space-y-4">
-              {[1, 2, 3, 4].map((i) => (
+              {[1, 2, 3, 4].map(i => (
                 <div key={i} className="h-4 bg-stone/10 rounded w-full"></div>
               ))}
             </div>
@@ -169,10 +171,10 @@ function ProfileSkeleton() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default function ProfilePage() {
+export default function ProfilePage(): JSX.Element {
   return (
     <ProtectedRoute>
       <AppLayout>
@@ -188,5 +190,5 @@ export default function ProfilePage() {
         </NavigationOptimizedCachedPage>
       </AppLayout>
     </ProtectedRoute>
-  );
+  )
 }

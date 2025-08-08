@@ -104,7 +104,7 @@ export function AppSidebar(): JSX.Element {
               >
                 <item.icon size={18} className="text-sage/50" />
                 <span className="font-medium text-sm">{item.name}</span>
-                <span className="ml-auto text-xs bg-sage/20 text-sage/70 px-2 py-1 rounded-full">
+                <span className="ml-auto text-xs bg-primary text-white px-2 py-1 rounded-full">
                   Coming Soon
                 </span>
               </div>
@@ -132,7 +132,7 @@ export function AppSidebar(): JSX.Element {
               />
               <span className="font-medium text-sm">{item.name}</span>
               {showUpgradePill && (
-                <span className="ml-auto text-xs bg-sage/20 text-sage/70 px-2 py-1 rounded-full">
+                <span className="ml-auto text-xs bg-primary text-white px-2 py-1 rounded-full">
                   Upgrade
                 </span>
               )}

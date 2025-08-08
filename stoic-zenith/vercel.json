@@ -1,7 +1,6 @@
 {
-  "rootDirectory": "stoic-zenith",
   "functions": {
-    "stoic-zenith/app/api/dodo/webhook/route.ts": {
+    "app/api/dodo/webhook/route.ts": {
       "maxDuration": 30
     }
   },
