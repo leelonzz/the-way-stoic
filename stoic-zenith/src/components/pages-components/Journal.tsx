@@ -1,26 +1,22 @@
-
-import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
-import { format } from 'date-fns';
-import { toast } from '@/components/ui/use-toast';
-import { EntryList } from '@/components/journal/EntryList';
-import { JournalEntry } from '@/components/journal/types';
-import { getJournalManager, RealTimeJournalManager } from '@/lib/journal';
-import { supabase } from '@/integrations/supabase/client';
-import { JournalSkeleton } from '@/components/journal/JournalSkeleton';
-import { useCachedJournal } from '@/hooks/useCachedJournal';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { toast } from '@/components/ui/use-toast'
+import { EntryList } from '@/components/journal/EntryList'
+import { JournalEntry } from '@/components/journal/types'
+import { supabase } from '@/integrations/supabase/client'
+import { JournalSkeleton } from '@/components/journal/JournalSkeleton'
+import { useCachedJournal } from '@/hooks/useCachedJournal'
 
 // Lazy load the heavy JournalNavigation component (rich text editor)
 const JournalNavigation = lazy(() =>
   import('@/components/journal/JournalNavigation').then(module => ({
-    default: module.JournalNavigation
+    default: module.JournalNavigation,
   }))
-);
+)
 import {
   recordEntryAccess,
-  getAllAccessTimes,
   cleanupOldAccessTimes,
-  removeEntryAccess
-} from '@/lib/entryAccessTracker';
+  removeEntryAccess,
+} from '@/lib/entryAccessTracker'
 
 export default function Journal(): JSX.Element {
   // Use cache-aware journal hook
@@ -30,117 +26,128 @@ export default function Journal(): JSX.Element {
     loading: isLoadingEntries,
     error: entriesError,
     syncStatus,
-    isRefetching,
-    isCached,
     handleSelectEntry: selectEntry,
     handleCreateEntry: createEntry,
     handleDeleteEntry: deleteEntry,
     handleUpdateEntry: updateEntry,
     handleRetrySync: retrySync,
-    journalManager
-  } = useCachedJournal();
+    journalManager,
+  } = useCachedJournal()
 
   // Legacy state for compatibility
-  const [isCreatingEntry, setIsCreatingEntry] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [lastCreateTime, setLastCreateTime] = useState<number>(0);
+  const [isCreatingEntry, setIsCreatingEntry] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [lastCreateTime, setLastCreateTime] = useState<number>(0)
 
   // Wrapper functions for compatibility with existing code
-  const handleSelectEntryWrapper = useCallback((entry: JournalEntry) => {
-    selectEntry(entry);
-    recordEntryAccess(entry.id);
-  }, [selectEntry]);
+  const handleSelectEntryWrapper = useCallback(
+    (entry: JournalEntry) => {
+      selectEntry(entry)
+      recordEntryAccess(entry.id)
+    },
+    [selectEntry]
+  )
 
   const handleCreateEntryWrapper = useCallback(async () => {
-    const now = Date.now();
-    if (now - lastCreateTime < 1000) return; // Prevent double-clicks
+    const now = Date.now()
+    if (now - lastCreateTime < 1000) return // Prevent double-clicks
 
-    setIsCreatingEntry(true);
-    setLastCreateTime(now);
+    setIsCreatingEntry(true)
+    setLastCreateTime(now)
 
     try {
-      await createEntry();
+      await createEntry()
     } finally {
-      setIsCreatingEntry(false);
+      setIsCreatingEntry(false)
     }
-  }, [createEntry, lastCreateTime]);
+  }, [createEntry, lastCreateTime])
 
-  const handleDeleteEntryWrapper = useCallback(async (entryId: string) => {
-    try {
-      await deleteEntry(entryId);
-      removeEntryAccess(entryId);
-      toast({
-        title: "Entry deleted",
-        description: "The journal entry has been deleted successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete entry. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [deleteEntry]);
+  const handleDeleteEntryWrapper = useCallback(
+    async (entryId: string) => {
+      try {
+        await deleteEntry(entryId)
+        removeEntryAccess(entryId)
+        toast({
+          title: 'Entry deleted',
+          description: 'The journal entry has been deleted successfully.',
+        })
+      } catch {
+        toast({
+          title: 'Error',
+          description: 'Failed to delete entry. Please try again.',
+          variant: 'destructive',
+        })
+      }
+    },
+    [deleteEntry]
+  )
 
   const handleRetrySyncWrapper = useCallback(async () => {
     try {
-      await retrySync();
+      await retrySync()
       toast({
-        title: "Sync completed",
-        description: "Your journal has been synchronized successfully.",
-      });
-    } catch (error) {
+        title: 'Sync completed',
+        description: 'Your journal has been synchronized successfully.',
+      })
+    } catch {
       toast({
-        title: "Sync failed",
-        description: "Failed to sync journal. Please check your connection.",
-        variant: "destructive",
-      });
+        title: 'Sync failed',
+        description: 'Failed to sync journal. Please check your connection.',
+        variant: 'destructive',
+      })
     }
-  }, [retrySync]);
+  }, [retrySync])
   // Initialize user context for legacy compatibility
-  useEffect(() => {
-    const initializeUser = async () => {
+  useEffect((): void => {
+    const initializeUser = async (): Promise<void> => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
         if (user) {
-          setUserId(user.id);
+          setUserId(user.id)
           // Clean up old access times to prevent localStorage bloat
-          cleanupOldAccessTimes();
+          cleanupOldAccessTimes()
         }
       } catch (error) {
-        console.error('Failed to initialize user:', error);
+        console.error('Failed to initialize user:', error)
       }
-    };
+    }
 
-    initializeUser();
-  }, []);
+    initializeUser()
+  }, [])
 
   // Listen for auth changes for legacy compatibility
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const newUserId = session?.user?.id || null;
+  useEffect((): (() => void) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const newUserId = session?.user?.id || null
       if (newUserId !== userId) {
-        setUserId(newUserId);
+        setUserId(newUserId)
       }
-    });
+    })
 
     return () => {
-      subscription.unsubscribe();
-    };
-  }, [userId]);
+      subscription.unsubscribe()
+    }
+  }, [userId])
 
   // Handle entry update using cache-aware hook to update UI instantly
-  const handleEntryUpdate = useCallback(async (updatedEntry: JournalEntry): Promise<void> => {
-    try {
-      await updateEntry(updatedEntry.id, updatedEntry.blocks);
-    } catch (error) {
-      console.error('Failed to update entry:', error);
-    }
-  }, [updateEntry]);
+  const handleEntryUpdate = useCallback(
+    async (updatedEntry: JournalEntry): Promise<void> => {
+      try {
+        await updateEntry(updatedEntry.id, updatedEntry.blocks)
+      } catch (error) {
+        console.error('Failed to update entry:', error)
+      }
+    },
+    [updateEntry]
+  )
 
   // Show loading state while entries are loading
   if (isLoadingEntries) {
-    return <JournalSkeleton />;
+    return <JournalSkeleton />
   }
 
   // Show error state if there's an error
@@ -157,7 +164,7 @@ export default function Journal(): JSX.Element {
           </button>
         </div>
       </div>
-    );
+    )
   }
 
   // Performance tracking removed to fix loading issues
@@ -182,11 +189,13 @@ export default function Journal(): JSX.Element {
       {/* Journal Editor */}
       <div className="flex-1 flex flex-col bg-white h-full">
         {selectedEntry ? (
-          <Suspense fallback={
-            <div className="flex-1 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-800"></div>
-            </div>
-          }>
+          <Suspense
+            fallback={
+              <div className="flex-1 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-800"></div>
+              </div>
+            }
+          >
             <JournalNavigation
               entry={selectedEntry}
               onEntryUpdate={handleEntryUpdate}
@@ -203,7 +212,8 @@ export default function Journal(): JSX.Element {
                 Welcome to your Journal
               </h2>
               <p className="text-stone-600 mb-6">
-                Select an entry from the sidebar or create a new one to start writing.
+                Select an entry from the sidebar or create a new one to start
+                writing.
               </p>
               <button
                 onClick={handleCreateEntryWrapper}
@@ -217,5 +227,5 @@ export default function Journal(): JSX.Element {
         )}
       </div>
     </div>
-  );
+  )
 }

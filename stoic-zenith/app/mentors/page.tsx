@@ -1,15 +1,14 @@
 'use client'
 
-import { AppLayout } from "@/components/layout/AppLayout";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { NavigationOptimizedCachedPage } from "@/components/layout/NavigationOptimizedCachedPage";
-import Mentors from "@/pages/Mentors";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { AppLayout } from '@/components/layout/AppLayout'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { NavigationOptimizedCachedPage } from '@/components/layout/NavigationOptimizedCachedPage'
+import Mentors from '@/components/pages-components/Mentors'
 
 // Force dynamic rendering to prevent static generation issues with AuthProvider
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
-function MentorsSkeleton() {
+function MentorsSkeleton(): JSX.Element {
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="mb-10">
@@ -18,8 +17,11 @@ function MentorsSkeleton() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="bg-white/30 rounded-xl p-6 border border-stone/5">
+        {[1, 2, 3, 4, 5, 6].map(i => (
+          <div
+            key={i}
+            className="bg-white/30 rounded-xl p-6 border border-stone/5"
+          >
             <div className="flex items-center gap-4 mb-4">
               <div className="w-16 h-16 bg-stone/10 rounded-full"></div>
               <div className="space-y-2">
@@ -36,10 +38,10 @@ function MentorsSkeleton() {
         ))}
       </div>
     </div>
-  );
+  )
 }
 
-export default function MentorsPage() {
+export default function MentorsPage(): JSX.Element {
   return (
     <ProtectedRoute>
       <AppLayout>
@@ -54,5 +56,5 @@ export default function MentorsPage() {
         </NavigationOptimizedCachedPage>
       </AppLayout>
     </ProtectedRoute>
-  );
+  )
 }
