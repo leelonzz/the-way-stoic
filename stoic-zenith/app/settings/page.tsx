@@ -8,6 +8,7 @@ import { NavigationOptimizedCachedPage } from '@/components/layout/NavigationOpt
 import { SettingsSidebar } from '@/components/settings/SettingsSidebar'
 import { AccountSettings } from '@/components/settings/AccountSettings'
 import { PreferencesSettings } from '@/components/settings/PreferencesSettings'
+import { SubscriptionManagement } from '@/components/subscription/SubscriptionManagement'
 import { useProfile } from '@/hooks/useProfile'
 import { useAuthContext } from '@/components/auth/AuthProvider'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -15,6 +16,7 @@ import { User } from 'lucide-react'
 
 type SettingsSection =
   | 'account'
+  | 'subscription'
   | 'preferences'
   | 'appearance'
   | 'notifications'
@@ -79,6 +81,18 @@ function SettingsContent(): JSX.Element {
             onUpdatePassword={updatePassword}
             onDeleteAccount={deleteAccount}
           />
+        )
+      case 'subscription':
+        return user ? (
+          <div className="p-6">
+            <h2 className="text-2xl font-serif text-ink mb-6">Subscription Management</h2>
+            <SubscriptionManagement userId={user.id} />
+          </div>
+        ) : (
+          <div className="p-6">
+            <h2 className="text-2xl font-serif text-ink mb-4">Subscription</h2>
+            <p className="text-stone">Please sign in to manage your subscription.</p>
+          </div>
         )
       case 'preferences':
         return <PreferencesSettings />

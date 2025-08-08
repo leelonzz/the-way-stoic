@@ -27,7 +27,7 @@ const NotFound = () => {
               src="/404/background-image.png"
               alt="404 illustration"
               fill
-              className="object-cover object-left h-full w-full"
+              className="object-cover object-[left_60%] h-full w-full"
               priority
             />
           </div>

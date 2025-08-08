@@ -170,7 +170,7 @@ export function Footer(): JSX.Element {
 
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <p className="text-stone text-sm">
-            © 2024 The Stoic Way. All rights reserved.
+            © 2025 The Stoic Way. All rights reserved.
           </p>
           <div className="flex items-center space-x-4 text-sm text-stone">
             <span>Made with wisdom and code</span>

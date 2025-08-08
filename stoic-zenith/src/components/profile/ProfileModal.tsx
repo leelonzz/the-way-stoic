@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Settings, Bell, Link, Zap, Check, Star } from 'lucide-react';
+import { Settings, Bell, Link, Zap, Check, Star, CreditCard } from 'lucide-react';
 import { useAuthContext } from '@/components/auth/AuthProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 
 import { DodoSubscriptionButton } from '@/components/subscription/DodoSubscriptionButton';
+import { SubscriptionManagement } from '@/components/subscription/SubscriptionManagement';
 import {
   Card,
   CardContent,
@@ -24,7 +25,7 @@ interface ProfileModalProps {
   onClose: () => void;
 }
 
-type NavigationSection = 'account' | 'preferences' | 'notifications' | 'connections' | 'upgrade';
+type NavigationSection = 'account' | 'preferences' | 'notifications' | 'connections' | 'subscription' | 'upgrade';
 
 export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Element | null {
   const { user, profile, signOut } = useAuthContext();
@@ -86,6 +87,12 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
       id: 'connections' as const,
       name: 'Connections',
       icon: Link,
+      isUserSection: true
+    },
+    {
+      id: 'subscription' as const,
+      name: 'Subscription',
+      icon: CreditCard,
       isUserSection: true
     },
     {
@@ -310,9 +317,9 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                           'Basic streak tracking',
                           'Daily journal prompts',
                         ],
-                        cta: 'Current Plan',
+                        cta: profile?.subscription_plan === 'seeker' ? 'Current Plan' : 'Downgrade',
                         popular: false,
-                        current: true,
+                        current: profile?.subscription_plan === 'seeker',
                       },
                       {
                         name: 'Philosopher',
@@ -328,9 +335,9 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                           'Personalized insights',
                           'Export journal entries',
                         ],
-                        cta: 'Begin Practice',
+                        cta: profile?.subscription_plan === 'philosopher' ? 'Current Plan' : 'Begin Practice',
                         popular: true,
-                        current: false,
+                        current: profile?.subscription_plan === 'philosopher',
                       },
                     ].map((plan, index) => (
                       <Card
@@ -380,7 +387,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                             ))}
                           </ul>
 
-{plan.name === 'Philosopher' ? (
+{plan.name === 'Philosopher' && !plan.current ? (
                             <DodoSubscriptionButton
                               productId="pdt_1xvwazO5L41SzZeMegxyk"
                               productName="The Stoic Way"
@@ -398,11 +405,16 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                               disabled={plan.current}
                               className={`w-full ${
                                 plan.current
-                                  ? 'bg-stone/10 text-stone cursor-not-allowed'
+                                  ? 'bg-green-100 text-green-700 cursor-not-allowed border border-green-200'
+                                  : plan.name === 'Philosopher'
+                                  ? 'bg-cta hover:bg-cta/90 text-white'
                                   : 'bg-stone/10 hover:bg-stone/20 text-stone border border-stone/30'
                               }`}
                               size="lg"
                             >
+                              {plan.current && (
+                                <Check className="h-4 w-4 mr-2" />
+                              )}
                               {plan.cta}
                             </Button>
                           )}
@@ -413,7 +425,14 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                 </div>
               )}
 
-              {activeSection !== 'account' && activeSection !== 'upgrade' && (
+              {activeSection === 'subscription' && (
+                <div className="space-y-6">
+                  <h1 className="text-2xl font-serif font-semibold text-ink">Subscription Management</h1>
+                  <SubscriptionManagement userId={user.id} />
+                </div>
+              )}
+
+              {activeSection !== 'account' && activeSection !== 'upgrade' && activeSection !== 'subscription' && (
                 <div className="space-y-6">
                   <h1 className="text-2xl font-serif font-semibold text-ink capitalize">{activeSection.replace('-', ' ')}</h1>
                   <div className="bg-parchment rounded-lg p-6 border border-stone/20">

@@ -13,38 +13,52 @@ import { toast } from '@/components/ui/use-toast'
  * when navigating to cached journal pages
  */
 export function useCachedJournal() {
+  console.log('🔍 useCachedJournal hook initializing...')
+
   const { user } = useAuthContext()
   const queryClient = useQueryClient()
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null)
   const [syncStatus, setSyncStatus] = useState<'syncing' | 'synced' | 'error'>('synced')
 
+  console.log('👤 User context:', { userId: user?.id, userEmail: user?.email })
+
   // Cache-aware query for journal entries
   const entriesQuery = useNavigationCachedQuery(
     ['journal-entries', user?.id || 'anonymous'],
     async (): Promise<JournalEntry[]> => {
-      if (!user?.id) return []
-      
+      console.log('📡 Journal query function executing...', { userId: user?.id })
+
+      if (!user?.id) {
+        console.log('⚠️ No user ID, returning empty entries')
+        return []
+      }
+
+      console.log('🔧 Getting journal manager for user:', user.id)
       const manager = getJournalManager(user.id)
-      
+
       // FORCE SYNC: Always sync from database first when user authenticates
       // This ensures entries persist after clearing site data
       setSyncStatus('syncing')
-      
+
       try {
+        console.log('🔄 Starting auth sync...')
         // Force sync from database first
         await manager.retryAuthSync()
-        
+
+        console.log('📚 Getting all entries...')
         // Get all entries (this will include database sync)
         const rawEntries = await manager.getAllEntries()
-        
+
+        console.log('✅ Sync successful, entries:', rawEntries.length)
         setSyncStatus('synced')
         return rawEntries
       } catch (error) {
         console.error('❌ [CachedJournal] Database sync failed:', error)
         setSyncStatus('error')
-        
+
         // Fallback to local data if sync fails
         try {
+          console.log('🔄 Attempting local fallback...')
           const rawEntries = await manager.getAllEntries()
           console.log('⚠️ [CachedJournal] Using local data after sync failure:', rawEntries.length, 'entries')
           return rawEntries

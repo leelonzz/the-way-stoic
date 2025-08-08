@@ -19,20 +19,31 @@ import {
 } from '@/lib/entryAccessTracker'
 
 export default function Journal(): JSX.Element {
-  // Use cache-aware journal hook
-  const {
-    entries,
-    selectedEntry,
-    loading: isLoadingEntries,
-    error: entriesError,
-    syncStatus,
-    handleSelectEntry: selectEntry,
-    handleCreateEntry: createEntry,
-    handleDeleteEntry: deleteEntry,
-    handleUpdateEntry: updateEntry,
-    handleRetrySync: retrySync,
-    journalManager,
-  } = useCachedJournal()
+  console.log('🔍 Journal component rendering...')
+
+  try {
+    // Use cache-aware journal hook
+    const {
+      entries,
+      selectedEntry,
+      loading: isLoadingEntries,
+      error: entriesError,
+      syncStatus,
+      handleSelectEntry: selectEntry,
+      handleCreateEntry: createEntry,
+      handleDeleteEntry: deleteEntry,
+      handleUpdateEntry: updateEntry,
+      handleRetrySync: retrySync,
+      journalManager,
+    } = useCachedJournal()
+
+    console.log('📊 Journal state:', {
+      entriesCount: entries?.length || 0,
+      selectedEntry: selectedEntry?.id || 'none',
+      isLoadingEntries,
+      entriesError,
+      syncStatus
+    })
 
   // Legacy state for compatibility
   const [isCreatingEntry, setIsCreatingEntry] = useState(false)
@@ -228,4 +239,8 @@ export default function Journal(): JSX.Element {
       </div>
     </div>
   )
+  } catch (error) {
+    console.error('🚨 Journal component error:', error)
+    throw error // Re-throw to trigger error boundary
+  }
 }

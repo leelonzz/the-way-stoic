@@ -1,7 +1,7 @@
 import React from 'react';
-import { User, Palette, Bell, Settings } from 'lucide-react';
+import { User, Palette, Bell, Settings, CreditCard } from 'lucide-react';
 
-type SettingsSection = 'account' | 'preferences' | 'appearance' | 'notifications';
+type SettingsSection = 'account' | 'preferences' | 'appearance' | 'notifications' | 'subscription';
 
 interface SettingsSidebarProps {
   activeSection: SettingsSection;
@@ -14,6 +14,12 @@ const settingsNavigation = [
     name: 'Account',
     description: 'Profile and security settings',
     icon: User
+  },
+  {
+    id: 'subscription' as const,
+    name: 'Subscription',
+    description: 'Manage your plan and billing',
+    icon: CreditCard
   },
   {
     id: 'preferences' as const,
