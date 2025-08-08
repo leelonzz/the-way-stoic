@@ -40,6 +40,7 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionManagementResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+  const [syncLoading, setSyncLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
 
@@ -121,6 +122,55 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
     }
   }
 
+  const handleSyncSubscription = async () => {
+    try {
+      setSyncLoading(true)
+      
+      const response = await fetch('/api/dodo/sync-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          subscriptionId: subscriptionData?.profile.subscription_id
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to sync subscription')
+      }
+
+      if (result.success) {
+        toast({
+          title: 'Subscription Synced',
+          description: 'Your subscription status has been updated successfully',
+          variant: 'default',
+        })
+        
+        // Reload subscription data to show updated status
+        await loadSubscriptionData()
+      } else {
+        toast({
+          title: 'Sync Status',
+          description: result.message || 'No updates needed',
+          variant: 'default',
+        })
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sync subscription'
+      toast({
+        title: 'Sync Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+    } finally {
+      setSyncLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <Card>
@@ -184,7 +234,7 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
     <div className="space-y-6">
       {/* Current Plan Overview */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             {profile.subscription_plan === 'philosopher' ? (
               <Crown className="h-5 w-5 text-yellow-600" />
@@ -193,6 +243,25 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
             )}
             {getPlanDisplayName(profile.subscription_plan)}
           </CardTitle>
+          <Button
+            onClick={handleSyncSubscription}
+            disabled={syncLoading}
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+          >
+            {syncLoading ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Sync Status
+              </>
+            )}
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">

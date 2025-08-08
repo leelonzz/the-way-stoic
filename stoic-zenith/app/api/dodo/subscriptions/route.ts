@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import DodoPayments from 'dodopayments'
+import { createClient } from '@supabase/supabase-js'
 
 interface CreateSubscriptionRequest {
   productId: string
@@ -78,6 +79,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         user_id: userId,
       },
     })
+
+    // Store the Dodo customer_id in the user's profile for webhook mapping
+    if (subscription.customer?.customer_id) {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          dodo_customer_id: subscription.customer.customer_id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+      
+      if (updateError) {
+        console.error('Failed to store Dodo customer_id:', updateError)
+        // Don't fail the request, just log the error
+      } else {
+        console.log(`Stored Dodo customer_id ${subscription.customer.customer_id} for user ${userId}`)
+      }
+    }
 
     return NextResponse.json({
       subscriptionId: subscription.subscription_id,
