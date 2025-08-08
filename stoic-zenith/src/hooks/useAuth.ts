@@ -18,7 +18,7 @@ export const useAuth = (): AuthState & {
   const [authState, setAuthState] = useState<AuthState>(() => {
     // Always start with loading true to prevent flashing
     if (typeof window !== 'undefined') {
-      const wasAuthenticated = localStorage.getItem('was-authenticated') === 'true'
+      const _wasAuthenticated = localStorage.getItem('was-authenticated') === 'true'
       return {
         user: null,
         session: null,
@@ -90,6 +90,14 @@ export const useAuth = (): AuthState & {
     },
     []
   )
+
+  const clearCachedProfile = useCallback((userId: string) => {
+    try {
+      localStorage.removeItem(`profile-${userId}`)
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [])
 
   const updateAuthState = useCallback(
     async (user: User | null, session: Session | null) => {
@@ -242,9 +250,9 @@ export const useAuth = (): AuthState & {
 
   // Listen for localStorage changes (cross-tab and same-tab)
   useEffect(() => {
-    const handleStorageChange = (event) => {
+    const handleStorageChange = (event: StorageEvent | CustomEvent): void => {
       if (
-        (event && event.key === 'was-authenticated') ||
+        (event && 'key' in event && event.key === 'was-authenticated') ||
         event.type === 'localStorageChanged'
       ) {
         // Force re-check of auth state
@@ -265,11 +273,17 @@ export const useAuth = (): AuthState & {
     }
   }, [])
 
-  const refreshProfile = useCallback(async () => {
+  const refreshProfile = useCallback(async (): Promise<void> => {
     if (!authState.user) return
 
     try {
+      // Clear cached profile data first
+      clearCachedProfile(authState.user.id)
+
       const profile = await authHelpers.getUserProfile(authState.user.id)
+      if (profile) {
+        setCachedProfile(authState.user.id, profile)
+      }
       setAuthState(prev => ({ ...prev, profile }))
     } catch (error) {
       console.error('Profile refresh error:', error)
@@ -296,7 +310,7 @@ export const useAuth = (): AuthState & {
         )
       }
     },
-    [authState.user, setError, setCachedProfile]
+    [authState.user, setError, setCachedProfile, clearCachedProfile]
   )
 
   useEffect(() => {

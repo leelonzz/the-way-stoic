@@ -5,16 +5,19 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2 } from 'lucide-react';
+import { useAuthContext } from '@/components/auth/AuthProvider';
+import { clearProfileCache } from '@/hooks/useProfile';
 
-export default function SubscriptionSuccessPage() {
+export default function SubscriptionSuccessPage(): JSX.Element {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { refreshProfile, user } = useAuthContext();
   const [isLoading, setIsLoading] = useState(true);
   const [subscriptionData, setSubscriptionData] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [profileRefreshed, setProfileRefreshed] = useState(false);
 
   const subscriptionId = searchParams.get('subscription_id');
-  const token = searchParams.get('token');
 
   const fetchSubscriptionDetails = useCallback(async () => {
     try {
@@ -26,12 +29,24 @@ export default function SubscriptionSuccessPage() {
 
       const data = await response.json();
       setSubscriptionData(data.subscription);
+
+      // Refresh user profile to update subscription status in the UI
+      if (!profileRefreshed) {
+        console.log('🔄 Refreshing user profile after successful subscription...');
+        // Clear profile cache first to ensure fresh data
+        if (user?.id) {
+          clearProfileCache(user.id);
+        }
+        await refreshProfile();
+        setProfileRefreshed(true);
+        console.log('✅ Profile refreshed successfully');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
     } finally {
       setIsLoading(false);
     }
-  }, [subscriptionId]);
+  }, [subscriptionId, refreshProfile, profileRefreshed, user?.id]);
 
   useEffect(() => {
     if (subscriptionId) {
@@ -42,7 +57,11 @@ export default function SubscriptionSuccessPage() {
     }
   }, [subscriptionId, fetchSubscriptionDetails]);
 
-  const handleContinue = () => {
+  const handleContinue = (): void => {
+    // Clear any cached profile data to ensure fresh data on return
+    if (user?.id) {
+      clearProfileCache(user.id);
+    }
     router.push('/');
   };
 
@@ -110,8 +129,8 @@ export default function SubscriptionSuccessPage() {
                 </p>
                 <p className="text-sm text-stone">
                   <strong>Next Billing:</strong> {
-                    (subscriptionData.billing_info as any)?.next_billing_time 
-                      ? new Date((subscriptionData.billing_info as any).next_billing_time).toLocaleDateString()
+                    (subscriptionData.billing_info as { next_billing_time?: string })?.next_billing_time
+                      ? new Date((subscriptionData.billing_info as { next_billing_time: string }).next_billing_time).toLocaleDateString()
                       : 'N/A'
                   }
                 </p>

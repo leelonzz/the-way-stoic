@@ -1,14 +1,39 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Brain, Star, Zap, ArrowRight } from 'lucide-react';
+import { Brain, Star, Zap, ArrowRight, RefreshCw, Loader2 } from 'lucide-react';
 import { DodoSubscriptionButton } from '@/components/subscription/DodoSubscriptionButton';
+import { useAuthContext } from '@/components/auth/AuthProvider';
+import { useToast } from '@/hooks/use-toast';
 
 interface MentorUpgradePromptProps {
   onClose?: () => void;
 }
 
-export function MentorUpgradePrompt({ onClose }: MentorUpgradePromptProps) {
+export function MentorUpgradePrompt({ onClose }: MentorUpgradePromptProps): JSX.Element {
+  const { refreshProfile } = useAuthContext();
+  const { toast } = useToast();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshSubscription = async (): Promise<void> => {
+    setIsRefreshing(true);
+    try {
+      await refreshProfile();
+      toast({
+        title: 'Subscription status updated',
+        description: 'Your subscription status has been refreshed.',
+      });
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh subscription status. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
     <div className="min-h-[60vh] flex items-center justify-center p-6">
       <Card className="max-w-2xl w-full bg-gradient-to-br from-hero/5 to-cta/5 border-cta/20 shadow-xl">
@@ -25,6 +50,32 @@ export function MentorUpgradePrompt({ onClose }: MentorUpgradePromptProps) {
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {/* Refresh Button */}
+          <div className="text-center">
+            <p className="text-sm text-stone mb-3">
+              Already subscribed? Refresh your subscription status:
+            </p>
+            <Button
+              onClick={handleRefreshSubscription}
+              disabled={isRefreshing}
+              variant="outline"
+              size="sm"
+              className="mb-4"
+            >
+              {isRefreshing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh Status
+                </>
+              )}
+            </Button>
+          </div>
+
           {/* Benefits */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-3 p-3 bg-white/50 rounded-lg">

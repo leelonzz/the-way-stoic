@@ -27,7 +27,41 @@ export interface UserStats {
 const profileCache = new Map<string, { data: UserProfile; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-export function useProfile(user: User | null) {
+// Utility function to clear profile cache
+export function clearProfileCache(userId?: string): void {
+  if (userId) {
+    const cacheKey = `profile_${userId}`;
+    profileCache.delete(cacheKey);
+    // Also clear localStorage cache if it exists
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(cacheKey);
+    }
+  } else {
+    // Clear all profile cache
+    profileCache.clear();
+    if (typeof window !== 'undefined') {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('profile_')) {
+          localStorage.removeItem(key);
+        }
+      });
+    }
+  }
+}
+
+export function useProfile(user: User | null): {
+  profile: UserProfile | null;
+  stats: UserStats | null;
+  loading: boolean;
+  error: string | null;
+  fetchProfile: (isRetry?: boolean, forceRefresh?: boolean) => Promise<void>;
+  updateProfile: (updates: Partial<Pick<UserProfile, 'full_name' | 'avatar_url'>>) => Promise<boolean>;
+  updateEmail: (newEmail: string) => Promise<boolean>;
+  updatePassword: (newPassword: string) => Promise<boolean>;
+  deleteAccount: () => Promise<boolean>;
+  refetch: () => Promise<void>;
+  retry: () => Promise<void>;
+} {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(false);
@@ -222,13 +256,17 @@ export function useProfile(user: User | null) {
     stats,
     loading,
     error,
+    fetchProfile,
     updateProfile,
     updateEmail,
     updatePassword,
     deleteAccount,
-    refetch: () => {
-      fetchProfile();
-      if (profile) fetchStats();
+    refetch: async (): Promise<void> => {
+      await fetchProfile();
+      if (profile) await fetchStats();
+    },
+    retry: async (): Promise<void> => {
+      await fetchProfile(true);
     }
   };
 }
