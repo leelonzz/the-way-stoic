@@ -63,11 +63,12 @@ export function useCachedJournal() {
             },
             {
               maxRetries: 2,
-              shouldRetry: (error) => {
+              shouldRetry: (error: unknown) => {
                 // Don't retry on auth errors
-                if (error?.message?.includes('401') || 
-                    error?.message?.includes('403') ||
-                    error?.message?.includes('unauthorized')) {
+                const errorMessage = error instanceof Error ? error.message : String(error)
+                if (errorMessage?.includes('401') || 
+                    errorMessage?.includes('403') ||
+                    errorMessage?.includes('unauthorized')) {
                   return false
                 }
                 // Retry on network/timeout errors
