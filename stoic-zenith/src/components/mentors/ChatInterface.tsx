@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, MessageCircle, ArrowLeft, User, Brain } from 'lucide-react';
+import { Send, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuthContext } from '@/components/auth/AuthProvider';
@@ -24,11 +23,11 @@ export interface ChatInterfaceProps {
   onSendMessage: (message: string) => Promise<string>;
 }
 
-export function ChatInterface({ 
-  mentorName, 
-  mentorTitle, 
-  mentorGreeting, 
-  onSendMessage 
+export function ChatInterface({
+  mentorName,
+  mentorTitle,
+  mentorGreeting,
+  onSendMessage
 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -41,7 +40,7 @@ export function ChatInterface({
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { user, profile } = useAuthContext();
+  const { profile } = useAuthContext();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -67,7 +66,7 @@ export function ChatInterface({
 
     try {
       const response = await onSendMessage(userMessage.content);
-      
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -90,13 +89,6 @@ export function ChatInterface({
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
   const getUserInitials = () => {
     if (profile?.full_name) {
       return profile.full_name
@@ -113,126 +105,187 @@ export function ChatInterface({
     return profile?.full_name || profile?.email.split('@')[0] || 'User';
   };
 
+  // Minimal markdown renderer for bold (**) and italics (*) without using innerHTML
+  const renderMarkdown = (input: string): React.ReactNode[] => {
+    const nodes: React.ReactNode[] = []
+    let i = 0
+    let key = 0
+
+    const indexOfOrInfinity = (s: string, search: string, from: number) => {
+      const idx = s.indexOf(search, from)
+      return idx === -1 ? Number.POSITIVE_INFINITY : idx
+    }
+
+    while (i < input.length) {
+      const nextBold = indexOfOrInfinity(input, "**", i)
+      const nextItalic = indexOfOrInfinity(input, "*", i)
+      const nextTokenPos = Math.min(nextBold, nextItalic)
+
+      if (nextTokenPos === Number.POSITIVE_INFINITY) {
+        // No more tokens
+        if (i < input.length) nodes.push(<span key={`t-${key++}`}>{input.slice(i)}</span>)
+        break
+      }
+
+      // Push plain text before token
+      if (nextTokenPos > i) {
+        nodes.push(<span key={`t-${key++}`}>{input.slice(i, nextTokenPos)}</span>)
+        i = nextTokenPos
+      }
+
+      // Handle bold
+      if (input.startsWith("**", i)) {
+        const end = input.indexOf("**", i + 2)
+        if (end !== -1) {
+          const inner = input.slice(i + 2, end)
+          nodes.push(<strong key={`b-${key++}`}>{inner}</strong>)
+          i = end + 2
+          continue
+        } else {
+          // No closing token; treat literally
+          nodes.push(<span key={`t-${key++}`}>**</span>)
+          i += 2
+          continue
+        }
+      }
+
+      // Handle italics
+      if (input[i] === "*") {
+        const end = input.indexOf("*", i + 1)
+        if (end !== -1) {
+          const inner = input.slice(i + 1, end)
+          nodes.push(<em key={`i-${key++}`}>{inner}</em>)
+          i = end + 1
+          continue
+        } else {
+          nodes.push(<span key={`t-${key++}`}>*</span>)
+          i += 1
+          continue
+        }
+      }
+    }
+
+    return nodes
+  }
+
+
+
   return (
-    <div className="flex flex-col h-full max-h-screen">
+    <div className="flex flex-col h-full min-h-0 bg-background">
       {/* Header */}
-      <Card className="border-b rounded-none bg-white/90 backdrop-blur-sm">
-        <CardHeader className="pb-4">
-          <div className="flex items-center gap-4">
-            <Link href="/mentors">
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            
-            <div className="flex items-center gap-3 flex-1">
-              <div className="w-10 h-10 bg-gradient-to-br from-cta to-accent rounded-full flex items-center justify-center">
-                <Brain className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-serif text-ink">{mentorName}</CardTitle>
-                <p className="text-sm text-stone">{mentorTitle}</p>
-              </div>
+      <div className="bg-card/90 backdrop-blur border-b border-border shrink-0">
+        <div className="px-6 py-3 flex items-center gap-3">
+          <Link href="/mentors">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-secondary">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+
+          <div className="flex items-center gap-2 flex-1">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cta to-accent flex items-center justify-center text-accent-foreground font-semibold">
+              {mentorName.charAt(0)}
+            </div>
+            <div className="leading-tight">
+              <h2 className="text-[15px] font-semibold text-foreground">{mentorName}</h2>
+              <p className="text-xs text-muted-foreground">{mentorTitle}</p>
             </div>
           </div>
-        </CardHeader>
-      </Card>
+        </div>
+      </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4 max-w-4xl mx-auto">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex gap-3 ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              {message.role === 'assistant' && (
-                <Avatar className="w-8 h-8 border-2 border-stone/20">
-                  <AvatarFallback className="bg-gradient-to-br from-cta to-accent text-white text-sm font-medium">
-                    {mentorName.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-              )}
-              
-              <div
-                className={`max-w-[70%] rounded-lg p-3 ${
-                  message.role === 'user'
-                    ? 'bg-cta text-white ml-auto'
-                    : 'bg-white/90 border border-stone/20 text-ink'
-                }`}
-              >
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {message.content}
-                </p>
-                <p className={`text-xs mt-2 ${
-                  message.role === 'user' ? 'text-white/70' : 'text-stone/70'
-                }`}>
-                  {message.timestamp.toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </p>
+      <div className="flex-1 min-h-0">
+        <ScrollArea className="h-full">
+          <div className="px-6 py-6">
+            {messages.map((message) => (
+              <div key={message.id} className="mb-8">
+                {message.role === 'assistant' ? (
+                  <div className="flex items-start gap-4">
+                    <div className="mt-0.5 w-8 h-8 rounded-full bg-gradient-to-br from-cta to-accent flex items-center justify-center text-accent-foreground text-xs font-semibold flex-shrink-0">
+                      {mentorName.charAt(0)}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div className="text-[15px] leading-7 text-foreground whitespace-pre-wrap">
+                        {renderMarkdown(message.content)}
+                      </div>
+                      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        {message.timestamp.toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-4">
+                    <div className="mt-0.5 w-8 h-8 rounded-full bg-stone flex items-center justify-center text-primary-foreground text-xs font-semibold flex-shrink-0">
+                      {getUserInitials()}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div className="text-[15px] leading-7 text-foreground whitespace-pre-wrap">
+                        {renderMarkdown(message.content)}
+                      </div>
+                      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        {message.timestamp.toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+            ))}
 
-              {message.role === 'user' && (
-                <Avatar className="w-8 h-8 border-2 border-stone/20">
-                  <AvatarImage 
-                    src={profile?.avatar_url || undefined} 
-                    alt={getDisplayName()}
-                  />
-                  <AvatarFallback className="bg-sage text-white text-sm font-medium">
-                    {getUserInitials()}
-                  </AvatarFallback>
-                </Avatar>
-              )}
-            </div>
-          ))}
-          
           {isLoading && (
-            <div className="flex gap-3 justify-start">
-              <Avatar className="w-8 h-8 border-2 border-stone/20">
-                <AvatarFallback className="bg-gradient-to-br from-cta to-accent text-white text-sm font-medium">
-                  {mentorName.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="bg-white/90 border border-stone/20 rounded-lg p-3">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-stone/60 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-stone/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-stone/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="flex items-start gap-4 mb-8">
+              <div className="mt-0.5 w-8 h-8 rounded-full bg-gradient-to-br from-cta to-accent flex items-center justify-center text-accent-foreground text-xs font-semibold flex-shrink-0">
+                {mentorName.charAt(0)}
+              </div>
+              <div className="flex-1">
+                <div className="flex space-x-1 pt-2">
+                  <div className="w-2 h-2 bg-sage rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-sage rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-sage rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               </div>
             </div>
           )}
-          
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
+
+            <div ref={messagesEndRef} />
+          </div>
+        </ScrollArea>
+      </div>
 
       {/* Input */}
-      <Card className="border-t rounded-none bg-white/90 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <div className="flex gap-2 max-w-4xl mx-auto">
+      <div className="border-t border-border bg-background/90 backdrop-blur shrink-0">
+        <div className="px-6 py-3">
+          <div className="relative">
             <Input
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
               placeholder={`Ask ${mentorName} for guidance...`}
-              className="flex-1 border-stone/20 focus:border-cta"
+              className="w-full pr-12 rounded-full border border-border bg-card shadow-sm text-[15px] placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
               disabled={isLoading}
             />
             <Button
               onClick={handleSendMessage}
               disabled={!inputMessage.trim() || isLoading}
-              className="bg-cta hover:bg-cta/90 text-white"
+              size="icon"
+              className="absolute right-1.5 top-1.5 h-8 w-8 rounded-full bg-cta text-primary-foreground hover:bg-cta/90 disabled:opacity-50"
+              aria-label="Send"
             >
               <Send className="w-4 h-4" />
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

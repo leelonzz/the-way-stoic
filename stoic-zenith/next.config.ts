@@ -38,7 +38,8 @@ const nextConfig: NextConfig = {
   },
   // Performance optimizations
   compiler: {
-    removeConsole: true, // Remove all console statements
+    // Only remove console statements in production, keep them in development for debugging
+    removeConsole: process.env.NODE_ENV === 'production' ? true : false,
   },
   // Bundle optimization
   webpack: (config: any, { dev, isServer }: { dev: boolean; isServer: boolean }) => {

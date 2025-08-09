@@ -320,8 +320,10 @@ export const useAuth = (): AuthState & {
     let mounted = true
 
     const initializeAuth = async (): Promise<void> => {
-      try {
+      const timeoutDuration = 10000 // 10 second timeout
+      let timeoutId: NodeJS.Timeout | null = null
 
+      try {
         // Check if user was previously authenticated
         const wasAuthenticated =
           localStorage.getItem('was-authenticated') === 'true'
@@ -334,49 +336,86 @@ export const useAuth = (): AuthState & {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        // Fetch session
-        let session = null
-        try {
-          session = await authHelpers.getCurrentSession()
-        } catch (error) {
-          console.warn('Session fetch failed:', error)
-          session = null
-          // Clear authentication marker on session fetch failure
-          localStorage.removeItem('was-authenticated')
-        }
+        // Set up timeout to prevent infinite loading
+        const authPromise = new Promise<void>((resolve, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('Authentication timeout - session verification took too long'))
+          }, timeoutDuration)
 
+          // Fetch session with timeout
+          authHelpers.getCurrentSession()
+            .then(session => {
+              if (timeoutId) {
+                clearTimeout(timeoutId)
+                timeoutId = null
+              }
 
-        if (mounted && mountedRef.current) {
-          if (session?.user) {
-            // Mark user as authenticated for future page loads
-            localStorage.setItem('was-authenticated', 'true')
-            await updateAuthState(session.user, session)
-          } else {
-            // Clear authentication marker
-            localStorage.removeItem('was-authenticated')
-            setAuthState({
-              user: null,
-              session: null,
-              profile: null,
-              loading: false,
-              error: null,
+              if (mounted && mountedRef.current) {
+                if (session?.user) {
+                  // Mark user as authenticated for future page loads
+                  localStorage.setItem('was-authenticated', 'true')
+                  updateAuthState(session.user, session).then(() => resolve()).catch(reject)
+                } else {
+                  // Clear authentication marker
+                  localStorage.removeItem('was-authenticated')
+                  setAuthState({
+                    user: null,
+                    session: null,
+                    profile: null,
+                    loading: false,
+                    error: null,
+                  })
+                  resolve()
+                }
+              } else {
+                resolve()
+              }
             })
-          }
-        }
+            .catch(error => {
+              if (timeoutId) {
+                clearTimeout(timeoutId)
+                timeoutId = null
+              }
+              console.warn('Session fetch failed:', error)
+              // Clear authentication marker on session fetch failure
+              localStorage.removeItem('was-authenticated')
+              if (mounted && mountedRef.current) {
+                setAuthState({
+                  user: null,
+                  session: null,
+                  profile: null,
+                  loading: false,
+                  error: null,
+                })
+              }
+              resolve() // Don't reject here, just clear auth state
+            })
+        })
+
+        await authPromise
       } catch (error) {
         console.error('❌ Auth initialization error:', error)
+        
+        // Clean up timeout
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+        }
+
         if (mounted && mountedRef.current) {
           localStorage.removeItem('was-authenticated')
+          // Dispatch event for ProtectedRoute to detect auth failure
+          window.dispatchEvent(new Event('localStorageChanged'))
           setAuthState({
             user: null,
             session: null,
             profile: null,
             loading: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : 'Failed to initialize authentication',
+            error: null, // Don't show error to user for timeout/session issues
           })
+        }
+      } finally {
+        if (timeoutId) {
+          clearTimeout(timeoutId)
         }
       }
     }

@@ -91,12 +91,12 @@ export default function Mentors(): JSX.Element {
 
       {/* Mentors Grid */}
       <div className="px-4 pb-16">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-12">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {mentors.map(mentor => {
             return (
               <div
                 key={mentor.name}
-                className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center space-y-6 border border-stone/20 w-full max-w-md mx-auto"
+                className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center space-y-6 border border-stone/20 w-full max-w-2xl mx-auto"
               >
                 {/* Portrait */}
                 <div className="relative w-56 h-56 flex items-center justify-center transition-transform duration-300 hover:scale-105">
@@ -115,7 +115,7 @@ export default function Mentors(): JSX.Element {
                 </h2>
 
                 {/* Description */}
-                <p className="font-inknut text-base md:text-lg font-light text-ink leading-relaxed max-w-lg">
+                <p className="font-inknut text-base md:text-lg font-light text-ink leading-relaxed max-w-3xl">
                   {mentor.description}
                 </p>
 

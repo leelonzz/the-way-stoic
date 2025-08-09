@@ -304,15 +304,18 @@ export class RealTimeJournalManager {
     // Validate user context for critical create operations
     this.validateUserContext('create journal entry');
 
-    // Generate unique ID with microsecond precision to prevent duplicates
-    const now = new Date();
-    const microTime = Date.now() * 1000 + Math.floor(Math.random() * 1000);
-    const tempId = `temp-${microTime}-${Math.random().toString(36).substring(2, 11)}`;
+    // CRITICAL: Check for existing entry with same date first
+    const existingEntries = this.getAllFromLocalStorage();
+    const existingEntry = existingEntries.find(entry => entry.date === date);
+    if (existingEntry) {
+      console.log(`✅ Found existing entry for ${date}, returning existing entry:`, existingEntry.id);
+      return existingEntry;
+    }
 
-    // CRITICAL: Check if creation is already in progress using stronger mutex
+    // Check if creation is already in progress using stronger mutex
     if (this.creationMutex.size > 0) {
+      console.log('⚠️ Creation mutex is busy, waiting for completion');
       // Return most recent entry instead of creating duplicate
-      const existingEntries = this.getAllFromLocalStorage();
       if (existingEntries.length > 0) {
         const mostRecent = existingEntries.sort((a, b) => 
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -320,6 +323,21 @@ export class RealTimeJournalManager {
         return mostRecent;
       }
     }
+
+    // Check for entries created in the last 10 seconds to prevent rapid duplicates
+    const tenSecondsAgo = Date.now() - 10000;
+    const recentEntry = existingEntries.find(entry => 
+      new Date(entry.createdAt).getTime() > tenSecondsAgo
+    );
+    if (recentEntry) {
+      console.log('✅ Found recent entry within 10 seconds, returning existing entry:', recentEntry.id);
+      return recentEntry;
+    }
+
+    // Generate unique ID with microsecond precision to prevent duplicates
+    const now = new Date();
+    const microTime = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+    const tempId = `temp-${microTime}-${Math.random().toString(36).substring(2, 11)}`;
 
     // Add to mutex BEFORE any operations
     this.creationMutex.add(tempId);

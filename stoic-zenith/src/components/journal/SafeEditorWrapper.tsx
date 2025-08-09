@@ -25,13 +25,17 @@ export class SafeEditorWrapper extends Component<SafeEditorWrapperProps, SafeEdi
     // Log the error to console but don't crash the app
     if (error.message && error.message.includes('removeChild')) {
       // This is a known issue with DOM manipulation, we can safely ignore it
-      console.warn('DOM manipulation warning (safely ignored):', error.message)
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('DOM manipulation warning (safely ignored):', error.message)
+      }
       // Reset error state after a brief delay
       setTimeout(() => {
         this.setState({ hasError: false, error: undefined })
       }, 100)
     } else {
-      console.error('Editor error:', error, errorInfo)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Editor error:', error, errorInfo)
+      }
     }
   }
 

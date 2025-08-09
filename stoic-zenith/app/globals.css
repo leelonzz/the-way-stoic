@@ -235,18 +235,7 @@ All colors MUST be HSL.
     font-family: var(--font-inknut-antiqua), serif !important;
   }
 
-  /* Debug mode styling */
-  .debug-typography-enabled .block-element {
-    outline: 1px dashed rgba(255, 0, 0, 0.3);
-  }
 
-  .debug-typography-enabled .block-element.editing-mode {
-    outline: 1px dashed rgba(0, 255, 0, 0.3);
-  }
-
-  .debug-typography-enabled .block-element.display-mode {
-    outline: 1px dashed rgba(0, 0, 255, 0.3);
-  }
 
   /* Smaller, more refined text cursor */
   [contenteditable] {

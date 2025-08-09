@@ -136,9 +136,26 @@ export function useLifeCalendar(user: User | null) {
     refetch
   } = useNavigationCachedQuery(
     QUERY_KEYS.preferences(user?.id || ''),
-    () => fetchPreferences(user!.id),
+    () => {
+      if (!user?.id) {
+        throw new Error('No user ID available for calendar preferences')
+      }
+
+      // Add timeout to prevent hanging
+      const timeoutDuration = 15000 // 15 seconds
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Calendar preferences fetch timeout'))
+        }, timeoutDuration)
+      })
+
+      return Promise.race([
+        fetchPreferences(user.id),
+        timeoutPromise
+      ])
+    },
     {
-      enabled: !!user,
+      enabled: !!user?.id,
       cacheThreshold: 10 * 60 * 1000, // 10 minutes cache threshold for calendar navigation
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes
@@ -146,6 +163,13 @@ export function useLifeCalendar(user: User | null) {
         // Don't retry on 404 (no preferences found)
         if (error && typeof error === 'object' && 'code' in error && error.code === 'PGRST116') {
           return false;
+        }
+        // Don't retry on timeout or auth errors
+        if (error && typeof error === 'object' && 'message' in error) {
+          const message = error.message as string
+          if (message.includes('timeout') || message.includes('unauthorized') || message.includes('No user ID')) {
+            return false
+          }
         }
         return failureCount < 2;
       }

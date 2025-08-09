@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   Home,
   BookOpen,
@@ -10,6 +10,11 @@ import {
   Calendar,
   Brain,
   GraduationCap,
+  ChevronDown,
+  ChevronRight,
+  Library,
+  Heart,
+  FileText,
 } from 'lucide-react'
 import { useAuthContext } from '@/components/auth/AuthProvider'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -59,10 +64,41 @@ const navigationItems = [
 
 export function AppSidebar(): JSX.Element {
   const pathname = usePathname()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { isAuthenticated, user, profile } = useAuthContext()
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [isQuotesDropdownOpen, setIsQuotesDropdownOpen] = useState(() => pathname.startsWith('/quotes'))
   const queryClient = useQueryClient()
   const { isPathLikelyCached, prefetchPage } = useNavigationState()
+
+  // Auto-sync Quotes dropdown with current route for smoother UX
+  useEffect(() => {
+    const shouldOpen = pathname.startsWith('/quotes')
+    setIsQuotesDropdownOpen(shouldOpen)
+  }, [pathname])
+
+  const quotesSubItems = [
+    {
+      name: 'Library',
+      param: 'library',
+      icon: Library,
+    },
+    {
+      name: 'Favorites',
+      param: 'favorites',
+      icon: Heart,
+      requiresAuth: true,
+    },
+    {
+      name: 'My Quotes',
+      param: 'my-quotes',
+      icon: FileText,
+      requiresAuth: true,
+    },
+  ]
+
+  const currentQuotesTab = searchParams.get('tab') || 'library'
 
   const handleMouseEnter = (href: string): void => {
     // Only prefetch if not already cached
@@ -70,6 +106,10 @@ export function AppSidebar(): JSX.Element {
       handleNavigationPrefetch(href, queryClient, user?.id)
       prefetchPage(href)
     }
+  }
+
+  const handleQuotesNavigation = (tab: string): void => {
+    router.push(`/quotes?tab=${tab}`)
   }
 
   return (
@@ -107,6 +147,84 @@ export function AppSidebar(): JSX.Element {
                 <span className="ml-auto text-xs bg-primary text-white px-2 py-1 rounded-full">
                   Coming Soon
                 </span>
+              </div>
+            )
+          }
+
+          // Special handling for Quotes with dropdown
+          if (item.name === 'Quotes') {
+            return (
+              <div key={item.name} className="space-y-1">
+                {/* Main Quotes Link */}
+                <div
+                  className={`
+                    flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200
+                    ${isActive ? 'bg-primary text-white shadow-lg' : 'text-sage hover:bg-parchment/50 hover:text-stone'}
+                  `}
+                >
+                  <Link
+                    href={item.href}
+                    prefetch={true}
+                    onMouseEnter={() => handleMouseEnter(item.href)}
+                    onClick={() => setIsQuotesDropdownOpen(true)}
+                    className="flex items-center gap-3 flex-1"
+                  >
+                    <item.icon size={18} />
+                    <span className="font-medium text-sm">{item.name}</span>
+                  </Link>
+
+                  {/* Dropdown Toggle */}
+                  <button
+                    onClick={() => setIsQuotesDropdownOpen(!isQuotesDropdownOpen)}
+                    className="ml-1 p-1 rounded transition-all duration-200"
+                    aria-label="Toggle quotes menu"
+                  >
+                    {isQuotesDropdownOpen ? (
+                      <ChevronDown size={14} />
+                    ) : (
+                      <ChevronRight size={14} />
+                    )}
+                  </button>
+                </div>
+
+                {/* Dropdown Menu */}
+                {isQuotesDropdownOpen && (
+                  <div className="ml-6 space-y-1 animate-fade-in">
+                    {quotesSubItems.map(subItem => {
+                      if (subItem.requiresAuth && !isAuthenticated) {
+                        return (
+                          <div
+                            key={subItem.name}
+                            className="flex items-center gap-3 px-3 py-1.5 text-sage/50 cursor-not-allowed text-sm"
+                          >
+                            <subItem.icon size={14} className="text-sage/50" />
+                            <span>{subItem.name}</span>
+                          </div>
+                        )
+                      }
+                      
+                      const isSubActive = isActive && currentQuotesTab === subItem.param
+                      
+                      return (
+                        <button
+                          key={subItem.name}
+                          onClick={() => handleQuotesNavigation(subItem.param)}
+                          className={`
+                            flex items-center gap-3 px-3 py-1.5 rounded-lg transition-all duration-200 w-full text-left text-sm
+                            ${
+                              isSubActive
+                                ? 'bg-primary/20 text-primary'
+                                : 'text-sage hover:bg-parchment/30 hover:text-stone'
+                            }
+                          `}
+                        >
+                          <subItem.icon size={14} className={isSubActive ? 'text-primary' : 'text-sage'} />
+                          <span>{subItem.name}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             )
           }

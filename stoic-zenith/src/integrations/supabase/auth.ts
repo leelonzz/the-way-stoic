@@ -108,32 +108,73 @@ export const authHelpers = {
   },
 
   async getCurrentSession() {
+    const timeoutDuration = 10000 // 10 second timeout
+    
     try {
       // For returning users, we can be more optimistic
       const wasAuthenticated = typeof window !== 'undefined' && localStorage.getItem('was-authenticated') === 'true';
       
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('❌ Get session error:', error);
-        console.error('Session error details:', {
-          message: error.message,
-          status: error.status,
-          code: error.code || 'unknown'
-        });
-        throw error;
-      }
-      
-      if (session) {
-        // Session found
-      } else {
-        // Clear authentication marker if no session found
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('was-authenticated');
+      // Create timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Session fetch timeout - taking too long to verify authentication'))
+        }, timeoutDuration)
+      })
+
+      // Race between session fetch and timeout
+      const sessionPromise = supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+        if (error) {
+          console.error('❌ Get session error:', error);
+          console.error('Session error details:', {
+            message: error.message,
+            status: error.status,
+            code: error.code || 'unknown'
+          });
+          throw error;
         }
-      }
-      
-      return session;
+
+        // If no session but user was previously authenticated, try to refresh
+        if (!session && wasAuthenticated) {
+          console.log('🔄 No session found but user was authenticated, attempting refresh...');
+          try {
+            const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+            
+            if (refreshError) {
+              console.warn('❌ Session refresh failed:', refreshError);
+              // Clear authentication marker on refresh failure
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('was-authenticated');
+              }
+              return null;
+            }
+
+            if (refreshedSession) {
+              console.log('✅ Session refreshed successfully');
+              return refreshedSession;
+            }
+          } catch (refreshErr) {
+            console.warn('❌ Session refresh error:', refreshErr);
+            // Clear authentication marker on refresh error
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('was-authenticated');
+            }
+            return null;
+          }
+        }
+
+        if (session) {
+          // Session found
+        } else {
+          // Clear authentication marker if no session found
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('was-authenticated');
+          }
+        }
+        
+        return session;
+      })
+
+      return await Promise.race([sessionPromise, timeoutPromise]);
     } catch (error) {
       console.error('❌ Unexpected error getting session:', error);
       // Clear authentication marker on error

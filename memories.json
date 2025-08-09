@@ -202,8 +202,8 @@
       ],
       "timestamp": "2025-07-31T13:46:36.273Z",
       "context": "Complete authentication implementation summary",
-      "accessCount": 31,
-      "lastAccessed": "2025-08-08T04:56:13.681Z",
+      "accessCount": 32,
+      "lastAccessed": "2025-08-09T00:55:44.022Z",
       "lastVerified": "2025-07-31T13:46:36.273Z",
       "status": "fresh"
     },
@@ -242,8 +242,8 @@
       ],
       "timestamp": "2025-07-31T13:57:29.542Z",
       "context": "Authentication troubleshooting complete - fixed CSP and added debugging",
-      "accessCount": 29,
-      "lastAccessed": "2025-08-06T12:55:32.280Z",
+      "accessCount": 30,
+      "lastAccessed": "2025-08-09T00:55:44.022Z",
       "lastVerified": "2025-07-31T13:57:29.542Z",
       "status": "fresh"
     },
@@ -323,8 +323,8 @@
       ],
       "timestamp": "2025-07-31T23:12:17.215Z",
       "context": "Planning implementation for profile popover and Gemini chat integration",
-      "accessCount": 5,
-      "lastAccessed": "2025-08-05T01:17:23.623Z",
+      "accessCount": 7,
+      "lastAccessed": "2025-08-09T01:43:59.278Z",
       "lastVerified": "2025-07-31T23:12:17.215Z",
       "status": "fresh"
     },
@@ -343,8 +343,8 @@
       ],
       "timestamp": "2025-07-31T23:17:13.996Z",
       "context": "Implementation completion summary",
-      "accessCount": 28,
-      "lastAccessed": "2025-08-06T12:55:32.280Z",
+      "accessCount": 29,
+      "lastAccessed": "2025-08-09T00:55:44.022Z",
       "lastVerified": "2025-07-31T23:17:13.996Z",
       "status": "fresh"
     },
@@ -788,8 +788,8 @@
       ],
       "timestamp": "2025-08-01T03:33:11.254Z",
       "context": "Fixed loading screen issue after login - JavaScript syntax errors resolved",
-      "accessCount": 19,
-      "lastAccessed": "2025-08-06T12:55:32.280Z",
+      "accessCount": 20,
+      "lastAccessed": "2025-08-09T00:55:44.022Z",
       "lastVerified": "2025-08-01T03:33:11.254Z",
       "status": "fresh"
     },
@@ -841,8 +841,8 @@
       ],
       "timestamp": "2025-08-01T07:06:44.180Z",
       "context": "Routing issue diagnosis for Stoic app authentication",
-      "accessCount": 6,
-      "lastAccessed": "2025-08-07T23:39:03.563Z",
+      "accessCount": 7,
+      "lastAccessed": "2025-08-09T00:55:44.022Z",
       "lastVerified": "2025-08-01T07:06:44.180Z",
       "status": "fresh"
     },
@@ -860,8 +860,8 @@
       ],
       "timestamp": "2025-08-01T07:09:32.941Z",
       "context": "Authentication routing fix implementation for Stoic app",
-      "accessCount": 7,
-      "lastAccessed": "2025-08-06T12:47:29.236Z",
+      "accessCount": 8,
+      "lastAccessed": "2025-08-09T00:55:44.022Z",
       "lastVerified": "2025-08-01T07:09:32.941Z",
       "status": "fresh"
     },
@@ -900,8 +900,8 @@
       ],
       "timestamp": "2025-08-01T07:16:18.989Z",
       "context": "Complete fix for authentication and loading screen issues",
-      "accessCount": 22,
-      "lastAccessed": "2025-08-08T04:56:13.681Z",
+      "accessCount": 23,
+      "lastAccessed": "2025-08-09T00:55:44.022Z",
       "lastVerified": "2025-08-01T07:16:18.989Z",
       "status": "fresh"
     },
@@ -953,8 +953,8 @@
         "implementation-complete"
       ],
       "timestamp": "2025-08-01T07:30:26.513Z",
-      "accessCount": 5,
-      "lastAccessed": "2025-08-07T23:39:03.563Z",
+      "accessCount": 6,
+      "lastAccessed": "2025-08-09T01:43:59.278Z",
       "lastVerified": "2025-08-01T07:30:26.513Z",
       "status": "fresh"
     },
@@ -1026,8 +1026,8 @@
       ],
       "timestamp": "2025-08-01T11:05:44.715Z",
       "context": "Successfully fixed authentication routing bugs in stoic-zenith app",
-      "accessCount": 3,
-      "lastAccessed": "2025-08-06T12:47:29.236Z",
+      "accessCount": 4,
+      "lastAccessed": "2025-08-09T01:43:59.278Z",
       "lastVerified": "2025-08-01T11:05:44.715Z",
       "status": "fresh"
     },
@@ -1444,8 +1444,8 @@
       ],
       "timestamp": "2025-08-02T01:58:07.876Z",
       "context": "Codebase analysis for journal navigation implementation",
-      "accessCount": 15,
-      "lastAccessed": "2025-08-08T04:56:13.681Z",
+      "accessCount": 16,
+      "lastAccessed": "2025-08-09T01:43:59.278Z",
       "lastVerified": "2025-08-02T01:58:07.876Z",
       "status": "fresh"
     },
@@ -1535,8 +1535,8 @@
       ],
       "timestamp": "2025-08-02T02:21:07.421Z",
       "context": "Reverted journal layout changes per user request",
-      "accessCount": 6,
-      "lastAccessed": "2025-08-07T23:39:03.563Z",
+      "accessCount": 7,
+      "lastAccessed": "2025-08-09T01:43:59.278Z",
       "lastVerified": "2025-08-02T02:21:07.421Z",
       "status": "fresh"
     },
@@ -1788,8 +1788,8 @@
       ],
       "timestamp": "2025-08-02T05:24:08.361Z",
       "context": "Journal layout analysis for comprehensive plan",
-      "accessCount": 11,
-      "lastAccessed": "2025-08-07T23:39:03.563Z",
+      "accessCount": 12,
+      "lastAccessed": "2025-08-09T01:43:59.278Z",
       "lastVerified": "2025-08-02T05:24:08.361Z",
       "status": "fresh"
     },
@@ -1808,8 +1808,8 @@
       ],
       "timestamp": "2025-08-02T05:33:26.476Z",
       "context": "Journal layout transformation project completion",
-      "accessCount": 6,
-      "lastAccessed": "2025-08-07T23:39:03.563Z",
+      "accessCount": 8,
+      "lastAccessed": "2025-08-09T01:43:59.278Z",
       "lastVerified": "2025-08-02T05:33:26.476Z",
       "status": "fresh"
     },
@@ -1828,8 +1828,8 @@
       ],
       "timestamp": "2025-08-02T05:41:35.877Z",
       "context": "Journal header redesign completion",
-      "accessCount": 12,
-      "lastAccessed": "2025-08-07T23:39:03.563Z",
+      "accessCount": 14,
+      "lastAccessed": "2025-08-09T01:43:59.278Z",
       "lastVerified": "2025-08-02T05:41:35.877Z",
       "status": "fresh"
     },
@@ -1939,8 +1939,8 @@
       ],
       "timestamp": "2025-08-02T06:00:55.652Z",
       "context": "Analyzing project for implementing functional journal entries with Supabase MCP",
-      "accessCount": 5,
-      "lastAccessed": "2025-08-07T23:39:03.563Z",
+      "accessCount": 6,
+      "lastAccessed": "2025-08-09T01:43:59.278Z",
       "lastVerified": "2025-08-02T06:00:55.652Z",
       "status": "fresh"
     },
@@ -2950,8 +2950,8 @@
       ],
       "timestamp": "2025-08-03T07:05:46.352Z",
       "context": "Resolved major typography-contentEditable conflict in The Way Stoic journal editor",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-03T07:05:46.352Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-09T01:35:29.398Z",
       "lastVerified": "2025-08-03T07:05:46.352Z",
       "status": "fresh"
     },
@@ -4876,7 +4876,342 @@
       "lastAccessed": "2025-08-08T05:14:39.427Z",
       "lastVerified": "2025-08-08T05:14:39.427Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1754691879478_2ohcnt26w",
+      "content": "Root cause of journal/calendar infinite loading issue:\n\n1. **Authentication Race Condition**: The useAuth hook has a race condition where `initializingRef.current` is set to true but the initialization can fail or stall when the session is invalid.\n\n2. **Cache-Query Coordination Problem**: The useCachedJournal and useLifeCalendar hooks use `enabled: !!user?.id` which depends on authentication state. When auth state is stuck in loading, queries never fire.\n\n3. **Session Verification Timing**: When a user returns to a cached page, the auth hook tries to verify the session but if the session is expired/invalid, it gets stuck in loading state because of the `wasAuthenticated` flag preventing proper error handling.\n\n4. **Missing Error Recovery**: The ProtectedRoute component shows MinimalLoadingScreen when `wasAuthenticated && !isAuthenticated` but doesn't handle the case where authentication verification fails.\n\nThe issue happens specifically when:\n- User was previously authenticated (wasAuthenticated = true in localStorage)\n- Session has expired or become invalid\n- User navigates to journal/calendar pages\n- Auth hook gets stuck trying to verify the invalid session\n- Components wait forever for auth to complete",
+      "type": "warning",
+      "tags": [
+        "warning",
+        "authentication",
+        "bug",
+        "infinite-loading",
+        "journal",
+        "calendar"
+      ],
+      "timestamp": "2025-08-08T22:24:39.477Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-08T22:24:39.477Z",
+      "lastVerified": "2025-08-08T22:24:39.477Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754692119261_cqpw0dqo0",
+      "content": "Fixed infinite loading issue for journal and calendar pages:\n\n## Root Cause\nAuthentication race condition where useAuth hook would get stuck when verifying expired sessions, preventing data loading.\n\n## Solutions Implemented:\n\n1. **useAuth.ts**: Added 10-second timeout for session verification with proper cleanup\n2. **ProtectedRoute.tsx**: Added 15-second timeout for wasAuthenticated state to prevent infinite loading \n3. **useCachedJournal.ts**: Added 15-second timeout for journal sync operations\n4. **useLifeCalendar.ts**: Added 15-second timeout for calendar preferences fetch\n5. **auth.ts**: Added automatic session refresh logic when previous authentication detected\n\n## Key Changes:\n- Timeout mechanisms prevent infinite loading states\n- Automatic session refresh for expired sessions  \n- Proper error recovery with fallback to login screen\n- Event dispatching for cross-component coordination\n- Better error handling without exposing technical details to users\n\n## Testing:\n- Build successful ✅\n- TypeScript compilation clean ✅\n- No critical linter errors ✅\n\nUsers should no longer experience infinite loading when returning with expired sessions.",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "typescript",
+        "authentication",
+        "testing",
+        "fix",
+        "infinite-loading",
+        "journal",
+        "calendar",
+        "session-management"
+      ],
+      "timestamp": "2025-08-08T22:28:39.260Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-08T22:28:39.260Z",
+      "lastVerified": "2025-08-08T22:28:39.260Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754694641542_sa63sd0uz",
+      "content": "Found webhook issue: handleSubscriptionCancelled only checks metadata.user_id but doesn't use fallback methods like handleSubscriptionActive. Need to fix user lookup consistency and store subscription_id in profiles table.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "webhook",
+        "subscription",
+        "dodo",
+        "cancellation",
+        "bug"
+      ],
+      "timestamp": "2025-08-08T23:10:41.542Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-08T23:10:41.542Z",
+      "lastVerified": "2025-08-08T23:10:41.542Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754694728143_9jg9lgip2",
+      "content": "Successfully fixed webhook cancellation handler: Added robust user lookup with 4 fallback methods (metadata, dodo_customer_id, email, subscription_id), added webhook logging, and ensured subscription_id is stored in profiles table during activation. All syntax validated.",
+      "type": "solution",
+      "tags": [
+        "solution",
+        "webhook",
+        "subscription",
+        "cancellation",
+        "dodo",
+        "fixed",
+        "user-lookup"
+      ],
+      "timestamp": "2025-08-08T23:12:08.143Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-08T23:12:08.143Z",
+      "lastVerified": "2025-08-08T23:12:08.143Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754699843280_46lcrv8lh",
+      "content": "User wants to replace the current chat interface layout with a cleaner design similar to the third image shown. The new design has:\n- Cleaner mentor profile header with name and description\n- Simplified message bubbles\n- Better spacing and typography\n- Input field at bottom with \"Ask [mentor] for guidance...\" placeholder\n- Overall more minimalist and professional appearance",
+      "type": "general",
+      "tags": [
+        "general",
+        "ui",
+        "chat-interface",
+        "design",
+        "stoic-zenith"
+      ],
+      "timestamp": "2025-08-09T00:37:23.280Z",
+      "context": "UI redesign task for stoic-zenith chat interface",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T00:37:23.280Z",
+      "lastVerified": "2025-08-09T00:37:23.280Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754699953613_a9qspk64j",
+      "content": "User wants to keep the original color palette from the codebase instead of the amber/orange colors. Need to revert to using the original color scheme with cta and accent colors while keeping the cleaner layout design.",
+      "type": "general",
+      "tags": [
+        "general",
+        "ui",
+        "color-palette",
+        "chat-interface"
+      ],
+      "timestamp": "2025-08-09T00:39:13.613Z",
+      "context": "UI update - maintaining brand colors",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T00:39:13.613Z",
+      "lastVerified": "2025-08-09T00:39:13.613Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754700020574_h3yazohzs",
+      "content": "Successfully updated ChatInterface component with cleaner design:\n- Cleaner header with mentor info and back button\n- Simplified message layout without bubbles\n- Better typography and spacing\n- Clean input field at bottom with rounded border\n- Maintained original color palette (cta/accent gradient)\n- Background changed to light beige (#faf9f7)\n- All tasks completed successfully",
+      "type": "general",
+      "tags": [
+        "general",
+        "ui",
+        "chat-interface",
+        "completed",
+        "stoic-zenith"
+      ],
+      "timestamp": "2025-08-09T00:40:20.574Z",
+      "context": "Completed UI redesign task",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T00:40:20.574Z",
+      "lastVerified": "2025-08-09T00:40:20.574Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754701042840_bntimcdrr",
+      "content": "Updated ChatInterface component to use full width instead of max-width constraints. Removed max-w-2xl mx-auto from header, messages, and input sections, replacing with consistent px-6 padding for full-width layout on right side of sidebar.",
+      "type": "general",
+      "tags": [
+        "general",
+        "chat-interface",
+        "layout",
+        "full-width",
+        "sidebar",
+        "ui-redesign"
+      ],
+      "timestamp": "2025-08-09T00:57:22.840Z",
+      "context": "Chat interface redesign for full-width layout",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T00:57:22.840Z",
+      "lastVerified": "2025-08-09T00:57:22.840Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754701229796_7gpguwve1",
+      "content": "Updated ChatInterface to match ChatGPT's full-width layout:\n- Added max-w-4xl mx-auto to messages and input containers for centered content\n- Changed user message layout from right-aligned to left-aligned with user avatar \n- Both assistant and user messages now have consistent left-aligned layout with avatars\n- Increased gap between avatar and content from gap-3 to gap-4\n- Increased spacing between messages from mb-6 to mb-8\n- User avatar uses gray background with initials from getUserInitials()\n- All content spans full width but is contained within centered max-width container",
+      "type": "general",
+      "tags": [
+        "general",
+        "chat-interface",
+        "layout",
+        "chatgpt-style",
+        "full-width",
+        "ui-redesign"
+      ],
+      "timestamp": "2025-08-09T01:00:29.796Z",
+      "context": "Chat interface redesign to ChatGPT-style layout",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T01:00:29.796Z",
+      "lastVerified": "2025-08-09T01:00:29.796Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754701550638_77wgddk1b",
+      "content": "Removed all max-width constraints from ChatInterface to make it truly full-width:\n- Removed max-w-4xl mx-auto from messages container, now uses only px-6 py-6\n- Removed max-w-4xl mx-auto from input container, now uses only px-6 py-3\n- Chat interface now spans the entire available width in the right area of the sidebar\n- Messages and input area take full width of the container without any centering constraints",
+      "type": "general",
+      "tags": [
+        "general",
+        "chat-interface",
+        "full-width",
+        "layout-fix",
+        "max-width-removal"
+      ],
+      "timestamp": "2025-08-09T01:05:50.638Z",
+      "context": "Final chat interface full-width layout fix",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T01:05:50.638Z",
+      "lastVerified": "2025-08-09T01:05:50.638Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754701835301_btvkzbqq9",
+      "content": "User wants quotes feature with dropdown navigation from main sidebar \"Quotes\" item. Structure should be:\n- Main \"Quotes\" item in sidebar (existing)\n- Dropdown with: Library, Favorites, My Quotes\n- Quote display with app's main terra cotta colors (#f2e5d4 background)\n- Star and share icons at bottom of each quote\n- No separate sidebar needed - just dropdown navigation",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "quotes",
+        "navigation",
+        "dropdown",
+        "ui-design"
+      ],
+      "timestamp": "2025-08-09T01:10:35.301Z",
+      "context": "Stoic app quotes feature planning",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T01:10:35.301Z",
+      "lastVerified": "2025-08-09T01:10:35.301Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754702105204_alhfuzzov",
+      "content": "Successfully implemented quotes feature with dropdown navigation:\n\n1. **Sidebar Enhancement**: Modified AppSidebar.tsx to include dropdown for Quotes with Library/Favorites/My Quotes options\n2. **URL-based Navigation**: Updated DailyStoicWisdom.tsx to use URL parameters (?tab=library|favorites|my-quotes) instead of tab buttons\n3. **Styling Improvements**: \n   - Quote cards now use terra cotta background (bg-hero/50 for regular cards, bg-hero/30 for daily quote)\n   - Star and Share icons moved to bottom of each quote card\n   - Used Star icon instead of Bookmark for favorites (filled when saved)\n   - Better spacing and visual hierarchy\n\n4. **Features Preserved**: All existing functionality maintained - search, refresh quotes, save/unsave, authentication checks\n\nDev server running on http://localhost:3001",
+      "type": "general",
+      "tags": [
+        "general",
+        "authentication",
+        "quotes",
+        "dropdown",
+        "navigation",
+        "styling",
+        "completed"
+      ],
+      "timestamp": "2025-08-09T01:15:05.204Z",
+      "context": "Quotes feature implementation complete",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T01:15:05.204Z",
+      "lastVerified": "2025-08-09T01:15:05.204Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754702210542_sbw1yx9bv",
+      "content": "User wants major redesign of quotes library view:\n- Full-screen quote display with mountain background image\n- Navigation with left/right arrow buttons to move between quotes\n- Bottom controls with Star and Share buttons centered\n- Quote text centered on screen with author attribution\n- Similar to the screenshot showing Epictetus quote with mountain background\n- This is a big change from current card-based layout",
+      "type": "general",
+      "tags": [
+        "general",
+        "quotes",
+        "redesign",
+        "carousel",
+        "fullscreen"
+      ],
+      "timestamp": "2025-08-09T01:16:50.542Z",
+      "context": "Quotes library redesign request",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T01:16:50.542Z",
+      "lastVerified": "2025-08-09T01:16:50.542Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754702672443_50fjguybu",
+      "content": "Successfully implemented full-screen Quote Carousel:\n\n✅ **QuoteCarousel Component** (`/src/components/quotes/QuoteCarousel.tsx`):\n- Full-screen carousel with terra cotta background (bg-hero)\n- Left/right arrow navigation on screen edges\n- Keyboard support (arrow keys)\n- Mobile swipe gestures (left/right)\n- Star and Share buttons at bottom center\n- Quote counter (1/10 format)\n- Smooth transitions and proper accessibility\n\n✅ **Integration**:\n- Library tab now shows full-screen carousel instead of card list\n- Favorites and My Quotes tabs keep original card layout\n- Dropdown navigation working from sidebar\n- All existing functionality preserved (save, share, search)\n\n✅ **Features**:\n- Full-screen immersive experience\n- Terra cotta color scheme (#f2e5d4)\n- Responsive design for mobile and desktop\n- Touch/swipe support for mobile\n- Keyboard navigation\n- Accessibility features (ARIA labels)\n\nDev server on http://localhost:3001",
+      "type": "general",
+      "tags": [
+        "general",
+        "quotes",
+        "carousel",
+        "fullscreen",
+        "complete",
+        "terra-cotta"
+      ],
+      "timestamp": "2025-08-09T01:24:32.443Z",
+      "context": "Quote Carousel implementation complete",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T01:24:32.443Z",
+      "lastVerified": "2025-08-09T01:24:32.443Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754703363502_5jckey472",
+      "content": "Journal image import investigation - The Way Stoic app\n\nCurrent implementation findings:\n1. Image upload is already implemented in EnhancedRichTextEditor.tsx (lines 1028-1058)\n2. User can trigger image upload via:\n   - Slash command menu (\"/image\" or \"splash image\")\n   - Command menu selection\n3. Image upload functionality:\n   - Creates file input element programmatically\n   - Accepts image/* files\n   - Max 10MB file size limit\n   - Converts to base64 data URL\n   - Stores in block as imageUrl\n\nIssue: User reports \"can't import image by command in journal\"\nLikely causes:\n- Command menu not showing properly\n- Image command not appearing in menu\n- Image upload handler not triggering\n- Image block not rendering correctly after upload",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "debugging",
+        "journal",
+        "image-upload",
+        "the-way-stoic",
+        "rich-text-editor"
+      ],
+      "timestamp": "2025-08-09T01:36:03.502Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T01:36:03.502Z",
+      "lastVerified": "2025-08-09T01:36:03.502Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754703616957_l2ws5ls29",
+      "content": "FIXED: Journal image import issue in The Way Stoic app\n\nProblem: Images weren't displaying in journal after upload via slash command\nRoot cause: EnhancedRichTextEditor was using SimplifiedRichTextEditor for ALL blocks, including images. SimplifiedRichTextEditor only renders contentEditable divs, not img elements.\n\nSolution implemented:\n1. Updated renderBlock function in EnhancedRichTextEditor.tsx to conditionally render image blocks\n2. Added proper img element rendering with styling (max-w-full h-auto rounded-lg shadow-sm)\n3. Made image blocks focusable with keyboard navigation support\n4. Added focus styling with orange ring\n5. Connected existing click handlers for image interaction\n\nImage upload workflow now works:\n1. Type \"/\" to open command menu\n2. Select \"Image\" option\n3. Upload file (max 10MB, converts to base64)\n4. Image displays correctly in journal\n5. Can navigate with keyboard arrows\n6. Can click to add new blocks before/after image\n\nStatus: FIXED and WORKING",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "bug-fix",
+        "journal",
+        "image-upload",
+        "the-way-stoic",
+        "rich-text-editor",
+        "success"
+      ],
+      "timestamp": "2025-08-09T01:40:16.957Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-09T01:43:59.278Z",
+      "lastVerified": "2025-08-09T01:40:16.957Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754704097569_yolaye3lh",
+      "content": "Journal auto-create duplicate entries bug - ROOT CAUSE FOUND\n\nProblem: Journal automatically creates multiple entries when navigating or during initialization\n\nRoot causes identified:\n1. **Timestamp precision issue**: Using `new Date().toISOString()` in useCachedJournal.ts line 218 creates unique millisecond-precision timestamps for each createEntry call, so rapid calls create \"different\" entries\n\n2. **Race condition in mutex check**: In journal.ts createEntryImmediately(), the mutex check (line 313) happens AFTER tempId generation. Multiple rapid calls can all pass the check before any add to mutex\n\n3. **Missing debouncing at manager level**: Only UI has 1-second threshold, but multiple components can still trigger creation\n\n4. **No recent entry check**: No verification if an entry was just created in the last few seconds\n\nFix needed:\n- Use date-only string (YYYY-MM-DD) instead of full ISO timestamp\n- Move mutex check BEFORE tempId generation  \n- Add manager-level debouncing (5-10 second window)\n- Check for entries created in last 10 seconds before creating new one",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "bug",
+        "journal",
+        "duplicate-entries",
+        "race-condition",
+        "the-way-stoic"
+      ],
+      "timestamp": "2025-08-09T01:48:17.569Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T01:48:17.569Z",
+      "lastVerified": "2025-08-09T01:48:17.569Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754704524841_pbfamgewl",
+      "content": "FIXED: Journal duplicate entries auto-creation bug in The Way Stoic app\n\nProblem: Journal was automatically creating multiple duplicate entries during navigation/initialization due to race conditions\n\nSolution implemented:\n1. ✅ Fixed timestamp generation in useCachedJournal.ts line 218:\n   - Changed from `new Date().toISOString()` to `new Date().toISOString().split('T')[0]`\n   - Now uses YYYY-MM-DD format instead of millisecond precision timestamps\n\n2. ✅ Strengthened duplicate prevention in journal.ts createEntryImmediately():\n   - Added check for existing entry with same date BEFORE creating new one\n   - Enhanced mutex check with better logging\n   - Added 10-second window check to prevent rapid duplicates\n   - Returns existing entry instead of creating duplicate\n\nKey changes:\n- Same-date check: Prevents multiple entries for same day\n- 10-second debouncing: Prevents rapid-fire creation\n- Better mutex handling: Stronger race condition protection\n- Improved logging: Better debugging for creation process\n\nStatus: FIXED - No more duplicate entries will be created automatically\n\nTest: The dev server is running at localhost:3003, ready for testing",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "testing",
+        "bug-fix",
+        "journal",
+        "duplicate-entries",
+        "race-condition",
+        "success",
+        "the-way-stoic"
+      ],
+      "timestamp": "2025-08-09T01:55:24.841Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T01:55:24.841Z",
+      "lastVerified": "2025-08-09T01:55:24.841Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-08T05:14:39.427Z"
+  "lastUpdated": "2025-08-09T01:55:24.841Z"
 }

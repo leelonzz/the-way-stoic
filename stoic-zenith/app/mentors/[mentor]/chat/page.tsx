@@ -123,7 +123,7 @@ export default function MentorChatPage(): JSX.Element {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <AppLayout>
+        <AppLayout fullWidth>
           <div className="h-full">
             <ChatInterface
               mentorName={mentor.name}

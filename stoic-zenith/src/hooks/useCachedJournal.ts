@@ -40,20 +40,54 @@ export function useCachedJournal() {
       // This ensures entries persist after clearing site data
       setSyncStatus('syncing')
 
+      const syncTimeout = 15000 // 15 second timeout for sync operations
+      let timeoutId: NodeJS.Timeout | null = null
+
       try {
-        console.log('🔄 Starting auth sync...')
-        // Force sync from database first
-        await manager.retryAuthSync()
+        // Wrap sync operations in a timeout to prevent hanging
+        const syncPromise = new Promise<JournalEntry[]>((resolve, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('Journal sync timeout - taking too long to load'))
+          }, syncTimeout)
 
-        console.log('📚 Getting all entries...')
-        // Get all entries (this will include database sync)
-        const rawEntries = await manager.getAllEntries()
+          const performSync = async () => {
+            try {
+              console.log('🔄 Starting auth sync...')
+              // Force sync from database first
+              await manager.retryAuthSync()
 
-        console.log('✅ Sync successful, entries:', rawEntries.length)
-        setSyncStatus('synced')
-        return rawEntries
+              console.log('📚 Getting all entries...')
+              // Get all entries (this will include database sync)
+              const rawEntries = await manager.getAllEntries()
+
+              console.log('✅ Sync successful, entries:', rawEntries.length)
+              setSyncStatus('synced')
+              
+              if (timeoutId) {
+                clearTimeout(timeoutId)
+                timeoutId = null
+              }
+              resolve(rawEntries)
+            } catch (error) {
+              if (timeoutId) {
+                clearTimeout(timeoutId)
+                timeoutId = null
+              }
+              reject(error)
+            }
+          }
+
+          performSync()
+        })
+
+        return await syncPromise
       } catch (error) {
         console.error('❌ [CachedJournal] Database sync failed:', error)
+        
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+        }
+
         setSyncStatus('error')
 
         // Fallback to local data if sync fails
@@ -61,6 +95,7 @@ export function useCachedJournal() {
           console.log('🔄 Attempting local fallback...')
           const rawEntries = await manager.getAllEntries()
           console.log('⚠️ [CachedJournal] Using local data after sync failure:', rawEntries.length, 'entries')
+          // Don't set sync status to 'synced' for fallback data
           return rawEntries
         } catch (fallbackError) {
           console.error('❌ [CachedJournal] Local fallback also failed:', fallbackError)
@@ -75,8 +110,17 @@ export function useCachedJournal() {
       gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
       retry: (failureCount, error) => {
         console.error('❌ [CachedJournal] Query failed:', error)
+        // Don't retry on timeout errors or auth failures
+        if (error && typeof error === 'object' && 'message' in error) {
+          const message = error.message as string
+          if (message.includes('timeout') || message.includes('unauthorized') || message.includes('invalid')) {
+            return false
+          }
+        }
         return failureCount < 2
       },
+      // Add refetch on auth state change
+      refetchOnMount: 'always',
     }
   )
 
@@ -170,8 +214,8 @@ export function useCachedJournal() {
     
     try {
       const manager = getJournalManager(user.id)
-      // Use full ISO timestamp to allow multiple entries per day
-      const dateString = new Date().toISOString()
+      // Use date-only format to prevent multiple entries on same day
+      const dateString = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
       const newEntry = manager.createEntryImmediately(dateString, 'general')
       
       // CRITICAL: Verify entry exists in localStorage before proceeding

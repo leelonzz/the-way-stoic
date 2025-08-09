@@ -1128,6 +1128,36 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
     const blockClassName = getBlockClassName(block, isEditing)
     // Only pass showPlaceholder to the first block
     const showPlaceholder = index === 0 && allBlocksEmpty
+
+    // Handle image blocks specially
+    if (block.type === 'image') {
+      return (
+        <div key={block.id} data-block-id={block.id} className={`${blockClassName} mb-4`}>
+          {block.imageUrl ? (
+            <img
+              src={block.imageUrl}
+              alt={block.imageAlt || 'Uploaded image'}
+              className="max-w-full h-auto rounded-lg shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
+              tabIndex={0}
+              onKeyDown={(e) => handleBlockKeyDown(e.nativeEvent, block.id)}
+              onClick={(e) => handleImageBlockClick(block.id, e.nativeEvent)}
+              draggable={false}
+            />
+          ) : (
+            <div
+              className="border-2 border-dashed border-stone-300 rounded-lg p-8 text-center cursor-pointer hover:border-stone-400 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
+              tabIndex={0}
+              onKeyDown={(e) => handleBlockKeyDown(e.nativeEvent, block.id)}
+              onClick={() => handleImageUpload(block.id)}
+            >
+              <p className="text-stone-500">Click to upload an image</p>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // Handle text blocks with SimplifiedRichTextEditor
     return (
       <div key={block.id} data-block-id={block.id} className={blockClassName}>
         <SimplifiedRichTextEditor

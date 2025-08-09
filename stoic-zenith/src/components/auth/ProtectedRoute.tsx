@@ -18,11 +18,17 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps): Rea
     }
     return false;
   });
+  const [authTimeoutReached, setAuthTimeoutReached] = useState(false);
 
   // Update wasAuthenticated whenever localStorage changes (cross-tab and same-tab)
   useEffect(() => {
     const updateWasAuthenticated = () => {
-      setWasAuthenticated(localStorage.getItem('was-authenticated') === 'true');
+      const newWasAuth = localStorage.getItem('was-authenticated') === 'true';
+      setWasAuthenticated(newWasAuth);
+      // Reset timeout when auth state changes
+      if (!newWasAuth) {
+        setAuthTimeoutReached(false);
+      }
     };
     window.addEventListener('storage', updateWasAuthenticated);
     window.addEventListener('localStorageChanged', updateWasAuthenticated);
@@ -32,7 +38,22 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps): Rea
     };
   }, []);
 
+  // Timeout for wasAuthenticated state to prevent infinite loading
+  useEffect(() => {
+    if (wasAuthenticated && !isAuthenticated && !isLoading) {
+      // Give auth system 15 seconds to complete, then show login screen
+      const timeoutId = setTimeout(() => {
+        console.warn('Authentication timeout reached, clearing was-authenticated flag');
+        localStorage.removeItem('was-authenticated');
+        setWasAuthenticated(false);
+        setAuthTimeoutReached(true);
+        // Dispatch event to notify other components
+        window.dispatchEvent(new Event('localStorageChanged'));
+      }, 15000);
 
+      return () => clearTimeout(timeoutId);
+    }
+  }, [wasAuthenticated, isAuthenticated, isLoading]);
 
   // Show minimal loading while checking authentication
   if (isLoading) {
@@ -40,8 +61,8 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps): Rea
   }
 
   // If user was previously authenticated but not currently authenticated,
-  // show loading to prevent login screen flash
-  if (wasAuthenticated && !isAuthenticated) {
+  // show loading to prevent login screen flash (but with timeout)
+  if (wasAuthenticated && !isAuthenticated && !authTimeoutReached) {
     return <MinimalLoadingScreen />;
   }
 

@@ -48,15 +48,15 @@ interface SubscriptionEvent {
 }
 
 export async function POST(request: NextRequest) {
-  console.log('🔔 DODO WEBHOOK RECEIVED - Starting processing')
-  console.log('Headers:', Object.fromEntries(request.headers.entries()))
+  // console.log('🔔 DODO WEBHOOK RECEIVED - Starting processing')
+  // console.log('Headers:', Object.fromEntries(request.headers.entries()))
   
   try {
     const body = await request.text()
-    console.log('✅ Body received, length:', body.length)
+    // console.log('✅ Body received, length:', body.length)
     
     const webhookSecret = process.env.DODO_WEBHOOK_SECRET
-    console.log('🔑 Webhook secret present:', !!webhookSecret)
+    // console.log('🔑 Webhook secret present:', !!webhookSecret)
 
     if (!webhookSecret) {
       console.error('❌ CRITICAL: Webhook secret not configured')
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       "webhook-timestamp": request.headers.get("webhook-timestamp") || "",
     }
     
-    console.log('📋 Webhook headers:', webhookHeaders)
+    // console.log('📋 Webhook headers:', webhookHeaders)
 
     if (!webhookHeaders["webhook-id"] || !webhookHeaders["webhook-signature"] || !webhookHeaders["webhook-timestamp"]) {
       console.error('❌ Missing required webhook headers:', webhookHeaders)
@@ -86,14 +86,14 @@ export async function POST(request: NextRequest) {
     // Verify webhook signature using Standard Webhooks
     // Skip verification for test webhooks (in development)
     const isTestWebhook = webhookHeaders["webhook-signature"] === 'test_signature_for_development'
-    console.log('🔐 Is test webhook:', isTestWebhook)
+    // console.log('🔐 Is test webhook:', isTestWebhook)
 
     if (!isTestWebhook) {
-      console.log('🔐 Verifying webhook signature...')
+      // console.log('🔐 Verifying webhook signature...')
       const webhook = new Webhook(webhookSecret)
       try {
         await webhook.verify(body, webhookHeaders)
-        console.log('✅ Webhook signature verified successfully')
+        // console.log('✅ Webhook signature verified successfully')
       } catch (error) {
         console.error('❌ Webhook signature verification failed:', error)
         console.error('Webhook secret (first 10 chars):', webhookSecret.substring(0, 10) + '...')
@@ -103,14 +103,14 @@ export async function POST(request: NextRequest) {
         )
       }
     } else {
-      console.log('🧪 Test webhook detected, skipping signature verification')
+      // console.log('🧪 Test webhook detected, skipping signature verification')
     }
 
-    console.log('📋 Parsing webhook body...')
+    // console.log('📋 Parsing webhook body...')
     let event: DodoWebhookEvent
     try {
       event = JSON.parse(body)
-      console.log('✅ Webhook body parsed successfully')
+      // console.log('✅ Webhook body parsed successfully')
     } catch (parseError) {
       console.error('❌ Failed to parse webhook body:', parseError)
       console.error('Body content:', body.substring(0, 500) + '...')
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Store ALL webhooks in logs for debugging
-    console.log('💾 Storing webhook in database...')
+    // console.log('💾 Storing webhook in database...')
     try {
       await supabase
         .from('webhook_logs')
@@ -130,53 +130,53 @@ export async function POST(request: NextRequest) {
           payload: event as any,
           processed: false
         })
-      console.log(`📝 ✅ Stored webhook ${event.type} in webhook_logs`)
+      // console.log(`📝 ✅ Stored webhook ${event.type} in webhook_logs`)
     } catch (logError) {
       console.error('❌ Failed to store webhook log:', logError)
       console.error('Database error details:', logError)
       // Don't fail the webhook for logging errors, just continue
     }
     
-    // Enhanced logging for debugging
-    console.log('========================================')
-    console.log('🔔 DODO WEBHOOK RECEIVED')
-    console.log('========================================')
-    console.log('Event Type:', event.type)
-    console.log('Timestamp:', new Date().toISOString())
-    console.log('Business ID:', event.business_id)
-    console.log('Event Timestamp:', event.timestamp)
-    console.log('Payload Type:', event.data?.payload_type)
+    // Enhanced logging for debugging - DISABLED FOR PRODUCTION
+    // console.log('========================================')
+    // console.log('🔔 DODO WEBHOOK RECEIVED')
+    // console.log('========================================')
+    // console.log('Event Type:', event.type)
+    // console.log('Timestamp:', new Date().toISOString())
+    // console.log('Business ID:', event.business_id)
+    // console.log('Event Timestamp:', event.timestamp)
+    // console.log('Payload Type:', event.data?.payload_type)
     
-    // Log specific data based on event type
-    if (event.type.startsWith('payment')) {
-      const payment = event.data as any
-      console.log('Payment Details:')
-      console.log('  - Payment ID:', payment.id)
-      console.log('  - Amount:', payment.amount)
-      console.log('  - Currency:', payment.currency)
-      console.log('  - Customer ID:', payment.customer_id)
-      console.log('  - Subscription ID:', payment.subscription_id)
-      console.log('  - User ID (metadata):', payment.metadata?.user_id)
-      console.log('  - Has metadata?:', !!payment.metadata)
-      console.log('  - All metadata:', JSON.stringify(payment.metadata))
-    } else if (event.type.startsWith('subscription')) {
-      const subscription = event.data as any
-      console.log('Subscription Details:')
-      console.log('  - Subscription ID:', subscription.id)
-      console.log('  - Status:', subscription.status)
-      console.log('  - Customer ID:', subscription.customer_id)
-      console.log('  - Product ID:', subscription.product_id)
-      console.log('  - User ID (metadata):', subscription.metadata?.user_id)
-      console.log('  - Has metadata?:', !!subscription.metadata)
-      console.log('  - All metadata:', JSON.stringify(subscription.metadata))
-      console.log('  - Customer object:', JSON.stringify(subscription.customer))
-      console.log('  - Period Start:', subscription.current_period_start)
-      console.log('  - Period End:', subscription.current_period_end)
-    }
+    // Log specific data based on event type - DISABLED FOR PRODUCTION
+    // if (event.type.startsWith('payment')) {
+    //   const payment = event.data as any
+    //   console.log('Payment Details:')
+    //   console.log('  - Payment ID:', payment.id)
+    //   console.log('  - Amount:', payment.amount)
+    //   console.log('  - Currency:', payment.currency)
+    //   console.log('  - Customer ID:', payment.customer_id)
+    //   console.log('  - Subscription ID:', payment.subscription_id)
+    //   console.log('  - User ID (metadata):', payment.metadata?.user_id)
+    //   console.log('  - Has metadata?:', !!payment.metadata)
+    //   console.log('  - All metadata:', JSON.stringify(payment.metadata))
+    // } else if (event.type.startsWith('subscription')) {
+    //   const subscription = event.data as any
+    //   console.log('Subscription Details:')
+    //   console.log('  - Subscription ID:', subscription.id)
+    //   console.log('  - Status:', subscription.status)
+    //   console.log('  - Customer ID:', subscription.customer_id)
+    //   console.log('  - Product ID:', subscription.product_id)
+    //   console.log('  - User ID (metadata):', subscription.metadata?.user_id)
+    //   console.log('  - Has metadata?:', !!subscription.metadata)
+    //   console.log('  - All metadata:', JSON.stringify(subscription.metadata))
+    //   console.log('  - Customer object:', JSON.stringify(subscription.customer))
+    //   console.log('  - Period Start:', subscription.current_period_start)
+    //   console.log('  - Period End:', subscription.current_period_end)
+    // }
     
-    console.log('Full Event Data:', JSON.stringify(event.data, null, 2))
-    console.log('Full Event:', JSON.stringify(event, null, 2))
-    console.log('========================================')
+    // console.log('Full Event Data:', JSON.stringify(event.data, null, 2))
+    // console.log('Full Event:', JSON.stringify(event, null, 2))
+    // console.log('========================================')
 
     // Handle different event types according to Dodo Payments documentation
     switch (event.type) {
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
         break
 
       default:
-        console.log(`Unhandled event type: ${event.type}`)
+        // console.log(`Unhandled event type: ${event.type}`)
     }
 
     return NextResponse.json({ received: true })
@@ -224,19 +224,19 @@ export async function POST(request: NextRequest) {
 }
 
 async function handlePaymentSucceeded(payment: PaymentEvent) {
-  console.log('Payment succeeded:', payment.id)
-  console.log('Payment metadata:', payment.metadata)
+  // console.log('Payment succeeded:', payment.id)
+  // console.log('Payment metadata:', payment.metadata)
 
   try {
     // If this payment is associated with a subscription, we'll update the user immediately
     // instead of waiting for subscription webhook which may be delayed or not sent
 
     // Log the successful payment for tracking
-    console.log(`✅ Payment ${payment.id} succeeded for customer ${payment.customer_id}`)
+    // console.log(`✅ Payment ${payment.id} succeeded for customer ${payment.customer_id}`)
 
     // Check if this is a subscription payment with user metadata
     if (payment.subscription_id && payment.metadata?.user_id) {
-      console.log(`Payment ${payment.id} is for subscription ${payment.subscription_id}, updating user immediately`)
+      // console.log(`Payment ${payment.id} is for subscription ${payment.subscription_id}, updating user immediately`)
       
       const userId = payment.metadata.user_id
       
@@ -423,6 +423,7 @@ async function handleSubscriptionActive(subscription: SubscriptionEvent) {
         subscription_status: 'active',
         subscription_plan: 'philosopher',
         subscription_expires_at: subscription.current_period_end,
+        subscription_id: subscription.id,
         updated_at: new Date().toISOString()
       })
       .eq('id', userId)
@@ -490,22 +491,101 @@ async function handleSubscriptionActive(subscription: SubscriptionEvent) {
 
 async function handleSubscriptionCancelled(subscription: SubscriptionEvent) {
   console.log('Subscription cancelled:', subscription.id)
+  console.log('Full subscription data:', JSON.stringify(subscription, null, 2))
 
   try {
-    // Extract user ID from metadata (passed during subscription creation)
-    const userId = subscription.metadata?.user_id
+    // Store webhook payload for debugging
+    await supabase
+      .from('webhook_logs')
+      .insert({
+        event_type: 'subscription.cancelled',
+        payload: subscription as any,
+        processed: false
+      })
+
+    // Try multiple methods to find the user (same logic as handleSubscriptionActive)
+    let userId: string | null = null
+    let user: any = null
+
+    // Method 1: Try to get user_id from metadata (passed during subscription creation)
+    userId = subscription.metadata?.user_id || null
+    console.log('Method 1 - User ID from metadata:', userId)
+
+    // Method 2: If no user_id in metadata, try to find user by Dodo customer_id
+    if (!userId && subscription.customer_id) {
+      console.log('Method 2 - Looking up user by Dodo customer_id:', subscription.customer_id)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('dodo_customer_id', subscription.customer_id)
+        .single()
+      
+      if (profile) {
+        userId = profile.id
+        console.log('Found user by customer_id:', userId)
+      }
+    }
+
+    // Method 3: If still no user, try to find by customer email
+    if (!userId && subscription.customer?.email) {
+      console.log('Method 3 - Looking up user by email:', subscription.customer.email)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', subscription.customer.email)
+        .single()
+      
+      if (profile) {
+        userId = profile.id
+        console.log('Found user by email:', userId)
+      }
+    }
+
+    // Method 4: If still no user, try to find by subscription_id
+    if (!userId) {
+      console.log('Method 4 - Looking up user by subscription_id:', subscription.id)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('subscription_id', subscription.id)
+        .single()
+      
+      if (profile) {
+        userId = profile.id
+        console.log('Found user by subscription_id:', userId)
+      }
+    }
 
     if (!userId) {
-      console.error('No user_id found in subscription metadata:', subscription.metadata)
+      console.error('Could not find user for subscription cancellation:', {
+        subscription_id: subscription.id,
+        customer_id: subscription.customer_id,
+        customer_email: subscription.customer?.email,
+        metadata: subscription.metadata
+      })
+      
+      // Mark webhook as unprocessed for manual recovery
+      await supabase
+        .from('webhook_logs')
+        .update({ 
+          error_message: 'Could not find user for subscription cancellation',
+          processed_at: new Date().toISOString()
+        })
+        .eq('event_type', 'subscription.cancelled')
+        .eq('processed', false)
+        .order('created_at', { ascending: false })
+        .limit(1)
+      
       return
     }
 
     // Validate user exists
-    const { data: user, error: userError } = await supabase.auth.admin.getUserById(userId)
-    if (userError || !user) {
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId)
+    if (userError || !userData) {
       console.error('User not found:', userId, userError)
       return
     }
+    user = userData
 
     // Update user profile to reflect cancelled status
     const { error } = await supabase
@@ -524,6 +604,18 @@ async function handleSubscriptionCancelled(subscription: SubscriptionEvent) {
     }
 
     console.log(`❌ User ${userId} subscription ${subscription.id} cancelled - downgraded to seeker plan`)
+
+    // Mark webhook as processed
+    await supabase
+      .from('webhook_logs')
+      .update({ 
+        processed: true,
+        processed_at: new Date().toISOString()
+      })
+      .eq('event_type', 'subscription.cancelled')
+      .eq('processed', false)
+      .order('created_at', { ascending: false })
+      .limit(1)
 
     // TODO: Send cancellation confirmation email
 

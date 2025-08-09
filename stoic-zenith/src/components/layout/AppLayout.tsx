@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { AppSidebar } from './AppSidebar';
 import { useNavigationMonitor } from '@/hooks/useNavigationMonitor';
+import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -15,9 +15,12 @@ export function AppLayout({ children, fullWidth = false }: AppLayoutProps) {
   return (
     <div className="flex min-h-screen bg-hero">
       <AppSidebar />
-      <main className="flex-1 overflow-auto ml-64">
+      <main className={cn(
+        "flex-1 ml-64",
+        fullWidth ? "flex flex-col min-h-screen overflow-hidden" : "overflow-auto"
+      )}>
         {fullWidth ? (
-          <div className="h-full">
+          <div className="flex-1 min-h-0">
             {children}
           </div>
         ) : (

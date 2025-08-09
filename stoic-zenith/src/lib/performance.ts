@@ -28,9 +28,10 @@ class PerformanceTracker {
       metadata
     });
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🚀 [Performance] Started tracking: ${name}`, metadata);
-    }
+    // Console debugging disabled
+    // if (process.env.NODE_ENV === 'development') {
+    //   console.log(`🚀 [Performance] Started tracking: ${name}`, metadata);
+    // }
   }
 
   // End tracking a metric
@@ -39,7 +40,10 @@ class PerformanceTracker {
 
     const metric = this.metrics.get(name);
     if (!metric) {
-      console.warn(`⚠️ [Performance] Metric not found: ${name}`);
+      // Console debugging disabled
+    // if (process.env.NODE_ENV === 'development') {
+    //   console.warn(`⚠️ [Performance] Metric not found: ${name}`);
+    // }
       return null;
     }
 
@@ -53,9 +57,10 @@ class PerformanceTracker {
       metric.metadata = { ...metric.metadata, ...additionalMetadata };
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`✅ [Performance] ${name}: ${duration.toFixed(2)}ms`, metric.metadata);
-    }
+    // Console debugging disabled
+    // if (process.env.NODE_ENV === 'development') {
+    //   console.log(`✅ [Performance] ${name}: ${duration.toFixed(2)}ms`, metric.metadata);
+    // }
 
     return duration;
   }
@@ -112,23 +117,26 @@ class PerformanceTracker {
 
   // Log performance summary
   logSummary(): void {
-    if (!this.isEnabled || process.env.NODE_ENV !== 'development') return;
+    // Console debugging disabled
+    return;
 
-    const summary = this.getSummary();
-    console.group('📊 Performance Summary');
-    console.log(`Total metrics: ${summary.totalMetrics}`);
-    console.log(`Completed metrics: ${summary.completedMetrics}`);
-    console.log(`Average duration: ${summary.averageDuration.toFixed(2)}ms`);
-    
-    if (summary.slowestMetric) {
-      console.log(`Slowest: ${summary.slowestMetric.name} (${summary.slowestMetric.duration!.toFixed(2)}ms)`);
-    }
-    
-    if (summary.fastestMetric) {
-      console.log(`Fastest: ${summary.fastestMetric.name} (${summary.fastestMetric.duration!.toFixed(2)}ms)`);
-    }
-    
-    console.groupEnd();
+    // if (!this.isEnabled || process.env.NODE_ENV !== 'development') return;
+
+    // const summary = this.getSummary();
+    // console.group('📊 Performance Summary');
+    // console.log(`Total metrics: ${summary.totalMetrics}`);
+    // console.log(`Completed metrics: ${summary.completedMetrics}`);
+    // console.log(`Average duration: ${summary.averageDuration.toFixed(2)}ms`);
+
+    // if (summary.slowestMetric) {
+    //   console.log(`Slowest: ${summary.slowestMetric.name} (${summary.slowestMetric.duration!.toFixed(2)}ms)`);
+    // }
+
+    // if (summary.fastestMetric) {
+    //   console.log(`Fastest: ${summary.fastestMetric.name} (${summary.fastestMetric.duration!.toFixed(2)}ms)`);
+    // }
+
+    // console.groupEnd();
   }
 }
 
@@ -171,16 +179,19 @@ export const journalPerformance = {
 
   // Log journal performance summary
   logJournalSummary: () => {
-    const journalMetrics = journalPerformance.getJournalMetrics();
-    if (journalMetrics.length === 0) return;
+    // Console debugging disabled
+    return;
 
-    console.group('📝 Journal Performance Summary');
-    journalMetrics.forEach(metric => {
-      if (metric.duration) {
-        console.log(`${metric.name}: ${metric.duration.toFixed(2)}ms`, metric.metadata);
-      }
-    });
-    console.groupEnd();
+    // const journalMetrics = journalPerformance.getJournalMetrics();
+    // if (journalMetrics.length === 0) return;
+
+    // console.group('📝 Journal Performance Summary');
+    // journalMetrics.forEach(metric => {
+    //   if (metric.duration) {
+    //     console.log(`${metric.name}: ${metric.duration.toFixed(2)}ms`, metric.metadata);
+    //   }
+    // });
+    // console.groupEnd();
   }
 };
 
@@ -230,26 +241,28 @@ export function measureWebVitals() {
     const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
     
     if (navigation) {
-      const metrics = {
-        'DNS Lookup': navigation.domainLookupEnd - navigation.domainLookupStart,
-        'TCP Connection': navigation.connectEnd - navigation.connectStart,
-        'Request': navigation.responseStart - navigation.requestStart,
-        'Response': navigation.responseEnd - navigation.responseStart,
-        'DOM Processing': navigation.domContentLoadedEventStart - navigation.responseEnd,
-        'Load Complete': navigation.loadEventEnd - navigation.loadEventStart,
-        'Total Load Time': navigation.loadEventEnd - navigation.fetchStart
-      };
+      // Console debugging disabled - metrics calculation commented out
+      // const metrics = {
+      //   'DNS Lookup': navigation.domainLookupEnd - navigation.domainLookupStart,
+      //   'TCP Connection': navigation.connectEnd - navigation.connectStart,
+      //   'Request': navigation.responseStart - navigation.requestStart,
+      //   'Response': navigation.responseEnd - navigation.responseStart,
+      //   'DOM Processing': navigation.domContentLoadedEventStart - navigation.responseEnd,
+      //   'Load Complete': navigation.loadEventEnd - navigation.loadEventStart,
+      //   'Total Load Time': navigation.loadEventEnd - navigation.fetchStart
+      // };
 
-      console.group('🌐 Web Performance Metrics');
-      Object.entries(metrics).forEach(([name, value]) => {
-        console.log(`${name}: ${value.toFixed(2)}ms`);
-      });
-      console.groupEnd();
+      // Console debugging disabled
+      // console.group('🌐 Web Performance Metrics');
+      // Object.entries(metrics).forEach(([name, value]) => {
+      //   console.log(`${name}: ${value.toFixed(2)}ms`);
+      // });
+      // console.groupEnd();
     }
   });
 }
 
-// Auto-start web vitals measurement in development
-if (process.env.NODE_ENV === 'development') {
-  measureWebVitals();
-}
+// Auto-start web vitals measurement in development - disabled
+// if (process.env.NODE_ENV === 'development') {
+//   measureWebVitals();
+// }
