@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigationCachedQuery } from '@/hooks/useCacheAwareQuery';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { getTimeoutConfig, isProduction } from '@/lib/config';
 // import type { Tables } from '@/integrations/supabase/types';
 
 export interface LifeCalendarPreferences {
@@ -141,11 +142,12 @@ export function useLifeCalendar(user: User | null) {
         throw new Error('No user ID available for calendar preferences')
       }
 
-      // Add timeout to prevent hanging
-      const timeoutDuration = 15000 // 15 seconds
+      // Production-aware timeout to prevent hanging
+      const timeoutConfig = getTimeoutConfig()
+      const timeoutDuration = timeoutConfig.dataTimeout // 30s prod, 15s dev
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
-          reject(new Error('Calendar preferences fetch timeout'))
+          reject(new Error(`Calendar preferences fetch timeout (${timeoutDuration}ms)`))
         }, timeoutDuration)
       })
 
@@ -164,14 +166,31 @@ export function useLifeCalendar(user: User | null) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'PGRST116') {
           return false;
         }
-        // Don't retry on timeout or auth errors
+
+        // Enhanced retry logic for production
         if (error && typeof error === 'object' && 'message' in error) {
           const message = error.message as string
-          if (message.includes('timeout') || message.includes('unauthorized') || message.includes('No user ID')) {
+
+          // Don't retry on auth errors
+          if (message.includes('unauthorized') || message.includes('No user ID') || message.includes('403') || message.includes('401')) {
+            console.log('🚫 Auth error detected in calendar, not retrying');
+            return false
+          }
+
+          // In production, be more lenient with timeouts and network errors
+          if (isProduction() && (message.includes('timeout') || message.includes('fetch') || message.includes('network'))) {
+            console.log('🔄 Network/timeout error in calendar production, allowing more retries');
+            return failureCount < 3 // More retries in production
+          }
+
+          // In development, don't retry timeouts
+          if (!isProduction() && message.includes('timeout')) {
             return false
           }
         }
-        return failureCount < 2;
+
+        const maxRetries = isProduction() ? 3 : 2
+        return failureCount < maxRetries;
       }
     }
   );

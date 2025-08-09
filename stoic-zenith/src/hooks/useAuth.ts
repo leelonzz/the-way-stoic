@@ -5,6 +5,7 @@ import {
   type AuthState,
   type UserProfile,
 } from '@/integrations/supabase/auth'
+import { getTimeoutConfig, isProduction } from '@/lib/config'
 
 export const useAuth = (): AuthState & {
   signInWithGoogle: () => Promise<void>
@@ -18,7 +19,6 @@ export const useAuth = (): AuthState & {
   const [authState, setAuthState] = useState<AuthState>(() => {
     // Always start with loading true to prevent flashing
     if (typeof window !== 'undefined') {
-      const _wasAuthenticated = localStorage.getItem('was-authenticated') === 'true'
       return {
         user: null,
         session: null,
@@ -320,7 +320,8 @@ export const useAuth = (): AuthState & {
     let mounted = true
 
     const initializeAuth = async (): Promise<void> => {
-      const timeoutDuration = 10000 // 10 second timeout
+      const timeoutConfig = getTimeoutConfig()
+      const timeoutDuration = timeoutConfig.authTimeout
       let timeoutId: NodeJS.Timeout | null = null
 
       try {
@@ -336,10 +337,20 @@ export const useAuth = (): AuthState & {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        // Set up timeout to prevent infinite loading
+        // Set up timeout - but don't clear auth state on timeout in production
         const authPromise = new Promise<void>((resolve, reject) => {
           timeoutId = setTimeout(() => {
-            reject(new Error('Authentication timeout - session verification took too long'))
+            const errorMsg = `Authentication timeout - session verification took too long (${timeoutDuration}ms)`;
+            console.warn(errorMsg);
+
+            // In production, don't reject on timeout - just resolve with current state
+            // This prevents clearing auth state due to slow network connections
+            if (isProduction()) {
+              console.log('🔄 Production timeout - keeping auth state, will retry in background');
+              resolve();
+            } else {
+              reject(new Error(errorMsg));
+            }
           }, timeoutDuration)
 
           // Fetch session with timeout
@@ -356,8 +367,11 @@ export const useAuth = (): AuthState & {
                   localStorage.setItem('was-authenticated', 'true')
                   updateAuthState(session.user, session).then(() => resolve()).catch(reject)
                 } else {
-                  // Clear authentication marker
-                  localStorage.removeItem('was-authenticated')
+                  // Only clear authentication marker if we got a definitive "no session" response
+                  // Don't clear on network errors or timeouts
+                  if (!wasAuthenticated) {
+                    localStorage.removeItem('was-authenticated')
+                  }
                   setAuthState({
                     user: null,
                     session: null,
@@ -377,8 +391,36 @@ export const useAuth = (): AuthState & {
                 timeoutId = null
               }
               console.warn('Session fetch failed:', error)
-              // Clear authentication marker on session fetch failure
-              localStorage.removeItem('was-authenticated')
+
+              // Distinguish between auth errors and network/timeout errors
+              const isAuthError = error?.message?.includes('unauthorized') ||
+                                 error?.message?.includes('invalid') ||
+                                 error?.status === 401 ||
+                                 error?.status === 403;
+
+              const isNetworkError = error?.message?.includes('timeout') ||
+                                   error?.message?.includes('fetch') ||
+                                   error?.message?.includes('network') ||
+                                   error?.name === 'AbortError';
+
+              // Only clear authentication marker on actual auth errors, not network issues
+              if (isAuthError) {
+                console.log('🚫 Actual auth error detected, clearing auth state');
+                localStorage.removeItem('was-authenticated')
+              } else if (isNetworkError && isProduction()) {
+                console.log('🌐 Network error in production, keeping auth state');
+                // Keep auth state in production for network errors
+                if (mounted && mountedRef.current && wasAuthenticated) {
+                  // Keep loading state to show user we're still trying
+                  setAuthState(prev => ({ ...prev, loading: false }))
+                  resolve()
+                  return
+                }
+              } else {
+                // Development or unknown error - clear auth state
+                localStorage.removeItem('was-authenticated')
+              }
+
               if (mounted && mountedRef.current) {
                 setAuthState({
                   user: null,
@@ -395,16 +437,22 @@ export const useAuth = (): AuthState & {
         await authPromise
       } catch (error) {
         console.error('❌ Auth initialization error:', error)
-        
+
         // Clean up timeout
         if (timeoutId) {
           clearTimeout(timeoutId)
         }
 
         if (mounted && mountedRef.current) {
-          localStorage.removeItem('was-authenticated')
-          // Dispatch event for ProtectedRoute to detect auth failure
-          window.dispatchEvent(new Event('localStorageChanged'))
+          // Only clear auth state on actual errors, not timeouts in production
+          const isTimeoutError = error?.message?.includes('timeout');
+
+          if (!isTimeoutError || !isProduction()) {
+            localStorage.removeItem('was-authenticated')
+            // Dispatch event for ProtectedRoute to detect auth failure
+            window.dispatchEvent(new Event('localStorageChanged'))
+          }
+
           setAuthState({
             user: null,
             session: null,
@@ -427,15 +475,18 @@ export const useAuth = (): AuthState & {
     const {
       data: { subscription },
     } = authHelpers.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state change:', event, session?.user?.id ? 'user present' : 'no user');
 
       if (mounted && mountedRef.current) {
         try {
           if (session?.user) {
+            console.log('✅ Auth state change - user authenticated');
             localStorage.setItem('was-authenticated', 'true')
             await updateAuthState(session.user, session)
           } else {
-            // Clear auth state for any sign out related events
-            if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || !session) {
+            // Only clear auth state for actual sign out events, not token refresh
+            if (event === 'SIGNED_OUT') {
+              console.log('🚪 User signed out, clearing auth state');
               localStorage.removeItem('was-authenticated')
               setAuthState({
                 user: null,
@@ -444,19 +495,41 @@ export const useAuth = (): AuthState & {
                 loading: false,
                 error: null,
               })
+            } else if (event === 'TOKEN_REFRESHED') {
+              console.log('🔄 Token refreshed but no session - this might be temporary');
+              // Don't clear auth state on token refresh - it might be temporary
+              // The session might be restored in the next event
+            } else if (!session) {
+              console.log('⚠️ No session in auth state change, but not a sign out');
+              // Only clear if we're sure it's not a temporary state
+              const wasAuth = localStorage.getItem('was-authenticated') === 'true';
+              if (!wasAuth) {
+                // If user wasn't previously authenticated, it's safe to clear
+                setAuthState({
+                  user: null,
+                  session: null,
+                  profile: null,
+                  loading: false,
+                  error: null,
+                })
+              }
+              // If user was previously authenticated, keep the state for now
             }
           }
         } catch (error) {
           console.error('Auth state change error:', error)
-          // Clear auth state on error to prevent stuck states
-          localStorage.removeItem('was-authenticated')
-          setAuthState({
-            user: null,
-            session: null,
-            profile: null,
-            loading: false,
-            error: null,
-          })
+          // Only clear auth state on actual errors, not temporary issues
+          if (error?.message?.includes('unauthorized') || error?.message?.includes('invalid')) {
+            console.log('🚫 Auth error detected, clearing auth state');
+            localStorage.removeItem('was-authenticated')
+            setAuthState({
+              user: null,
+              session: null,
+              profile: null,
+              loading: false,
+              error: null,
+            })
+          }
         }
       }
     })

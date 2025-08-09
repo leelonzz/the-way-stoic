@@ -131,7 +131,10 @@ export function AppSidebar(): JSX.Element {
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {navigationItems.map(item => {
-          const isActive = pathname === item.href
+          // Special handling for Mentors section - check if pathname starts with /mentors
+          const isActive = item.name === 'Mentors' 
+            ? pathname.startsWith('/mentors')
+            : pathname === item.href
           const isComingSoon = item.comingSoon
           const showUpgradePill =
             item.name === 'Mentors' && !hasPhilosopherPlan(profile)

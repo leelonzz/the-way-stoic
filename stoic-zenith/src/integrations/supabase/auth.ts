@@ -1,5 +1,9 @@
 import { supabase } from './client';
-import type { User, Session, Provider } from '@supabase/supabase-js';
+import type { User, Session, Provider } from '@supabase/supabase-js'
+import { getTimeoutConfig, isProduction } from '@/lib/config';
+
+// Debug flag - set to false for production
+const DEBUG_AUTH = false;
 
 export interface UserProfile {
   id: string;
@@ -28,21 +32,32 @@ async function retryOperation<T>(
   baseDelay: number = 1000
 ): Promise<T> {
   let lastError: Error;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (attempt === maxRetries) {
         throw lastError;
       }
-      
+
       // Don't retry on certain errors
       if (lastError.message.includes('PGRST116') || // Not found
           lastError.message.includes('invalid') ||
           lastError.message.includes('unauthorized')) {
+        throw lastError;
+      }
+
+      // Retry on timeout and network errors
+      const shouldRetry = lastError.message.includes('timeout') ||
+                         lastError.message.includes('fetch') ||
+                         lastError.message.includes('network') ||
+                         lastError.message.includes('AbortError') ||
+                         lastError.name === 'AbortError';
+
+      if (!shouldRetry) {
         throw lastError;
       }
       
@@ -54,6 +69,38 @@ async function retryOperation<T>(
   }
   
   throw lastError!;
+}
+
+// Session recovery function for handling authentication timeouts
+async function recoverSession(): Promise<Session | null> {
+  try {
+    // First try to get the session from storage
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error) {
+      if (DEBUG_AUTH) console.warn('⚠️ Session recovery failed:', error);
+      return null;
+    }
+
+    if (session) {
+      if (DEBUG_AUTH) console.log('✅ Session recovered from storage');
+      return session;
+    }
+
+    // If no session in storage, try to refresh
+    const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+
+    if (refreshError) {
+      if (DEBUG_AUTH) console.warn('⚠️ Session refresh failed:', refreshError);
+      return null;
+    }
+
+    if (DEBUG_AUTH) console.log('✅ Session refreshed successfully');
+    return refreshedSession;
+  } catch (error) {
+    if (DEBUG_AUTH) console.error('❌ Session recovery error:', error);
+    return null;
+  }
 }
 
 export const authHelpers = {
@@ -98,26 +145,55 @@ export const authHelpers = {
 
   async getCurrentUser() {
     return retryOperation(async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error('Get user error:', error);
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          // Try session recovery on timeout/network errors
+          if (error.message.includes('timeout') || error.message.includes('fetch')) {
+            const session = await recoverSession();
+            if (session?.user) {
+              if (DEBUG_AUTH) console.log('✅ User recovered via session recovery');
+              return session.user;
+            }
+          }
+          console.error('Get user error:', error);
+          throw error;
+        }
+        return user;
+      } catch (error) {
+        // Last resort: try session recovery
+        const session = await recoverSession();
+        if (session?.user) {
+          if (DEBUG_AUTH) console.log('✅ User recovered via fallback session recovery');
+          return session.user;
+        }
         throw error;
       }
-      return user;
     });
   },
 
   async getCurrentSession() {
-    const timeoutDuration = 10000 // 10 second timeout
+    // Production-aware timeout configuration
+    const timeoutConfig = getTimeoutConfig();
+    const timeoutDuration = timeoutConfig.sessionTimeout;
     
     try {
       // For returning users, we can be more optimistic
       const wasAuthenticated = typeof window !== 'undefined' && localStorage.getItem('was-authenticated') === 'true';
       
-      // Create timeout promise
+      // Create timeout promise - but handle differently in production
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
-          reject(new Error('Session fetch timeout - taking too long to verify authentication'))
+          const errorMsg = `Session fetch timeout - taking too long to verify authentication (${timeoutDuration}ms)`;
+
+          // In production, be more lenient with timeouts
+          if (isProduction() && wasAuthenticated) {
+            console.warn('🔄 Production session timeout - will attempt recovery');
+            // Don't reject immediately, let the session promise continue
+            setTimeout(() => reject(new Error(errorMsg)), 5000); // Give extra 5s in production
+          } else {
+            reject(new Error(errorMsg));
+          }
         }, timeoutDuration)
       })
 
@@ -130,32 +206,72 @@ export const authHelpers = {
             status: error.status,
             code: error.code || 'unknown'
           });
+
+          // Distinguish between auth errors and network errors
+          const isAuthError = error.message?.includes('unauthorized') ||
+                             error.message?.includes('invalid') ||
+                             error.status === 401 ||
+                             error.status === 403;
+
+          const isNetworkError = error.message?.includes('timeout') ||
+                                error.message?.includes('fetch') ||
+                                error.message?.includes('network');
+
+          // Only clear auth state on actual auth errors, not network issues
+          if (isAuthError) {
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('was-authenticated');
+            }
+          } else if (isNetworkError && isProduction()) {
+            console.log('🌐 Network error in production, attempting recovery...');
+            // Try session recovery for network errors in production
+            try {
+              const recoveredSession = await recoverSession();
+              if (recoveredSession) {
+                if (DEBUG_AUTH) console.log('✅ Session recovered from network error');
+                return recoveredSession;
+              }
+            } catch (recoveryError) {
+              console.warn('❌ Session recovery failed:', recoveryError);
+            }
+          }
+
           throw error;
         }
 
         // If no session but user was previously authenticated, try to refresh
         if (!session && wasAuthenticated) {
-          console.log('🔄 No session found but user was authenticated, attempting refresh...');
+          if (DEBUG_AUTH) console.log('🔄 No session found but user was authenticated, attempting refresh...');
           try {
             const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
             
             if (refreshError) {
               console.warn('❌ Session refresh failed:', refreshError);
-              // Clear authentication marker on refresh failure
-              if (typeof window !== 'undefined') {
+
+              // Only clear auth marker on actual auth errors, not network issues
+              const isAuthError = refreshError.message?.includes('unauthorized') ||
+                                 refreshError.message?.includes('invalid') ||
+                                 refreshError.status === 401 ||
+                                 refreshError.status === 403;
+
+              if (isAuthError && typeof window !== 'undefined') {
                 localStorage.removeItem('was-authenticated');
               }
               return null;
             }
 
             if (refreshedSession) {
-              console.log('✅ Session refreshed successfully');
+              if (DEBUG_AUTH) console.log('✅ Session refreshed successfully');
               return refreshedSession;
             }
           } catch (refreshErr) {
             console.warn('❌ Session refresh error:', refreshErr);
-            // Clear authentication marker on refresh error
-            if (typeof window !== 'undefined') {
+
+            // Only clear auth marker on actual auth errors
+            const isAuthError = refreshErr?.message?.includes('unauthorized') ||
+                               refreshErr?.message?.includes('invalid');
+
+            if (isAuthError && typeof window !== 'undefined') {
               localStorage.removeItem('was-authenticated');
             }
             return null;
@@ -165,8 +281,9 @@ export const authHelpers = {
         if (session) {
           // Session found
         } else {
-          // Clear authentication marker if no session found
-          if (typeof window !== 'undefined') {
+          // Only clear authentication marker if we're sure there's no session
+          // Don't clear on network errors in production
+          if (typeof window !== 'undefined' && !isProduction()) {
             localStorage.removeItem('was-authenticated');
           }
         }
@@ -177,10 +294,24 @@ export const authHelpers = {
       return await Promise.race([sessionPromise, timeoutPromise]);
     } catch (error) {
       console.error('❌ Unexpected error getting session:', error);
-      // Clear authentication marker on error
+
+      // Distinguish between different error types
+      const isTimeoutError = error?.message?.includes('timeout');
+      const isNetworkError = error?.message?.includes('fetch') ||
+                           error?.message?.includes('network') ||
+                           error?.name === 'AbortError';
+
+      // Only clear authentication marker on actual auth errors, not timeouts/network issues in production
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('was-authenticated');
+        const shouldClearAuth = !isProduction() || (!isTimeoutError && !isNetworkError);
+
+        if (shouldClearAuth) {
+          localStorage.removeItem('was-authenticated');
+        } else {
+          console.log('🔄 Keeping auth state due to network/timeout error in production');
+        }
       }
+
       throw error;
     }
   },

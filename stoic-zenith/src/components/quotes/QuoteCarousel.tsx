@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, Star, Share } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { usePageCache } from '@/components/providers/PageCacheProvider'
 import type { Quote as QuoteType } from '@/hooks/useCachedQuotes'
 
 interface QuoteCarouselProps {
@@ -13,18 +14,41 @@ interface QuoteCarouselProps {
   onUnsave?: (quoteId: string) => Promise<boolean>
 }
 
-export function QuoteCarousel({ 
-  quotes, 
-  isQuoteSaved, 
-  onSave, 
-  onUnsave 
+export function QuoteCarousel({
+  quotes,
+  isQuoteSaved,
+  onSave,
+  onUnsave
 }: QuoteCarouselProps): JSX.Element {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
   const { toast } = useToast()
+  const { updateCustomState, getCustomState } = usePageCache()
 
   const currentQuote = quotes[currentIndex]
   const isSaved = currentQuote && isQuoteSaved ? isQuoteSaved(currentQuote.id) : false
+
+  // Initialize quote index from cache on mount
+  useEffect(() => {
+    if (!isInitialized && quotes.length > 0) {
+      const cachedState = getCustomState('quotes')
+      const savedIndex = cachedState?.quoteIndex
+
+      if (typeof savedIndex === 'number' && savedIndex >= 0 && savedIndex < quotes.length) {
+        setCurrentIndex(savedIndex)
+      }
+
+      setIsInitialized(true)
+    }
+  }, [quotes.length, isInitialized, getCustomState])
+
+  // Save quote index to cache whenever it changes
+  useEffect(() => {
+    if (isInitialized) {
+      updateCustomState('quotes', { quoteIndex: currentIndex })
+    }
+  }, [currentIndex, isInitialized, updateCustomState])
 
   // Navigation functions
   const goToPrevious = useCallback(() => {

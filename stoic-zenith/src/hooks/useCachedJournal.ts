@@ -7,6 +7,7 @@ import type { JournalEntry, JournalBlock } from '@/components/journal/types'
 import { useAuthContext } from '@/components/auth/AuthProvider'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/components/ui/use-toast'
+import { getTimeoutConfig, isProduction } from '@/lib/config'
 
 /**
  * Cache-aware journal hook that prevents redundant database calls
@@ -40,7 +41,8 @@ export function useCachedJournal() {
       // This ensures entries persist after clearing site data
       setSyncStatus('syncing')
 
-      const syncTimeout = 15000 // 15 second timeout for sync operations
+      const timeoutConfig = getTimeoutConfig()
+      const syncTimeout = timeoutConfig.syncTimeout // Production-aware timeout
       let timeoutId: NodeJS.Timeout | null = null
 
       try {
@@ -110,14 +112,31 @@ export function useCachedJournal() {
       gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
       retry: (failureCount, error) => {
         console.error('❌ [CachedJournal] Query failed:', error)
-        // Don't retry on timeout errors or auth failures
+
+        // Enhanced retry logic for production
         if (error && typeof error === 'object' && 'message' in error) {
           const message = error.message as string
-          if (message.includes('timeout') || message.includes('unauthorized') || message.includes('invalid')) {
+
+          // Don't retry on auth failures
+          if (message.includes('unauthorized') || message.includes('invalid') || message.includes('403') || message.includes('401')) {
+            console.log('🚫 Auth error detected, not retrying');
+            return false
+          }
+
+          // In production, be more lenient with timeouts and network errors
+          if (isProduction() && (message.includes('timeout') || message.includes('fetch') || message.includes('network'))) {
+            console.log('🔄 Network/timeout error in production, allowing more retries');
+            return failureCount < 3 // More retries in production
+          }
+
+          // In development, don't retry timeouts
+          if (!isProduction() && message.includes('timeout')) {
             return false
           }
         }
-        return failureCount < 2
+
+        const maxRetries = isProduction() ? 3 : 2
+        return failureCount < maxRetries
       },
       // Add refetch on auth state change
       refetchOnMount: 'always',

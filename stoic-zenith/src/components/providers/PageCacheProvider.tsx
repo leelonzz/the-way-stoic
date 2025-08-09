@@ -6,6 +6,7 @@ interface CachedPageData {
   component: ReactNode
   timestamp: number
   scrollPosition?: { x: number; y: number }
+  customState?: Record<string, any>
 }
 
 interface PageCacheContextType {
@@ -14,6 +15,8 @@ interface PageCacheContextType {
   clearCache: () => void
   clearPageCache: (pageKey: string) => void
   updateScrollPosition: (pageKey: string, position: { x: number; y: number }) => void
+  updateCustomState: (pageKey: string, state: Record<string, any>) => void
+  getCustomState: (pageKey: string) => Record<string, any> | null
   isPageCached: (pageKey: string) => boolean
   getCacheSize: () => number
 }
@@ -107,6 +110,19 @@ export function PageCacheProvider({
     }
   }, [])
 
+  const updateCustomState = useCallback((pageKey: string, state: Record<string, any>) => {
+    const cached = cacheRef.current.get(pageKey)
+    if (cached) {
+      cached.customState = { ...cached.customState, ...state }
+      cacheRef.current.set(pageKey, cached)
+    }
+  }, [])
+
+  const getCustomState = useCallback((pageKey: string): Record<string, any> | null => {
+    const cached = cacheRef.current.get(pageKey)
+    return cached?.customState || null
+  }, [])
+
   const isPageCached = useCallback((pageKey: string): boolean => {
     cleanExpiredCache()
     return cacheRef.current.has(pageKey)
@@ -123,6 +139,8 @@ export function PageCacheProvider({
     clearCache,
     clearPageCache,
     updateScrollPosition,
+    updateCustomState,
+    getCustomState,
     isPageCached,
     getCacheSize
   }

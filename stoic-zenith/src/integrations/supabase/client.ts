@@ -15,10 +15,26 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    debug: false,
+    flowType: 'pkce',
+    // Fix authentication timeout issues
+    storageKey: 'stoic-zenith-auth',
   },
   global: {
     headers: {
       'X-Client-Info': 'stoic-zenith-web',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+    // Add fetch options for better reliability with timeout
+    fetch: (url: string, options: RequestInit = {}) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      return fetch(url, {
+        ...options,
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeoutId));
     },
   },
   realtime: {

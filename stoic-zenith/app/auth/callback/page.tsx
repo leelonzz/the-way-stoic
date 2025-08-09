@@ -12,8 +12,11 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
+        console.log('🔄 Processing auth callback...');
+
+        // First, handle the auth callback from the URL
         const { data, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error('❌ Auth callback error:', error);
           console.error('Error details:', {
@@ -25,13 +28,25 @@ export default function AuthCallback() {
           return;
         }
 
-        if (data.session) {
+        if (data.session?.user) {
+          console.log('✅ Auth callback successful, user authenticated');
+          // Mark user as authenticated immediately
+          localStorage.setItem('was-authenticated', 'true');
+
+          // Add a small delay to ensure auth state is properly set
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          // Navigate to home
           router.push('/');
         } else {
-          router.push('/');
+          console.warn('⚠️ Auth callback completed but no session found');
+          // Clear any stale auth markers
+          localStorage.removeItem('was-authenticated');
+          router.push('/?error=no_session');
         }
       } catch (error) {
         console.error('❌ Unexpected auth callback error:', error);
+        localStorage.removeItem('was-authenticated');
         router.push('/?error=auth_callback_failed');
       }
     };

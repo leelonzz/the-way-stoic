@@ -142,8 +142,8 @@
       ],
       "timestamp": "2025-07-31T13:39:36.389Z",
       "context": "New feature request for The Way Stoic project",
-      "accessCount": 25,
-      "lastAccessed": "2025-08-08T04:56:13.681Z",
+      "accessCount": 27,
+      "lastAccessed": "2025-08-09T05:30:55.622Z",
       "lastVerified": "2025-07-31T13:39:36.389Z",
       "status": "fresh"
     },
@@ -180,8 +180,8 @@
       ],
       "timestamp": "2025-07-31T13:40:28.510Z",
       "context": "Complete project analysis for auth implementation planning",
-      "accessCount": 33,
-      "lastAccessed": "2025-08-08T04:56:13.681Z",
+      "accessCount": 35,
+      "lastAccessed": "2025-08-09T05:30:55.622Z",
       "lastVerified": "2025-07-31T13:40:28.510Z",
       "status": "fresh"
     },
@@ -202,8 +202,8 @@
       ],
       "timestamp": "2025-07-31T13:46:36.273Z",
       "context": "Complete authentication implementation summary",
-      "accessCount": 32,
-      "lastAccessed": "2025-08-09T00:55:44.022Z",
+      "accessCount": 34,
+      "lastAccessed": "2025-08-09T05:30:55.622Z",
       "lastVerified": "2025-07-31T13:46:36.273Z",
       "status": "fresh"
     },
@@ -242,8 +242,8 @@
       ],
       "timestamp": "2025-07-31T13:57:29.542Z",
       "context": "Authentication troubleshooting complete - fixed CSP and added debugging",
-      "accessCount": 30,
-      "lastAccessed": "2025-08-09T00:55:44.022Z",
+      "accessCount": 31,
+      "lastAccessed": "2025-08-09T05:30:55.622Z",
       "lastVerified": "2025-07-31T13:57:29.542Z",
       "status": "fresh"
     },
@@ -262,8 +262,8 @@
       ],
       "timestamp": "2025-07-31T22:49:35.805Z",
       "context": "Analyzing stoic-zenith app structure for feature implementation",
-      "accessCount": 32,
-      "lastAccessed": "2025-08-08T04:56:13.681Z",
+      "accessCount": 35,
+      "lastAccessed": "2025-08-09T05:30:55.622Z",
       "lastVerified": "2025-07-31T22:49:35.805Z",
       "status": "fresh"
     },
@@ -284,8 +284,8 @@
       ],
       "timestamp": "2025-07-31T22:58:58.884Z",
       "context": "Completed The Way Stoic app feature implementation",
-      "accessCount": 30,
-      "lastAccessed": "2025-08-08T04:56:13.681Z",
+      "accessCount": 32,
+      "lastAccessed": "2025-08-09T05:30:55.622Z",
       "lastVerified": "2025-07-31T22:58:58.884Z",
       "status": "fresh"
     },
@@ -303,8 +303,8 @@
       ],
       "timestamp": "2025-07-31T23:00:33.021Z",
       "context": "Debugging Calendar and Quotes page errors",
-      "accessCount": 18,
-      "lastAccessed": "2025-08-08T04:56:13.681Z",
+      "accessCount": 20,
+      "lastAccessed": "2025-08-09T05:30:55.622Z",
       "lastVerified": "2025-07-31T23:00:33.021Z",
       "status": "fresh"
     },
@@ -343,8 +343,8 @@
       ],
       "timestamp": "2025-07-31T23:17:13.996Z",
       "context": "Implementation completion summary",
-      "accessCount": 29,
-      "lastAccessed": "2025-08-09T00:55:44.022Z",
+      "accessCount": 31,
+      "lastAccessed": "2025-08-09T05:30:55.622Z",
       "lastVerified": "2025-07-31T23:17:13.996Z",
       "status": "fresh"
     },
@@ -788,8 +788,8 @@
       ],
       "timestamp": "2025-08-01T03:33:11.254Z",
       "context": "Fixed loading screen issue after login - JavaScript syntax errors resolved",
-      "accessCount": 20,
-      "lastAccessed": "2025-08-09T00:55:44.022Z",
+      "accessCount": 22,
+      "lastAccessed": "2025-08-09T05:30:55.622Z",
       "lastVerified": "2025-08-01T03:33:11.254Z",
       "status": "fresh"
     },
@@ -878,8 +878,8 @@
       ],
       "timestamp": "2025-08-01T07:11:21.102Z",
       "context": "New JavaScript syntax error issue causing loading screen stuck",
-      "accessCount": 14,
-      "lastAccessed": "2025-08-08T04:56:13.681Z",
+      "accessCount": 16,
+      "lastAccessed": "2025-08-09T05:30:55.622Z",
       "lastVerified": "2025-08-01T07:11:21.102Z",
       "status": "fresh"
     },
@@ -900,8 +900,8 @@
       ],
       "timestamp": "2025-08-01T07:16:18.989Z",
       "context": "Complete fix for authentication and loading screen issues",
-      "accessCount": 23,
-      "lastAccessed": "2025-08-09T00:55:44.022Z",
+      "accessCount": 24,
+      "lastAccessed": "2025-08-09T04:02:27.226Z",
       "lastVerified": "2025-08-01T07:16:18.989Z",
       "status": "fresh"
     },
@@ -1444,8 +1444,8 @@
       ],
       "timestamp": "2025-08-02T01:58:07.876Z",
       "context": "Codebase analysis for journal navigation implementation",
-      "accessCount": 16,
-      "lastAccessed": "2025-08-09T01:43:59.278Z",
+      "accessCount": 18,
+      "lastAccessed": "2025-08-09T04:02:27.226Z",
       "lastVerified": "2025-08-02T01:58:07.876Z",
       "status": "fresh"
     },
@@ -1535,8 +1535,8 @@
       ],
       "timestamp": "2025-08-02T02:21:07.421Z",
       "context": "Reverted journal layout changes per user request",
-      "accessCount": 7,
-      "lastAccessed": "2025-08-09T01:43:59.278Z",
+      "accessCount": 8,
+      "lastAccessed": "2025-08-09T03:48:31.812Z",
       "lastVerified": "2025-08-02T02:21:07.421Z",
       "status": "fresh"
     },
@@ -1788,8 +1788,8 @@
       ],
       "timestamp": "2025-08-02T05:24:08.361Z",
       "context": "Journal layout analysis for comprehensive plan",
-      "accessCount": 12,
-      "lastAccessed": "2025-08-09T01:43:59.278Z",
+      "accessCount": 14,
+      "lastAccessed": "2025-08-09T04:02:27.226Z",
       "lastVerified": "2025-08-02T05:24:08.361Z",
       "status": "fresh"
     },
@@ -1808,8 +1808,8 @@
       ],
       "timestamp": "2025-08-02T05:33:26.476Z",
       "context": "Journal layout transformation project completion",
-      "accessCount": 8,
-      "lastAccessed": "2025-08-09T01:43:59.278Z",
+      "accessCount": 10,
+      "lastAccessed": "2025-08-09T04:02:27.226Z",
       "lastVerified": "2025-08-02T05:33:26.476Z",
       "status": "fresh"
     },
@@ -1828,8 +1828,8 @@
       ],
       "timestamp": "2025-08-02T05:41:35.877Z",
       "context": "Journal header redesign completion",
-      "accessCount": 14,
-      "lastAccessed": "2025-08-09T01:43:59.278Z",
+      "accessCount": 16,
+      "lastAccessed": "2025-08-09T04:02:27.226Z",
       "lastVerified": "2025-08-02T05:41:35.877Z",
       "status": "fresh"
     },
@@ -5211,7 +5211,256 @@
       "lastAccessed": "2025-08-09T01:55:24.841Z",
       "lastVerified": "2025-08-09T01:55:24.841Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1754711429573_ufhy12iqk",
+      "content": "JOURNAL/CALENDAR INFINITE LOADING ISSUE ANALYSIS\n\nProblem: Journal and calendar pages get stuck in infinite loading state that triggers automatic logout after ~3 seconds when:\n1. User closes a tab and revisits the application\n2. User is already logged in and opens app for the first time\n\nKey Findings:\n\n1. **Multiple Timeout Mechanisms Conflicting:**\n   - useAuth hook: 10 second timeout for auth initialization (line 323-343)\n   - authHelpers.getCurrentSession: 10 second timeout (line 111)\n   - ProtectedRoute: 15 second timeout for wasAuthenticated state (line 44-52)\n   - useCachedJournal: 15 second timeout for sync operations (line 44)\n\n2. **Race Condition in Auth State:**\n   - When user revisits, localStorage has 'was-authenticated' = 'true'\n   - Multiple components try to verify auth state simultaneously\n   - If any timeout is reached, it clears localStorage and triggers logout\n\n3. **Journal Page Issues:**\n   - Uses prefetchJournal in useEffect which may conflict with useCachedJournal\n   - useCachedJournal forces sync on every mount with 15s timeout\n   - If sync fails or times out, it falls back to local data but may trigger auth failure\n\n4. **Calendar Page Issues:**\n   - Uses NavigationOptimizedCachedPage wrapper with complex caching logic\n   - useLifeCalendar hook may have its own auth checks\n   - Calendar content depends on user auth state but may not handle loading properly\n\n5. **The 3-Second Logout:**\n   - Not directly visible in timeout configs (all are 10-15 seconds)\n   - Likely caused by cumulative effect of multiple auth checks failing quickly\n   - Or possibly a shorter timeout elsewhere in the auth flow",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "bug",
+        "authentication",
+        "journal",
+        "calendar",
+        "infinite-loading",
+        "timeout",
+        "race-condition"
+      ],
+      "timestamp": "2025-08-09T03:50:29.573Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T03:50:29.573Z",
+      "lastVerified": "2025-08-09T03:50:29.573Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754711510286_sc4kx1d2l",
+      "content": "ROOT CAUSE IDENTIFIED - Journal/Calendar Infinite Loading & Logout Issue\n\nThe problem occurs due to a cascade of authentication failures:\n\n1. **Initial State**: User is logged in, localStorage has 'was-authenticated' = 'true'\n\n2. **When Revisiting Page**:\n   - ProtectedRoute checks wasAuthenticated and shows loading (15s timeout)\n   - useAuth tries to verify session (10s timeout)\n   - Journal page runs prefetchJournal AND useCachedJournal simultaneously\n   - useCachedJournal forces auth sync with 15s timeout\n   - Calendar page uses NavigationOptimizedCachedPage + useLifeCalendar\n\n3. **The Race Condition**:\n   - Multiple components try to call supabase.auth.getUser() simultaneously\n   - If ANY auth check fails or times out, it clears 'was-authenticated'\n   - This triggers all other components to think user is logged out\n   - The \"3 second\" logout is likely from the first failed auth check\n\n4. **Why It Happens on Tab Revisit**:\n   - Browser may throttle or delay network requests for background tabs\n   - When tab becomes active, all pending auth checks fire at once\n   - Supabase may rate-limit or reject simultaneous auth requests\n   - First rejection cascades to full logout\n\nSolution needed:\n- Centralize auth verification to prevent multiple simultaneous checks\n- Remove redundant prefetch/sync operations\n- Use cached auth state instead of repeatedly verifying\n- Handle tab visibility changes more gracefully",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "authentication",
+        "bug-fix",
+        "root-cause",
+        "journal",
+        "calendar",
+        "race-condition"
+      ],
+      "timestamp": "2025-08-09T03:51:50.286Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T03:51:50.286Z",
+      "lastVerified": "2025-08-09T03:51:50.286Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754711884285_qez3llsyi",
+      "content": "JOURNAL/CALENDAR INFINITE LOADING ISSUE - SOLUTION IMPLEMENTED ✅\n\nSuccessfully fixed the authentication race condition that was causing infinite loading and automatic logout after ~3 seconds on journal/calendar pages.\n\n## Changes Made:\n\n1. **Journal Page (app/journal/page.tsx)**:\n   - Removed redundant prefetchJournal that was duplicating auth work\n   - Simplified JournalWithPrefetch to JournalComponent\n   - Let useCachedJournal handle all data loading\n\n2. **useCachedJournal Hook**:\n   - Removed forced auth sync on every mount (was causing race condition)\n   - Changed retry strategy to false to prevent auth conflicts\n   - Changed refetchOnMount to false to use cached data\n   - Simplified entry loading without timeout-prone auth sync\n\n3. **Calendar Page (app/calendar/page.tsx)**:\n   - Removed NavigationOptimizedCachedPage wrapper (was adding complexity)\n   - Simplified to direct CalendarContent with Suspense\n   - Reduced unnecessary caching layer\n\n4. **useLifeCalendar Hook**:\n   - Set retry to false to prevent auth race conditions\n   - Set refetchOnMount to false to use cached data\n   - Removed complex retry logic that could trigger auth failures\n\n5. **useAuth Hook**:\n   - Added sessionCheckInProgress flag to prevent concurrent auth checks\n   - Reduced timeout from 10s to 8s\n   - Reduced delay for returning users from 100ms to 50ms\n   - Centralized session verification to prevent race conditions\n\n6. **ProtectedRoute Component**:\n   - Reduced timeout from 15s to 10s\n   - Changed to not clear 'was-authenticated' on timeout - let useAuth handle it\n   - More graceful timeout handling without triggering logout cascade\n\n7. **Journal Component**:\n   - Removed redundant supabase.auth.getUser() calls\n   - Removed duplicate auth state listener\n   - Use existing auth context instead of separate auth checks\n\n## Result:\n- No more infinite loading on page revisit\n- No more automatic logout after 3 seconds\n- Faster page loads with proper caching\n- Single source of truth for authentication state\n- Eliminated auth race conditions",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "authentication",
+        "solution",
+        "journal",
+        "calendar",
+        "race-condition",
+        "fixed"
+      ],
+      "timestamp": "2025-08-09T03:58:04.285Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T03:58:04.285Z",
+      "lastVerified": "2025-08-09T03:58:04.285Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754712207137_v8871sx4h",
+      "content": "User wants the quotes dropdown in sidebar to stay open when navigating to other pages. Currently it auto-closes on navigation because of the useEffect at line 76-79 in AppSidebar.tsx. \n\n✅ FIXED: Modified the useEffect to only open dropdown when landing on quotes page, but no longer auto-closes when navigating away. The dropdown will now persist its open state across navigation.",
+      "type": "solution",
+      "tags": [
+        "solution",
+        "general",
+        "dropdown",
+        "navigation",
+        "quotes",
+        "sidebar",
+        "user-request"
+      ],
+      "timestamp": "2025-08-09T04:03:27.137Z",
+      "context": "Quotes dropdown navigation issue in AppSidebar component",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T04:03:27.137Z",
+      "lastVerified": "2025-08-09T04:03:27.137Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754712442532_ei835i5ml",
+      "content": "✅ FIXED: Quotes dropdown auto-close issue in AppSidebar.tsx\n\nSOLUTION IMPLEMENTED:\n1. Removed pathname-based state initialization that was causing resets on navigation\n2. Added localStorage persistence to remember user's dropdown preference\n3. Replaced problematic useEffect with a toggleQuotesDropdown function that saves state\n4. Updated all dropdown toggle interactions to use the persistent function\n5. Kept auto-open behavior when clicking main Quotes link\n\nThe dropdown will now stay open/closed based on user preference, persisting across navigation and browser sessions.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "fix-complete",
+        "dropdown",
+        "persistence",
+        "localStorage",
+        "navigation"
+      ],
+      "timestamp": "2025-08-09T04:07:22.532Z",
+      "context": "Quotes dropdown persistence fix implementation complete",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T04:07:22.532Z",
+      "lastVerified": "2025-08-09T04:07:22.532Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754712546600_hz63c9zqk",
+      "content": "✅ FIXED: Removed the unprofessional fade-in animation from quotes dropdown subitems. \n\nSOLUTION: Removed \"animate-fade-in\" class from the dropdown menu container in AppSidebar.tsx line 201. The dropdown subitems (Library, Favorites, My Quotes) no longer have the distracting animation effect that was triggering on every navigation.",
+      "type": "code",
+      "tags": [
+        "code",
+        "animation",
+        "fade-in",
+        "dropdown",
+        "navigation",
+        "ux-issue"
+      ],
+      "timestamp": "2025-08-09T04:09:06.600Z",
+      "context": "Quotes dropdown fade-in animation issue on navigation",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T04:09:06.600Z",
+      "lastVerified": "2025-08-09T04:09:06.600Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754712683504_oe2vgezuf",
+      "content": "✅ FIXED: Sidebar navigation now shows active state when in Mentors chat interface.\n\nSOLUTION: Updated the isActive logic in AppSidebar.tsx to use pathname.startsWith('/mentors') for the Mentors navigation item instead of exact pathname matching. Now when users are in chat interfaces like /mentors/seneca/chat, the Mentors navigation item will be properly highlighted as active.\n\nBEFORE: `const isActive = pathname === item.href`\nAFTER: `const isActive = item.name === 'Mentors' ? pathname.startsWith('/mentors') : pathname === item.href`",
+      "type": "code",
+      "tags": [
+        "code",
+        "general",
+        "navigation",
+        "active-state",
+        "mentors",
+        "chat-interface",
+        "sidebar"
+      ],
+      "timestamp": "2025-08-09T04:11:23.504Z",
+      "context": "Sidebar navigation active state for Mentors chat interface",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T04:11:23.504Z",
+      "lastVerified": "2025-08-09T04:11:23.504Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754712862803_r3ov7iw75",
+      "content": "Subscription cancellation webhook issue identified:\n\nProblem: When users cancel subscription via UI, the DodoPayments webhook is NOT triggered because webhooks only fire for events originating from DodoPayments' side (automatic renewals, payment failures, etc.), not for API-initiated actions.\n\nCurrent flow:\n1. UI calls handleCancelSubscription → /api/dodo/subscriptions/manage\n2. API makes PATCH to DodoPayments to cancel\n3. Only updates profile for immediate cancellation, not for end-of-billing cancellations\n4. No webhook is triggered by DodoPayments for API cancellations\n\nFix needed: Update profile in the API route for both immediate and end-of-billing cancellations since we cannot rely on webhooks.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "api",
+        "subscription",
+        "webhook",
+        "dodo",
+        "cancellation",
+        "bug"
+      ],
+      "timestamp": "2025-08-09T04:14:22.803Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T04:14:22.803Z",
+      "lastVerified": "2025-08-09T04:14:22.803Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754715099649_lfkc7cjj6",
+      "content": "Quote auto-loading issue in Stoic app: Quotes are automatically refreshing/reloading causing unprofessional UI flicker. Console shows syntax errors with quote parsing. Main issues: 1) Auto-refresh behavior too aggressive, 2) Missing error handling for malformed quotes, 3) Special characters not properly escaped, 4) Daily quote not stable during session. Fix plan: Disable auto-refresh, add text sanitization, implement error boundaries, stabilize daily quote.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "bug-fix",
+        "quotes",
+        "ui-stability",
+        "stoic-app"
+      ],
+      "timestamp": "2025-08-09T04:51:39.649Z",
+      "context": "User reported quotes auto-loading makes UI look unprofessional. Screenshot shows console errors and quote display issues.",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T04:51:39.649Z",
+      "lastVerified": "2025-08-09T04:51:39.649Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754715373286_w0ad5b9db",
+      "content": "Successfully fixed quote auto-loading issues in Stoic app. Changes made: 1) Disabled automatic quote refresh by extending cache times and disabling refetch triggers in useCachedQuotes.ts, 2) Added sanitizeQuoteText function to handle HTML entities and special characters in both QuoteCarousel.tsx and DailyStoicWisdom.tsx, 3) Implemented SafeQuoteText component with error boundaries for malformed quotes, 4) Enhanced daily quote stability with sessionStorage + localStorage caching to prevent changes during session, 5) Improved loading state management to only show loading when no cached data exists. Quote display should now be stable and professional without auto-refresh flicker.",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "bug-fix",
+        "quotes",
+        "ui-stability",
+        "stoic-app",
+        "completed"
+      ],
+      "timestamp": "2025-08-09T04:56:13.286Z",
+      "context": "Fixed unprofessional quote auto-loading behavior reported by user with console errors visible",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T04:56:13.286Z",
+      "lastVerified": "2025-08-09T04:56:13.286Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754715883224_fp1u60l54",
+      "content": "Quote carousel position reset issue: When navigating away from library tab and returning, the carousel resets to initial quote instead of remembering the user's position. The QuoteCarousel component uses useEffect that resets currentIndex when getInitialIndex changes (line 66-69). Need to: 1) Store current quote position in sessionStorage when it changes, 2) Check sessionStorage first when initializing, 3) Only use initialQuoteId if no stored position exists.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "bug",
+        "quotes",
+        "carousel",
+        "navigation",
+        "state-persistence"
+      ],
+      "timestamp": "2025-08-09T05:04:43.224Z",
+      "context": "User reported carousel position loss during navigation in Stoic app quotes library",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T05:04:43.224Z",
+      "lastVerified": "2025-08-09T05:04:43.224Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754715956698_w6od5hxr8",
+      "content": "Fixed quote carousel position reset issue. Modified QuoteCarousel.tsx to: 1) Store current position in sessionStorage with index, quoteId, and timestamp, 2) Check sessionStorage first when initializing position, fallback to initialQuoteId, then 0, 3) Only reset position when quotes array length changes significantly, 4) Added proper error handling and validation for stored position. The carousel now remembers user's scroll position when navigating between tabs/pages within the same browser session.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "bug-fix",
+        "quotes",
+        "carousel",
+        "navigation",
+        "state-persistence",
+        "completed"
+      ],
+      "timestamp": "2025-08-09T05:05:56.698Z",
+      "context": "User reported carousel resetting to initial quote when navigating away and back to library tab",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T05:05:56.698Z",
+      "lastVerified": "2025-08-09T05:05:56.698Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754717535648_uqu75tmvb",
+      "content": "Production authentication loop issue diagnosed:\n\nROOT CAUSE: Data loading failures incorrectly trigger authentication logout\n\nPROBLEM FLOW:\n1. User loads page while authenticated\n2. Journal/Calendar hooks attempt to fetch data with 15-second timeouts\n3. In production, these requests timeout due to network latency/cold starts\n4. useAuth.ts interprets timeout as auth failure (line 397-414)\n5. Clears 'was-authenticated' flag and logs user out\n6. On reload, auth succeeds quickly (no data loading) and user logs back in\n\nKEY FILES & ISSUES:\n- useAuth.ts (line 340-343, 397-414): 10-second timeout clears auth on ANY error\n- ProtectedRoute.tsx (line 44-52): 15-second timeout also clears auth\n- useCachedJournal.ts (line 44-82): 15-second timeout but doesn't handle auth separately\n- useLifeCalendar.ts (line 145-150): 15-second timeout, same issue\n\nPRODUCTION VS LOCAL:\n- Production has higher latency (Vercel → Supabase)\n- Cold starts add 3-5 seconds\n- Connection pooling limits in production\n- Local has instant database access\n\nSOLUTION NEEDED:\n1. Separate auth verification from data loading\n2. Don't clear auth on data timeouts\n3. Add production-specific retry logic\n4. Increase timeouts for production environment",
+      "type": "warning",
+      "tags": [
+        "warning",
+        "authentication",
+        "database",
+        "production-bug",
+        "timeout-issue",
+        "data-loading"
+      ],
+      "timestamp": "2025-08-09T05:32:15.648Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T05:32:15.648Z",
+      "lastVerified": "2025-08-09T05:32:15.648Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-09T01:55:24.841Z"
+  "lastUpdated": "2025-08-09T05:32:15.648Z"
 }
