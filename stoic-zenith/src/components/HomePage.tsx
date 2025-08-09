@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -10,9 +10,9 @@ import { useCachedJournalStats } from '@/hooks/useCachedJournalStats'
 function HomePage(): JSX.Element {
   const router = useRouter()
   const { user } = useAuthContext()
-  const { getDailyQuote, loading, error, forceRefresh, quotes, isCached } = useCachedQuotes(user)
-  const { stats: journalStats, loading: journalLoading, isCached: journalCached } = useCachedJournalStats()
-  
+  const { getDailyQuote, loading, error, forceRefresh, hasStableQuote } = useCachedQuotes(user)
+  const { stats: journalStats, loading: journalLoading } = useCachedJournalStats()
+
   const currentHour = new Date().getHours()
   const greeting =
     currentHour < 12
@@ -64,7 +64,7 @@ function HomePage(): JSX.Element {
           }}
         >
           <CardContent className="py-8 px-12 text-center">
-            {loading && quotes.length === 0 ? (
+            {loading && !hasStableQuote ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone"></div>
               </div>

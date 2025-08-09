@@ -1,173 +1,62 @@
 'use client'
-export const dynamic = 'force-dynamic'
 
-import React, { Suspense } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { NavigationOptimizedCachedPage } from '@/components/layout/NavigationOptimizedCachedPage'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Calendar as CalendarIcon, BarChart3, Settings } from 'lucide-react'
-import { useLifeCalendar } from '@/hooks/useLifeCalendar'
-import { useAuthContext } from '@/components/auth/AuthProvider'
-import { Skeleton } from '@/components/ui/skeleton'
+import LifeCalendar from '@/components/pages-components/LifeCalendar'
 
-import { LifeCalendarGrid } from '@/components/calendar/LifeCalendarGrid'
-import { LifeCalendarSetup } from '@/components/calendar/LifeCalendarSetup'
-import { MementoMoriInsights } from '@/components/calendar/MementoMoriInsights'
+// Force dynamic rendering to prevent static generation issues with AuthProvider
+export const dynamic = 'force-dynamic'
 
-// Loading skeleton component
 function CalendarSkeleton(): JSX.Element {
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8">
-      <div className="text-center space-y-2">
-        <Skeleton className="h-12 w-64 mx-auto" />
-        <Skeleton className="h-4 w-48 mx-auto" />
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="mb-10">
+        <div className="h-8 bg-stone/10 rounded w-48 mb-3"></div>
+        <div className="h-5 bg-stone/10 rounded w-64"></div>
       </div>
-      <div className="max-w-2xl mx-auto">
-        <Skeleton className="h-96 w-full rounded-lg" />
-      </div>
-    </div>
-  )
-}
-
-// Error component
-function CalendarError({
-  error,
-  onRetry,
-}: {
-  error: string
-  onRetry: () => void
-}): JSX.Element {
-  return (
-    <div className="text-center py-20 space-y-4">
-      <h1 className="text-3xl font-serif text-ink">Memento Mori Calendar</h1>
-      <p className="text-red-600 mt-4">Connection issue: {error}</p>
-      <div className="space-y-2">
-        <p className="text-stone/70 text-sm">
-          Unable to load your calendar preferences
-        </p>
-        <button
-          onClick={onRetry}
-          className="px-6 py-2 bg-cta hover:bg-cta/90 text-white rounded-lg transition-colors"
-        >
-          Try Again
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function CalendarContent(): JSX.Element {
-  const { user, isAuthenticated } = useAuthContext()
-  const {
-    lifeCalendarData,
-    loading: calendarLoading,
-    error,
-    updatePreferences,
-    getWeekData,
-    getMotivationalMessage,
-    refetch,
-    isUpdating,
-  } = useLifeCalendar(user)
-
-  if (!isAuthenticated) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="text-center py-20">
-          <CalendarIcon className="w-16 h-16 text-stone/30 mx-auto mb-4" />
-          <h1 className="text-3xl font-serif text-ink mb-4">
-            Memento Mori Calendar
-          </h1>
-          <p className="text-stone">
-            Please sign in to create your life calendar and track your time.
-          </p>
+      
+      <div className="grid gap-6">
+        {/* Setup card skeleton */}
+        <div className="bg-gradient-to-br from-hero/10 to-cta/5 border border-hero/20 rounded-lg p-6">
+          <div className="text-center mb-6">
+            <div className="h-8 bg-stone/10 rounded w-64 mx-auto mb-2"></div>
+            <div className="h-4 bg-stone/10 rounded w-48 mx-auto"></div>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <div className="h-4 bg-stone/10 rounded w-20"></div>
+              <div className="h-10 bg-stone/10 rounded w-full"></div>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="h-4 bg-stone/10 rounded w-32"></div>
+              <div className="h-10 bg-stone/10 rounded w-full"></div>
+            </div>
+            
+            <div className="h-10 bg-stone/10 rounded w-full"></div>
+          </div>
+        </div>
+        
+        {/* Calendar grid skeleton */}
+        <div className="bg-white/70 border border-stone/20 rounded-lg p-6">
+          <div className="h-6 bg-stone/10 rounded w-48 mb-4"></div>
+          
+          <div className="space-y-1">
+            {Array.from({ length: 80 }, (_, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="w-8 h-4 bg-stone/10 rounded"></div>
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 52 }, (_, j) => (
+                    <div key={j} className="w-2 h-2 bg-stone/10 rounded-sm"></div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    )
-  }
-
-  if (calendarLoading) {
-    return <CalendarSkeleton />
-  }
-
-  if (error) {
-    return <CalendarError error={error} onRetry={refetch} />
-  }
-
-  const hasSetupData = lifeCalendarData.birthDate !== null
-
-  return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8">
-      <div className="text-center space-y-2">
-        <h1 className="text-4xl font-serif text-ink">Memento Mori</h1>
-        <p className="text-stone">
-          Remember you must die - Live with intention
-        </p>
-      </div>
-
-      {!hasSetupData ? (
-        <div className="max-w-2xl mx-auto">
-          <LifeCalendarSetup
-            onSetup={updatePreferences}
-            initialBirthDate={lifeCalendarData.birthDate}
-            initialLifeExpectancy={lifeCalendarData.lifeExpectancy}
-            isLoading={isUpdating}
-          />
-        </div>
-      ) : (
-        <Tabs defaultValue="calendar" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-white/50">
-            <TabsTrigger value="calendar" className="flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4" />
-              Life Calendar
-            </TabsTrigger>
-            <TabsTrigger value="insights" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Insights
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="w-4 h-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="calendar" className="space-y-6">
-            <div className="text-center space-y-2 mb-6">
-              <h2 className="text-2xl font-serif text-ink">
-                Your Life Visualized
-              </h2>
-              <p className="text-stone/70">
-                Each square represents one week. Time is finite—make it count.
-              </p>
-            </div>
-
-            <Suspense fallback={<CalendarSkeleton />}>
-              <LifeCalendarGrid
-                data={lifeCalendarData}
-                getWeekData={getWeekData}
-              />
-            </Suspense>
-          </TabsContent>
-
-          <TabsContent value="insights" className="space-y-6">
-            <MementoMoriInsights
-              data={lifeCalendarData}
-              motivationalMessage={getMotivationalMessage()}
-            />
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <div className="max-w-2xl mx-auto">
-              <LifeCalendarSetup
-                onSetup={updatePreferences}
-                initialBirthDate={lifeCalendarData.birthDate}
-                initialLifeExpectancy={lifeCalendarData.lifeExpectancy}
-                isLoading={isUpdating}
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
-      )}
     </div>
   )
 }
@@ -181,10 +70,10 @@ export default function CalendarPage(): JSX.Element {
           fallback={<CalendarSkeleton />}
           preserveOnNavigation={true}
           refreshOnlyWhenStale={true}
-          maxAge={60 * 60 * 1000} // 60 minutes - longer cache for heavy calendar rendering
-          navigationRefreshThreshold={45 * 60 * 1000} // 45 minutes - calendar data doesn't change often
+          maxAge={10 * 60 * 1000} // 10 minutes - calendar data changes infrequently
+          navigationRefreshThreshold={5 * 60 * 1000} // 5 minutes
         >
-          <CalendarContent />
+          <LifeCalendar />
         </NavigationOptimizedCachedPage>
       </AppLayout>
     </ProtectedRoute>

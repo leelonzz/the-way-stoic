@@ -1,6 +1,9 @@
 import { supabase } from './client';
 import type { User, Session, Provider } from '@supabase/supabase-js';
 
+// Debug flag - set to false for production
+const DEBUG_AUTH = false;
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -108,12 +111,18 @@ export const authHelpers = {
   },
 
   async getCurrentSession() {
-    const timeoutDuration = 10000 // 10 second timeout
-    
     try {
       // For returning users, we can be more optimistic
       const wasAuthenticated = typeof window !== 'undefined' && localStorage.getItem('was-authenticated') === 'true';
-      
+
+      // Adjust timeout based on user status and environment
+      // Production needs longer timeouts due to network latency and CSP processing
+      const isProduction = process.env.NODE_ENV === 'production'
+      const baseTimeout = isProduction ? 20000 : 8000 // 20s in production, 8s in dev
+      const timeoutDuration = wasAuthenticated ? baseTimeout + 5000 : baseTimeout // +5s for returning users
+
+
+
       // Create timeout promise
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
@@ -135,7 +144,7 @@ export const authHelpers = {
 
         // If no session but user was previously authenticated, try to refresh
         if (!session && wasAuthenticated) {
-          console.log('🔄 No session found but user was authenticated, attempting refresh...');
+          if (DEBUG_AUTH) console.log('🔄 No session found but user was authenticated, attempting refresh...');
           try {
             const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
             
@@ -149,7 +158,7 @@ export const authHelpers = {
             }
 
             if (refreshedSession) {
-              console.log('✅ Session refreshed successfully');
+              if (DEBUG_AUTH) console.log('✅ Session refreshed successfully');
               return refreshedSession;
             }
           } catch (refreshErr) {

@@ -6,22 +6,110 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import type { Quote as QuoteType } from '@/hooks/useCachedQuotes'
 
+// Quote text sanitization utility
+const sanitizeQuoteText = (text: string): string => {
+  if (!text) return ''
+  
+  try {
+    // Handle HTML entities and special characters
+    return text
+      .replace(/&ldquo;/g, '"')
+      .replace(/&rdquo;/g, '"')
+      .replace(/&lsquo;/g, "'")
+      .replace(/&rsquo;/g, "'")
+      .replace(/&mdash;/g, "—")
+      .replace(/&ndash;/g, "–")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      // Remove any remaining HTML tags
+      .replace(/<[^>]*>/g, '')
+      // Trim whitespace
+      .trim()
+  } catch (error) {
+    console.warn('Error sanitizing quote text:', error)
+    return text || ''
+  }
+}
+
 interface QuoteCarouselProps {
   quotes: QuoteType[]
   isQuoteSaved?: (quoteId: string) => boolean
   onSave?: (quoteId: string) => Promise<boolean>
   onUnsave?: (quoteId: string) => Promise<boolean>
+  initialQuoteId?: string // ID of quote to start with (e.g., daily quote)
 }
 
-export function QuoteCarousel({ 
-  quotes, 
-  isQuoteSaved, 
-  onSave, 
-  onUnsave 
+export function QuoteCarousel({
+  quotes,
+  isQuoteSaved,
+  onSave,
+  onUnsave,
+  initialQuoteId
 }: QuoteCarouselProps): JSX.Element {
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const STORAGE_KEY = 'twstoic:carousel-position'
+
+  // Initialize with stored position, fallback to initial quote, then 0
+  const getInitialIndex = useCallback(() => {
+    if (quotes.length === 0) return 0
+
+    // First priority: Check sessionStorage for stored position
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem(STORAGE_KEY)
+        if (stored) {
+          const storedData = JSON.parse(stored)
+          const storedIndex = storedData.index
+          // Validate stored index is within bounds
+          if (typeof storedIndex === 'number' && storedIndex >= 0 && storedIndex < quotes.length) {
+            return storedIndex
+          }
+        }
+      } catch (error) {
+        console.warn('Error reading carousel position from storage:', error)
+      }
+    }
+
+    // Second priority: Use initialQuoteId if provided
+    if (initialQuoteId && quotes.length > 0) {
+      const index = quotes.findIndex(quote => quote.id === initialQuoteId)
+      return index >= 0 ? index : 0
+    }
+    
+    return 0
+  }, [quotes, initialQuoteId, STORAGE_KEY])
+
+  const [currentIndex, setCurrentIndex] = useState(getInitialIndex)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+
+  // Save position to sessionStorage when currentIndex changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && quotes.length > 0) {
+      try {
+        const positionData = {
+          index: currentIndex,
+          quoteId: quotes[currentIndex]?.id,
+          timestamp: Date.now()
+        }
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(positionData))
+      } catch (error) {
+        console.warn('Error saving carousel position to storage:', error)
+      }
+    }
+  }, [currentIndex, quotes, STORAGE_KEY])
+
+  // Only update index if quotes array changes significantly (length change)
+  const [lastQuotesLength, setLastQuotesLength] = useState(quotes.length)
+  useEffect(() => {
+    if (quotes.length !== lastQuotesLength) {
+      const newIndex = getInitialIndex()
+      setCurrentIndex(newIndex)
+      setLastQuotesLength(quotes.length)
+    }
+  }, [quotes.length, lastQuotesLength, getInitialIndex])
 
   const currentQuote = quotes[currentIndex]
   const isSaved = currentQuote && isQuoteSaved ? isQuoteSaved(currentQuote.id) : false
@@ -121,31 +209,40 @@ export function QuoteCarousel({
   const handleShare = async (): Promise<void> => {
     if (!currentQuote) return
 
-    const text = `"${currentQuote.text}" - ${currentQuote.author}${currentQuote.source ? ` (${currentQuote.source})` : ''}`
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Stoic Quote',
-          text: text,
-        })
-      } catch {
-        // User cancelled or error occurred
+    try {
+      const text = `"${sanitizeQuoteText(currentQuote.text)}" - ${sanitizeQuoteText(currentQuote.author)}${currentQuote.source ? ` (${sanitizeQuoteText(currentQuote.source)})` : ''}`
+      
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Stoic Quote',
+            text: text,
+          })
+        } catch {
+          // User cancelled or error occurred
+        }
+      } else {
+        try {
+          await navigator.clipboard.writeText(text)
+          toast({
+            title: "Quote copied",
+            description: "Quote copied to clipboard",
+          })
+        } catch {
+          toast({
+            title: "Failed to copy",
+            description: "Unable to copy quote to clipboard",
+            variant: "destructive"
+          })
+        }
       }
-    } else {
-      try {
-        await navigator.clipboard.writeText(text)
-        toast({
-          title: "Quote copied",
-          description: "Quote copied to clipboard",
-        })
-      } catch {
-        toast({
-          title: "Failed to copy",
-          description: "Unable to copy quote to clipboard",
-          variant: "destructive"
-        })
-      }
+    } catch (error) {
+      console.error('Error sharing quote:', error)
+      toast({
+        title: "Share failed",
+        description: "Unable to share quote",
+        variant: "destructive"
+      })
     }
   }
 
@@ -178,14 +275,14 @@ export function QuoteCarousel({
       <div className="fixed left-64 right-0 top-0 bottom-0 flex items-center justify-center px-16 md:px-24">
         <div className="max-w-4xl w-full text-center space-y-8">
           <blockquote className="text-2xl md:text-3xl lg:text-4xl font-bold leading-relaxed text-ink font-inknut">
-            "{currentQuote.text}"
+            "{sanitizeQuoteText(currentQuote.text)}"
           </blockquote>
           
           <div className="text-lg md:text-xl font-medium text-stone font-inknut">
-            — {currentQuote.author}
+            — {sanitizeQuoteText(currentQuote.author)}
             {currentQuote.source && (
               <div className="text-base md:text-lg text-stone/70 mt-2">
-                {currentQuote.source}
+                {sanitizeQuoteText(currentQuote.source)}
               </div>
             )}
           </div>

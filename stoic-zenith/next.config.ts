@@ -38,8 +38,9 @@ const nextConfig: NextConfig = {
   },
   // Performance optimizations
   compiler: {
-    // Only remove console statements in production, keep them in development for debugging
-    removeConsole: process.env.NODE_ENV === 'production' ? true : false,
+    // Keep console statements in production for authentication debugging
+    // TODO: Re-enable removeConsole after authentication issues are resolved
+    removeConsole: false,
   },
   // Bundle optimization
   webpack: (config: any, { dev, isServer }: { dev: boolean; isServer: boolean }) => {
@@ -106,7 +107,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: https: *.googleusercontent.com *.supabase.co; font-src 'self' data: https://accounts.google.com; connect-src 'self' https://*.supabase.co https://accounts.google.com https://oauth2.googleapis.com; frame-src https://accounts.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://accounts.google.com https://vercel.live https://*.vercel.app; style-src 'self' 'unsafe-inline' https://accounts.google.com https://*.vercel.app; img-src 'self' data: https: *.googleusercontent.com *.supabase.co; font-src 'self' data: https://accounts.google.com; connect-src 'self' https://*.supabase.co https://accounts.google.com https://oauth2.googleapis.com https://generativelanguage.googleapis.com https://*.vercel.app wss://*.supabase.co; frame-src https://accounts.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:; manifest-src 'self'",
           },
         ],
       },

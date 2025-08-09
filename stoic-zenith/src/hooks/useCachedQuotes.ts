@@ -74,7 +74,7 @@ export function useCachedQuotes(user: User | null) {
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  // Use cache-aware query for quotes
+  // Use cache-aware query for quotes - Disable auto-refresh to prevent UI flicker
   const quotesQuery = useNavigationCachedQuery(
     ['quotes', 'all'],
     async (): Promise<Quote[]> => {
@@ -97,9 +97,12 @@ export function useCachedQuotes(user: User | null) {
       return data
     },
     {
-      cacheThreshold: 10 * 60 * 1000, // 10 minutes - longer cache for quotes
-      staleTime: 15 * 60 * 1000, // 15 minutes stale time
-      gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
+      cacheThreshold: 30 * 60 * 1000, // 30 minutes - much longer cache to prevent auto-refresh
+      staleTime: 60 * 60 * 1000, // 60 minutes stale time - prevent background refetching
+      gcTime: 120 * 60 * 1000, // 120 minutes garbage collection
+      refetchOnMount: false, // Don't refetch on component mount
+      refetchOnWindowFocus: false, // Don't refetch when window gains focus
+      refetchOnReconnect: false, // Don't refetch on network reconnection
       retry: (failureCount, error) => {
         // Don't retry on auth errors, but retry on network errors
         if (error?.message?.includes('auth') || error?.message?.includes('permission')) {
@@ -112,58 +115,139 @@ export function useCachedQuotes(user: User | null) {
     }
   )
 
-  // Compute a deterministic quote of the day based on day-of-year and available quotes
-  const computedDailyQuote = useMemo(() => {
-    const quotes = quotesQuery.data || FALLBACK_QUOTES
-    if (!quotes || quotes.length === 0) return null
+  // Stable daily quote management to prevent UI flicker
+  const [stableDailyQuote, setStableDailyQuote] = useState<Quote | null>(null)
+  const [isQuoteInitialized, setIsQuoteInitialized] = useState(false)
 
-    const today = new Date()
-    const dayOfYear = Math.floor(
-      (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24)
-    )
-    return quotes[dayOfYear % quotes.length]
-  }, [quotesQuery.data])
-
-  // Persist a stable daily quote per day to avoid UI flicker on data refresh
-  const [selectedDailyQuote, setSelectedDailyQuote] = useState<Quote | null>(null)
+  // Initialize daily quote once and keep it stable for the entire session
   useEffect(() => {
-    // Key per calendar day (YYYY-MM-DD)
+    if (isQuoteInitialized) return
+
     const today = new Date()
     const dayKey = today.toISOString().slice(0, 10)
     const storageKey = `twstoic:daily-quote:${dayKey}`
+    const sessionKey = `twstoic:session-quote:${dayKey}`
+
+    // Function to calculate daily quote deterministically
+    const calculateDailyQuote = (quotes: Quote[]): Quote => {
+      const dayOfYear = Math.floor(
+        (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24)
+      )
+      return quotes[dayOfYear % quotes.length]
+    }
 
     try {
-      // If already selected for today (either from previous render or storage), use it
-      if (selectedDailyQuote) return
+      // First priority: Check sessionStorage for current session's stable quote
+      if (typeof window !== 'undefined') {
+        const sessionStored = sessionStorage.getItem(sessionKey)
+        if (sessionStored) {
+          const parsed: Quote = JSON.parse(sessionStored)
+          setStableDailyQuote(parsed)
+          setIsQuoteInitialized(true)
+          return
+        }
+      }
 
-      const stored = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
-      if (stored) {
-        const parsed: Quote = JSON.parse(stored)
-        setSelectedDailyQuote(parsed)
+      // Second priority: Check localStorage for today's cached quote
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem(storageKey)
+        if (stored) {
+          const parsed: Quote = JSON.parse(stored)
+          setStableDailyQuote(parsed)
+          setIsQuoteInitialized(true)
+          
+          // Also cache in session storage for stability
+          try {
+            sessionStorage.setItem(sessionKey, stored)
+          } catch (e) {
+            // ignore storage errors
+          }
+          return
+        }
+      }
+
+      // Third priority: Use database quotes if available
+      const availableQuotes = quotesQuery.data
+      if (availableQuotes && availableQuotes.length > 0) {
+        const dailyQuote = calculateDailyQuote(availableQuotes)
+        setStableDailyQuote(dailyQuote)
+        setIsQuoteInitialized(true)
+
+        // Cache to both localStorage and sessionStorage
+        if (typeof window !== 'undefined') {
+          try {
+            const quoteJson = JSON.stringify(dailyQuote)
+            localStorage.setItem(storageKey, quoteJson)
+            sessionStorage.setItem(sessionKey, quoteJson)
+          } catch (e) {
+            // ignore storage errors
+          }
+        }
         return
       }
 
-      // Otherwise, if we have a computed quote (from either fallback or fetched data), lock it in for today
-      if (computedDailyQuote) {
-        setSelectedDailyQuote(computedDailyQuote)
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(computedDailyQuote))
-        } catch (e) {
-          // ignore storage errors (e.g., private mode)
+      // Fourth priority: Use fallback quotes if no database quotes
+      if (FALLBACK_QUOTES.length > 0) {
+        const dailyQuote = calculateDailyQuote(FALLBACK_QUOTES)
+        setStableDailyQuote(dailyQuote)
+        setIsQuoteInitialized(true)
+
+        // Cache fallback in session storage only (not localStorage)
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem(sessionKey, JSON.stringify(dailyQuote))
+          } catch (e) {
+            // ignore storage errors
+          }
         }
+        return
       }
+
     } catch (e) {
-      // If parsing or storage access fails, just rely on computedDailyQuote as a fallback without persisting
-      if (computedDailyQuote && !selectedDailyQuote) {
-        setSelectedDailyQuote(computedDailyQuote)
+      console.warn('Error initializing daily quote:', e)
+      // Fallback to first available quote
+      const quotes = quotesQuery.data || FALLBACK_QUOTES
+      if (quotes.length > 0) {
+        setStableDailyQuote(quotes[0])
+        setIsQuoteInitialized(true)
       }
     }
-  }, [computedDailyQuote, selectedDailyQuote])
+  }, [quotesQuery.data, isQuoteInitialized])
 
-  // Expose a stable daily quote
+  // Update quote when database data becomes available (but only if we're using fallback)
+  useEffect(() => {
+    if (!isQuoteInitialized || !quotesQuery.data || quotesQuery.data.length === 0) return
+
+    // Only update if current quote is from fallback quotes
+    const isCurrentlyFallback = stableDailyQuote && FALLBACK_QUOTES.some(fq => fq.id === stableDailyQuote.id)
+
+    if (isCurrentlyFallback) {
+      const today = new Date()
+      const dayKey = today.toISOString().slice(0, 10)
+      const storageKey = `twstoic:daily-quote:${dayKey}`
+
+      const dayOfYear = Math.floor(
+        (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24)
+      )
+      const newDailyQuote = quotesQuery.data[dayOfYear % quotesQuery.data.length]
+
+      setStableDailyQuote(newDailyQuote)
+
+      // Cache the real quote
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(newDailyQuote))
+        } catch (e) {
+          // ignore storage errors
+        }
+      }
+    }
+  }, [quotesQuery.data, stableDailyQuote, isQuoteInitialized])
+
+  // Expose the stable daily quote
   const getDailyQuote = useMemo(() => {
-    return selectedDailyQuote || computedDailyQuote
-  }, [selectedDailyQuote, computedDailyQuote])
+    return stableDailyQuote
+  }, [stableDailyQuote])
 
   // Search quotes function
   const searchQuotes = useMemo(() => {
@@ -261,7 +345,7 @@ export function useCachedQuotes(user: User | null) {
     quotes: quotesQuery.data || FALLBACK_QUOTES,
     savedQuotes: savedQuotes,
     userQuotes: [], // TODO: Implement user quotes with cache-aware query
-    loading: quotesQuery.isLoading && !quotesQuery.data, // Don't show loading if we have cached data
+    loading: quotesQuery.isLoading && !quotesQuery.data && !stableDailyQuote, // Don't show loading if we have cached data or stable quote
     error: error, // Don't show quote fetching errors to user, only save/unsave errors
     isRefetching: quotesQuery.isFetching && !!quotesQuery.data, // Only show refetching if we have data
     getDailyQuote: () => getDailyQuote,
@@ -417,6 +501,8 @@ export function useCachedQuotes(user: User | null) {
     // Additional useful properties
     isCached: !quotesQuery.isLoading && !!quotesQuery.data,
     lastUpdated: quotesQuery.dataUpdatedAt,
+    isQuoteStable: isQuoteInitialized,
+    hasStableQuote: !!stableDailyQuote,
   }
 }
 

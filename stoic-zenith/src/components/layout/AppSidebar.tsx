@@ -68,15 +68,24 @@ export function AppSidebar(): JSX.Element {
   const searchParams = useSearchParams()
   const { isAuthenticated, user, profile } = useAuthContext()
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
-  const [isQuotesDropdownOpen, setIsQuotesDropdownOpen] = useState(() => pathname.startsWith('/quotes'))
+  const [isQuotesDropdownOpen, setIsQuotesDropdownOpen] = useState(() => {
+    // Load from localStorage, default to false
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('quotes-dropdown-open')
+      return saved ? JSON.parse(saved) : false
+    }
+    return false
+  })
   const queryClient = useQueryClient()
   const { isPathLikelyCached, prefetchPage } = useNavigationState()
 
-  // Auto-sync Quotes dropdown with current route for smoother UX
-  useEffect(() => {
-    const shouldOpen = pathname.startsWith('/quotes')
-    setIsQuotesDropdownOpen(shouldOpen)
-  }, [pathname])
+  // Save dropdown state to localStorage when it changes
+  const toggleQuotesDropdown = (isOpen: boolean) => {
+    setIsQuotesDropdownOpen(isOpen)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('quotes-dropdown-open', JSON.stringify(isOpen))
+    }
+  }
 
   const quotesSubItems = [
     {
@@ -131,7 +140,9 @@ export function AppSidebar(): JSX.Element {
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {navigationItems.map(item => {
-          const isActive = pathname === item.href
+          const isActive = item.name === 'Mentors' 
+            ? pathname.startsWith('/mentors')
+            : pathname === item.href
           const isComingSoon = item.comingSoon
           const showUpgradePill =
             item.name === 'Mentors' && !hasPhilosopherPlan(profile)
@@ -166,7 +177,7 @@ export function AppSidebar(): JSX.Element {
                     href={item.href}
                     prefetch={true}
                     onMouseEnter={() => handleMouseEnter(item.href)}
-                    onClick={() => setIsQuotesDropdownOpen(true)}
+                    onClick={() => toggleQuotesDropdown(true)}
                     className="flex items-center gap-3 flex-1"
                   >
                     <item.icon size={18} />
@@ -175,7 +186,7 @@ export function AppSidebar(): JSX.Element {
 
                   {/* Dropdown Toggle */}
                   <button
-                    onClick={() => setIsQuotesDropdownOpen(!isQuotesDropdownOpen)}
+                    onClick={() => toggleQuotesDropdown(!isQuotesDropdownOpen)}
                     className="ml-1 p-1 rounded transition-all duration-200"
                     aria-label="Toggle quotes menu"
                   >
@@ -189,7 +200,7 @@ export function AppSidebar(): JSX.Element {
 
                 {/* Dropdown Menu */}
                 {isQuotesDropdownOpen && (
-                  <div className="ml-6 space-y-1 animate-fade-in">
+                  <div className="ml-6 space-y-1">
                     {quotesSubItems.map(subItem => {
                       if (subItem.requiresAuth && !isAuthenticated) {
                         return (

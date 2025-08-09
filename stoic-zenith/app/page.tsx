@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -8,7 +8,7 @@ import { NavigationOptimizedCachedPage } from "@/components/layout/NavigationOpt
 import HomePage from "@/components/HomePage";
 import LandingPage from "@/components/LandingPage";
 import LoginScreen from "@/components/auth/LoginScreen";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+
 
 function HomeSkeleton(): JSX.Element {
   return (
@@ -49,7 +49,7 @@ function HomeSkeleton(): JSX.Element {
   );
 }
 
-function AppContent() {
+function AppContent(): JSX.Element {
   const [showAuth, setShowAuth] = useState(false);
   const { isAuthenticated, isLoading } = useAuthContext();
 
@@ -92,8 +92,8 @@ function AppContent() {
           fallback={<HomeSkeleton />}
           preserveOnNavigation={true}
           refreshOnlyWhenStale={true}
-          maxAge={10 * 60 * 1000} // 10 minutes - longer cache for better navigation
-          navigationRefreshThreshold={3 * 60 * 1000} // 3 minutes for quote content
+          maxAge={5 * 60 * 1000} // 5 minutes - shorter cache to prevent stale daily quotes
+          navigationRefreshThreshold={2 * 60 * 1000} // 2 minutes for quote content
         >
           <HomePage />
         </NavigationOptimizedCachedPage>
@@ -102,6 +102,6 @@ function AppContent() {
   );
 }
 
-export default function App() {
+export default function App(): JSX.Element {
   return <AppContent />;
 }

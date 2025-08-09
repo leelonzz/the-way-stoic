@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Search, Bookmark, BookmarkCheck, Share, RotateCcw, Star } from 'lucide-react'
+import { Search, Share, RotateCcw, Star } from 'lucide-react'
 import { QuoteCarousel } from './QuoteCarousel'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,59 @@ import { useCachedQuotes } from '@/hooks/useCachedQuotes'
 import { useAuthContext } from '@/components/auth/AuthProvider'
 import type { Quote as QuoteType } from '@/hooks/useCachedQuotes'
 import { MinimalLoadingScreen } from '@/components/ui/loading-spinner'
+
+// Quote text sanitization utility - shared with QuoteCarousel
+const sanitizeQuoteText = (text: string): string => {
+  if (!text) return ''
+  
+  try {
+    // Handle HTML entities and special characters
+    return text
+      .replace(/&ldquo;/g, '"')
+      .replace(/&rdquo;/g, '"')
+      .replace(/&lsquo;/g, "'")
+      .replace(/&rsquo;/g, "'")
+      .replace(/&mdash;/g, "—")
+      .replace(/&ndash;/g, "–")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      // Remove any remaining HTML tags
+      .replace(/<[^>]*>/g, '')
+      // Trim whitespace
+      .trim()
+  } catch (error) {
+    console.warn('Error sanitizing quote text:', error)
+    return text || ''
+  }
+}
+
+// Safe quote rendering component with error boundary
+const SafeQuoteText = ({ quote }: { quote: QuoteType }) => {
+  try {
+    return (
+      <>
+        <blockquote className="text-lg md:text-xl font-bold leading-relaxed text-ink font-inknut">
+          &ldquo;{sanitizeQuoteText(quote.text)}&rdquo;
+        </blockquote>
+        
+        <div className="text-base md:text-lg font-medium text-ink font-inknut">
+          — {sanitizeQuoteText(quote.author)}
+        </div>
+      </>
+    )
+  } catch (error) {
+    console.error('Error rendering quote:', error)
+    return (
+      <div className="text-center text-stone/70">
+        <p>Unable to display quote</p>
+        <p className="text-sm">Quote ID: {quote.id}</p>
+      </div>
+    )
+  }
+}
 
 interface DailyStoicQuoteCardProps {
   quote: QuoteType
@@ -66,31 +119,40 @@ function DailyStoicQuoteCard({
   }
 
   const handleShare = async (): Promise<void> => {
-    const text = `"${quote.text}" - ${quote.author}${quote.source ? ` (${quote.source})` : ''}`
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Stoic Quote',
-          text: text,
-        })
-              } catch {
+    try {
+      const text = `"${sanitizeQuoteText(quote.text)}" - ${sanitizeQuoteText(quote.author)}${quote.source ? ` (${sanitizeQuoteText(quote.source)})` : ''}`
+      
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Stoic Quote',
+            text: text,
+          })
+        } catch {
           // User cancelled or error occurred
         }
-    } else {
-      try {
-        await navigator.clipboard.writeText(text)
-        toast({
-          title: "Quote copied",
-          description: "Quote copied to clipboard",
-        })
-      } catch {
-        toast({
-          title: "Failed to copy",
-          description: "Unable to copy quote to clipboard",
-          variant: "destructive"
-        })
+      } else {
+        try {
+          await navigator.clipboard.writeText(text)
+          toast({
+            title: "Quote copied",
+            description: "Quote copied to clipboard",
+          })
+        } catch {
+          toast({
+            title: "Failed to copy",
+            description: "Unable to copy quote to clipboard",
+            variant: "destructive"
+          })
+        }
       }
+    } catch (error) {
+      console.error('Error sharing quote:', error)
+      toast({
+        title: "Share failed",
+        description: "Unable to share quote",
+        variant: "destructive"
+      })
     }
   }
 
@@ -100,13 +162,7 @@ function DailyStoicQuoteCard({
         <div className="space-y-6">
           {/* Quote content */}
           <div className="text-center space-y-6 max-w-4xl mx-auto">
-            <blockquote className="text-lg md:text-xl font-bold leading-relaxed text-ink font-inknut">
-              &ldquo;{quote.text}&rdquo;
-            </blockquote>
-            
-            <div className="text-base md:text-lg font-medium text-ink font-inknut">
-              — {quote.author}
-            </div>
+            <SafeQuoteText quote={quote} />
           </div>
 
           {/* Action buttons at bottom */}
@@ -229,31 +285,40 @@ function SimplifiedQuoteCard({
   }
 
   const handleShare = async (): Promise<void> => {
-    const text = `"${quote.text}" - ${quote.author}${quote.source ? ` (${quote.source})` : ''}`
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Stoic Quote',
-          text: text,
-        })
-      } catch {
-        // User cancelled or error occurred
+    try {
+      const text = `"${sanitizeQuoteText(quote.text)}" - ${sanitizeQuoteText(quote.author)}${quote.source ? ` (${sanitizeQuoteText(quote.source)})` : ''}`
+      
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Stoic Quote',
+            text: text,
+          })
+        } catch {
+          // User cancelled or error occurred
+        }
+      } else {
+        try {
+          await navigator.clipboard.writeText(text)
+          toast({
+            title: "Quote copied",
+            description: "Quote copied to clipboard",
+          })
+        } catch {
+          toast({
+            title: "Failed to copy",
+            description: "Unable to copy quote to clipboard",
+            variant: "destructive"
+          })
+        }
       }
-    } else {
-      try {
-        await navigator.clipboard.writeText(text)
-        toast({
-          title: "Quote copied",
-          description: "Quote copied to clipboard",
-        })
-      } catch {
-        toast({
-          title: "Failed to copy",
-          description: "Unable to copy quote to clipboard",
-          variant: "destructive"
-        })
-      }
+    } catch (error) {
+      console.error('Error sharing quote:', error)
+      toast({
+        title: "Share failed",
+        description: "Unable to share quote",
+        variant: "destructive"
+      })
     }
   }
 
@@ -264,13 +329,13 @@ function SimplifiedQuoteCard({
           {/* Quote Content */}
           <div className="space-y-3">
             <blockquote className="text-lg font-medium italic text-ink leading-relaxed">
-              &ldquo;{quote.text}&rdquo;
+              &ldquo;{sanitizeQuoteText(quote.text)}&rdquo;
             </blockquote>
             
             <div className="text-base font-medium text-stone">
-              — {quote.author}
+              — {sanitizeQuoteText(quote.author)}
               {quote.source && (
-                <span className="text-sm text-stone/70 ml-2">({quote.source})</span>
+                <span className="text-sm text-stone/70 ml-2">({sanitizeQuoteText(quote.source)})</span>
               )}
             </div>
           </div>
@@ -350,25 +415,27 @@ export function DailyStoicWisdom(): JSX.Element {
   const [searchTerm, setSearchTerm] = useState('')
   const activeTab = searchParams.get('tab') as 'library' | 'favorites' | 'my-quotes' || 'library'
   
-  const { 
-    quotes, 
-    savedQuotes, 
-    userQuotes, 
-    loading, 
-    error, 
-    getDailyQuote, 
-    saveQuote, 
-    unsaveQuote, 
-    isQuoteSaved, 
+  const {
+    quotes,
+    savedQuotes,
+    userQuotes,
+    loading,
+    error,
+    getDailyQuote,
+    saveQuote,
+    unsaveQuote,
+    isQuoteSaved,
     searchQuotes,
-    createUserQuote: _createUserQuote, 
-    updateUserQuote: _updateUserQuote, 
+    createUserQuote: _createUserQuote,
+    updateUserQuote: _updateUserQuote,
     deleteUserQuote: _deleteUserQuote,
     refreshDailyQuote,
     reloadCount,
     maxReloads,
     canReload,
-    isRefetching
+    isRefetching,
+    hasStableQuote,
+    isQuoteStable
   } = useCachedQuotes(user)
 
   const dailyQuote = getDailyQuote()
@@ -384,15 +451,8 @@ export function DailyStoicWisdom(): JSX.Element {
   }, [quotes, searchTerm, searchQuotes])
 
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [currentDailyQuote, setCurrentDailyQuote] = useState<QuoteType | null>(null)
   const [refreshedQuotes, setRefreshedQuotes] = useState<Map<string, QuoteType>>(new Map())
   const [individualRefreshStates, setIndividualRefreshStates] = useState<Map<string, boolean>>(new Map())
-
-  // Initialize current daily quote
-  useEffect(() => {
-    const quote = getDailyQuote()
-    setCurrentDailyQuote(quote)
-  }, [getDailyQuote])
 
   // Only show toast when manually refreshing, not on automatic refetch
   useEffect(() => {
@@ -417,8 +477,7 @@ export function DailyStoicWisdom(): JSX.Element {
       // Add small delay for better UX
       await new Promise(resolve => setTimeout(resolve, 300))
       const newQuote = refreshDailyQuote()
-      setCurrentDailyQuote(newQuote)
-      
+
       if (newQuote) {
         const remaining = maxReloads - reloadCount - 1
         toast({
@@ -501,8 +560,8 @@ export function DailyStoicWisdom(): JSX.Element {
     return refreshedQuotes.get(originalQuote.id) || originalQuote
   }
 
-  // Show loading screen only for initial load or when no quotes exist
-  if (loading || (isRefetching && quotes.length === 0)) {
+  // Show loading screen only for initial load when we don't have any quote data
+  if (loading && !hasStableQuote && (!quotes || quotes.length === 0)) {
     return <MinimalLoadingScreen />
   }
 
@@ -526,6 +585,7 @@ export function DailyStoicWisdom(): JSX.Element {
           isQuoteSaved={isAuthenticated ? isQuoteSaved : undefined}
           onSave={isAuthenticated ? (quoteId: string) => saveQuote(quoteId) : undefined}
           onUnsave={isAuthenticated ? (quoteId: string) => unsaveQuote(quoteId) : undefined}
+          initialQuoteId={dailyQuote?.id} // Start with daily quote
         />
       )
     } else {

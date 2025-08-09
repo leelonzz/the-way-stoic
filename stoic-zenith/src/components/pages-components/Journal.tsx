@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { toast } from '@/components/ui/use-toast'
 import { EntryList } from '@/components/journal/EntryList'
 import { JournalEntry } from '@/components/journal/types'
-import { supabase } from '@/integrations/supabase/client'
+
 import { JournalSkeleton } from '@/components/journal/JournalSkeleton'
 import { useCachedJournal } from '@/hooks/useCachedJournal'
+import { useAuthContext } from '@/components/auth/AuthProvider'
 
 // Lazy load the heavy JournalNavigation component (rich text editor)
 const JournalNavigation = lazy(() =>
@@ -22,6 +23,8 @@ export default function Journal(): JSX.Element {
   console.log('🔍 Journal component rendering...')
 
   try {
+    const { user } = useAuthContext()
+    
     // Use cache-aware journal hook
     const {
       entries,
@@ -47,7 +50,7 @@ export default function Journal(): JSX.Element {
 
   // Legacy state for compatibility
   const [isCreatingEntry, setIsCreatingEntry] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
+  const [_userId, _setUserId] = useState<string | null>(null)
   const [lastCreateTime, setLastCreateTime] = useState<number>(0)
 
   // Wrapper functions for compatibility with existing code
@@ -108,41 +111,15 @@ export default function Journal(): JSX.Element {
       })
     }
   }, [retrySync])
-  // Initialize user context for legacy compatibility
+  // Initialize user from auth context instead of separate auth call
   useEffect((): void => {
-    const initializeUser = async (): Promise<void> => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-        if (user) {
-          setUserId(user.id)
-          // Clean up old access times to prevent localStorage bloat
-          cleanupOldAccessTimes()
-        }
-      } catch (error) {
-        console.error('Failed to initialize user:', error)
-      }
+    // Use the auth context instead of making separate auth calls
+    if (user?.id) {
+      setUserId(user.id)
+      // Clean up old access times to prevent localStorage bloat
+      cleanupOldAccessTimes()
     }
-
-    initializeUser()
-  }, [])
-
-  // Listen for auth changes for legacy compatibility
-  useEffect((): (() => void) => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const newUserId = session?.user?.id || null
-      if (newUserId !== userId) {
-        setUserId(newUserId)
-      }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [userId])
+  }, [user?.id])
 
   // Handle entry update using cache-aware hook to update UI instantly
   const handleEntryUpdate = useCallback(

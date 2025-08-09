@@ -17,27 +17,18 @@ export const useAuth = (): AuthState & {
   // Initialize with better default loading state
   const [authState, setAuthState] = useState<AuthState>(() => {
     // Always start with loading true to prevent flashing
-    if (typeof window !== 'undefined') {
-      const _wasAuthenticated = localStorage.getItem('was-authenticated') === 'true'
-      return {
-        user: null,
-        session: null,
-        profile: null,
-        loading: true, // Always start loading to prevent login screen flash
-        error: null,
-      }
-    }
     return {
       user: null,
       session: null,
       profile: null,
-      loading: true,
+      loading: true, // Always start loading to prevent login screen flash
       error: null,
     }
   })
   const [isClient, setIsClient] = useState(false)
   const initializingRef = useRef(false)
   const mountedRef = useRef(true)
+  const sessionCheckInProgress = useRef(false)
 
   useEffect(() => {
     setIsClient(true)
@@ -320,8 +311,13 @@ export const useAuth = (): AuthState & {
     let mounted = true
 
     const initializeAuth = async (): Promise<void> => {
-      const timeoutDuration = 10000 // 10 second timeout
-      let timeoutId: NodeJS.Timeout | null = null
+      // Prevent concurrent auth checks
+      if (sessionCheckInProgress.current) {
+        console.log('⚠️ Auth check already in progress, skipping...')
+        return
+      }
+
+      sessionCheckInProgress.current = true
 
       try {
         // Check if user was previously authenticated
@@ -333,12 +329,20 @@ export const useAuth = (): AuthState & {
 
         // Add a small delay for returning users to ensure smooth transition
         if (wasAuthenticated) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 50))
         }
+
+        // For returning users, be more patient with session verification
+        // For new users, use shorter timeout to prevent hanging on login attempts
+        const timeoutDuration = wasAuthenticated ? 15000 : 8000 // 15s for returning users, 8s for new users
+        let timeoutId: NodeJS.Timeout | null = null
+
+        console.log(`🔐 Starting auth check (${wasAuthenticated ? 'returning' : 'new'} user, ${timeoutDuration}ms timeout)`)
 
         // Set up timeout to prevent infinite loading
         const authPromise = new Promise<void>((resolve, reject) => {
           timeoutId = setTimeout(() => {
+            console.warn(`⏰ Authentication timeout after ${timeoutDuration}ms`)
             reject(new Error('Authentication timeout - session verification took too long'))
           }, timeoutDuration)
 
@@ -352,10 +356,12 @@ export const useAuth = (): AuthState & {
 
               if (mounted && mountedRef.current) {
                 if (session?.user) {
+                  console.log('✅ Session verified successfully:', session.user.email)
                   // Mark user as authenticated for future page loads
                   localStorage.setItem('was-authenticated', 'true')
                   updateAuthState(session.user, session).then(() => resolve()).catch(reject)
                 } else {
+                  console.log('❌ No valid session found')
                   // Clear authentication marker
                   localStorage.removeItem('was-authenticated')
                   setAuthState({
@@ -376,9 +382,11 @@ export const useAuth = (): AuthState & {
                 clearTimeout(timeoutId)
                 timeoutId = null
               }
-              console.warn('Session fetch failed:', error)
-              // Clear authentication marker on session fetch failure
-              localStorage.removeItem('was-authenticated')
+              console.warn('❌ Session fetch failed:', error)
+              // Only clear authentication marker if this is a real auth failure, not a network issue
+              if (error.message.includes('invalid') || error.message.includes('unauthorized') || error.message.includes('expired')) {
+                localStorage.removeItem('was-authenticated')
+              }
               if (mounted && mountedRef.current) {
                 setAuthState({
                   user: null,
@@ -395,16 +403,15 @@ export const useAuth = (): AuthState & {
         await authPromise
       } catch (error) {
         console.error('❌ Auth initialization error:', error)
-        
-        // Clean up timeout
-        if (timeoutId) {
-          clearTimeout(timeoutId)
-        }
 
         if (mounted && mountedRef.current) {
-          localStorage.removeItem('was-authenticated')
-          // Dispatch event for ProtectedRoute to detect auth failure
-          window.dispatchEvent(new Event('localStorageChanged'))
+          // Only clear was-authenticated on actual auth errors, not timeouts for returning users
+          const wasAuthenticated = localStorage.getItem('was-authenticated') === 'true'
+          if (!wasAuthenticated || error.message.includes('invalid') || error.message.includes('unauthorized')) {
+            localStorage.removeItem('was-authenticated')
+            // Dispatch event for ProtectedRoute to detect auth failure
+            window.dispatchEvent(new Event('localStorageChanged'))
+          }
           setAuthState({
             user: null,
             session: null,
@@ -414,9 +421,7 @@ export const useAuth = (): AuthState & {
           })
         }
       } finally {
-        if (timeoutId) {
-          clearTimeout(timeoutId)
-        }
+        sessionCheckInProgress.current = false
       }
     }
 

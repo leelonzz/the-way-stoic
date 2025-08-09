@@ -33,74 +33,24 @@ export function useCachedJournal() {
         return []
       }
 
-      console.log('🔧 Getting journal manager for user:', user.id)
-      const manager = getJournalManager(user.id)
-
-      // FORCE SYNC: Always sync from database first when user authenticates
-      // This ensures entries persist after clearing site data
-      setSyncStatus('syncing')
-
-      const syncTimeout = 15000 // 15 second timeout for sync operations
-      let timeoutId: NodeJS.Timeout | null = null
-
       try {
-        // Wrap sync operations in a timeout to prevent hanging
-        const syncPromise = new Promise<JournalEntry[]>((resolve, reject) => {
-          timeoutId = setTimeout(() => {
-            reject(new Error('Journal sync timeout - taking too long to load'))
-          }, syncTimeout)
+        console.log('🔧 Getting journal manager for user:', user.id)
+        const manager = getJournalManager(user.id)
 
-          const performSync = async () => {
-            try {
-              console.log('🔄 Starting auth sync...')
-              // Force sync from database first
-              await manager.retryAuthSync()
+        // Get entries without forcing sync - let natural sync happen
+        console.log('📚 Getting all entries...')
+        const rawEntries = await manager.getAllEntries()
 
-              console.log('📚 Getting all entries...')
-              // Get all entries (this will include database sync)
-              const rawEntries = await manager.getAllEntries()
-
-              console.log('✅ Sync successful, entries:', rawEntries.length)
-              setSyncStatus('synced')
-              
-              if (timeoutId) {
-                clearTimeout(timeoutId)
-                timeoutId = null
-              }
-              resolve(rawEntries)
-            } catch (error) {
-              if (timeoutId) {
-                clearTimeout(timeoutId)
-                timeoutId = null
-              }
-              reject(error)
-            }
-          }
-
-          performSync()
-        })
-
-        return await syncPromise
+        console.log('✅ Entries loaded:', rawEntries.length)
+        setSyncStatus('synced')
+        return rawEntries
       } catch (error) {
-        console.error('❌ [CachedJournal] Database sync failed:', error)
-        
-        if (timeoutId) {
-          clearTimeout(timeoutId)
-        }
-
+        console.error('❌ [CachedJournal] Failed to load entries:', error)
         setSyncStatus('error')
 
-        // Fallback to local data if sync fails
-        try {
-          console.log('🔄 Attempting local fallback...')
-          const rawEntries = await manager.getAllEntries()
-          console.log('⚠️ [CachedJournal] Using local data after sync failure:', rawEntries.length, 'entries')
-          // Don't set sync status to 'synced' for fallback data
-          return rawEntries
-        } catch (fallbackError) {
-          console.error('❌ [CachedJournal] Local fallback also failed:', fallbackError)
-          return []
-        }
+        // Don't throw the error - return empty array to prevent auth failures
+        // The error will be handled by the query error state
+        return []
       }
     },
     {
@@ -109,18 +59,20 @@ export function useCachedJournal() {
       staleTime: 5 * 60 * 1000, // 5 minutes stale time
       gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
       retry: (failureCount, error) => {
-        console.error('❌ [CachedJournal] Query failed:', error)
-        // Don't retry on timeout errors or auth failures
-        if (error && typeof error === 'object' && 'message' in error) {
-          const message = error.message as string
-          if (message.includes('timeout') || message.includes('unauthorized') || message.includes('invalid')) {
-            return false
-          }
+        console.error(`❌ [CachedJournal] Query failed (attempt ${failureCount + 1}):`, error)
+
+        // Only retry on network errors, not auth errors
+        if (error.message.includes('network') || error.message.includes('timeout') || error.message.includes('fetch')) {
+          return failureCount < 2 // Retry up to 2 times for network issues
         }
-        return failureCount < 2
+
+        // Don't retry auth errors or other critical errors
+        return false
       },
-      // Add refetch on auth state change
-      refetchOnMount: 'always',
+      // Only refetch if data is stale, not on every mount
+      refetchOnMount: false,
+      // Don't throw errors to prevent auth failures
+      throwOnError: false,
     }
   )
 

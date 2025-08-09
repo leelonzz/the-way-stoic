@@ -41,17 +41,21 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps): Rea
   // Timeout for wasAuthenticated state to prevent infinite loading
   useEffect(() => {
     if (wasAuthenticated && !isAuthenticated && !isLoading) {
-      // Give auth system 15 seconds to complete, then show login screen
+      // Longer timeout for production due to network latency and CSP processing
+      const isProduction = process.env.NODE_ENV === 'production'
+      const timeoutDuration = isProduction ? 30000 : 15000 // 30s in production, 15s in dev
+
       const timeoutId = setTimeout(() => {
-        console.warn('Authentication timeout reached, clearing was-authenticated flag');
-        localStorage.removeItem('was-authenticated');
-        setWasAuthenticated(false);
+        console.warn(`ProtectedRoute: Authentication timeout reached after ${timeoutDuration/1000}s`);
+        console.warn('This may indicate a network issue or session expiry');
+        // Don't clear was-authenticated here - let useAuth manage it
         setAuthTimeoutReached(true);
-        // Dispatch event to notify other components
-        window.dispatchEvent(new Event('localStorageChanged'));
-      }, 15000);
+      }, timeoutDuration);
 
       return () => clearTimeout(timeoutId);
+    } else if (isAuthenticated) {
+      // Reset timeout when user becomes authenticated
+      setAuthTimeoutReached(false);
     }
   }, [wasAuthenticated, isAuthenticated, isLoading]);
 

@@ -136,23 +136,37 @@ export function useLifeCalendar(user: User | null) {
     refetch
   } = useNavigationCachedQuery(
     QUERY_KEYS.preferences(user?.id || ''),
-    () => {
+    async () => {
       if (!user?.id) {
-        throw new Error('No user ID available for calendar preferences')
+        console.log('⚠️ No user ID available for calendar preferences')
+        return null
       }
 
-      // Add timeout to prevent hanging
-      const timeoutDuration = 15000 // 15 seconds
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Calendar preferences fetch timeout'))
-        }, timeoutDuration)
-      })
+      try {
+        console.log('📅 Fetching calendar preferences for user:', user.id)
 
-      return Promise.race([
-        fetchPreferences(user.id),
-        timeoutPromise
-      ])
+        // Add timeout to prevent hanging
+        const timeoutDuration = 15000 // 15 seconds
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('Calendar preferences fetch timeout'))
+          }, timeoutDuration)
+        })
+
+        const result = await Promise.race([
+          fetchPreferences(user.id),
+          timeoutPromise
+        ])
+
+        console.log('✅ Calendar preferences loaded successfully')
+        return result
+      } catch (error) {
+        console.error('❌ Failed to fetch calendar preferences:', error)
+
+        // Don't throw the error - return null to prevent auth failures
+        // The error will be handled by the query error state
+        return null
+      }
     },
     {
       enabled: !!user?.id,
@@ -160,19 +174,19 @@ export function useLifeCalendar(user: User | null) {
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes
       retry: (failureCount, error) => {
-        // Don't retry on 404 (no preferences found)
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'PGRST116') {
-          return false;
+        console.error(`❌ [Calendar] Query failed (attempt ${failureCount + 1}):`, error)
+
+        // Only retry on network errors, not auth errors
+        if (error.message.includes('network') || error.message.includes('timeout') || error.message.includes('fetch')) {
+          return failureCount < 2 // Retry up to 2 times for network issues
         }
-        // Don't retry on timeout or auth errors
-        if (error && typeof error === 'object' && 'message' in error) {
-          const message = error.message as string
-          if (message.includes('timeout') || message.includes('unauthorized') || message.includes('No user ID')) {
-            return false
-          }
-        }
-        return failureCount < 2;
-      }
+
+        // Don't retry auth errors or other critical errors
+        return false
+      },
+      refetchOnMount: false, // Use cached data when available
+      // Don't throw errors to prevent auth failures
+      throwOnError: false,
     }
   );
 
