@@ -335,63 +335,20 @@ export const useAuth = (): AuthState & {
         // Always start with loading true to prevent login screen flash
         setAuthState(prev => ({ ...prev, loading: true }))
 
-        // Use getUser() for more reliable auth verification in production
-        const userPromise = exponentialBackoff(
-          async () => {
-            console.log('🔍 Checking auth status...')
-            const result = await supabase.auth.getUser()
-            if (result.error) {
-              console.error(
-                '❌ Auth check error:',
-                result.error.message,
-                result.error
-              )
-            } else if (result.data.user) {
-              console.log('✅ User found:', result.data.user.email)
-            } else {
-              console.log('⚠️ No user found')
-            }
-            return result
-          },
-          {
-            maxRetries: 2, // Increased retries for production reliability
-            shouldRetry: (error: unknown) => {
-              // Don't retry on auth errors
-              const errorMessage =
-                error instanceof Error ? error.message : String(error)
-              if (
-                errorMessage?.includes('401') ||
-                errorMessage?.includes('403') ||
-                errorMessage?.includes('Invalid')
-              ) {
-                return false
-              }
-              return true
-            },
-          }
-        )
-
-        // Quick auth check with aggressive timeout - use getUser() for reliability
-        const authPromise = Promise.race([
-          userPromise,
-          new Promise<{ data: { user: null }; error: null }>(resolve =>
-            setTimeout(() => {
-              console.warn('⏱️ Auth timeout - using cached state')
-              resolve({ data: { user: null }, error: null })
-            }, timeouts.authInit)
-          ),
-        ])
+        // Try to get session first (faster than getUser)
+        const sessionPromise = supabase.auth.getSession()
+        
+        // Check session immediately without timeout for production
+        const authPromise = sessionPromise
           .then(async result => {
             if (mounted && mountedRef.current) {
-              const user = result?.data?.user
+              const session = result?.data?.session
+              const user = session?.user
 
-              if (user) {
-                // User is authenticated - get session
+              if (user && session) {
+                // User is authenticated
+                console.log('✅ Session found for user:', user.email)
                 localStorage.setItem('was-authenticated', 'true')
-
-                const {
-                  data: { session },
-                } = await supabase.auth.getSession()
 
                 // Fast path - use cached profile if available
                 const cachedProfile = getCachedProfile(user.id)
@@ -407,8 +364,9 @@ export const useAuth = (): AuthState & {
                 if (!cachedProfile) {
                   updateAuthState(user, session).catch(console.warn)
                 }
-              } else if (result && !wasAuthenticated) {
-                // Clear auth if definitive "no user" response and user wasn't previously authenticated
+              } else if (!session && !wasAuthenticated) {
+                // No session and wasn't previously authenticated
+                console.log('❌ No session found')
                 localStorage.removeItem('was-authenticated')
                 setAuthState({
                   user: null,
@@ -417,8 +375,46 @@ export const useAuth = (): AuthState & {
                   loading: false,
                   error: null,
                 })
+              } else if (!session && wasAuthenticated) {
+                // Was authenticated but no session - try to get user
+                console.log('⚠️ Was authenticated but no session, checking user...')
+                const { data: { user } } = await supabase.auth.getUser()
+                if (user) {
+                  const { data: { session: newSession } } = await supabase.auth.getSession()
+                  if (newSession) {
+                    const cachedProfile = getCachedProfile(user.id)
+                    setAuthState({
+                      user,
+                      session: newSession,
+                      profile: cachedProfile,
+                      loading: false,
+                      error: null,
+                    })
+                    if (!cachedProfile) {
+                      updateAuthState(user, newSession).catch(console.warn)
+                    }
+                  } else {
+                    localStorage.removeItem('was-authenticated')
+                    setAuthState({
+                      user: null,
+                      session: null,
+                      profile: null,
+                      loading: false,
+                      error: null,
+                    })
+                  }
+                } else {
+                  localStorage.removeItem('was-authenticated')
+                  setAuthState({
+                    user: null,
+                    session: null,
+                    profile: null,
+                    loading: false,
+                    error: null,
+                  })
+                }
               } else {
-                // Timeout or preserve existing state
+                // Preserve existing state
                 setAuthState(prev => ({ ...prev, loading: false }))
               }
             }
