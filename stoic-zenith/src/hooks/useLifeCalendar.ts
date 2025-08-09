@@ -79,17 +79,19 @@ const fetchPreferences = async (userId: string): Promise<LifeCalendarPreferences
     },
     {
       maxRetries: 2,
-      shouldRetry: (error) => {
+      shouldRetry: (error: unknown) => {
         // Don't retry on 404 (not found) or auth errors
-        if (error?.code === 'PGRST116' || 
-            error?.message?.includes('401') || 
-            error?.message?.includes('403')) {
+        const errorCode = error && typeof error === 'object' && 'code' in error ? (error as any).code : undefined;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorCode === 'PGRST116' || 
+            errorMessage?.includes('401') || 
+            errorMessage?.includes('403')) {
           return false;
         }
         return true;
       }
     }
-  ).catch(err => {
+  ).catch((err: unknown) => {
     console.error('❌ Error fetching preferences after retries:', err);
     
     // Try to get from localStorage as fallback
@@ -100,7 +102,8 @@ const fetchPreferences = async (userId: string): Promise<LifeCalendarPreferences
     }
     
     // Don't throw for network errors - return null to allow app to continue
-    if (!err?.message?.includes('401') && !err?.message?.includes('403')) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    if (!errorMessage?.includes('401') && !errorMessage?.includes('403')) {
       return null;
     }
     
