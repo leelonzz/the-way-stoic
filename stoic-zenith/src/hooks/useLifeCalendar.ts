@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigationCachedQuery } from '@/hooks/useCacheAwareQuery';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
-import { getTimeoutConfig, isProduction } from '@/lib/config';
+import { getTimeouts, exponentialBackoff } from '@/lib/environment';
 // import type { Tables } from '@/integrations/supabase/types';
 
 export interface LifeCalendarPreferences {
@@ -53,30 +53,44 @@ const setStoredPreferences = (userId: string, prefs: LifeCalendarPreferences): v
   }
 };
 
-// Fetch preferences function
+// Fetch preferences function with retry logic
 const fetchPreferences = async (userId: string): Promise<LifeCalendarPreferences | null> => {
   console.log('🔄 Fetching life calendar preferences for user:', userId);
   
-  try {
-    const { data, error } = await supabase
-      .from('user_preferences')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+  return exponentialBackoff(
+    async () => {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // No data found - this is normal for new users
-        console.log('📝 No preferences found for user, will create on first setup');
-        return null;
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No data found - this is normal for new users
+          console.log('📝 No preferences found for user, will create on first setup');
+          return null;
+        }
+        throw error;
       }
-      throw error;
-    }
 
-    console.log('✅ Preferences fetched successfully:', data);
-    return data;
-  } catch (err) {
-    console.error('❌ Error fetching preferences:', err);
+      console.log('✅ Preferences fetched successfully:', data);
+      return data;
+    },
+    {
+      maxRetries: 2,
+      shouldRetry: (error) => {
+        // Don't retry on 404 (not found) or auth errors
+        if (error?.code === 'PGRST116' || 
+            error?.message?.includes('401') || 
+            error?.message?.includes('403')) {
+          return false;
+        }
+        return true;
+      }
+    }
+  ).catch(err => {
+    console.error('❌ Error fetching preferences after retries:', err);
     
     // Try to get from localStorage as fallback
     const stored = getStoredPreferences(userId);
@@ -85,8 +99,13 @@ const fetchPreferences = async (userId: string): Promise<LifeCalendarPreferences
       return stored;
     }
     
+    // Don't throw for network errors - return null to allow app to continue
+    if (!err?.message?.includes('401') && !err?.message?.includes('403')) {
+      return null;
+    }
+    
     throw err;
-  }
+  });
 };
 
 // Update preferences function using regular upsert
@@ -142,13 +161,15 @@ export function useLifeCalendar(user: User | null) {
         throw new Error('No user ID available for calendar preferences')
       }
 
-      // Production-aware timeout to prevent hanging
-      const timeoutConfig = getTimeoutConfig()
-      const timeoutDuration = timeoutConfig.dataTimeout // 30s prod, 15s dev
-      const timeoutPromise = new Promise<never>((_, reject) => {
+      const timeouts = getTimeouts();
+      
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<LifeCalendarPreferences | null>((resolve) => {
         setTimeout(() => {
-          reject(new Error(`Calendar preferences fetch timeout (${timeoutDuration}ms)`))
-        }, timeoutDuration)
+          console.warn('⏱️ Calendar preferences fetch timeout - continuing without data');
+          // Don't reject - resolve with null to allow app to continue
+          resolve(null);
+        }, timeouts.calendarFetch)
       })
 
       return Promise.race([
@@ -166,31 +187,18 @@ export function useLifeCalendar(user: User | null) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'PGRST116') {
           return false;
         }
-
-        // Enhanced retry logic for production
+        // Don't retry on auth errors
         if (error && typeof error === 'object' && 'message' in error) {
           const message = error.message as string
-
-          // Don't retry on auth errors
-          if (message.includes('unauthorized') || message.includes('No user ID') || message.includes('403') || message.includes('401')) {
-            console.log('🚫 Auth error detected in calendar, not retrying');
-            return false
-          }
-
-          // In production, be more lenient with timeouts and network errors
-          if (isProduction() && (message.includes('timeout') || message.includes('fetch') || message.includes('network'))) {
-            console.log('🔄 Network/timeout error in calendar production, allowing more retries');
-            return failureCount < 3 // More retries in production
-          }
-
-          // In development, don't retry timeouts
-          if (!isProduction() && message.includes('timeout')) {
+          if (message.includes('401') || 
+              message.includes('403') || 
+              message.includes('unauthorized') || 
+              message.includes('No user ID')) {
             return false
           }
         }
-
-        const maxRetries = isProduction() ? 3 : 2
-        return failureCount < maxRetries;
+        // Allow retry for network/timeout errors
+        return failureCount < 3;
       }
     }
   );

@@ -68,15 +68,29 @@ export function AppSidebar(): JSX.Element {
   const searchParams = useSearchParams()
   const { isAuthenticated, user, profile } = useAuthContext()
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
-  const [isQuotesDropdownOpen, setIsQuotesDropdownOpen] = useState(() => pathname.startsWith('/quotes'))
+  const [isQuotesDropdownOpen, setIsQuotesDropdownOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('sidebar_quotes_open')
+      if (stored !== null) return stored === 'true'
+    }
+    return pathname.startsWith('/quotes')
+  })
   const queryClient = useQueryClient()
   const { isPathLikelyCached, prefetchPage } = useNavigationState()
 
-  // Auto-sync Quotes dropdown with current route for smoother UX
+  // Auto-open Quotes dropdown when navigating into /quotes, but do not auto-close when leaving
   useEffect(() => {
-    const shouldOpen = pathname.startsWith('/quotes')
-    setIsQuotesDropdownOpen(shouldOpen)
+    if (pathname.startsWith('/quotes')) {
+      setIsQuotesDropdownOpen(true)
+    }
   }, [pathname])
+
+  // Persist user preference for Quotes dropdown
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('sidebar_quotes_open', String(isQuotesDropdownOpen))
+    }
+  }, [isQuotesDropdownOpen])
 
   const quotesSubItems = [
     {
@@ -169,7 +183,16 @@ export function AppSidebar(): JSX.Element {
                     href={item.href}
                     prefetch={true}
                     onMouseEnter={() => handleMouseEnter(item.href)}
-                    onClick={() => setIsQuotesDropdownOpen(true)}
+                    onClick={(e) => {
+                      setIsQuotesDropdownOpen(true)
+                      if (typeof window !== 'undefined') {
+                        const saved = window.localStorage.getItem('quotes_active_tab')
+                        if (saved === 'library' || saved === 'favorites' || saved === 'my-quotes') {
+                          e.preventDefault()
+                          router.push(`/quotes?tab=${saved}`)
+                        }
+                      }
+                    }}
                     className="flex items-center gap-3 flex-1"
                   >
                     <item.icon size={18} />
@@ -192,7 +215,7 @@ export function AppSidebar(): JSX.Element {
 
                 {/* Dropdown Menu */}
                 {isQuotesDropdownOpen && (
-                  <div className="ml-6 space-y-1 animate-fade-in">
+                  <div className="ml-6 space-y-1">
                     {quotesSubItems.map(subItem => {
                       if (subItem.requiresAuth && !isAuthenticated) {
                         return (

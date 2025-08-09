@@ -73,6 +73,8 @@ const FALLBACK_QUOTES: Quote[] = [
 export function useCachedQuotes(user: User | null) {
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [reloadCount, setReloadCount] = useState(0)
+  const [randomQuoteOverride, setRandomQuoteOverride] = useState<Quote | null>(null)
 
   // Use cache-aware query for quotes
   const quotesQuery = useNavigationCachedQuery(
@@ -127,6 +129,9 @@ export function useCachedQuotes(user: User | null) {
   // Persist a stable daily quote per day to avoid UI flicker on data refresh
   const [selectedDailyQuote, setSelectedDailyQuote] = useState<Quote | null>(null)
   useEffect(() => {
+    // Skip if we have a random override
+    if (randomQuoteOverride) return
+    
     // Key per calendar day (YYYY-MM-DD)
     const today = new Date()
     const dayKey = today.toISOString().slice(0, 10)
@@ -158,12 +163,12 @@ export function useCachedQuotes(user: User | null) {
         setSelectedDailyQuote(computedDailyQuote)
       }
     }
-  }, [computedDailyQuote, selectedDailyQuote])
+  }, [computedDailyQuote, selectedDailyQuote, randomQuoteOverride])
 
-  // Expose a stable daily quote
+  // Expose a stable daily quote (with optional override for refresh)
   const getDailyQuote = useMemo(() => {
-    return selectedDailyQuote || computedDailyQuote
-  }, [selectedDailyQuote, computedDailyQuote])
+    return randomQuoteOverride || selectedDailyQuote || computedDailyQuote
+  }, [randomQuoteOverride, selectedDailyQuote, computedDailyQuote])
 
   // Search quotes function
   const searchQuotes = useMemo(() => {
@@ -256,6 +261,14 @@ export function useCachedQuotes(user: User | null) {
       setError(null)
     }
   }, [user, fetchSavedQuotes])
+  
+  // Initialize reload count from localStorage
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    const reloadKey = `twstoic:reload-count:${today}`
+    const count = parseInt(localStorage.getItem(reloadKey) || '0', 10)
+    setReloadCount(count)
+  }, [])
 
   return {
     quotes: quotesQuery.data || FALLBACK_QUOTES,
@@ -410,10 +423,45 @@ export function useCachedQuotes(user: User | null) {
       console.warn('deleteUserQuote not implemented in cached version')
       return false
     },
-    refreshDailyQuote: () => getDailyQuote,
-    reloadCount: 0,
+    refreshDailyQuote: () => {
+      const quotes = quotesQuery.data || FALLBACK_QUOTES
+      if (!quotes || quotes.length === 0) return null
+      
+      // Track reload count (reset daily)
+      const today = new Date().toISOString().slice(0, 10)
+      const reloadKey = `twstoic:reload-count:${today}`
+      const currentCount = parseInt(localStorage.getItem(reloadKey) || '0', 10)
+      
+      if (currentCount >= 10) {
+        return getDailyQuote // Return current quote if quota exceeded
+      }
+      
+      // Get a random quote that's different from the current one
+      const currentQuote = getDailyQuote
+      let availableQuotes = quotes
+      if (currentQuote) {
+        availableQuotes = quotes.filter(q => q.id !== currentQuote.id)
+      }
+      
+      if (availableQuotes.length === 0) {
+        availableQuotes = quotes // Fallback if somehow all quotes are filtered out
+      }
+      
+      const randomIndex = Math.floor(Math.random() * availableQuotes.length)
+      const newQuote = availableQuotes[randomIndex]
+      
+      // Update reload count
+      localStorage.setItem(reloadKey, String(currentCount + 1))
+      setReloadCount(currentCount + 1)
+      
+      // Set the override quote
+      setRandomQuoteOverride(newQuote)
+      
+      return newQuote
+    },
+    reloadCount,
     maxReloads: 10,
-    canReload: true,
+    canReload: reloadCount < 10,
     // Additional useful properties
     isCached: !quotesQuery.isLoading && !!quotesQuery.data,
     lastUpdated: quotesQuery.dataUpdatedAt,

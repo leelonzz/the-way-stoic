@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Search, Bookmark, BookmarkCheck, Share, RotateCcw, Star } from 'lucide-react'
 import { QuoteCarousel } from './QuoteCarousel'
 import { Card, CardContent } from '@/components/ui/card'
@@ -95,7 +95,7 @@ function DailyStoicQuoteCard({
   }
 
   return (
-    <Card className="bg-hero/30 border-stone/20 shadow-lg animate-fade-in">
+    <Card className={`bg-hero/30 border-stone/20 shadow-lg ${isRefreshing ? 'transition-opacity duration-300' : 'animate-fade-in'}`}>
       <CardContent className="p-12">
         <div className="space-y-6">
           {/* Quote content */}
@@ -258,7 +258,7 @@ function SimplifiedQuoteCard({
   }
 
   return (
-    <Card className="bg-hero/50 border-stone/20 shadow-sm hover:shadow-md transition-shadow animate-fade-in">
+    <Card className={`bg-hero/50 border-stone/20 shadow-sm hover:shadow-md transition-shadow ${isRefreshing ? 'transition-opacity duration-300' : 'animate-fade-in'}`}>
       <CardContent className="p-6">
         <div className="space-y-4">
           {/* Quote Content */}
@@ -347,8 +347,26 @@ export function DailyStoicWisdom(): JSX.Element {
   const { isAuthenticated } = useAuthContext()
   const { toast } = useToast()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const activeTab = searchParams.get('tab') as 'library' | 'favorites' | 'my-quotes' || 'library'
+
+  // On first load without a tab parameter, redirect to the last used tab if available
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (!tabParam) {
+      const saved = typeof window !== 'undefined' ? window.localStorage.getItem('quotes_active_tab') : null
+      const fallback = saved === 'favorites' || saved === 'my-quotes' || saved === 'library' ? saved : 'library'
+      router.replace(`/quotes?tab=${fallback}`)
+    }
+  }, [searchParams, router])
+
+  // Persist current tab to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && activeTab) {
+      window.localStorage.setItem('quotes_active_tab', activeTab)
+    }
+  }, [activeTab])
   
   const { 
     quotes, 
@@ -384,15 +402,12 @@ export function DailyStoicWisdom(): JSX.Element {
   }, [quotes, searchTerm, searchQuotes])
 
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [currentDailyQuote, setCurrentDailyQuote] = useState<QuoteType | null>(null)
   const [refreshedQuotes, setRefreshedQuotes] = useState<Map<string, QuoteType>>(new Map())
   const [individualRefreshStates, setIndividualRefreshStates] = useState<Map<string, boolean>>(new Map())
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
-  // Initialize current daily quote
-  useEffect(() => {
-    const quote = getDailyQuote()
-    setCurrentDailyQuote(quote)
-  }, [getDailyQuote])
+  // Get the current display quote
+  const currentDailyQuote = getDailyQuote()
 
   // Only show toast when manually refreshing, not on automatic refetch
   useEffect(() => {
@@ -413,11 +428,13 @@ export function DailyStoicWisdom(): JSX.Element {
     }
     
     setIsRefreshing(true)
+    setIsTransitioning(true)
     try {
-      // Add small delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 300))
+      // Start fade out
+      await new Promise(resolve => setTimeout(resolve, 150))
       const newQuote = refreshDailyQuote()
-      setCurrentDailyQuote(newQuote)
+      // Allow fade in
+      await new Promise(resolve => setTimeout(resolve, 150))
       
       if (newQuote) {
         const remaining = maxReloads - reloadCount - 1
@@ -443,6 +460,7 @@ export function DailyStoicWisdom(): JSX.Element {
       })
     } finally {
       setIsRefreshing(false)
+      setTimeout(() => setIsTransitioning(false), 300)
     }
   }
 
@@ -458,10 +476,11 @@ export function DailyStoicWisdom(): JSX.Element {
     
     // Set individual refresh state
     setIndividualRefreshStates(prev => new Map(prev).set(quoteId, true))
+    setIsTransitioning(true)
     
     try {
-      // Add small delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 300))
+      // Start fade out
+      await new Promise(resolve => setTimeout(resolve, 150))
       
       // Use the hook's refreshDailyQuote function as fallback
       const newQuote = refreshDailyQuote()
@@ -469,6 +488,8 @@ export function DailyStoicWisdom(): JSX.Element {
       if (newQuote) {
         // Update the refreshed quotes map with the new quote
         setRefreshedQuotes(prev => new Map(prev).set(quoteId, newQuote))
+        // Allow fade in
+        await new Promise(resolve => setTimeout(resolve, 150))
         
         const remaining = maxReloads - reloadCount - 1
         toast({
@@ -493,6 +514,7 @@ export function DailyStoicWisdom(): JSX.Element {
       })
     } finally {
       setIndividualRefreshStates(prev => new Map(prev).set(quoteId, false))
+      setTimeout(() => setIsTransitioning(false), 300)
     }
   }
 

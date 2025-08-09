@@ -7,7 +7,7 @@ import type { JournalEntry, JournalBlock } from '@/components/journal/types'
 import { useAuthContext } from '@/components/auth/AuthProvider'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/components/ui/use-toast'
-import { getTimeoutConfig, isProduction } from '@/lib/config'
+import { getTimeouts, exponentialBackoff } from '@/lib/environment'
 
 /**
  * Cache-aware journal hook that prevents redundant database calls
@@ -41,45 +41,77 @@ export function useCachedJournal() {
       // This ensures entries persist after clearing site data
       setSyncStatus('syncing')
 
-      const timeoutConfig = getTimeoutConfig()
-      const syncTimeout = timeoutConfig.syncTimeout // Production-aware timeout
+      const timeouts = getTimeouts()
       let timeoutId: NodeJS.Timeout | null = null
 
       try {
-        // Wrap sync operations in a timeout to prevent hanging
-        const syncPromise = new Promise<JournalEntry[]>((resolve, reject) => {
-          timeoutId = setTimeout(() => {
-            reject(new Error('Journal sync timeout - taking too long to load'))
-          }, syncTimeout)
-
-          const performSync = async () => {
-            try {
-              console.log('🔄 Starting auth sync...')
+        // Use exponential backoff for production resilience
+        const syncWithRetry = async () => {
+          return exponentialBackoff(
+            async () => {
+              console.log('🔄 Starting journal sync...')
               // Force sync from database first
               await manager.retryAuthSync()
-
+              
               console.log('📚 Getting all entries...')
               // Get all entries (this will include database sync)
               const rawEntries = await manager.getAllEntries()
-
+              
               console.log('✅ Sync successful, entries:', rawEntries.length)
               setSyncStatus('synced')
-              
-              if (timeoutId) {
-                clearTimeout(timeoutId)
-                timeoutId = null
+              return rawEntries
+            },
+            {
+              maxRetries: 2,
+              shouldRetry: (error) => {
+                // Don't retry on auth errors
+                if (error?.message?.includes('401') || 
+                    error?.message?.includes('403') ||
+                    error?.message?.includes('unauthorized')) {
+                  return false
+                }
+                // Retry on network/timeout errors
+                return true
               }
-              resolve(rawEntries)
-            } catch (error) {
-              if (timeoutId) {
-                clearTimeout(timeoutId)
-                timeoutId = null
-              }
-              reject(error)
             }
-          }
+          )
+        }
 
-          performSync()
+        // Add timeout as safeguard
+        const syncPromise = new Promise<JournalEntry[]>((resolve, reject) => {
+          timeoutId = setTimeout(() => {
+            console.warn('⏱️ Journal sync timeout - using local data')
+            // Don't reject, resolve with local data
+            manager.getAllEntries()
+              .then(entries => {
+                setSyncStatus('error')
+                resolve(entries)
+              })
+              .catch(() => resolve([]))
+          }, timeouts.journalSync)
+
+          syncWithRetry()
+            .then(entries => {
+              if (timeoutId) {
+                clearTimeout(timeoutId)
+                timeoutId = null
+              }
+              resolve(entries)
+            })
+            .catch(error => {
+              if (timeoutId) {
+                clearTimeout(timeoutId)
+                timeoutId = null
+              }
+              console.error('❌ Journal sync failed after retries:', error)
+              // Try local fallback
+              manager.getAllEntries()
+                .then(entries => {
+                  setSyncStatus('error')
+                  resolve(entries)
+                })
+                .catch(() => resolve([]))
+            })
         })
 
         return await syncPromise
@@ -97,11 +129,14 @@ export function useCachedJournal() {
           console.log('🔄 Attempting local fallback...')
           const rawEntries = await manager.getAllEntries()
           console.log('⚠️ [CachedJournal] Using local data after sync failure:', rawEntries.length, 'entries')
-          // Don't set sync status to 'synced' for fallback data
           return rawEntries
         } catch (fallbackError) {
           console.error('❌ [CachedJournal] Local fallback also failed:', fallbackError)
           return []
+        }
+      } finally {
+        if (timeoutId) {
+          clearTimeout(timeoutId)
         }
       }
     },
@@ -112,31 +147,18 @@ export function useCachedJournal() {
       gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
       retry: (failureCount, error) => {
         console.error('❌ [CachedJournal] Query failed:', error)
-
-        // Enhanced retry logic for production
+        // Don't retry on auth failures
         if (error && typeof error === 'object' && 'message' in error) {
           const message = error.message as string
-
-          // Don't retry on auth failures
-          if (message.includes('unauthorized') || message.includes('invalid') || message.includes('403') || message.includes('401')) {
-            console.log('🚫 Auth error detected, not retrying');
-            return false
-          }
-
-          // In production, be more lenient with timeouts and network errors
-          if (isProduction() && (message.includes('timeout') || message.includes('fetch') || message.includes('network'))) {
-            console.log('🔄 Network/timeout error in production, allowing more retries');
-            return failureCount < 3 // More retries in production
-          }
-
-          // In development, don't retry timeouts
-          if (!isProduction() && message.includes('timeout')) {
+          if (message.includes('401') || 
+              message.includes('403') || 
+              message.includes('unauthorized') || 
+              message.includes('invalid')) {
             return false
           }
         }
-
-        const maxRetries = isProduction() ? 3 : 2
-        return failureCount < maxRetries
+        // Allow retry for network/timeout errors
+        return failureCount < 3
       },
       // Add refetch on auth state change
       refetchOnMount: 'always',

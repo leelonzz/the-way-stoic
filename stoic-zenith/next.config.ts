@@ -1,12 +1,15 @@
 import type { NextConfig } from 'next'
 
+type BundleAnalyzerPlugin = (config: NextConfig) => NextConfig;
+
 // Conditional bundle analyzer import to avoid TypeScript issues
-let withBundleAnalyzer: any = (config: NextConfig) => config;
+let withBundleAnalyzer: BundleAnalyzerPlugin = (config: NextConfig) => config;
 if (process.env.ANALYZE === 'true') {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     withBundleAnalyzer = require('@next/bundle-analyzer')({
       enabled: true,
-    });
+    }) as BundleAnalyzerPlugin;
   } catch (e) {
     console.warn('Bundle analyzer not available:', e);
   }
@@ -36,13 +39,15 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  // Enable source maps for debugging
+  productionBrowserSourceMaps: true,
   // Performance optimizations
   compiler: {
-    // Only remove console statements in production, keep them in development for debugging
-    removeConsole: process.env.NODE_ENV === 'production' ? true : false,
+    // Keep console statements for debugging - disable console removal
+    removeConsole: false,
   },
   // Bundle optimization
-  webpack: (config: any, { dev, isServer }: { dev: boolean; isServer: boolean }) => {
+  webpack: (config: NextConfig & { optimization?: { splitChunks?: { cacheGroups?: Record<string, unknown> } } }, { dev, isServer }: { dev: boolean; isServer: boolean }) => {
     // Optimize bundle splitting
     if (!dev && !isServer) {
       config.optimization.splitChunks = {

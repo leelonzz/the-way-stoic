@@ -9,8 +9,7 @@ import { DodoProvider } from '@/components/providers/DodoProvider'
 import { PageCacheProvider } from '@/components/providers/PageCacheProvider'
 import { PrefetchProvider } from '@/components/providers/PrefetchProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { ReactNode, useState, useEffect } from 'react'
-import { warmConnection, isProduction } from '@/lib/config'
+import { ReactNode, useState } from 'react'
 
 interface ClientProvidersProps {
   children: ReactNode
@@ -59,13 +58,6 @@ export function ClientProviders({ children }: ClientProvidersProps): JSX.Element
       },
     },
   }))
-
-  // Warm connection in production to prevent cold starts
-  useEffect(() => {
-    if (isProduction()) {
-      warmConnection().catch(console.warn);
-    }
-  }, []);
 
   return (
     <ErrorBoundary>

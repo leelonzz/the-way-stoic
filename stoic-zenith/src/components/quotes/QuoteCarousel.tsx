@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, Star, Share } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { usePageCache } from '@/components/providers/PageCacheProvider'
 import type { Quote as QuoteType } from '@/hooks/useCachedQuotes'
 
 interface QuoteCarouselProps {
@@ -20,48 +19,55 @@ export function QuoteCarousel({
   onSave,
   onUnsave
 }: QuoteCarouselProps): JSX.Element {
-  const [currentIndex, setCurrentIndex] = useState(0)
+  // Initialize currentIndex from localStorage immediately
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedIndex = localStorage.getItem('quote-carousel-index')
+      if (savedIndex !== null) {
+        const index = parseInt(savedIndex, 10)
+        if (!isNaN(index) && index >= 0 && index < quotes.length) {
+          return index
+        }
+      }
+    }
+    return 0
+  })
   const [isLoading, setIsLoading] = useState(false)
-  const [isInitialized, setIsInitialized] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(false)
   const { toast } = useToast()
-  const { updateCustomState, getCustomState } = usePageCache()
 
   const currentQuote = quotes[currentIndex]
   const isSaved = currentQuote && isQuoteSaved ? isQuoteSaved(currentQuote.id) : false
 
-  // Initialize quote index from cache on mount
+  // Save quote index to localStorage whenever it changes
   useEffect(() => {
-    if (!isInitialized && quotes.length > 0) {
-      const cachedState = getCustomState('quotes')
-      const savedIndex = cachedState?.quoteIndex
-
-      if (typeof savedIndex === 'number' && savedIndex >= 0 && savedIndex < quotes.length) {
-        setCurrentIndex(savedIndex)
-      }
-
-      setIsInitialized(true)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('quote-carousel-index', currentIndex.toString())
     }
-  }, [quotes.length, isInitialized, getCustomState])
+  }, [currentIndex])
 
-  // Save quote index to cache whenever it changes
-  useEffect(() => {
-    if (isInitialized) {
-      updateCustomState('quotes', { quoteIndex: currentIndex })
-    }
-  }, [currentIndex, isInitialized, updateCustomState])
-
-  // Navigation functions
+  // Navigation functions with smooth transition
   const goToPrevious = useCallback(() => {
-    setCurrentIndex(prev => prev === 0 ? quotes.length - 1 : prev - 1)
-  }, [quotes.length])
+    if (isTransitioning) return
+    setIsTransitioning(true)
+    setTimeout(() => {
+      setCurrentIndex(prev => prev === 0 ? quotes.length - 1 : prev - 1)
+      setTimeout(() => setIsTransitioning(false), 200)
+    }, 150)
+  }, [quotes.length, isTransitioning])
 
   const goToNext = useCallback(() => {
-    setCurrentIndex(prev => prev === quotes.length - 1 ? 0 : prev + 1)
-  }, [quotes.length])
+    if (isTransitioning) return
+    setIsTransitioning(true)
+    setTimeout(() => {
+      setCurrentIndex(prev => prev === quotes.length - 1 ? 0 : prev + 1)
+      setTimeout(() => setIsTransitioning(false), 200)
+    }, 150)
+  }, [quotes.length, isTransitioning])
 
   // Keyboard navigation
   useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
+    const handleKeyPress = (event: KeyboardEvent): void => {
       if (event.key === 'ArrowLeft') {
         event.preventDefault()
         goToNext()
@@ -72,7 +78,7 @@ export function QuoteCarousel({
     }
 
     window.addEventListener('keydown', handleKeyPress)
-    return () => window.removeEventListener('keydown', handleKeyPress)
+    return (): void => window.removeEventListener('keydown', handleKeyPress)
   }, [goToPrevious, goToNext])
 
   // Touch/swipe support
@@ -80,12 +86,12 @@ export function QuoteCarousel({
     let startX = 0
     let startY = 0
 
-    const handleTouchStart = (e: TouchEvent) => {
+    const handleTouchStart = (e: TouchEvent): void => {
       startX = e.touches[0].clientX
       startY = e.touches[0].clientY
     }
 
-    const handleTouchEnd = (e: TouchEvent) => {
+    const handleTouchEnd = (e: TouchEvent): void => {
       if (!startX || !startY) return
 
       const endX = e.changedTouches[0].clientX
@@ -110,7 +116,7 @@ export function QuoteCarousel({
     window.addEventListener('touchstart', handleTouchStart)
     window.addEventListener('touchend', handleTouchEnd)
     
-    return () => {
+    return (): void => {
       window.removeEventListener('touchstart', handleTouchStart)
       window.removeEventListener('touchend', handleTouchEnd)
     }
@@ -188,7 +194,8 @@ export function QuoteCarousel({
         variant="default"
         size="lg"
         onClick={goToNext}
-        className="fixed left-72 top-1/2 -translate-y-1/2 p-3 bg-stone hover:bg-stone/80 rounded-full text-white shadow-lg transition-all duration-200 z-50"
+        disabled={isTransitioning}
+        className="fixed left-72 top-1/2 -translate-y-1/2 p-3 bg-stone hover:bg-stone/80 rounded-full text-white shadow-lg transition-all duration-200 z-50 disabled:opacity-50"
         aria-label="Next quote"
         style={{ 
           minWidth: '56px', 
@@ -198,11 +205,15 @@ export function QuoteCarousel({
         <ChevronLeft className="w-8 h-8 text-white" />
       </Button>
 
-      {/* Quote Content - Perfectly Centered */}
+      {/* Quote Content - Perfectly Centered with smooth transition */}
       <div className="fixed left-64 right-0 top-0 bottom-0 flex items-center justify-center px-16 md:px-24">
-        <div className="max-w-4xl w-full text-center space-y-8">
+        <div 
+          className={`max-w-4xl w-full text-center space-y-8 transition-opacity duration-300 ${
+            isTransitioning ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
           <blockquote className="text-2xl md:text-3xl lg:text-4xl font-bold leading-relaxed text-ink font-inknut">
-            "{currentQuote.text}"
+            &quot;{currentQuote.text}&quot;
           </blockquote>
           
           <div className="text-lg md:text-xl font-medium text-stone font-inknut">
@@ -221,7 +232,8 @@ export function QuoteCarousel({
         variant="default"
         size="lg"
         onClick={goToPrevious}
-        className="fixed right-4 md:right-8 top-1/2 -translate-y-1/2 p-3 bg-stone hover:bg-stone/80 rounded-full text-white shadow-lg transition-all duration-200 z-50"
+        disabled={isTransitioning}
+        className="fixed right-4 md:right-8 top-1/2 -translate-y-1/2 p-3 bg-stone hover:bg-stone/80 rounded-full text-white shadow-lg transition-all duration-200 z-50 disabled:opacity-50"
         aria-label="Previous quote"
         style={{ 
           minWidth: '56px', 
