@@ -20,7 +20,8 @@ export const useAuth = (): AuthState & {
   const [authState, setAuthState] = useState<AuthState>(() => {
     // Always start with loading true to prevent flashing
     if (typeof window !== 'undefined') {
-      const _wasAuthenticated = localStorage.getItem('was-authenticated') === 'true'
+      const _wasAuthenticated =
+        localStorage.getItem('was-authenticated') === 'true'
       return {
         user: null,
         session: null,
@@ -127,14 +128,17 @@ export const useAuth = (): AuthState & {
             })
 
             // Update profile in background (non-blocking)
-            authHelpers.getUserProfile(user.id)
+            authHelpers
+              .getUserProfile(user.id)
               .then(freshProfile => {
                 if (freshProfile && mountedRef.current) {
                   setCachedProfile(user.id, freshProfile)
                   setAuthState(prev => ({ ...prev, profile: freshProfile }))
                 }
               })
-              .catch(err => console.warn('Background profile update failed:', err))
+              .catch(err =>
+                console.warn('Background profile update failed:', err)
+              )
           } else {
             // For new users or no cache, load profile synchronously
             try {
@@ -212,7 +216,6 @@ export const useAuth = (): AuthState & {
     setError(null)
 
     try {
-
       // Clear all cached data immediately
       const userId = authState.user?.id
       if (userId) {
@@ -268,7 +271,7 @@ export const useAuth = (): AuthState & {
     }
     window.addEventListener('storage', handleStorageChange)
     window.addEventListener('localStorageChanged', handleStorageChange)
-    return () => {
+    return (): void => {
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('localStorageChanged', handleStorageChange)
     }
@@ -289,7 +292,7 @@ export const useAuth = (): AuthState & {
     } catch (error) {
       console.error('Profile refresh error:', error)
     }
-  }, [authState.user])
+  }, [authState.user, clearCachedProfile, setCachedProfile])
 
   const updateProfile = useCallback(
     async (updates: Partial<UserProfile>) => {
@@ -311,7 +314,7 @@ export const useAuth = (): AuthState & {
         )
       }
     },
-    [authState.user, setError, setCachedProfile, clearCachedProfile]
+    [authState.user, setError, setCachedProfile]
   )
 
   useEffect(() => {
@@ -322,7 +325,7 @@ export const useAuth = (): AuthState & {
 
     const initializeAuth = async (): Promise<void> => {
       const timeouts = getTimeouts()
-      let timeoutId: NodeJS.Timeout | null = null
+      const timeoutId: NodeJS.Timeout | null = null
 
       try {
         // Check if user was previously authenticated
@@ -334,95 +337,119 @@ export const useAuth = (): AuthState & {
 
         // Use getUser() for more reliable auth verification in production
         const userPromise = exponentialBackoff(
-          () => supabase.auth.getUser(),
+          async () => {
+            console.log('🔍 Checking auth status...')
+            const result = await supabase.auth.getUser()
+            if (result.error) {
+              console.error(
+                '❌ Auth check error:',
+                result.error.message,
+                result.error
+              )
+            } else if (result.data.user) {
+              console.log('✅ User found:', result.data.user.email)
+            } else {
+              console.log('⚠️ No user found')
+            }
+            return result
+          },
           {
-            maxRetries: 1, // Just one retry for fast initial load
-            shouldRetry: (error) => {
+            maxRetries: 2, // Increased retries for production reliability
+            shouldRetry: error => {
               // Don't retry on auth errors
-              if (error?.message?.includes('401') || 
-                  error?.message?.includes('403') ||
-                  error?.message?.includes('Invalid')) {
+              if (
+                error?.message?.includes('401') ||
+                error?.message?.includes('403') ||
+                error?.message?.includes('Invalid')
+              ) {
                 return false
               }
               return true
-            }
+            },
           }
         )
 
         // Quick auth check with aggressive timeout - use getUser() for reliability
         const authPromise = Promise.race([
           userPromise,
-          new Promise<{ data: { user: null }, error: null }>(resolve => setTimeout(() => {
-            console.warn('⏱️ Auth timeout - using cached state')
-            resolve({ data: { user: null }, error: null })
-          }, timeouts.authInit))
-        ]).then(async result => {
-          if (mounted && mountedRef.current) {
-            const user = result?.data?.user
-            
-            if (user) {
-              // User is authenticated - get session
-              localStorage.setItem('was-authenticated', 'true')
-              
-              const { data: { session } } = await supabase.auth.getSession()
-              
-              // Fast path - use cached profile if available
-              const cachedProfile = getCachedProfile(user.id)
-              setAuthState({
-                user,
-                session,
-                profile: cachedProfile,
-                loading: false,
-                error: null,
-              })
-              
-              // Update profile in background if no cache
-              if (!cachedProfile) {
-                updateAuthState(user, session).catch(console.warn)
+          new Promise<{ data: { user: null }; error: null }>(resolve =>
+            setTimeout(() => {
+              console.warn('⏱️ Auth timeout - using cached state')
+              resolve({ data: { user: null }, error: null })
+            }, timeouts.authInit)
+          ),
+        ])
+          .then(async result => {
+            if (mounted && mountedRef.current) {
+              const user = result?.data?.user
+
+              if (user) {
+                // User is authenticated - get session
+                localStorage.setItem('was-authenticated', 'true')
+
+                const {
+                  data: { session },
+                } = await supabase.auth.getSession()
+
+                // Fast path - use cached profile if available
+                const cachedProfile = getCachedProfile(user.id)
+                setAuthState({
+                  user,
+                  session,
+                  profile: cachedProfile,
+                  loading: false,
+                  error: null,
+                })
+
+                // Update profile in background if no cache
+                if (!cachedProfile) {
+                  updateAuthState(user, session).catch(console.warn)
+                }
+              } else if (result && !wasAuthenticated) {
+                // Clear auth if definitive "no user" response and user wasn't previously authenticated
+                localStorage.removeItem('was-authenticated')
+                setAuthState({
+                  user: null,
+                  session: null,
+                  profile: null,
+                  loading: false,
+                  error: null,
+                })
+              } else {
+                // Timeout or preserve existing state
+                setAuthState(prev => ({ ...prev, loading: false }))
               }
-            } else if (result && !wasAuthenticated) {
-              // Clear auth if definitive "no user" response and user wasn't previously authenticated
-              localStorage.removeItem('was-authenticated')
-              setAuthState({
-                user: null,
-                session: null,
-                profile: null,
-                loading: false,
-                error: null,
-              })
-            } else {
-              // Timeout or preserve existing state
-              setAuthState(prev => ({ ...prev, loading: false }))
             }
-          }
-        }).catch(error => {
-          console.warn('⚠️ Auth check failed:', error)
-          
-          if (mounted && mountedRef.current) {
-            const isAuthError = error?.message?.includes('401') || 
-                                error?.message?.includes('403') ||
-                                error?.message?.includes('Invalid token')
-            
-            if (isAuthError) {
-              localStorage.removeItem('was-authenticated')
-              setAuthState({
-                user: null,
-                session: null,
-                profile: null,
-                loading: false,
-                error: null,
-              })
-            } else {
-              // Network/timeout error - just stop loading
-              setAuthState(prev => ({ ...prev, loading: false }))
+          })
+          .catch(error => {
+            console.warn('⚠️ Auth check failed:', error)
+
+            if (mounted && mountedRef.current) {
+              const isAuthError =
+                error?.message?.includes('401') ||
+                error?.message?.includes('403') ||
+                error?.message?.includes('Invalid token')
+
+              if (isAuthError) {
+                localStorage.removeItem('was-authenticated')
+                setAuthState({
+                  user: null,
+                  session: null,
+                  profile: null,
+                  loading: false,
+                  error: null,
+                })
+              } else {
+                // Network/timeout error - just stop loading
+                setAuthState(prev => ({ ...prev, loading: false }))
+              }
             }
-          }
-        })
+          })
 
         await authPromise
       } catch (error) {
         console.error('❌ Auth initialization error:', error)
-        
+
         // Clean up timeout
         if (timeoutId) {
           clearTimeout(timeoutId)
@@ -452,7 +479,11 @@ export const useAuth = (): AuthState & {
     const {
       data: { subscription },
     } = authHelpers.onAuthStateChange(async (event, session) => {
-      console.log('🔐 Auth state change:', event, session?.user?.email || 'no user')
+      console.log(
+        '🔐 Auth state change:',
+        event,
+        session?.user?.email || 'no user'
+      )
 
       if (mounted && mountedRef.current) {
         try {
@@ -485,20 +516,23 @@ export const useAuth = (): AuthState & {
                 error: null,
               })
             } else {
-              console.log('⚠️ Session lost but not explicit logout, keeping loading state')
+              console.log(
+                '⚠️ Session lost but not explicit logout, keeping loading state'
+              )
             }
           }
         } catch (error) {
           console.error('Auth state change error:', error)
           // Only clear auth on actual auth errors, not network issues
-          const isAuthError = error?.message?.includes('401') || 
-                              error?.message?.includes('403') ||
-                              error?.message?.includes('Invalid')
-          
+          const isAuthError =
+            error?.message?.includes('401') ||
+            error?.message?.includes('403') ||
+            error?.message?.includes('Invalid')
+
           if (isAuthError) {
             localStorage.removeItem('was-authenticated')
           }
-          
+
           setAuthState({
             user: null,
             session: null,
@@ -515,7 +549,7 @@ export const useAuth = (): AuthState & {
       initializingRef.current = false
       subscription.unsubscribe()
     }
-  }, [updateAuthState, setError, isClient])
+  }, [updateAuthState, setError, isClient, getCachedProfile])
 
   return {
     ...authState,
