@@ -355,12 +355,14 @@ export const useAuth = (): AuthState & {
           },
           {
             maxRetries: 2, // Increased retries for production reliability
-            shouldRetry: error => {
+            shouldRetry: (error: unknown) => {
               // Don't retry on auth errors
+              const errorMessage =
+                error instanceof Error ? error.message : String(error)
               if (
-                error?.message?.includes('401') ||
-                error?.message?.includes('403') ||
-                error?.message?.includes('Invalid')
+                errorMessage?.includes('401') ||
+                errorMessage?.includes('403') ||
+                errorMessage?.includes('Invalid')
               ) {
                 return false
               }
@@ -421,14 +423,16 @@ export const useAuth = (): AuthState & {
               }
             }
           })
-          .catch(error => {
+          .catch((error: unknown) => {
             console.warn('⚠️ Auth check failed:', error)
 
             if (mounted && mountedRef.current) {
+              const errorMessage =
+                error instanceof Error ? error.message : String(error)
               const isAuthError =
-                error?.message?.includes('401') ||
-                error?.message?.includes('403') ||
-                error?.message?.includes('Invalid token')
+                errorMessage?.includes('401') ||
+                errorMessage?.includes('403') ||
+                errorMessage?.includes('Invalid token')
 
               if (isAuthError) {
                 localStorage.removeItem('was-authenticated')
@@ -521,13 +525,15 @@ export const useAuth = (): AuthState & {
               )
             }
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Auth state change error:', error)
           // Only clear auth on actual auth errors, not network issues
+          const errorMessage =
+            error instanceof Error ? error.message : String(error)
           const isAuthError =
-            error?.message?.includes('401') ||
-            error?.message?.includes('403') ||
-            error?.message?.includes('Invalid')
+            errorMessage?.includes('401') ||
+            errorMessage?.includes('403') ||
+            errorMessage?.includes('Invalid')
 
           if (isAuthError) {
             localStorage.removeItem('was-authenticated')
