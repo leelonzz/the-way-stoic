@@ -35,9 +35,9 @@ export const getTimeouts = (): {
   const isProd = isProduction()
 
   return {
-    // Auth timeouts - increased for better reliability
-    authInit: isProd ? 15000 : 5000, // 15s prod, 5s dev for initial auth
-    authStateChange: isProd ? 20000 : 10000, // 20s prod, 10s dev
+    // Auth timeouts - shorter for faster fallback
+    authInit: isProd ? 3000 : 5000, // 3s prod (faster fail), 5s dev for initial auth
+    authStateChange: isProd ? 5000 : 10000, // 5s prod, 10s dev
 
     // Data loading timeouts - can be longer since they're non-blocking
     dataFetch: isProd ? 30000 : 15000, // 30s prod, 15s dev
@@ -45,8 +45,8 @@ export const getTimeouts = (): {
     calendarFetch: isProd ? 30000 : 15000, // 30s prod, 15s dev
 
     // UI timeouts - quick for better UX
-    protectedRoute: isProd ? 10000 : 5000, // 10s prod, 5s dev
-    loadingScreen: isProd ? 15000 : 10000, // 15s prod, 10s dev
+    protectedRoute: isProd ? 5000 : 5000, // 5s both
+    loadingScreen: isProd ? 8000 : 10000, // 8s prod, 10s dev
   }
 }
 
