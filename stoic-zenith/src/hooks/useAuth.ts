@@ -318,7 +318,13 @@ export const useAuth = (): AuthState & {
   )
 
   useEffect(() => {
-    if (!isClient || initializingRef.current) return
+    if (!isClient) return
+    
+    // Prevent double initialization
+    if (initializingRef.current) {
+      console.log('⚠️ Auth already initializing, skipping...')
+      return
+    }
 
     initializingRef.current = true
     let mounted = true
@@ -331,6 +337,8 @@ export const useAuth = (): AuthState & {
         // Check if user was previously authenticated
         const wasAuthenticated =
           localStorage.getItem('was-authenticated') === 'true'
+
+        console.log('🚀 Starting auth initialization, wasAuthenticated:', wasAuthenticated)
 
         // Always start with loading true to prevent login screen flash
         setAuthState(prev => ({ ...prev, loading: true }))
@@ -360,8 +368,9 @@ export const useAuth = (): AuthState & {
                   loading: false,
                   error: null,
                 }
-                console.log('🔄 New auth state:', { userId: user.id, hasSession: !!session, loading: false })
-                setAuthState(newAuthState)
+                console.log('🔄 Setting new auth state:', { userId: user.id, hasSession: !!session, loading: false })
+                // Force a complete state replacement
+                setAuthState(() => newAuthState)
 
                 // Update profile in background if no cache
                 if (!cachedProfile) {
@@ -493,7 +502,27 @@ export const useAuth = (): AuthState & {
           if (session?.user) {
             console.log('✅ User session found, updating auth state')
             localStorage.setItem('was-authenticated', 'true')
-            await updateAuthState(session.user, session)
+            
+            // Directly set the auth state here instead of calling updateAuthState
+            const cachedProfile = getCachedProfile(session.user.id)
+            console.log('📝 Directly setting auth state from auth state change')
+            setAuthState(() => ({
+              user: session.user,
+              session,
+              profile: cachedProfile,
+              loading: false,
+              error: null,
+            }))
+            
+            // Update profile in background if needed
+            if (!cachedProfile) {
+              authHelpers.getUserProfile(session.user.id).then(profile => {
+                if (profile && mountedRef.current) {
+                  setCachedProfile(session.user.id, profile)
+                  setAuthState(prev => ({ ...prev, profile }))
+                }
+              }).catch(console.warn)
+            }
           } else {
             console.log('❌ No user session, event:', event)
             // Only clear auth state on explicit sign-out or user removal
@@ -554,7 +583,7 @@ export const useAuth = (): AuthState & {
       initializingRef.current = false
       subscription.unsubscribe()
     }
-  }, [updateAuthState, setError, isClient, getCachedProfile])
+  }, [updateAuthState, setError, isClient, getCachedProfile, setCachedProfile])
 
   const result = {
     ...authState,

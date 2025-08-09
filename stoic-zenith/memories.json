@@ -412,7 +412,61 @@
       "lastAccessed": "2025-08-07T09:07:40.616Z",
       "lastVerified": "2025-08-07T09:07:40.616Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1754733057233_9klj9oxo0",
+      "content": "Production Google OAuth issue analysis:\n- Site: www.thewaystoic.site\n- Errors: CSP violations blocking Google fonts and accounts.google.com\n- Auth flow: Shows \"SIGNED_IN\" but session not found\n- Environment: Works locally, fails in production\n- Root cause likely: CSP blocking critical OAuth resources",
+      "type": "config",
+      "tags": [
+        "config",
+        "oauth",
+        "csp",
+        "production-bug",
+        "google-auth"
+      ],
+      "timestamp": "2025-08-09T09:50:57.233Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T09:50:57.233Z",
+      "lastVerified": "2025-08-09T09:50:57.233Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754733122094_mh6jgq0d7",
+      "content": "Analysis of production Google OAuth issue:\n\nROOT CAUSE: CSP conflicts between next.config.ts CSP headers and Google Fonts/OAuth\n1. CSP in next.config.ts line 114 allows accounts.google.com for fonts but conflicts occur\n2. Layout.tsx uses preload links for Google Fonts (lines 40-49) which get blocked by CSP \n3. Next.js Google Font optimization (Inknut_Antiqua, Inika imports) conflicts with manual preload links\n4. OAuth flow: Auth code exchange works but session not properly established due to timing issues\n\nSPECIFIC PROBLEMS:\n1. Duplicate font loading methods causing CSP violations\n2. CSP doesn't include fonts.gstatic.com for font files themselves\n3. CSP missing googleapis.com for font CSS files\n4. Race condition between auth callback and session establishment\n\nENVIRONMENT: Production at www.thewaystoic.site, NEXT_PUBLIC_APP_URL set correctly",
+      "type": "config",
+      "tags": [
+        "config",
+        "optimization",
+        "oauth-analysis",
+        "csp-issue",
+        "google-fonts",
+        "production-bug"
+      ],
+      "timestamp": "2025-08-09T09:52:02.094Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T09:52:02.094Z",
+      "lastVerified": "2025-08-09T09:52:02.094Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754733187800_kea9s898f",
+      "content": "Production Google OAuth Authentication Issue Analysis:\n\n## Problem\n- Production site www.thewaystoic.site fails Google OAuth login\n- After Google login, redirects back but doesn't complete authentication\n- Console shows CSP violations blocking Google resources\n- Works fine on localhost\n\n## Root Causes Identified\n1. **CSP Configuration Issues** (next.config.ts line 114):\n   - Missing `fonts.gstatic.com` in font-src (only has fonts.googleapis.com in style-src)\n   - Missing `fonts.googleapis.com` in style-src directive\n   - Current font-src: 'self' data: https://accounts.google.com\n   - Needs: fonts.gstatic.com added for actual font files\n\n2. **Duplicate Font Loading** (app/layout.tsx lines 40-49):\n   - Manual preload links conflict with Next.js font optimization\n   - Using both next/font/google AND manual preload links\n   - Causes CSP violations and loading conflicts\n\n3. **Auth Callback Timing**:\n   - Code exchange succeeds but session establishment has race condition\n   - Need to add small delay after exchangeCodeForSession\n\n## Fix Required\n1. Update CSP font-src to include fonts.gstatic.com\n2. Add fonts.googleapis.com to style-src\n3. Remove manual font preload links (lines 40-49 in layout.tsx)\n4. Add session verification delay in auth callback",
+      "type": "config",
+      "tags": [
+        "config",
+        "authentication",
+        "optimization",
+        "google-oauth",
+        "csp",
+        "production-bug",
+        "stoic-zenith"
+      ],
+      "timestamp": "2025-08-09T09:53:07.800Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T09:53:07.800Z",
+      "lastVerified": "2025-08-09T09:53:07.800Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-07T09:07:40.616Z"
+  "lastUpdated": "2025-08-09T09:53:07.800Z"
 }
