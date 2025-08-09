@@ -19,10 +19,11 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps): Rea
     return false;
   });
   const [authTimeoutReached, setAuthTimeoutReached] = useState(false);
+  const [quickTimeout, setQuickTimeout] = useState(false);
 
   // Update wasAuthenticated whenever localStorage changes (cross-tab and same-tab)
   useEffect(() => {
-    const updateWasAuthenticated = () => {
+    const updateWasAuthenticated = (): void => {
       const newWasAuth = localStorage.getItem('was-authenticated') === 'true';
       setWasAuthenticated(newWasAuth);
       // Reset timeout when auth state changes
@@ -32,41 +33,68 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps): Rea
     };
     window.addEventListener('storage', updateWasAuthenticated);
     window.addEventListener('localStorageChanged', updateWasAuthenticated);
-    return () => {
+    return (): void => {
       window.removeEventListener('storage', updateWasAuthenticated);
       window.removeEventListener('localStorageChanged', updateWasAuthenticated);
     };
   }, []);
 
-  // Timeout for wasAuthenticated state to prevent infinite loading
+  // Quick timeout for initial render (8s)
+  useEffect(() => {
+    if (isLoading && !quickTimeout) {
+      const quickTimeoutId = setTimeout((): void => {
+        setQuickTimeout(true);
+      }, 8000); // 8 second quick timeout - more patient for auth
+
+      return (): void => clearTimeout(quickTimeoutId);
+    }
+  }, [isLoading, quickTimeout]);
+
+  // Longer timeout for wasAuthenticated state
   useEffect(() => {
     if (wasAuthenticated && !isAuthenticated && !isLoading) {
-      // Longer timeout for production due to network latency and CSP processing
-      const isProduction = process.env.NODE_ENV === 'production'
-      const timeoutDuration = isProduction ? 30000 : 15000 // 30s in production, 15s in dev
+      // Only start timeout after a brief delay to allow auth state to propagate
+      const initialDelayId = setTimeout((): void => {
+        if (!isAuthenticated && !isLoading) {
+          console.warn('⏱️ Auth state not updated after initial delay, starting timeout');
 
-      const timeoutId = setTimeout(() => {
-        console.warn(`ProtectedRoute: Authentication timeout reached after ${timeoutDuration/1000}s`);
-        console.warn('This may indicate a network issue or session expiry');
-        // Don't clear was-authenticated here - let useAuth manage it
-        setAuthTimeoutReached(true);
-      }, timeoutDuration);
+          // Longer timeout as fallback - be more patient (8 seconds)
+          const longTimeoutId = setTimeout((): void => {
+            if (!isAuthenticated) {
+              console.warn('🔐 Auth timeout - clearing session');
+              localStorage.removeItem('was-authenticated');
+              setWasAuthenticated(false);
+              setAuthTimeoutReached(true);
+              window.dispatchEvent(new Event('localStorageChanged'));
+            }
+          }, 8000); // 8 second timeout for safety
 
-      return () => clearTimeout(timeoutId);
-    } else if (isAuthenticated) {
-      // Reset timeout when user becomes authenticated
+          return (): void => {
+            clearTimeout(longTimeoutId);
+          };
+        }
+      }, 2000); // Wait 2 seconds before starting timeout logic
+
+      return (): void => {
+        clearTimeout(initialDelayId);
+      };
+    }
+
+    // Reset timeout when user becomes authenticated
+    if (isAuthenticated) {
       setAuthTimeoutReached(false);
+      setQuickTimeout(false);
     }
   }, [wasAuthenticated, isAuthenticated, isLoading]);
 
-  // Show minimal loading while checking authentication
-  if (isLoading) {
+  // Show minimal loading while checking authentication (with quick timeout)
+  if (isLoading && !quickTimeout) {
     return <MinimalLoadingScreen />;
   }
 
   // If user was previously authenticated but not currently authenticated,
-  // show loading to prevent login screen flash (but with timeout)
-  if (wasAuthenticated && !isAuthenticated && !authTimeoutReached) {
+  // show loading briefly to prevent login screen flash
+  if (wasAuthenticated && !isAuthenticated && !authTimeoutReached && !quickTimeout) {
     return <MinimalLoadingScreen />;
   }
 
