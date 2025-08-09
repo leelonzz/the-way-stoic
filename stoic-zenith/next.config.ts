@@ -107,7 +107,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://accounts.google.com https://vercel.live https://*.vercel.app; style-src 'self' 'unsafe-inline' https://accounts.google.com https://*.vercel.app https://fonts.googleapis.com; img-src 'self' data: https: *.googleusercontent.com *.supabase.co; font-src 'self' data: https://accounts.google.com https://fonts.googleapis.com https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://accounts.google.com https://oauth2.googleapis.com https://generativelanguage.googleapis.com https://*.vercel.app wss://*.supabase.co; frame-src https://accounts.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:; manifest-src 'self'",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://accounts.google.com https://vercel.live https://*.vercel.app; style-src 'self' 'unsafe-inline' https://accounts.google.com https://*.vercel.app https://fonts.googleapis.com https://*.gstatic.com; img-src 'self' data: https: *.googleusercontent.com *.supabase.co; font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com https://*.gstatic.com; connect-src 'self' https://*.supabase.co https://accounts.google.com https://oauth2.googleapis.com https://generativelanguage.googleapis.com https://*.vercel.app wss://*.supabase.co; frame-src https://accounts.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:; manifest-src 'self'",
           },
         ],
       },

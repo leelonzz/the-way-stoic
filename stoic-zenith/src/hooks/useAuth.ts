@@ -209,8 +209,9 @@ export const useAuth = (): AuthState & {
         localStorage.removeItem(`profile-${userId}`)
         localStorage.removeItem(`calendar-${userId}`)
       }
-      // Clear authentication marker immediately
+      // Clear authentication markers immediately
       localStorage.removeItem('was-authenticated')
+      localStorage.removeItem('last-user-id')
       // Dispatch custom event for same-tab listeners
       window.dispatchEvent(new Event('localStorageChanged'))
 
@@ -437,11 +438,13 @@ export const useAuth = (): AuthState & {
         try {
           if (session?.user) {
             localStorage.setItem('was-authenticated', 'true')
+            localStorage.setItem('last-user-id', session.user.id)
             await updateAuthState(session.user, session)
           } else {
             // Clear auth state for any sign out related events
             if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || !session) {
               localStorage.removeItem('was-authenticated')
+              localStorage.removeItem('last-user-id')
               setAuthState({
                 user: null,
                 session: null,
@@ -455,6 +458,7 @@ export const useAuth = (): AuthState & {
           console.error('Auth state change error:', error)
           // Clear auth state on error to prevent stuck states
           localStorage.removeItem('was-authenticated')
+          localStorage.removeItem('last-user-id')
           setAuthState({
             user: null,
             session: null,

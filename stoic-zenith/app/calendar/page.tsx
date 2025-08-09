@@ -3,7 +3,7 @@
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { NavigationOptimizedCachedPage } from '@/components/layout/NavigationOptimizedCachedPage'
-import LifeCalendar from '@/components/pages-components/LifeCalendar'
+import LifeCalendar from '@/components/calendar/LifeCalendarGrid'
 
 // Force dynamic rendering to prevent static generation issues with AuthProvider
 export const dynamic = 'force-dynamic'
