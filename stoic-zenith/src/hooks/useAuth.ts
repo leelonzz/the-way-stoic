@@ -348,17 +348,20 @@ export const useAuth = (): AuthState & {
               if (user && session) {
                 // User is authenticated
                 console.log('✅ Session found for user:', user.email)
+                console.log('📊 Setting auth state with user:', user.id)
                 localStorage.setItem('was-authenticated', 'true')
 
                 // Fast path - use cached profile if available
                 const cachedProfile = getCachedProfile(user.id)
-                setAuthState({
+                const newAuthState = {
                   user,
                   session,
                   profile: cachedProfile,
                   loading: false,
                   error: null,
-                })
+                }
+                console.log('🔄 New auth state:', { userId: user.id, hasSession: !!session, loading: false })
+                setAuthState(newAuthState)
 
                 // Update profile in background if no cache
                 if (!cachedProfile) {
@@ -553,7 +556,7 @@ export const useAuth = (): AuthState & {
     }
   }, [updateAuthState, setError, isClient, getCachedProfile])
 
-  return {
+  const result = {
     ...authState,
     signInWithGoogle,
     signOut,
@@ -562,6 +565,18 @@ export const useAuth = (): AuthState & {
     isAuthenticated: !!authState.user,
     isLoading: authState.loading,
   }
+  
+  // Debug log the current auth state
+  useEffect(() => {
+    console.log('🔐 Current auth state:', {
+      hasUser: !!authState.user,
+      userId: authState.user?.id,
+      isAuthenticated: !!authState.user,
+      isLoading: authState.loading,
+    })
+  }, [authState])
+  
+  return result
 }
 
 export default useAuth
