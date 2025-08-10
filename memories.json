@@ -5599,7 +5599,28 @@
       "lastAccessed": "2025-08-10T03:32:18.877Z",
       "lastVerified": "2025-08-10T03:32:18.877Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1754797313454_moy5jgw1m",
+      "content": "Fixed initial navigation delay in The Stoic Way app by implementing immediate prefetching optimizations:\n\n## Key Changes Made:\n\n1. **ImmediatePrefetchProvider** - New provider that starts prefetching routes immediately on app mount (before auth), no delays\n   - Priority routes (/, /quotes, /quotes?tab=library) prefetch instantly\n   - Secondary routes prefetch after 100ms\n   - Positioned high in provider hierarchy for earliest execution\n\n2. **Zero Delay Prefetching** - Modified AggressivePrefetchProvider:\n   - Reduced delayMs from 1500ms to 0ms\n   - Disabled onIdle waiting (onIdle: false)\n   - Removed setTimeout wrapper - executes immediately\n\n3. **Static Generation** - Added generateStaticParams to quotes page for build-time pre-rendering\n\n4. **Lazy Loading Optimization** - Created LazyComponents.tsx:\n   - Dynamic imports for heavy components (HomePage, DailyStoicWisdom, Journal)\n   - Selective SSR control (HomePage keeps SSR for SEO, others client-only)\n   - Proper loading fallbacks for each component\n\n5. **Bundle Splitting** - Updated page imports to use lazy components:\n   - app/page.tsx uses LazyHomePage\n   - app/quotes/page.tsx uses LazyDailyStoicWisdom  \n   - app/journal/page.tsx uses LazyJournalPage\n\n## Results:\n- Prefetching now starts immediately on app load (not after 1.5-2s delay)\n- Critical routes load instantly on first navigation\n- Smaller initial JavaScript bundles\n- Better code splitting and lazy loading",
+      "type": "solution",
+      "tags": [
+        "solution",
+        "javascript",
+        "optimization",
+        "navigation-optimization",
+        "prefetching",
+        "lazy-loading",
+        "performance",
+        "bundle-splitting",
+        "stoic-way"
+      ],
+      "timestamp": "2025-08-10T03:41:53.454Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-10T03:41:53.454Z",
+      "lastVerified": "2025-08-10T03:41:53.454Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-10T03:32:18.877Z"
+  "lastUpdated": "2025-08-10T03:41:53.454Z"
 }

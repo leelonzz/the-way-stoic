@@ -875,13 +875,41 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
         return
       }
 
-      // Handle Enter key - let it create line breaks within blocks (default behavior)
-      // Only handle Enter for image blocks to create new blocks after them
-      if (e.key === 'Enter' && !showCommandMenu && block.type === 'image') {
-        e.preventDefault()
-        const newBlockId = addBlock(blockId)
-        focusBlock(newBlockId, 'start')
-        return
+      // Handle Enter key for list continuation and image blocks
+      if (e.key === 'Enter' && !showCommandMenu) {
+        // Handle image blocks - create new paragraph block after them
+        if (block.type === 'image') {
+          e.preventDefault()
+          const newBlockId = addBlock(blockId)
+          focusBlock(newBlockId, 'start')
+          return
+        }
+
+        // Handle list continuation
+        if (block.type === 'bullet-list' || block.type === 'numbered-list') {
+          e.preventDefault()
+
+          // If the current list item is empty, convert it to a paragraph
+          if (!block.text || block.text.trim() === '') {
+            updateBlock(blockId, {
+              type: 'paragraph',
+              level: undefined,
+              text: '',
+              richText: '',
+            })
+            return
+          }
+
+          // Create a new list item of the same type
+          const newBlockId = addBlock(blockId, {
+            type: block.type,
+            level: block.level,
+          })
+          focusBlock(newBlockId, 'start')
+          return
+        }
+
+        // For other block types, allow default Enter behavior (line breaks within blocks)
       }
 
       // Handle arrow key navigation for image blocks
@@ -938,7 +966,7 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
               richText: '',
             })
 
-            // Focus the transformed block
+            // Focus the transformed block and place cursor at the beginning
             setTimeout(() => {
               const element = document.querySelector(
                 `[data-block-id="${blockId}"] [contenteditable]`
@@ -1132,7 +1160,13 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
     // Handle image blocks specially
     if (block.type === 'image') {
       return (
-        <div key={block.id} data-block-id={block.id} className={`${blockClassName} mb-4`}>
+        <div
+          key={block.id}
+          data-block-id={block.id}
+          data-block-type={block.type}
+          data-block-level={block.level}
+          className={`${blockClassName} mb-4`}
+        >
           {block.imageUrl ? (
             <img
               src={block.imageUrl}
@@ -1159,7 +1193,13 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
 
     // Handle text blocks with SimplifiedRichTextEditor
     return (
-      <div key={block.id} data-block-id={block.id} className={blockClassName}>
+      <div
+        key={block.id}
+        data-block-id={block.id}
+        data-block-type={block.type}
+        data-block-level={block.level}
+        className={blockClassName}
+      >
         <SimplifiedRichTextEditor
           key={block.id} // Stable key to prevent re-mounting
           block={block}

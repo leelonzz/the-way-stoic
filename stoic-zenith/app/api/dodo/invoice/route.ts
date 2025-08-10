@@ -22,9 +22,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // Initialize Supabase with service role key for server-side operations
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json({ error: 'Configuration error' }, { status: 500 })
+    }
+    
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      supabaseUrl,
+      supabaseServiceKey
     )
 
     // Validate user exists and get their dodo_customer_id
@@ -100,9 +107,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Same logic as GET but with POST body
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json({ error: 'Configuration error' }, { status: 500 })
+    }
+    
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      supabaseUrl,
+      supabaseServiceKey
     )
 
     const { data: profile, error: profileError } = await supabase

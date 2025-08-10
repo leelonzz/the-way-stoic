@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Loader2, Receipt, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
-export default function BillingPortalPage() {
+export default function BillingPortalPage(): JSX.Element {
   const { user, loading } = useUser()
   const router = useRouter()
 
@@ -21,7 +21,7 @@ export default function BillingPortalPage() {
     }
 
     // Automatically redirect to customer portal
-    const redirectToPortal = async () => {
+    const redirectToPortal = async (): Promise<void> => {
       try {
         const response = await fetch('/api/dodo/customer-portal', {
           method: 'POST',
@@ -80,7 +80,7 @@ export default function BillingPortalPage() {
           </div>
           
           <p className="text-sm text-stone">
-            You'll be redirected to your secure billing portal where you can:
+            You&apos;ll be redirected to your secure billing portal where you can:
           </p>
           
           <ul className="text-sm text-stone text-left space-y-1">

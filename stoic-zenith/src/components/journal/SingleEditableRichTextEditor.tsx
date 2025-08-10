@@ -458,7 +458,7 @@ export function SingleEditableRichTextEditor({
       }
 
       // Get text from block element and clean it
-      let text = blockElement.textContent || ''
+      const text = blockElement.textContent || ''
 
       // Clean the text by removing zero-width spaces and other invisible characters
       const cleanText = text.replace(/[\u200B-\u200D\uFEFF]/g, '')

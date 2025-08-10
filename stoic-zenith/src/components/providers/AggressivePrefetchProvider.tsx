@@ -19,11 +19,10 @@ export function AggressivePrefetchProvider({ children }: AggressivePrefetchProvi
       '/quotes?tab=library',
       '/quotes?tab=favorites', 
       '/quotes?tab=my-quotes',
-      '/mentors',
-      '/calendar'
+      '/mentors'
     ],
-    delayMs: 1500, // Start prefetching after 1.5 seconds
-    onIdle: true,
+    delayMs: 0, // No delay - start immediately
+    onIdle: false, // Don't wait for idle
     prefetchData: true
   })
 
@@ -33,12 +32,8 @@ export function AggressivePrefetchProvider({ children }: AggressivePrefetchProvi
       // Clear any existing cache and start fresh prefetch
       clearPrefetchCache()
       
-      // Start aggressive prefetching after a short delay
-      const timer = setTimeout(() => {
-        prefetchAllRoutes()
-      }, 2000)
-      
-      return () => clearTimeout(timer)
+      // Start aggressive prefetching immediately
+      prefetchAllRoutes()
     }
   }, [isAuthenticated, isLoading, prefetchAllRoutes, clearPrefetchCache])
 

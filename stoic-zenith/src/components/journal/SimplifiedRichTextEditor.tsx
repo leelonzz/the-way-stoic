@@ -35,7 +35,7 @@ const restoreCursorPosition = (element: HTMLElement, position: { start: number; 
 
   const range = document.createRange()
   let charIndex = 0
-  let nodeStack = [element]
+  const nodeStack = [element]
   let node: Node | undefined
   let foundStart = false
   let foundEnd = false

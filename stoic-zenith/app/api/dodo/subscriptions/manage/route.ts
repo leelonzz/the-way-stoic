@@ -2,22 +2,29 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 // Use service role client for subscription management
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('Missing required Supabase environment variables')
+}
+
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  supabaseUrl,
+  supabaseServiceKey
 )
 
 interface SubscriptionUpdateRequest {
   subscriptionId: string
   action: 'cancel' | 'update' | 'reactivate'
   cancelAtNextBilling?: boolean
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 /**
  * GET - Retrieve user's subscription details
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
@@ -87,7 +94,7 @@ export async function GET(request: NextRequest) {
 /**
  * POST - Update subscription (cancel, reactivate, etc.)
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body: SubscriptionUpdateRequest = await request.json()
     const { subscriptionId, action, cancelAtNextBilling, metadata } = body
@@ -100,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     let dodoResponse: Response
-    let updateData: any = {}
+    let updateData: Record<string, unknown> = {}
 
     switch (action) {
       case 'cancel':

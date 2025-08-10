@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Landing page build files
+landing-page-stoicm/.next/
+landing-page-stoicm/out/
+landing-page-stoicm/dist/
+
+# Other
+*.log
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

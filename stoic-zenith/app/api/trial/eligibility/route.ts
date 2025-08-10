@@ -5,7 +5,7 @@ import { checkTrialEligibility, recordTrialUsage } from '@/lib/trial-prevention'
 /**
  * GET - Check if user is eligible for trial
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // Authenticate the request
     const user = await authenticateRequest(request)
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 /**
  * POST - Start trial for eligible user
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Authenticate the request
     const user = await authenticateRequest(request)
