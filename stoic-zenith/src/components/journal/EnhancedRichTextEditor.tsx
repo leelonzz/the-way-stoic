@@ -200,7 +200,23 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
           range.collapse(false)
         } else {
           // Place cursor at the start
-          range.setStart(contentEditable, 0)
+          // For list items, ensure cursor is positioned in the text area
+          if (block.type === 'bullet-list' || block.type === 'numbered-list') {
+            // If there's text content, position at the beginning of the text
+            if (contentEditable.textContent && contentEditable.textContent.length > 0) {
+              const textNode = contentEditable.firstChild
+              if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+                range.setStart(textNode, 0)
+              } else {
+                range.setStart(contentEditable, 0)
+              }
+            } else {
+              // For empty list items, position at the start of the contentEditable
+              range.setStart(contentEditable, 0)
+            }
+          } else {
+            range.setStart(contentEditable, 0)
+          }
           range.collapse(true)
         }
 

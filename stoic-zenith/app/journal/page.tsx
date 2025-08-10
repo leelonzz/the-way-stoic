@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import { LazyJournalPage } from '@/components/lazy/LazyComponents'
+import Journal from '@/components/pages-components/Journal'
 import { ErrorBoundary } from 'react-error-boundary'
 import { prefetchJournal } from '@/lib/prefetch'
 import { useAuthContext } from '@/components/auth/AuthProvider'
@@ -87,7 +87,7 @@ function JournalWithPrefetch(): JSX.Element {
   }, [user?.id, queryClient])
 
   // Try the actual Journal component
-  return <LazyJournalPage />
+  return <Journal />
   // return <SimpleJournalTest />
 }
 

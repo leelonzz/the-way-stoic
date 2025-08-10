@@ -3,7 +3,7 @@
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { NavigationOptimizedCachedPage } from '@/components/layout/NavigationOptimizedCachedPage'
-import { LazyDailyStoicWisdom } from '@/components/lazy/LazyComponents'
+import { DailyStoicWisdom } from '@/components/quotes/DailyStoicWisdom'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 function QuotesSkeleton(): JSX.Element {
@@ -68,18 +68,10 @@ export default function QuotesPage(): JSX.Element {
           maxAge={8 * 60 * 1000} // 8 minutes - balanced for quote freshness
           navigationRefreshThreshold={2 * 60 * 1000} // 2 minutes for quote content
         >
-          <LazyDailyStoicWisdom />
+          <DailyStoicWisdom />
         </NavigationOptimizedCachedPage>
       </AppLayout>
     </ProtectedRoute>
   )
 }
 
-// Export static params for build-time generation
-export async function generateStaticParams() {
-  return [
-    { tab: 'library' },
-    { tab: 'favorites' },
-    { tab: 'my-quotes' }
-  ]
-}

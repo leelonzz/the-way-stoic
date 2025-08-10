@@ -20,6 +20,7 @@ export function useCachedJournal() {
   const queryClient = useQueryClient()
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null)
   const [syncStatus, setSyncStatus] = useState<'syncing' | 'synced' | 'error'>('synced')
+  const [isCreatingEntry, setIsCreatingEntry] = useState(false)
 
   console.log('👤 User context:', { userId: user?.id, userEmail: user?.email })
 
@@ -201,9 +202,9 @@ export function useCachedJournal() {
     }))
   }, [entriesQuery.data])
 
-  // Auto-select entry when entries load
+  // Auto-select entry when entries load (but not during entry creation)
   useEffect(() => {
-    if (!selectedEntry && entriesWithAccessTimes.length > 0) {
+    if (!selectedEntry && entriesWithAccessTimes.length > 0 && !isCreatingEntry) {
       const entriesWithAccess = entriesWithAccessTimes.filter(entry => entry.lastAccessedAt)
       
       let entryToSelect: typeof entriesWithAccessTimes[0] | undefined
@@ -228,7 +229,7 @@ export function useCachedJournal() {
         recordEntryAccess(entryToSelect.id)
       }
     }
-  }, [entriesWithAccessTimes, selectedEntry])
+  }, [entriesWithAccessTimes, selectedEntry, isCreatingEntry])
 
   // Record entry access function
   const recordEntryAccess = (entryId: string) => {
@@ -253,6 +254,9 @@ export function useCachedJournal() {
   // Create new entry function - INSTANT (0ms) - FIXED: Ensure localStorage before selection
   const handleCreateEntry = () => {
     if (!user?.id) return
+
+    // Set creation flag to prevent auto-selection interference
+    setIsCreatingEntry(true)
     
     // CREATION LOCK: Prevent rapid duplicate creation attempts
     const lastCreateTime = typeof window !== 'undefined' 
@@ -293,29 +297,37 @@ export function useCachedJournal() {
       const currentEntries = entriesQuery.data || []
       const deduplicatedEntries = currentEntries.filter(entry => entry.id !== newEntry.id)
       
+      // Record access time BEFORE updating UI to prevent race conditions
+      recordEntryAccess(newEntry.id)
+
       // Optimistically update the entries list immediately (0ms)
       queryClient.setQueryData(['journal-entries', user.id], [newEntry, ...deduplicatedEntries])
-      
-      // Select the new entry only after localStorage verification
+
+      // Select the new entry only after localStorage verification and access recording
       setSelectedEntry(newEntry)
-      recordEntryAccess(newEntry.id)
-      
+
+      // Clear creation flag after successful creation and selection
+      setIsCreatingEntry(false)
+
       console.log(`✅ Entry created and selected: ${newEntry.id}`)
-      
+
       // Background refetch (non-blocking)
       entriesQuery.refetch()
       
     } catch (error) {
       console.error('Failed to create entry:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      
+
+      // Clear creation flag on error
+      setIsCreatingEntry(false)
+
       // Handle specific error cases
       if (errorMessage.includes('creation blocked') || errorMessage.includes('another creation in progress')) {
         // This is expected behavior - don't show error toast
         console.log('✅ Creation appropriately blocked to prevent duplicates')
         return
       }
-      
+
       toast({
         title: "Entry creation failed",
         description: "Failed to create new entry. Please try again.",
@@ -371,7 +383,6 @@ export function useCachedJournal() {
       
       if (!existingEntry) {
         console.warn(`⚠️ Cannot update entry ${entryId} - entry not found in localStorage. Skipping update.`)
-        console.log('Available entries:', manager.getAllFromLocalStorage().map(e => e.id))
         return
       }
       

@@ -465,7 +465,9 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
           minHeight: '1.5rem',
-          padding: '0.5rem',
+          padding: block.type === 'bullet-list' || block.type === 'numbered-list'
+            ? '0.5rem 0.5rem 0.5rem 0' // Remove left padding for list items
+            : '0.5rem',
           borderRadius: '0.375rem',
           lineHeight: '1.8',
         }}

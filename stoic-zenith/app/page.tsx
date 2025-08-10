@@ -5,7 +5,7 @@ import { useAuthContext } from "@/components/auth/AuthProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { NavigationOptimizedCachedPage } from "@/components/layout/NavigationOptimizedCachedPage";
-import { LazyHomePage } from "@/components/lazy/LazyComponents";
+import HomePage from "@/components/HomePage";
 import LandingPage from "@/components/LandingPage";
 import LoginScreen from "@/components/auth/LoginScreen";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -95,7 +95,7 @@ function AppContent() {
           maxAge={10 * 60 * 1000} // 10 minutes - longer cache for better navigation
           navigationRefreshThreshold={3 * 60 * 1000} // 3 minutes for quote content
         >
-          <LazyHomePage />
+          <HomePage />
         </NavigationOptimizedCachedPage>
       </AppLayout>
     </ProtectedRoute>

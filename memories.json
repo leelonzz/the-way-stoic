@@ -284,8 +284,8 @@
       ],
       "timestamp": "2025-07-31T22:58:58.884Z",
       "context": "Completed The Way Stoic app feature implementation",
-      "accessCount": 33,
-      "lastAccessed": "2025-08-10T03:13:06.029Z",
+      "accessCount": 32,
+      "lastAccessed": "2025-08-09T05:30:55.622Z",
       "lastVerified": "2025-07-31T22:58:58.884Z",
       "status": "fresh"
     },
@@ -1640,8 +1640,8 @@
         "completed"
       ],
       "timestamp": "2025-08-02T03:04:46.847Z",
-      "accessCount": 2,
-      "lastAccessed": "2025-08-10T03:13:06.029Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-08T04:56:06.936Z",
       "lastVerified": "2025-08-02T03:04:46.847Z",
       "status": "fresh"
     },
@@ -3131,8 +3131,8 @@
       ],
       "timestamp": "2025-08-03T11:41:42.501Z",
       "context": "Completed navigation performance optimization for The Way Stoic app",
-      "accessCount": 3,
-      "lastAccessed": "2025-08-10T03:13:06.029Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-10T02:56:14.879Z",
       "lastVerified": "2025-08-03T11:41:42.501Z",
       "status": "fresh"
     },
@@ -3401,8 +3401,8 @@
       ],
       "timestamp": "2025-08-04T02:28:35.917Z",
       "context": "Journal application bug fixes - comprehensive solution implemented and tested",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-10T03:13:06.029Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-04T02:28:35.917Z",
       "lastVerified": "2025-08-04T02:28:35.917Z",
       "status": "fresh"
     },
@@ -3439,8 +3439,8 @@
       ],
       "timestamp": "2025-08-04T02:59:35.637Z",
       "context": "Journal code analysis for navigation bug fixes",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-10T03:13:06.029Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-04T02:59:35.637Z",
       "lastVerified": "2025-08-04T02:59:35.637Z",
       "status": "fresh"
     },
@@ -3460,8 +3460,8 @@
       ],
       "timestamp": "2025-08-04T03:07:02.755Z",
       "context": "Journal navigation bug fixes completed",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-10T03:13:06.029Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-04T03:07:02.755Z",
       "lastVerified": "2025-08-04T03:07:02.755Z",
       "status": "fresh"
     },
@@ -3714,8 +3714,8 @@
       ],
       "timestamp": "2025-08-05T06:54:40.288Z",
       "context": "User reported Dodo payments not working on Vercel production",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-05T06:54:40.288Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T03:59:55.290Z",
       "lastVerified": "2025-08-05T06:54:40.288Z",
       "status": "fresh"
     },
@@ -3734,8 +3734,8 @@
       ],
       "timestamp": "2025-08-05T07:01:28.743Z",
       "context": "Diagnosed Dodo payments integration failing on Vercel",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-05T07:01:28.743Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T03:59:55.290Z",
       "lastVerified": "2025-08-05T07:01:28.743Z",
       "status": "fresh"
     },
@@ -4202,8 +4202,8 @@
         "critical"
       ],
       "timestamp": "2025-08-06T12:09:14.549Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-06T12:09:14.549Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T03:59:55.290Z",
       "lastVerified": "2025-08-06T12:09:14.549Z",
       "status": "fresh"
     },
@@ -4222,8 +4222,8 @@
         "fixes"
       ],
       "timestamp": "2025-08-06T12:27:09.237Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-06T12:27:09.237Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T03:59:55.290Z",
       "lastVerified": "2025-08-06T12:27:09.237Z",
       "status": "fresh"
     },
@@ -4399,8 +4399,8 @@
         "hooks"
       ],
       "timestamp": "2025-08-07T04:08:45.245Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-10T03:13:06.029Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-07T04:08:45.245Z",
       "lastVerified": "2025-08-07T04:08:45.245Z",
       "status": "fresh"
     },
@@ -4831,8 +4831,8 @@
         "bug"
       ],
       "timestamp": "2025-08-08T04:57:08.446Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-08T04:57:08.446Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T03:59:55.290Z",
       "lastVerified": "2025-08-08T04:57:08.446Z",
       "status": "fresh"
     },
@@ -4852,8 +4852,8 @@
         "completed"
       ],
       "timestamp": "2025-08-08T05:03:40.014Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-08T05:03:40.014Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T03:59:55.290Z",
       "lastVerified": "2025-08-08T05:03:40.014Z",
       "status": "fresh"
     },
@@ -4872,8 +4872,8 @@
         "completed"
       ],
       "timestamp": "2025-08-08T05:14:39.427Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-08T05:14:39.427Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T03:59:55.290Z",
       "lastVerified": "2025-08-08T05:14:39.427Z",
       "status": "fresh"
     },
@@ -4948,8 +4948,8 @@
         "user-lookup"
       ],
       "timestamp": "2025-08-08T23:12:08.143Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-10T03:13:06.029Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-08T23:12:08.143Z",
       "lastVerified": "2025-08-08T23:12:08.143Z",
       "status": "fresh"
     },
@@ -5095,8 +5095,8 @@
       ],
       "timestamp": "2025-08-09T01:15:05.204Z",
       "context": "Quotes feature implementation complete",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-10T03:13:06.029Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T01:15:05.204Z",
       "lastVerified": "2025-08-09T01:15:05.204Z",
       "status": "fresh"
     },
@@ -5169,8 +5169,8 @@
         "success"
       ],
       "timestamp": "2025-08-09T01:40:16.957Z",
-      "accessCount": 2,
-      "lastAccessed": "2025-08-10T03:13:06.029Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-09T01:43:59.278Z",
       "lastVerified": "2025-08-09T01:40:16.957Z",
       "status": "fresh"
     },
@@ -5561,66 +5561,44 @@
       "status": "fresh"
     },
     {
-      "id": "mem_1754795683433_c1cyd3b5r",
-      "content": "User wants to add functionality for creating custom quotes in the \"My Quotes\" section. Current findings:\n\n1. Database table user_quotes already exists with proper schema\n2. MyOwnQuotes component exists but not integrated into DailyStoicWisdom\n3. useCachedQuotes hook has stub implementations for createUserQuote, updateUserQuote, deleteUserQuote\n4. Current \"My Quotes\" tab shows empty state with message \"Create your own quotes in the main quotes section\"\n5. Need to:\n   - Implement actual functions in useCachedQuotes hook\n   - Add floating action button (FAB) for creating quotes\n   - Integrate MyOwnQuotes component or create simpler inline solution\n   - Style to match the existing design pattern",
-      "type": "solution",
+      "id": "mem_1754796301204_fvk0a6m2m",
+      "content": "Auto-save functionality FIXED:\n- Problem: \"Save failed\" error when typing in journal entries\n- Root cause: Entry ID mismatch - update function received block IDs with \"-initial\" suffix instead of entry IDs\n- Solutions implemented:\n  1. Added ID cleaning in performSimpleUpdate to strip \"-initial\" suffixes\n  2. Enhanced error handling with better logging\n  3. Fixed sync queue to use correct entry ID\n  4. Added debugging logs to track ID flow\n- Status: RESOLVED - Server restarted on localhost:3001 for testing",
+      "type": "troubleshooting",
       "tags": [
-        "solution",
-        "database",
-        "quotes",
-        "user-quotes",
-        "custom-quotes",
-        "implementation-plan"
+        "troubleshooting",
+        "testing",
+        "journal",
+        "auto-save",
+        "bug-fix",
+        "entry-id",
+        "resolved"
       ],
-      "timestamp": "2025-08-10T03:14:43.433Z",
+      "timestamp": "2025-08-10T03:25:01.203Z",
+      "context": "Fix for journal auto-save failure due to entry ID mismatch",
       "accessCount": 0,
-      "lastAccessed": "2025-08-10T03:14:43.433Z",
-      "lastVerified": "2025-08-10T03:14:43.433Z",
+      "lastAccessed": "2025-08-10T03:25:01.203Z",
+      "lastVerified": "2025-08-10T03:25:01.203Z",
       "status": "fresh"
     },
     {
-      "id": "mem_1754796738878_opoaqrfrj",
-      "content": "Implemented instant navigation system for The Stoic Way app with the following components:\n\n1. **InstantNavigationProvider** - Core provider managing view transitions with React startTransition for non-blocking updates\n2. **Enhanced AppSidebar** - Updated with optimistic navigation using buttons instead of Links, immediate visual feedback with transition states\n3. **NavigationOptimizedCachedPage** - Added Suspense boundaries and smooth opacity transitions during navigation\n4. **AggressivePrefetchProvider** - Preloads all main routes after user authentication for instant navigation\n5. **CSS View Transitions** - Added native browser view transitions with fallbacks for smooth page switches\n6. **Loading States** - Created InstantLoading, ProgressBar, and MinimalLoadingIndicator components for subtle feedback\n7. **Integration** - Wired everything through ClientProviders with proper provider hierarchy\n\nKey features achieved:\n- Instant visual feedback on navigation clicks\n- Background loading with cached content visible\n- Smooth CSS transitions between pages\n- Aggressive prefetching of all main routes\n- Minimal loading indicators instead of full-page spinners\n- React Suspense for deferred loading\n\nThe app now feels native with instant navigation responses!",
-      "type": "general",
+      "id": "mem_1754798478457_3xut1k7v6",
+      "content": "Stoic Zenith Dodo Payments Subscription Issues Identified:\n\n1. **Immediate Downgrade Issue**: When users cancel subscription via Dodo customer portal, the webhook handler (subscription.cancelled) doesn't immediately downgrade the user. The webhook only downgrades if it can find the user through various lookup methods.\n\n2. **Trial System Vulnerability**: Users on trial can still upgrade through regular payment flow, and the trial system doesn't properly check if user is already on trial before allowing upgrade.\n\n3. **Webhook User Mapping**: The subscription.cancelled webhook tries multiple methods to find user (metadata user_id, dodo_customer_id, email, subscription_id) but may fail if customer portal doesn't include metadata.\n\n4. **Missing Real-time Sync**: After customer portal actions, users need to manually force sync to update their subscription status in the app.\n\n5. **Trial Prevention Logic**: Uses Google account ID to prevent trial abuse, but doesn't prevent trial users from upgrading while already on trial.",
+      "type": "troubleshooting",
       "tags": [
-        "general",
-        "react",
-        "authentication",
-        "instant-navigation",
-        "performance",
-        "nextjs",
-        "optimization",
-        "prefetching",
-        "view-transitions",
-        "stoic-way"
+        "troubleshooting",
+        "dodo-payments",
+        "subscription",
+        "webhook",
+        "trial",
+        "bug",
+        "stoic-zenith"
       ],
-      "timestamp": "2025-08-10T03:32:18.877Z",
+      "timestamp": "2025-08-10T04:01:18.457Z",
       "accessCount": 0,
-      "lastAccessed": "2025-08-10T03:32:18.877Z",
-      "lastVerified": "2025-08-10T03:32:18.877Z",
-      "status": "fresh"
-    },
-    {
-      "id": "mem_1754797313454_moy5jgw1m",
-      "content": "Fixed initial navigation delay in The Stoic Way app by implementing immediate prefetching optimizations:\n\n## Key Changes Made:\n\n1. **ImmediatePrefetchProvider** - New provider that starts prefetching routes immediately on app mount (before auth), no delays\n   - Priority routes (/, /quotes, /quotes?tab=library) prefetch instantly\n   - Secondary routes prefetch after 100ms\n   - Positioned high in provider hierarchy for earliest execution\n\n2. **Zero Delay Prefetching** - Modified AggressivePrefetchProvider:\n   - Reduced delayMs from 1500ms to 0ms\n   - Disabled onIdle waiting (onIdle: false)\n   - Removed setTimeout wrapper - executes immediately\n\n3. **Static Generation** - Added generateStaticParams to quotes page for build-time pre-rendering\n\n4. **Lazy Loading Optimization** - Created LazyComponents.tsx:\n   - Dynamic imports for heavy components (HomePage, DailyStoicWisdom, Journal)\n   - Selective SSR control (HomePage keeps SSR for SEO, others client-only)\n   - Proper loading fallbacks for each component\n\n5. **Bundle Splitting** - Updated page imports to use lazy components:\n   - app/page.tsx uses LazyHomePage\n   - app/quotes/page.tsx uses LazyDailyStoicWisdom  \n   - app/journal/page.tsx uses LazyJournalPage\n\n## Results:\n- Prefetching now starts immediately on app load (not after 1.5-2s delay)\n- Critical routes load instantly on first navigation\n- Smaller initial JavaScript bundles\n- Better code splitting and lazy loading",
-      "type": "solution",
-      "tags": [
-        "solution",
-        "javascript",
-        "optimization",
-        "navigation-optimization",
-        "prefetching",
-        "lazy-loading",
-        "performance",
-        "bundle-splitting",
-        "stoic-way"
-      ],
-      "timestamp": "2025-08-10T03:41:53.454Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-10T03:41:53.454Z",
-      "lastVerified": "2025-08-10T03:41:53.454Z",
+      "lastAccessed": "2025-08-10T04:01:18.457Z",
+      "lastVerified": "2025-08-10T04:01:18.457Z",
       "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-10T03:41:53.454Z"
+  "lastUpdated": "2025-08-10T04:01:18.457Z"
 }

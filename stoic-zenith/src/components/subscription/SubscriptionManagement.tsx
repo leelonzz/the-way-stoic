@@ -22,11 +22,9 @@ import {
 } from 'lucide-react'
 import {
   getUserSubscription,
-  cancelSubscription,
   reactivateSubscription,
   getSubscriptionStatusText,
   getSubscriptionStatusColor,
-  canCancelSubscription,
   canReactivateSubscription,
   formatSubscriptionDate,
   getDaysUntilExpiry,
@@ -75,35 +73,7 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
     }
   }, [userId])
 
-  const handleCancelSubscription = async (immediate: boolean = false) => {
-    if (!subscriptionData?.profile.subscription_id) return
 
-    try {
-      setActionLoading(true)
-      const result = await cancelSubscription(
-        subscriptionData.profile.subscription_id,
-        !immediate // cancelAtNextBilling is opposite of immediate
-      )
-
-      toast({
-        title: 'Subscription Updated',
-        description: result.message,
-        variant: 'default',
-      })
-
-      // Reload subscription data
-      await loadSubscriptionData()
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to cancel subscription'
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      })
-    } finally {
-      setActionLoading(false)
-    }
-  }
 
   const handleReactivateSubscription = async () => {
     if (!subscriptionData?.profile.subscription_id) return
@@ -354,7 +324,6 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
   const daysUntilExpiry = getDaysUntilExpiry(profile.subscription_expires_at)
   const effectivePlan = getEffectiveSubscriptionPlan(profile)
   const planFeatures = getPlanFeatures(effectivePlan)
-  const canCancel = canCancelSubscription(profile.subscription_status)
   const canReactivate = canReactivateSubscription(
     profile.subscription_status,
     subscription?.cancel_at_next_billing_date
@@ -570,53 +539,7 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
             </div>
           )}
 
-          {canCancel && !canReactivate && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-sm text-stone">
-                  Cancel your subscription. You can choose to cancel immediately or at the end of your current billing period.
-                </p>
-                <div className="grid gap-2">
-                  <Button
-                    onClick={() => handleCancelSubscription(false)}
-                    disabled={actionLoading}
-                    variant="outline"
-                    className="w-full border-yellow-300 text-yellow-700 hover:bg-yellow-50"
-                  >
-                    {actionLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Cancel at End of Billing Period
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    onClick={() => handleCancelSubscription(true)}
-                    disabled={actionLoading}
-                    variant="outline"
-                    className="w-full border-red-300 text-red-700 hover:bg-red-50"
-                  >
-                    {actionLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Cancel Immediately
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+
 
           {(profile.subscription_status === 'free' || effectivePlan === 'seeker') && (
             <TrialEligibilityCheck

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import DodoPayments from 'dodopayments'
 import { createClient } from '@supabase/supabase-js'
+import { getEffectiveSubscriptionPlan } from '@/utils/subscription'
 
 interface CreateSubscriptionRequest {
   productId: string
@@ -56,6 +57,50 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       environment
     })
 
+    // Check if user is already on trial - prevent double subscription
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('subscription_plan, subscription_status, trial_expires_at')
+      .eq('id', userId)
+      .single()
+
+    if (profileError || !profile) {
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 404 }
+      )
+    }
+
+    // Get effective plan to check if user is on trial
+    const effectivePlan = getEffectiveSubscriptionPlan(profile)
+    
+    // Prevent trial users from upgrading while on trial
+    if (effectivePlan === 'philosopher' && profile.subscription_status !== 'active') {
+      return NextResponse.json(
+        { 
+          error: 'Trial users cannot upgrade while on trial',
+          details: 'Please wait for your trial to expire before subscribing, or contact support to convert your trial to a paid subscription.'
+        },
+        { status: 409 }
+      )
+    }
+
+    // Prevent users with active paid subscriptions from creating new ones
+    if (profile.subscription_status === 'active' && profile.subscription_plan === 'philosopher') {
+      return NextResponse.json(
+        {
+          error: 'User already has an active subscription',
+          details: 'Please manage your existing subscription instead of creating a new one.'
+        },
+        { status: 409 }
+      )
+    }
+
     // Create subscription using Dodo Payments SDK
     const subscription = await dodoClient.subscriptions.create({
       billing: {
@@ -82,11 +127,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Store the Dodo customer_id in the user's profile for webhook mapping
     if (subscription.customer?.customer_id) {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      )
-      
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ 

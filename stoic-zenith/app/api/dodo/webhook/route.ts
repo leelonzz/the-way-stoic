@@ -386,19 +386,35 @@ async function handleSubscriptionActive(subscription: SubscriptionEvent) {
     }
 
     if (!userId) {
-      console.error('Could not find user for subscription:', {
+      console.error('Could not find user for subscription activation:', {
         subscription_id: subscription.id,
         customer_id: subscription.customer_id,
         customer_email: subscription.customer?.email,
         metadata: subscription.metadata
       })
       
-      // Mark webhook as unprocessed for manual recovery
+      // Store detailed error information for manual recovery
+      const errorDetails = {
+        error_type: 'USER_NOT_FOUND',
+        subscription_id: subscription.id,
+        customer_id: subscription.customer_id,
+        customer_email: subscription.customer?.email,
+        metadata: subscription.metadata,
+        search_methods_tried: [
+          'metadata.user_id',
+          'dodo_customer_id_lookup', 
+          'email_lookup'
+        ]
+      }
+
+      // Mark webhook as unprocessed for manual recovery with detailed info
       await supabase
         .from('webhook_logs')
         .update({ 
-          error_message: 'Could not find user for subscription',
-          processed_at: new Date().toISOString()
+          error_message: 'Could not find user for subscription activation - requires manual intervention',
+          error_details: errorDetails,
+          processed_at: new Date().toISOString(),
+          requires_manual_action: true
         })
         .eq('event_type', 'subscription.active')
         .eq('processed', false)
@@ -434,6 +450,9 @@ async function handleSubscriptionActive(subscription: SubscriptionEvent) {
     }
 
     console.log(`✅ User ${userId} subscription ${subscription.id} activated successfully - profile updated`)
+
+    // Trigger profile refresh for real-time updates
+    await triggerProfileRefresh(userId)
 
     // Update Dodo customer_id if not already set
     if (subscription.customer_id) {
@@ -564,12 +583,29 @@ async function handleSubscriptionCancelled(subscription: SubscriptionEvent) {
         metadata: subscription.metadata
       })
       
-      // Mark webhook as unprocessed for manual recovery
+      // Store detailed error information for manual recovery
+      const errorDetails = {
+        error_type: 'USER_NOT_FOUND',
+        subscription_id: subscription.id,
+        customer_id: subscription.customer_id,
+        customer_email: subscription.customer?.email,
+        metadata: subscription.metadata,
+        search_methods_tried: [
+          'metadata.user_id',
+          'dodo_customer_id_lookup', 
+          'email_lookup',
+          'subscription_id_lookup'
+        ]
+      }
+
+      // Mark webhook as unprocessed for manual recovery with detailed info
       await supabase
         .from('webhook_logs')
         .update({ 
-          error_message: 'Could not find user for subscription cancellation',
-          processed_at: new Date().toISOString()
+          error_message: 'Could not find user for subscription cancellation - requires manual intervention',
+          error_details: errorDetails,
+          processed_at: new Date().toISOString(),
+          requires_manual_action: true
         })
         .eq('event_type', 'subscription.cancelled')
         .eq('processed', false)
@@ -587,13 +623,14 @@ async function handleSubscriptionCancelled(subscription: SubscriptionEvent) {
     }
     user = userData
 
-    // Update user profile to reflect cancelled status
+    // Update user profile to reflect cancelled status - immediate downgrade
     const { error } = await supabase
       .from('profiles')
       .update({
         subscription_status: 'cancelled',
-        subscription_plan: 'seeker', // Downgrade to free plan
+        subscription_plan: 'seeker', // Immediate downgrade to free plan
         subscription_expires_at: null,
+        trial_expires_at: null, // Clear trial expiry if any
         updated_at: new Date().toISOString()
       })
       .eq('id', userId)
@@ -603,7 +640,10 @@ async function handleSubscriptionCancelled(subscription: SubscriptionEvent) {
       throw error
     }
 
-    console.log(`❌ User ${userId} subscription ${subscription.id} cancelled - downgraded to seeker plan`)
+    console.log(`❌ User ${userId} subscription ${subscription.id} cancelled - immediately downgraded to seeker plan`)
+
+    // Trigger profile refresh for real-time updates
+    await triggerProfileRefresh(userId)
 
     // Mark webhook as processed
     await supabase
@@ -669,13 +709,14 @@ async function handleSubscriptionFailed(subscription: SubscriptionEvent) {
       return
     }
 
-    // Update user profile to reflect failed status
+    // Update user profile to reflect failed status - immediate downgrade
     const { error } = await supabase
       .from('profiles')
       .update({
         subscription_status: 'failed',
-        subscription_plan: 'seeker', // Downgrade to free plan
+        subscription_plan: 'seeker', // Immediate downgrade to free plan
         subscription_expires_at: null,
+        trial_expires_at: null, // Clear trial expiry if any
         updated_at: new Date().toISOString()
       })
       .eq('id', userId)
@@ -685,7 +726,10 @@ async function handleSubscriptionFailed(subscription: SubscriptionEvent) {
       throw error
     }
 
-    console.log(`❌ Subscription ${subscription.id} failed for user ${userId}`)
+    console.log(`❌ Subscription ${subscription.id} failed for user ${userId} - immediately downgraded to seeker plan`)
+
+    // Trigger profile refresh for real-time updates
+    await triggerProfileRefresh(userId)
 
   } catch (error) {
     console.error('Error handling subscription failure:', error)
@@ -722,8 +766,34 @@ async function handleSubscriptionRenewed(subscription: SubscriptionEvent) {
 
     console.log(`🔄 Subscription ${subscription.id} renewed for user ${userId}`)
 
+    // Trigger profile refresh for real-time updates
+    await triggerProfileRefresh(userId)
+
   } catch (error) {
     console.error('Error handling subscription renewal:', error)
     throw error
+  }
+}
+
+/**
+ * Trigger profile refresh for real-time updates
+ */
+async function triggerProfileRefresh(userId: string) {
+  try {
+    // Clear any cached profile data by updating a timestamp field
+    const { error } = await supabase
+      .from('profiles')
+      .update({ 
+        profile_refreshed_at: new Date().toISOString()
+      })
+      .eq('id', userId)
+
+    if (error) {
+      console.error('Failed to trigger profile refresh:', error)
+    } else {
+      console.log(`📱 Profile refresh triggered for user ${userId}`)
+    }
+  } catch (error) {
+    console.error('Error triggering profile refresh:', error)
   }
 }
