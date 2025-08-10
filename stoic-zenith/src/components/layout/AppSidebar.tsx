@@ -27,6 +27,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 import { handleNavigationPrefetch } from '@/lib/prefetch'
 import { useNavigationState } from '@/hooks/useNavigationState'
+import { useInstantNavigation } from '@/components/providers/InstantNavigationProvider'
 
 const navigationItems = [
   {
@@ -77,6 +78,7 @@ export function AppSidebar(): JSX.Element {
   })
   const queryClient = useQueryClient()
   const { isPathLikelyCached, prefetchPage } = useNavigationState()
+  const { navigateInstantly, isPathTransitioning } = useInstantNavigation()
 
   // Auto-open Quotes dropdown when navigating into /quotes, but do not auto-close when leaving
   useEffect(() => {
@@ -123,7 +125,14 @@ export function AppSidebar(): JSX.Element {
   }
 
   const handleQuotesNavigation = (tab: string): void => {
-    router.push(`/quotes?tab=${tab}`)
+    navigateInstantly(`/quotes?tab=${tab}`)
+  }
+
+  const handleInstantNavigation = (href: string, e?: React.MouseEvent): void => {
+    if (e) {
+      e.preventDefault()
+    }
+    navigateInstantly(href)
   }
 
   return (
@@ -152,6 +161,7 @@ export function AppSidebar(): JSX.Element {
           const isComingSoon = item.comingSoon
           const showUpgradePill =
             item.name === 'Mentors' && !hasPhilosopherPlan(profile)
+          const isTransitioning = isPathTransitioning(item.href)
 
           if (isComingSoon) {
             return (
@@ -176,28 +186,29 @@ export function AppSidebar(): JSX.Element {
                 <div
                   className={`
                     flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200
-                    ${isActive ? 'bg-primary text-white shadow-lg' : 'text-sage hover:bg-parchment/50 hover:text-stone'}
+                    ${isActive || isTransitioning ? 'bg-primary text-white shadow-lg' : 'text-sage hover:bg-parchment/50 hover:text-stone'}
+                    ${isTransitioning ? 'opacity-90' : ''}
                   `}
                 >
-                  <Link
-                    href={item.href}
-                    prefetch={true}
-                    onMouseEnter={() => handleMouseEnter(item.href)}
+                  <button
                     onClick={(e) => {
+                      e.preventDefault()
                       setIsQuotesDropdownOpen(true)
                       if (typeof window !== 'undefined') {
                         const saved = window.localStorage.getItem('quotes_active_tab')
                         if (saved === 'library' || saved === 'favorites' || saved === 'my-quotes') {
-                          e.preventDefault()
-                          router.push(`/quotes?tab=${saved}`)
+                          handleInstantNavigation(`/quotes?tab=${saved}`)
+                          return
                         }
                       }
+                      handleInstantNavigation(item.href)
                     }}
-                    className="flex items-center gap-3 flex-1"
+                    onMouseEnter={() => handleMouseEnter(item.href)}
+                    className="flex items-center gap-3 flex-1 w-full"
                   >
                     <item.icon size={18} />
                     <span className="font-medium text-sm">{item.name}</span>
-                  </Link>
+                  </button>
 
                   {/* Dropdown Toggle */}
                   <button
@@ -256,23 +267,23 @@ export function AppSidebar(): JSX.Element {
           }
 
           return (
-            <Link
+            <button
               key={item.name}
-              href={item.href}
-              prefetch={true} // Enable Next.js prefetch
+              onClick={(e) => handleInstantNavigation(item.href, e)}
               onMouseEnter={() => handleMouseEnter(item.href)}
               className={`
-                flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200
+                flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 w-full
                 ${
-                  isActive
+                  isActive || isTransitioning
                     ? 'bg-primary text-white shadow-lg'
                     : 'text-sage hover:bg-parchment/50 hover:text-stone'
                 }
+                ${isTransitioning ? 'opacity-90' : ''}
               `}
             >
               <item.icon
                 size={18}
-                className={isActive ? 'text-white' : 'text-sage'}
+                className={isActive || isTransitioning ? 'text-white' : 'text-sage'}
               />
               <span className="font-medium text-sm">{item.name}</span>
               {showUpgradePill && (
@@ -280,7 +291,7 @@ export function AppSidebar(): JSX.Element {
                   Upgrade
                 </span>
               )}
-            </Link>
+            </button>
           )
         })}
       </nav>

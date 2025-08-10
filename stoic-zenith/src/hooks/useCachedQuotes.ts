@@ -114,6 +114,39 @@ export function useCachedQuotes(user: User | null) {
     }
   )
 
+  // Use cache-aware query for user quotes
+  const userQuotesQuery = useNavigationCachedQuery(
+    ['user-quotes', user?.id || 'anonymous'],
+    async (): Promise<UserQuote[]> => {
+      if (!user) return []
+      
+      const { data, error } = await supabase
+        .from('user_quotes')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('❌ [CachedQuotes] User quotes error:', error)
+        return []
+      }
+      
+      return data || []
+    },
+    {
+      cacheThreshold: 5 * 60 * 1000, // 5 minutes for user quotes
+      staleTime: 10 * 60 * 1000, // 10 minutes stale time
+      gcTime: 20 * 60 * 1000, // 20 minutes garbage collection
+      retry: (failureCount, error) => {
+        if (error?.message?.includes('auth') || error?.message?.includes('permission')) {
+          return false
+        }
+        return failureCount < 2
+      },
+      placeholderData: [],
+    }
+  )
+
   // Compute a deterministic quote of the day based on day-of-year and available quotes
   const computedDailyQuote = useMemo(() => {
     const quotes = quotesQuery.data || FALLBACK_QUOTES
@@ -273,14 +306,20 @@ export function useCachedQuotes(user: User | null) {
   return {
     quotes: quotesQuery.data || FALLBACK_QUOTES,
     savedQuotes: savedQuotes,
-    userQuotes: [], // TODO: Implement user quotes with cache-aware query
-    loading: quotesQuery.isLoading && !quotesQuery.data, // Don't show loading if we have cached data
+    userQuotes: userQuotesQuery.data || [],
+    loading: (quotesQuery.isLoading && !quotesQuery.data) || (userQuotesQuery.isLoading && !userQuotesQuery.data),
     error: error, // Don't show quote fetching errors to user, only save/unsave errors
     isRefetching: quotesQuery.isFetching && !!quotesQuery.data, // Only show refetching if we have data
     getDailyQuote: () => getDailyQuote,
     searchQuotes,
     getQuotesByCategory,
-    forceRefresh,
+    forceRefresh: async () => {
+      await quotesQuery.refetch()
+      await userQuotesQuery.refetch()
+      if (user) {
+        await fetchSavedQuotes()
+      }
+    },
     // Implement save/unsave functions
     saveQuote: async (quoteId: string, notes?: string) => {
       if (!user) {
@@ -411,17 +450,83 @@ export function useCachedQuotes(user: User | null) {
         saved.quote.text === quote.text && saved.quote.author === quote.author
       )
     },
-    createUserQuote: async (_quote: Omit<UserQuote, 'id' | 'created_at' | 'updated_at'>) => {
-      console.warn('createUserQuote not implemented in cached version')
-      return false
+    createUserQuote: async (quote: Omit<UserQuote, 'id' | 'created_at' | 'updated_at'>) => {
+      if (!user) {
+        setError('User not authenticated')
+        return false
+      }
+
+      try {
+        const { error } = await supabase
+          .from('user_quotes')
+          .insert({
+            user_id: user.id,
+            text: quote.text,
+            author: quote.author,
+            source: quote.source,
+            category: quote.category,
+            mood_tags: quote.mood_tags,
+            is_private: quote.is_private
+          })
+
+        if (error) throw error
+
+        await userQuotesQuery.refetch()
+        setError(null)
+        return true
+      } catch (err) {
+        console.error('Failed to create user quote:', err)
+        setError(err instanceof Error ? err.message : 'Failed to create quote')
+        return false
+      }
     },
-    updateUserQuote: async (_id: string, _updates: Partial<UserQuote>) => {
-      console.warn('updateUserQuote not implemented in cached version')
-      return false
+    updateUserQuote: async (id: string, updates: Partial<UserQuote>) => {
+      if (!user) {
+        setError('User not authenticated')
+        return false
+      }
+
+      try {
+        const { error } = await supabase
+          .from('user_quotes')
+          .update(updates)
+          .eq('id', id)
+          .eq('user_id', user.id)
+
+        if (error) throw error
+
+        await userQuotesQuery.refetch()
+        setError(null)
+        return true
+      } catch (err) {
+        console.error('Failed to update user quote:', err)
+        setError(err instanceof Error ? err.message : 'Failed to update quote')
+        return false
+      }
     },
-    deleteUserQuote: async (_id: string) => {
-      console.warn('deleteUserQuote not implemented in cached version')
-      return false
+    deleteUserQuote: async (id: string) => {
+      if (!user) {
+        setError('User not authenticated')
+        return false
+      }
+
+      try {
+        const { error } = await supabase
+          .from('user_quotes')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user.id)
+
+        if (error) throw error
+
+        await userQuotesQuery.refetch()
+        setError(null)
+        return true
+      } catch (err) {
+        console.error('Failed to delete user quote:', err)
+        setError(err instanceof Error ? err.message : 'Failed to delete quote')
+        return false
+      }
     },
     refreshDailyQuote: () => {
       const quotes = quotesQuery.data || FALLBACK_QUOTES

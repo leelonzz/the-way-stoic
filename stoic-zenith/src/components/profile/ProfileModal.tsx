@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 
 import { DodoSubscriptionButton } from '@/components/subscription/DodoSubscriptionButton';
 import { SubscriptionManagement } from '@/components/subscription/SubscriptionManagement';
+import { getEffectiveSubscriptionPlan } from '@/utils/subscription';
 import {
   Card,
   CardContent,
@@ -303,43 +304,46 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                   </div>
 
                   <div className="grid gap-6 md:grid-cols-2">
-                    {[
-                      {
-                        name: 'Seeker',
-                        price: 'Free',
-                        period: '',
-                        description: 'Perfect for beginning your stoic journey',
-                        features: [
-                          'Unlimited journal entries',
-                          'Quote library & saving',
-                          'Memento mori calendar',
-                          'Daily stoic quotes',
-                          'Basic streak tracking',
-                          'Daily journal prompts',
-                        ],
-                        cta: profile?.subscription_plan === 'seeker' ? 'Current Plan' : 'Downgrade',
-                        popular: false,
-                        current: profile?.subscription_plan === 'seeker',
-                      },
-                      {
-                        name: 'Philosopher',
-                        price: '$14',
-                        period: 'per month',
-                        description: 'For dedicated practitioners of stoic wisdom',
-                        features: [
-                          'Everything in Free',
-                          'Unlimited chat with philosopher',
-                          'Course (coming soon)',
-                          'Priority support',
-                          'Advanced streak analytics',
-                          'Personalized insights',
-                          'Export journal entries',
-                        ],
-                        cta: profile?.subscription_plan === 'philosopher' ? 'Current Plan' : 'Begin Practice',
-                        popular: true,
-                        current: profile?.subscription_plan === 'philosopher',
-                      },
-                    ].map((plan, index) => (
+                    {(() => {
+                      const effectivePlan = getEffectiveSubscriptionPlan(profile);
+                      return [
+                        {
+                          name: 'Seeker',
+                          price: 'Free',
+                          period: '',
+                          description: 'Perfect for beginning your stoic journey',
+                          features: [
+                            'Unlimited journal entries',
+                            'Quote library & saving',
+                            'Memento mori calendar',
+                            'Daily stoic quotes',
+                            'Basic streak tracking',
+                            'Daily journal prompts',
+                          ],
+                          cta: effectivePlan === 'seeker' ? 'Current Plan' : 'Downgrade',
+                          popular: false,
+                          current: effectivePlan === 'seeker',
+                        },
+                        {
+                          name: 'Philosopher',
+                          price: '$14',
+                          period: 'per month',
+                          description: 'For dedicated practitioners of stoic wisdom',
+                          features: [
+                            'Everything in Free',
+                            'Unlimited chat with philosopher',
+                            'Course (coming soon)',
+                            'Priority support',
+                            'Advanced streak analytics',
+                            'Personalized insights',
+                            'Export journal entries',
+                          ],
+                          cta: effectivePlan === 'philosopher' ? 'Current Plan' : 'Begin Practice',
+                          popular: true,
+                          current: effectivePlan === 'philosopher',
+                        },
+                      ];
+                    })().map((plan, index) => (
                       <Card
                         key={index}
                         className={`relative overflow-hidden transition-all duration-300 ${

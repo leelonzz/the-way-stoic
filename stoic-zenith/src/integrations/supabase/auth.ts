@@ -12,6 +12,10 @@ export interface UserProfile {
   subscription_status?: string;
   subscription_plan?: string;
   subscription_expires_at?: string;
+  google_account_id?: string;
+  has_used_trial?: boolean;
+  trial_used_at?: string;
+  account_cancelled_at?: string;
   created_at: string;
   updated_at: string;
 }

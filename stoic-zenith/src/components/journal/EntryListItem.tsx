@@ -8,6 +8,7 @@ interface EntryListItemProps {
   onSelect: () => void;
   onDelete?: (entryId: string) => void;
   dateLabel: string;
+  showDeleteButton?: boolean;
 }
 
 export const EntryListItem = memo(({ 
@@ -15,7 +16,8 @@ export const EntryListItem = memo(({
   isSelected, 
   onSelect,
   onDelete,
-  dateLabel
+  dateLabel,
+  showDeleteButton = true
 }: EntryListItemProps): JSX.Element => {
   const handleClick = (e: React.MouseEvent): void => {
     // Prevent click if clicking on delete button
@@ -55,7 +57,7 @@ export const EntryListItem = memo(({
             <span className="text-sm font-inknut font-medium text-stone-800">
               {dateLabel}
             </span>
-            {onDelete && (
+            {showDeleteButton && onDelete && (
               <button
                 onClick={handleDelete}
                 className="delete-button p-1 hover:bg-red-100 rounded transition-colors"

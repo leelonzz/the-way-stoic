@@ -254,11 +254,33 @@ export function useCachedJournal() {
   const handleCreateEntry = () => {
     if (!user?.id) return
     
+    // CREATION LOCK: Prevent rapid duplicate creation attempts
+    const lastCreateTime = typeof window !== 'undefined' 
+      ? parseInt(localStorage.getItem('lastJournalCreateTime') || '0') 
+      : 0
+    const now = Date.now()
+    const minimumInterval = 2000 // 2 seconds between creations
+    
+    if (now - lastCreateTime < minimumInterval) {
+      console.log('⚠️ Creation blocked - too soon after last creation')
+      toast({
+        title: "Please wait",
+        description: "Please wait a moment before creating another entry.",
+        variant: "default",
+      })
+      return
+    }
+    
     try {
       const manager = getJournalManager(user.id)
-      // Use date-only format to prevent multiple entries on same day
-      const dateString = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
+      // Use timestamp format to allow multiple entries per day
+      const dateString = new Date().toISOString() // Full ISO timestamp format
       const newEntry = manager.createEntryImmediately(dateString, 'general')
+      
+      // Update last creation time
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lastJournalCreateTime', now.toString())
+      }
       
       // CRITICAL: Verify entry exists in localStorage before proceeding
       const verifyEntry = manager.getFromLocalStorage(newEntry.id)
@@ -267,9 +289,12 @@ export function useCachedJournal() {
         throw new Error('Entry creation failed - not persisted to localStorage')
       }
       
-      // Optimistically update the entries list immediately (0ms)
+      // DEDUPLICATION: Remove any existing entries with the same ID before adding
       const currentEntries = entriesQuery.data || []
-      queryClient.setQueryData(['journal-entries', user.id], [newEntry, ...currentEntries])
+      const deduplicatedEntries = currentEntries.filter(entry => entry.id !== newEntry.id)
+      
+      // Optimistically update the entries list immediately (0ms)
+      queryClient.setQueryData(['journal-entries', user.id], [newEntry, ...deduplicatedEntries])
       
       // Select the new entry only after localStorage verification
       setSelectedEntry(newEntry)
@@ -282,6 +307,15 @@ export function useCachedJournal() {
       
     } catch (error) {
       console.error('Failed to create entry:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      
+      // Handle specific error cases
+      if (errorMessage.includes('creation blocked') || errorMessage.includes('another creation in progress')) {
+        // This is expected behavior - don't show error toast
+        console.log('✅ Creation appropriately blocked to prevent duplicates')
+        return
+      }
+      
       toast({
         title: "Entry creation failed",
         description: "Failed to create new entry. Please try again.",
@@ -329,14 +363,19 @@ export function useCachedJournal() {
     if (!user?.id) return
     
     try {
+      console.log(`🔍 handleUpdateEntry called with entryId: ${entryId}`)
+      
       // Check if entry exists before trying to update
       const manager = getJournalManager(user.id)
       const existingEntry = manager.getFromLocalStorage(entryId)
       
       if (!existingEntry) {
         console.warn(`⚠️ Cannot update entry ${entryId} - entry not found in localStorage. Skipping update.`)
+        console.log('Available entries:', manager.getAllFromLocalStorage().map(e => e.id))
         return
       }
+      
+      console.log(`✅ Found existing entry: ${existingEntry.id}`)
       
       // Update in localStorage via journal manager
       await manager.updateEntryImmediately(entryId, blocks)

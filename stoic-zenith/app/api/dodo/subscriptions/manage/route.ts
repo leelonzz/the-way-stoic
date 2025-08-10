@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let dodoResponse
+    let dodoResponse: Response
     let updateData: any = {}
 
     switch (action) {
@@ -171,18 +171,30 @@ export async function POST(request: NextRequest) {
 
     const updatedSubscription = await dodoResponse.json()
 
-    // Update local profile if needed
-    if (action === 'cancel' && !cancelAtNextBilling) {
-      // Immediately cancel - update profile
-      await supabase
-        .from('profiles')
-        .update({
-          subscription_status: 'cancelled',
-          subscription_plan: 'seeker',
-          subscription_expires_at: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('subscription_id', subscriptionId)
+    // Update local profile for cancellation - ALWAYS downgrade to seeker plan
+    if (action === 'cancel') {
+      if (cancelAtNextBilling) {
+        // Cancel at next billing - mark for downgrade but keep active until then
+        await supabase
+          .from('profiles')
+          .update({
+            subscription_status: 'active', // Keep active until billing period ends
+            // Keep current plan until billing period ends
+            updated_at: new Date().toISOString()
+          })
+          .eq('subscription_id', subscriptionId)
+      } else {
+        // Immediately cancel - downgrade to seeker plan immediately
+        await supabase
+          .from('profiles')
+          .update({
+            subscription_status: 'cancelled',
+            subscription_plan: 'seeker', // Always downgrade to seeker
+            subscription_expires_at: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('subscription_id', subscriptionId)
+      }
     }
 
     return NextResponse.json({

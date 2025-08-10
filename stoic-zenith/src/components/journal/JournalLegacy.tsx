@@ -179,6 +179,7 @@ export function JournalLegacy(): JSX.Element {
           syncStatus={syncStatus === 'syncing' ? 'pending' : syncStatus}
           onRetrySync={handleRetrySyncWrapper}
           journalManager={journalManager}
+          showDeleteButton={false}
         />
       </div>
 

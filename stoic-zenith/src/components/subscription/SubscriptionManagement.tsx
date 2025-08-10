@@ -6,16 +6,19 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
-import { 
-  Calendar, 
-  CreditCard, 
-  AlertTriangle, 
-  CheckCircle, 
-  XCircle, 
+import { TrialEligibilityCheck } from './TrialEligibilityCheck'
+import {
+  Calendar,
+  CreditCard,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
   RefreshCw,
   Loader2,
   Crown,
-  User
+  User,
+  Receipt,
+  Download
 } from 'lucide-react'
 import {
   getUserSubscription,
@@ -31,6 +34,9 @@ import {
   getPlanFeatures,
   type SubscriptionManagementResponse
 } from '@/lib/subscription-management'
+import { getEffectiveSubscriptionPlan } from '@/utils/subscription'
+import { completeProfileRefresh } from '@/utils/profileRefresh'
+import { useAuthContext } from '@/components/auth/AuthProvider'
 
 interface SubscriptionManagementProps {
   userId: string
@@ -41,8 +47,12 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [syncLoading, setSyncLoading] = useState(false)
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [invoiceLoading, setInvoiceLoading] = useState(false)
+  const [refreshLoading, setRefreshLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
+  const { refreshProfile } = useAuthContext()
 
   const loadSubscriptionData = async () => {
     try {
@@ -171,6 +181,125 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
     }
   }
 
+  const handleOpenCustomerPortal = async () => {
+    try {
+      setPortalLoading(true)
+      
+      const response = await fetch('/api/dodo/customer-portal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to access billing portal')
+      }
+
+      if (result.portalUrl) {
+        // Open portal in new tab
+        window.open(result.portalUrl, '_blank')
+        
+        toast({
+          title: 'Opening Billing Portal',
+          description: 'Your billing portal has opened in a new tab',
+          variant: 'default',
+        })
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to access billing portal'
+      toast({
+        title: 'Portal Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+    } finally {
+      setPortalLoading(false)
+    }
+  }
+
+  const handleDownloadInvoice = async (paymentId: string) => {
+    try {
+      setInvoiceLoading(true)
+
+      // First check if invoice exists
+      const checkResponse = await fetch('/api/dodo/invoice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentId: paymentId,
+          userId: userId
+        }),
+      })
+
+      const checkResult = await checkResponse.json()
+
+      if (checkResponse.ok && checkResult.success) {
+        // Invoice exists, download it
+        const downloadUrl = `/api/dodo/invoice?paymentId=${paymentId}&userId=${userId}`
+        window.open(downloadUrl, '_blank')
+
+        toast({
+          title: 'Invoice Download',
+          description: 'Your invoice download has started',
+          variant: 'default',
+        })
+      } else {
+        // Invoice not available, show helpful message
+        toast({
+          title: 'Invoice Not Available',
+          description: checkResult.error || 'Invoice may not be generated yet. Try using the billing portal or contact support.',
+          variant: 'destructive',
+        })
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to download invoice'
+      toast({
+        title: 'Download Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+    } finally {
+      setInvoiceLoading(false)
+    }
+  }
+
+  const handleForceRefreshProfile = async () => {
+    try {
+      setRefreshLoading(true)
+
+      toast({
+        title: 'Refreshing Profile',
+        description: 'Clearing cached data and fetching fresh profile information...',
+        variant: 'default',
+      })
+
+      await completeProfileRefresh(userId, refreshProfile)
+
+      toast({
+        title: 'Profile Refreshed',
+        description: 'Your profile data has been updated. The page will reload to show the latest information.',
+        variant: 'default',
+      })
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to refresh profile'
+      toast({
+        title: 'Refresh Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+    } finally {
+      setRefreshLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <Card>
@@ -223,10 +352,11 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
   const { profile, subscription } = subscriptionData
   const statusColor = getSubscriptionStatusColor(profile.subscription_status)
   const daysUntilExpiry = getDaysUntilExpiry(profile.subscription_expires_at)
-  const planFeatures = getPlanFeatures(profile.subscription_plan)
+  const effectivePlan = getEffectiveSubscriptionPlan(profile)
+  const planFeatures = getPlanFeatures(effectivePlan)
   const canCancel = canCancelSubscription(profile.subscription_status)
   const canReactivate = canReactivateSubscription(
-    profile.subscription_status, 
+    profile.subscription_status,
     subscription?.cancel_at_next_billing_date
   )
 
@@ -236,32 +366,52 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            {profile.subscription_plan === 'philosopher' ? (
+            {effectivePlan === 'philosopher' ? (
               <Crown className="h-5 w-5 text-yellow-600" />
             ) : (
               <User className="h-5 w-5 text-stone" />
             )}
-            {getPlanDisplayName(profile.subscription_plan)}
+            {getPlanDisplayName(effectivePlan)}
           </CardTitle>
-          <Button
-            onClick={handleSyncSubscription}
-            disabled={syncLoading}
-            variant="outline"
-            size="sm"
-            className="ml-auto"
-          >
-            {syncLoading ? (
-              <>
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                Syncing...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-3 w-3 mr-1" />
-                Sync Status
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleForceRefreshProfile}
+              disabled={refreshLoading}
+              variant="outline"
+              size="sm"
+              className="border-purple-300 text-purple-700 hover:bg-purple-50"
+            >
+              {refreshLoading ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Refreshing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Force Refresh
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleSyncSubscription}
+              disabled={syncLoading}
+              variant="outline"
+              size="sm"
+            >
+              {syncLoading ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Sync Status
+                </>
+              )}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
@@ -318,6 +468,83 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
           <CardTitle>Manage Subscription</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Force Refresh Profile Button */}
+          <div className="space-y-2">
+            <p className="text-sm text-stone">
+              If your subscription status isn't updating correctly, use this to clear cached data and refresh your profile.
+            </p>
+            <Button
+              onClick={handleForceRefreshProfile}
+              disabled={refreshLoading}
+              variant="outline"
+              className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
+            >
+              {refreshLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Refreshing Profile...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Force Refresh Profile Data
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Billing Portal Button */}
+          <div className="space-y-2">
+            <p className="text-sm text-stone">
+              Access your billing history, download invoices, and manage your payment methods.
+            </p>
+            <Button
+              onClick={handleOpenCustomerPortal}
+              disabled={portalLoading}
+              variant="outline"
+              className="w-full border-blue-300 text-blue-700 hover:bg-blue-50"
+            >
+              {portalLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Opening Portal...
+                </>
+              ) : (
+                <>
+                  <Receipt className="h-4 w-4 mr-2" />
+                  View Billing History & Invoices
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Direct Invoice Download for Recent Payment */}
+          {subscription && (
+            <div className="space-y-2">
+              <p className="text-sm text-stone">
+                Download your invoice directly if the portal download isn't working.
+              </p>
+              <Button
+                onClick={() => handleDownloadInvoice('pay_8PM80')} // Replace with dynamic payment ID
+                disabled={invoiceLoading}
+                variant="outline"
+                className="w-full border-green-300 text-green-700 hover:bg-green-50"
+              >
+                {invoiceLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Latest Invoice
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+
           {canReactivate && (
             <div className="space-y-2">
               <p className="text-sm text-stone">
@@ -391,14 +618,17 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
             </div>
           )}
 
-          {profile.subscription_status === 'free' && (
-            <div className="text-center py-4">
-              <p className="text-stone mb-4">You're currently on the free plan.</p>
-              <Button className="bg-cta hover:bg-cta/90 text-white">
-                <Crown className="h-4 w-4 mr-2" />
-                Upgrade to Philosopher Plan
-              </Button>
-            </div>
+          {(profile.subscription_status === 'free' || effectivePlan === 'seeker') && (
+            <TrialEligibilityCheck
+              onTrialStart={() => {
+                // Refresh profile after trial start
+                window.location.reload()
+              }}
+              onUpgrade={() => {
+                // Handle upgrade action - could navigate to pricing page
+                console.log('Navigate to upgrade page')
+              }}
+            />
           )}
         </CardContent>
       </Card>

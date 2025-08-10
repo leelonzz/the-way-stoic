@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Search, Bookmark, BookmarkCheck, Share, RotateCcw, Star } from 'lucide-react'
+import { Search, Bookmark, BookmarkCheck, Share, RotateCcw, Star, Plus, Edit, Trash2 } from 'lucide-react'
 import { QuoteCarousel } from './QuoteCarousel'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import { useCachedQuotes } from '@/hooks/useCachedQuotes'
 import { useAuthContext } from '@/components/auth/AuthProvider'
 import type { Quote as QuoteType } from '@/hooks/useCachedQuotes'
 import { MinimalLoadingScreen } from '@/components/ui/loading-spinner'
+import { CreateQuoteDialog } from './CreateQuoteDialog'
 
 interface DailyStoicQuoteCardProps {
   quote: QuoteType
@@ -379,9 +380,9 @@ export function DailyStoicWisdom(): JSX.Element {
     unsaveQuote, 
     isQuoteSaved, 
     searchQuotes,
-    createUserQuote: _createUserQuote, 
-    updateUserQuote: _updateUserQuote, 
-    deleteUserQuote: _deleteUserQuote,
+    createUserQuote, 
+    updateUserQuote, 
+    deleteUserQuote,
     refreshDailyQuote,
     reloadCount,
     maxReloads,
@@ -405,6 +406,7 @@ export function DailyStoicWisdom(): JSX.Element {
   const [refreshedQuotes, setRefreshedQuotes] = useState<Map<string, QuoteType>>(new Map())
   const [individualRefreshStates, setIndividualRefreshStates] = useState<Map<string, boolean>>(new Map())
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
   // Get the current display quote
   const currentDailyQuote = getDailyQuote()
@@ -523,6 +525,23 @@ export function DailyStoicWisdom(): JSX.Element {
     return refreshedQuotes.get(originalQuote.id) || originalQuote
   }
 
+  // Handle user quote deletion with confirmation
+  const handleDeleteUserQuote = async (quoteId: string) => {
+    const success = await deleteUserQuote(quoteId)
+    if (success) {
+      toast({
+        title: "Quote deleted",
+        description: "Your quote has been removed"
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to delete quote",
+        variant: "destructive"
+      })
+    }
+  }
+
   // Show loading screen only for initial load or when no quotes exist
   if (loading || (isRefetching && quotes.length === 0)) {
     return <MinimalLoadingScreen />
@@ -618,17 +637,55 @@ export function DailyStoicWisdom(): JSX.Element {
               {isAuthenticated ? (
                 userQuotes.length > 0 ? (
                   userQuotes.map((quote) => (
-                    <SimplifiedQuoteCard
-                      key={quote.id}
-                      quote={quote}
-                      isSaved={false}
-                    />
+                    <Card key={quote.id} className="bg-hero/50 border-stone/20 shadow-sm hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="space-y-4">
+                          {/* Quote Content */}
+                          <div className="space-y-3">
+                            <blockquote className="text-lg font-medium italic text-ink leading-relaxed">
+                              &ldquo;{quote.text}&rdquo;
+                            </blockquote>
+                            
+                            <div className="text-base font-medium text-stone">
+                              — {quote.author}
+                              {quote.source && (
+                                <span className="text-sm text-stone/70 ml-2">({quote.source})</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Action Icons at Bottom */}
+                          <div className="flex items-center justify-between pt-2 border-t border-stone/10">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-stone hover:text-cta hover:bg-transparent p-2"
+                              >
+                                <Share className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteUserQuote(quote.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-transparent p-2"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))
                 ) : (
                   <div className="text-center py-12">
                     <p className="text-stone">No personal quotes yet.</p>
                     <p className="text-stone/70 text-sm mt-2">
-                      Create your own quotes in the main quotes section.
+                      Click the + button to create your first quote!
                     </p>
                   </div>
                 )
@@ -641,6 +698,24 @@ export function DailyStoicWisdom(): JSX.Element {
           )}
         </div>
       </div>
+
+      {/* Floating Action Button - only show on My Quotes tab */}
+      {activeTab === 'my-quotes' && isAuthenticated && (
+        <Button
+          onClick={() => setIsCreateDialogOpen(true)}
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-shadow bg-cta hover:bg-cta/90"
+          size="icon"
+        >
+          <Plus className="w-6 h-6" />
+        </Button>
+      )}
+
+      {/* Create Quote Dialog */}
+      <CreateQuoteDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        onCreateQuote={createUserQuote}
+      />
     </div>
   )
 }

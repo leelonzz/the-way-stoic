@@ -304,33 +304,30 @@ export class RealTimeJournalManager {
     // Validate user context for critical create operations
     this.validateUserContext('create journal entry');
 
-    // CRITICAL: Check for existing entry with same date first
     const existingEntries = this.getAllFromLocalStorage();
-    const existingEntry = existingEntries.find(entry => entry.date === date);
-    if (existingEntry) {
-      console.log(`✅ Found existing entry for ${date}, returning existing entry:`, existingEntry.id);
-      return existingEntry;
-    }
 
-    // Check if creation is already in progress using stronger mutex
+    // FIXED: Only check if creation is actively in progress (not if any entries exist)
     if (this.creationMutex.size > 0) {
-      console.log('⚠️ Creation mutex is busy, waiting for completion');
-      // Return most recent entry instead of creating duplicate
+      console.log('⚠️ Creation mutex is busy, blocking concurrent creation');
+      // Return most recent entry only during active creation
       if (existingEntries.length > 0) {
         const mostRecent = existingEntries.sort((a, b) => 
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         )[0];
+        console.log('✅ Returning most recent entry during active creation:', mostRecent.id);
         return mostRecent;
       }
+      // If no entries exist, allow creation to continue
+      console.log('⚠️ No existing entries, allowing creation despite mutex');
     }
 
-    // Check for entries created in the last 10 seconds to prevent rapid duplicates
-    const tenSecondsAgo = Date.now() - 10000;
+    // REDUCED: Check for entries created in the last 3 seconds (reduced from 30) to prevent rapid duplicates
+    const threeSecondsAgo = Date.now() - 3000;
     const recentEntry = existingEntries.find(entry => 
-      new Date(entry.createdAt).getTime() > tenSecondsAgo
+      new Date(entry.createdAt).getTime() > threeSecondsAgo
     );
     if (recentEntry) {
-      console.log('✅ Found recent entry within 10 seconds, returning existing entry:', recentEntry.id);
+      console.log('✅ Found recent entry within 3 seconds, returning existing entry:', recentEntry.id);
       return recentEntry;
     }
 
@@ -457,24 +454,37 @@ export class RealTimeJournalManager {
   private async performSimpleUpdate(entryId: string, blocks: JournalBlock[]): Promise<void> {
     const now = new Date();
 
-    // Get entry from localStorage
-    let entry = this.getFromLocalStorage(entryId);
+    // FIXED: Clean entryId to remove any block suffixes like "-initial"
+    const cleanEntryId = entryId.replace(/-initial$/, '');
+    
+    console.log(`🔍 Attempting to update entry: ${entryId} (cleaned: ${cleanEntryId})`);
+
+    // Get entry from localStorage using cleaned ID
+    let entry = this.getFromLocalStorage(cleanEntryId);
     if (!entry) {
-      throw new Error(`Entry ${entryId} not found`);
+      // Try with original ID as fallback
+      entry = this.getFromLocalStorage(entryId);
+      if (!entry) {
+        console.error(`❌ Entry not found: ${entryId} (cleaned: ${cleanEntryId})`);
+        console.log('Available entries:', this.getAllFromLocalStorage().map(e => e.id));
+        throw new Error(`Entry ${entryId} not found in localStorage`);
+      }
     }
 
-    // Update entry
+    // Update entry using the actual entry ID (not the passed ID which might have suffixes)
     const updatedEntry: JournalEntry = {
       ...entry,
       blocks,
       updatedAt: now
     };
 
-    // Save to localStorage immediately
+    // Save to localStorage immediately using the correct entry ID
     this.saveToLocalStorage(updatedEntry);
 
-    // Add to sync queue for background database update (non-blocking)
-    this.syncQueue.set(entryId, { entry: updatedEntry, timestamp: Date.now(), retryCount: 0 });
+    // Add to sync queue for background database update using correct entry ID
+    this.syncQueue.set(entry.id, { entry: updatedEntry, timestamp: Date.now(), retryCount: 0 });
+    
+    console.log(`✅ Entry updated successfully: ${entry.id}`);
   }
 
   // Extracted update logic to separate method for mutex handling

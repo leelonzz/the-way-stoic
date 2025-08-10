@@ -8,6 +8,8 @@ import { AuthProvider } from '@/components/auth/AuthProvider'
 import { DodoProvider } from '@/components/providers/DodoProvider'
 import { PageCacheProvider } from '@/components/providers/PageCacheProvider'
 import { PrefetchProvider } from '@/components/providers/PrefetchProvider'
+import { InstantNavigationProvider } from '@/components/providers/InstantNavigationProvider'
+import { AggressivePrefetchProvider } from '@/components/providers/AggressivePrefetchProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ReactNode, useState } from 'react'
 
@@ -70,9 +72,13 @@ export function ClientProviders({ children }: ClientProvidersProps): JSX.Element
                   maxCacheSize={20} // Increased cache size for better performance
                   maxAge={45 * 60 * 1000} // 45 minutes - balanced cache duration
                 >
-                  {children}
-                  <Toaster />
-                  <Sonner />
+                  <InstantNavigationProvider>
+                    <AggressivePrefetchProvider>
+                      {children}
+                      <Toaster />
+                      <Sonner />
+                    </AggressivePrefetchProvider>
+                  </InstantNavigationProvider>
                 </PageCacheProvider>
               </DodoProvider>
             </PrefetchProvider>

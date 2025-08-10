@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppSidebar } from './AppSidebar';
 import { useNavigationMonitor } from '@/hooks/useNavigationMonitor';
+import { ProgressBar } from '@/components/ui/instant-loading';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
@@ -14,6 +15,7 @@ export function AppLayout({ children, fullWidth = false }: AppLayoutProps) {
 
   return (
     <div className="flex min-h-screen bg-hero">
+      <ProgressBar />
       <AppSidebar />
       <main className={cn(
         "flex-1 ml-64",

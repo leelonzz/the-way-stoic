@@ -22,6 +22,7 @@ interface EntryListProps {
   syncStatus?: 'synced' | 'pending' | 'error';
   onRetrySync?: () => void;
   journalManager: RealTimeJournalManager;
+  showDeleteButton?: boolean;
 }
 
 interface EntryListItemData {
@@ -48,7 +49,8 @@ export const EntryList = React.memo(function EntryList({
   onEntriesChange,
   syncStatus: _syncStatus = 'synced',
   onRetrySync: _onRetrySync,
-  journalManager
+  journalManager,
+  showDeleteButton = true
 }: EntryListProps): JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -58,9 +60,17 @@ export const EntryList = React.memo(function EntryList({
 
   // Convert parent entries to EntryListItemData format
   const processEntries = useCallback((journalEntries: JournalEntry[]): EntryListItemData[] => {
+    // DEDUPLICATION: Remove duplicate entries by ID (React key issue fix)
+    const uniqueEntries = journalEntries.reduce((acc: JournalEntry[], entry) => {
+      if (!acc.find(existing => existing.id === entry.id)) {
+        acc.push(entry);
+      }
+      return acc;
+    }, []);
+
     // Filter out entries that appear to be test/debug entries with timestamp text
     // But allow empty entries to be deletable
-    const filteredJournalEntries = journalEntries.filter(entry => {
+    const filteredJournalEntries = uniqueEntries.filter(entry => {
       const timestampPattern = /^Entry created at \d{1,2}:\d{2}:\d{2}$/;
       const isTimestampEntry = entry.blocks.some(block =>
         timestampPattern.test(block.text || '')
@@ -346,14 +356,15 @@ export const EntryList = React.memo(function EntryList({
 
                 {/* Group Entries */}
                 <div className="space-y-1">
-                  {group.entries.map(({ entry }) => (
+                  {group.entries.map(({ entry }, index) => (
                     <EntryListItem
-                      key={entry.id}
+                      key={`${entry.id}-${index}`}
                       entry={entry}
                       isSelected={selectedEntry?.id === entry.id}
                       onSelect={() => onSelectEntry(entry)}
                       onDelete={() => handleDeleteEntry(entry.id)}
                       dateLabel={getDateDisplayForEntry(entry, group.groupType)}
+                      showDeleteButton={showDeleteButton}
                     />
                   ))}
                 </div>

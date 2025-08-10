@@ -284,8 +284,8 @@
       ],
       "timestamp": "2025-07-31T22:58:58.884Z",
       "context": "Completed The Way Stoic app feature implementation",
-      "accessCount": 32,
-      "lastAccessed": "2025-08-09T05:30:55.622Z",
+      "accessCount": 33,
+      "lastAccessed": "2025-08-10T03:13:06.029Z",
       "lastVerified": "2025-07-31T22:58:58.884Z",
       "status": "fresh"
     },
@@ -1640,8 +1640,8 @@
         "completed"
       ],
       "timestamp": "2025-08-02T03:04:46.847Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-08T04:56:06.936Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-10T03:13:06.029Z",
       "lastVerified": "2025-08-02T03:04:46.847Z",
       "status": "fresh"
     },
@@ -1828,8 +1828,8 @@
       ],
       "timestamp": "2025-08-02T05:41:35.877Z",
       "context": "Journal header redesign completion",
-      "accessCount": 16,
-      "lastAccessed": "2025-08-09T04:02:27.226Z",
+      "accessCount": 17,
+      "lastAccessed": "2025-08-10T02:56:14.879Z",
       "lastVerified": "2025-08-02T05:41:35.877Z",
       "status": "fresh"
     },
@@ -2077,8 +2077,8 @@
         "duplicate-key"
       ],
       "timestamp": "2025-08-02T06:47:41.196Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-03T06:24:07.117Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-10T02:56:14.879Z",
       "lastVerified": "2025-08-02T06:47:41.196Z",
       "status": "fresh"
     },
@@ -2886,8 +2886,8 @@
       ],
       "timestamp": "2025-08-03T06:42:35.299Z",
       "context": "Research completed for text editor implementation, focusing on professional UX like Notion/Google Docs",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-03T06:42:35.299Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T02:56:14.879Z",
       "lastVerified": "2025-08-03T06:42:35.299Z",
       "status": "fresh"
     },
@@ -3131,8 +3131,8 @@
       ],
       "timestamp": "2025-08-03T11:41:42.501Z",
       "context": "Completed navigation performance optimization for The Way Stoic app",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-03T12:04:24.269Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-08-10T03:13:06.029Z",
       "lastVerified": "2025-08-03T11:41:42.501Z",
       "status": "fresh"
     },
@@ -3401,8 +3401,8 @@
       ],
       "timestamp": "2025-08-04T02:28:35.917Z",
       "context": "Journal application bug fixes - comprehensive solution implemented and tested",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-04T02:28:35.917Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T03:13:06.029Z",
       "lastVerified": "2025-08-04T02:28:35.917Z",
       "status": "fresh"
     },
@@ -3439,8 +3439,8 @@
       ],
       "timestamp": "2025-08-04T02:59:35.637Z",
       "context": "Journal code analysis for navigation bug fixes",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-04T02:59:35.637Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T03:13:06.029Z",
       "lastVerified": "2025-08-04T02:59:35.637Z",
       "status": "fresh"
     },
@@ -3460,8 +3460,8 @@
       ],
       "timestamp": "2025-08-04T03:07:02.755Z",
       "context": "Journal navigation bug fixes completed",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-04T03:07:02.755Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T03:13:06.029Z",
       "lastVerified": "2025-08-04T03:07:02.755Z",
       "status": "fresh"
     },
@@ -3769,8 +3769,8 @@
         "race-condition"
       ],
       "timestamp": "2025-08-06T01:34:11.331Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-06T23:20:01.911Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-10T02:56:14.879Z",
       "lastVerified": "2025-08-06T01:34:11.331Z",
       "status": "fresh"
     },
@@ -3808,8 +3808,8 @@
         "privacy"
       ],
       "timestamp": "2025-08-06T01:42:58.419Z",
-      "accessCount": 3,
-      "lastAccessed": "2025-08-07T11:00:34.589Z",
+      "accessCount": 4,
+      "lastAccessed": "2025-08-10T02:56:14.879Z",
       "lastVerified": "2025-08-06T01:42:58.419Z",
       "status": "fresh"
     },
@@ -3827,8 +3827,8 @@
         "completed"
       ],
       "timestamp": "2025-08-06T01:50:38.526Z",
-      "accessCount": 3,
-      "lastAccessed": "2025-08-07T11:00:34.589Z",
+      "accessCount": 4,
+      "lastAccessed": "2025-08-10T02:56:14.879Z",
       "lastVerified": "2025-08-06T01:50:38.526Z",
       "status": "fresh"
     },
@@ -4399,8 +4399,8 @@
         "hooks"
       ],
       "timestamp": "2025-08-07T04:08:45.245Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-07T04:08:45.245Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T03:13:06.029Z",
       "lastVerified": "2025-08-07T04:08:45.245Z",
       "status": "fresh"
     },
@@ -4948,8 +4948,8 @@
         "user-lookup"
       ],
       "timestamp": "2025-08-08T23:12:08.143Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-08T23:12:08.143Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T03:13:06.029Z",
       "lastVerified": "2025-08-08T23:12:08.143Z",
       "status": "fresh"
     },
@@ -5095,8 +5095,8 @@
       ],
       "timestamp": "2025-08-09T01:15:05.204Z",
       "context": "Quotes feature implementation complete",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-09T01:15:05.204Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T03:13:06.029Z",
       "lastVerified": "2025-08-09T01:15:05.204Z",
       "status": "fresh"
     },
@@ -5169,8 +5169,8 @@
         "success"
       ],
       "timestamp": "2025-08-09T01:40:16.957Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-09T01:43:59.278Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-10T03:13:06.029Z",
       "lastVerified": "2025-08-09T01:40:16.957Z",
       "status": "fresh"
     },
@@ -5246,8 +5246,8 @@
         "race-condition"
       ],
       "timestamp": "2025-08-09T03:51:50.286Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-09T03:51:50.286Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T02:56:14.879Z",
       "lastVerified": "2025-08-09T03:51:50.286Z",
       "status": "fresh"
     },
@@ -5265,8 +5265,8 @@
         "fixed"
       ],
       "timestamp": "2025-08-09T03:58:04.285Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-09T03:58:04.285Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T02:56:14.879Z",
       "lastVerified": "2025-08-09T03:58:04.285Z",
       "status": "fresh"
     },
@@ -5460,7 +5460,146 @@
       "lastAccessed": "2025-08-09T05:32:15.648Z",
       "lastVerified": "2025-08-09T05:32:15.648Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1754780542041_oglrqnjq9",
+      "content": "Journal duplicate entry bug FIXED:\n- Issue: User got React \"duplicate key\" error when creating second entry, showing two entries simultaneously\n- Root cause: Race condition in createEntryImmediately + React key conflicts\n- Solutions implemented:\n  1. Strengthened duplicate prevention (30s window, stronger mutex blocking)\n  2. Added 2-second creation lock in useCachedJournal\n  3. Added deduplication before query cache updates  \n  4. Fixed React keys with entry ID + index combination\n- Status: RESOLVED - Server running on localhost:3002 for testing",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "react",
+        "testing",
+        "journal",
+        "bug",
+        "duplicate-entries",
+        "react-keys"
+      ],
+      "timestamp": "2025-08-09T23:02:22.041Z",
+      "context": "Bug investigation for journal entry duplication issue",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-10T02:56:14.879Z",
+      "lastVerified": "2025-08-09T23:02:22.041Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754781720149_ydooqfi6d",
+      "content": "DodoPayments Invoice Email Issue Investigation:\n\nPROBLEM: Customer successfully processed payment (pay_8PM80...) but didn't receive invoice email from DodoPayments. Only merchant received email.\n\nKEY FINDINGS:\n1. DodoPayments SHOULD automatically send invoices to BOTH customer and merchant after successful payment\n2. Invoice generation works (can retrieve via API endpoint GET /invoices/payment_id)\n3. **IMPORTANT**: Many payment platforms (like Stripe) DON'T send emails in TEST MODE - only in PRODUCTION/LIVE mode\n4. DodoPayments has distinct Test Mode vs Live Mode environments\n\nROOT CAUSE (Most Likely):\n- Using TEST MODE instead of PRODUCTION MODE\n- Test transactions typically don't trigger real emails to prevent spam\n\nCONFIGURATION REQUIREMENTS:\n1. Business Profile Setup: Dashboard → Settings → Business Profile Tab\n   - Upload business logo\n   - Add business name\n   - Save settings\n2. Must be in LIVE/PRODUCTION mode for emails to send\n\nVERIFICATION STEPS:\n1. Check if using test API keys vs live API keys\n2. Verify Dashboard shows \"Live Mode\" not \"Test Mode\"\n3. Check Dashboard → Invoices section (invoice should exist even if email wasn't sent)\n4. Try manual resend from Invoices section\n\nWORKAROUND FOR TEST MODE:\n- Retrieve invoice via API: GET /invoices/{payment_id}\n- View in Dashboard → Invoices section\n- Download PDF and manually send\n\nSOLUTION:\n- Switch to PRODUCTION/LIVE mode for automatic customer emails\n- Test mode is for integration testing only, not for real customer emails\n\nSUPPORT: support@dodopayments.com",
+      "type": "warning",
+      "tags": [
+        "warning",
+        "api",
+        "testing",
+        "tip",
+        "dodopayments",
+        "invoice",
+        "email",
+        "payment",
+        "configuration"
+      ],
+      "timestamp": "2025-08-09T23:22:00.149Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T23:22:00.149Z",
+      "lastVerified": "2025-08-09T23:22:00.149Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754782282231_19fjnx8v8",
+      "content": "DodoPayments API Solutions for Invoice Access:\n\nCONTEXT: User found Discord conversation showing API endpoints for customer invoice access\n\nKEY APIS:\n\n1. GET SUBSCRIPTIONS API\n   - Endpoint: GET /subscriptions?customer_id={customer_id}\n   - Returns list of customer's subscriptions\n   - Includes subscription_id, status, billing dates\n   - Use to show transaction history\n\n2. GET INVOICE API (from earlier)\n   - Endpoint: GET /invoices/{payment_id}\n   - Returns PDF invoice for specific payment\n   - Use payment_id from subscription transactions\n\n3. CUSTOMER PORTAL API (Recommended Solution)\n   - Endpoint: POST /customers/{customer_id}/customer-portal/session\n   - Creates temporary portal link\n   - Customer can view transactions & download invoices\n   - Self-service solution\n   \nExample Implementation:\n```javascript\n// Option 1: Build custom UI\nconst subscriptions = await client.subscriptions.list({customer_id: 'cust_123'});\n// Then for each payment, allow invoice download via:\nconst invoice = await client.invoices.retrieve(payment_id);\n\n// Option 2: Use prebuilt portal (easier)\nconst portal = await client.customers.customerPortal.create('cust_123');\n// Redirect customer to: portal.link\n```\n\nBEST PRACTICE: Use Customer Portal API for quickest implementation - gives customers self-service access to all invoices without building custom UI",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "javascript",
+        "api",
+        "dodopayments",
+        "invoice",
+        "customer-portal",
+        "subscriptions"
+      ],
+      "timestamp": "2025-08-09T23:31:22.231Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T23:31:22.231Z",
+      "lastVerified": "2025-08-09T23:31:22.231Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754782609081_uitasonht",
+      "content": "DodoPayments Customer Portal Implementation Complete:\n\nIMPLEMENTED FEATURES:\n1. Customer Portal API endpoint at /api/dodo/customer-portal/route.ts\n   - Creates secure portal sessions using dodo_customer_id from profiles table\n   - Handles both POST (for authenticated users) and GET (direct access) methods\n   - Returns portal link for redirect\n\n2. Updated SubscriptionManagement.tsx component:\n   - Added \"View Billing History & Invoices\" button in Manage Subscription section\n   - Opens portal in new tab with loading states and proper error handling\n   - Users can access their transaction history and download invoices\n\n3. Created dedicated billing portal page at /app/billing-portal/page.tsx\n   - Auto-redirects authenticated users to their DodoPayments portal\n   - Fallback error handling if portal creation fails\n   - Direct URL access: /billing-portal\n\nKEY BENEFITS:\n- Solves invoice email issue - customers can self-serve download invoices\n- No additional database changes needed (uses existing dodo_customer_id mapping)\n- Secure temporary access links from DodoPayments\n- Professional UI integration with existing subscription management\n\nUSAGE:\n- From subscription page: click \"View Billing History & Invoices\" button\n- Direct access: visit /billing-portal URL\n- Portal shows: transaction history, downloadable invoices, payment methods, subscription management\n\nThis provides immediate solution for customers to access invoices without waiting for emails.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "api",
+        "database",
+        "dodopayments",
+        "customer-portal",
+        "invoices",
+        "implementation",
+        "complete"
+      ],
+      "timestamp": "2025-08-09T23:36:49.081Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T23:36:49.081Z",
+      "lastVerified": "2025-08-09T23:36:49.081Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754794770925_44d2hq0j5",
+      "content": "Journal entry creation issue FIXED:\n- Problem: Users couldn't create new entries - system was returning existing entries instead\n- Root cause: Over-aggressive duplicate prevention from previous fix:\n  1. Same-date blocking prevented multiple entries per day\n  2. 30-second window was too long for normal usage\n- Solution implemented:\n  1. Removed same-date blocking - allow multiple daily entries\n  2. Reduced time window from 30s to 3s for rapid-click prevention\n  3. Changed date format from YYYY-MM-DD to full ISO timestamp for uniqueness\n- Result: Users can now create multiple journal entries per day normally",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "journal",
+        "bug-fix",
+        "entry-creation",
+        "duplicate-prevention",
+        "resolved"
+      ],
+      "timestamp": "2025-08-10T02:59:30.925Z",
+      "context": "Fix for journal entry creation blockage after over-restrictive duplicate prevention",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-10T02:59:30.925Z",
+      "lastVerified": "2025-08-10T02:59:30.925Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754795683433_c1cyd3b5r",
+      "content": "User wants to add functionality for creating custom quotes in the \"My Quotes\" section. Current findings:\n\n1. Database table user_quotes already exists with proper schema\n2. MyOwnQuotes component exists but not integrated into DailyStoicWisdom\n3. useCachedQuotes hook has stub implementations for createUserQuote, updateUserQuote, deleteUserQuote\n4. Current \"My Quotes\" tab shows empty state with message \"Create your own quotes in the main quotes section\"\n5. Need to:\n   - Implement actual functions in useCachedQuotes hook\n   - Add floating action button (FAB) for creating quotes\n   - Integrate MyOwnQuotes component or create simpler inline solution\n   - Style to match the existing design pattern",
+      "type": "solution",
+      "tags": [
+        "solution",
+        "database",
+        "quotes",
+        "user-quotes",
+        "custom-quotes",
+        "implementation-plan"
+      ],
+      "timestamp": "2025-08-10T03:14:43.433Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-10T03:14:43.433Z",
+      "lastVerified": "2025-08-10T03:14:43.433Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754796738878_opoaqrfrj",
+      "content": "Implemented instant navigation system for The Stoic Way app with the following components:\n\n1. **InstantNavigationProvider** - Core provider managing view transitions with React startTransition for non-blocking updates\n2. **Enhanced AppSidebar** - Updated with optimistic navigation using buttons instead of Links, immediate visual feedback with transition states\n3. **NavigationOptimizedCachedPage** - Added Suspense boundaries and smooth opacity transitions during navigation\n4. **AggressivePrefetchProvider** - Preloads all main routes after user authentication for instant navigation\n5. **CSS View Transitions** - Added native browser view transitions with fallbacks for smooth page switches\n6. **Loading States** - Created InstantLoading, ProgressBar, and MinimalLoadingIndicator components for subtle feedback\n7. **Integration** - Wired everything through ClientProviders with proper provider hierarchy\n\nKey features achieved:\n- Instant visual feedback on navigation clicks\n- Background loading with cached content visible\n- Smooth CSS transitions between pages\n- Aggressive prefetching of all main routes\n- Minimal loading indicators instead of full-page spinners\n- React Suspense for deferred loading\n\nThe app now feels native with instant navigation responses!",
+      "type": "general",
+      "tags": [
+        "general",
+        "react",
+        "authentication",
+        "instant-navigation",
+        "performance",
+        "nextjs",
+        "optimization",
+        "prefetching",
+        "view-transitions",
+        "stoic-way"
+      ],
+      "timestamp": "2025-08-10T03:32:18.877Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-10T03:32:18.877Z",
+      "lastVerified": "2025-08-10T03:32:18.877Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-09T05:32:15.648Z"
+  "lastUpdated": "2025-08-10T03:32:18.877Z"
 }

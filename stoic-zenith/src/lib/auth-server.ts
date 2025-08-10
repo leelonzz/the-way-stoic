@@ -61,10 +61,20 @@ export async function authenticateRequest(request: NextRequest): Promise<Authent
 
 /**
  * Check if user has philosopher plan access
+ * This now uses the effective subscription plan logic
  */
 export function hasPhilosopherPlan(profile: UserProfile): boolean {
+  // If subscription is cancelled, expired, or free, user has no philosopher access
+  if (profile.subscription_status === 'cancelled' ||
+      profile.subscription_status === 'expired' ||
+      profile.subscription_status === 'free' ||
+      !profile.subscription_status) {
+    return false;
+  }
+
+  // Only return true if subscription is active and plan is philosopher
   return (
-    profile.subscription_status === 'active' && 
+    profile.subscription_status === 'active' &&
     profile.subscription_plan === 'philosopher'
   );
 }

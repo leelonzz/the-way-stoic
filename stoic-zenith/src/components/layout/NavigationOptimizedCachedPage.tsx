@@ -1,8 +1,9 @@
 'use client'
 
-import React, { ReactNode, useState, useEffect, useRef } from 'react'
+import React, { ReactNode, useState, useEffect, useRef, Suspense } from 'react'
 import { usePageCache } from '@/components/providers/PageCacheProvider'
 import { usePathname } from 'next/navigation'
+import { useNavigationTransition } from '@/components/providers/InstantNavigationProvider'
 
 interface NavigationOptimizedCachedPageProps {
   pageKey: string
@@ -49,6 +50,7 @@ export function NavigationOptimizedCachedPage({
   const pathname = usePathname()
   const lastPathnameRef = useRef<string>('')
   const navigationCountRef = useRef<number>(0)
+  const { isCurrentPageTransitioning } = useNavigationTransition()
 
   // Debug logging for development
   const debugLog = (message: string, data?: unknown): void => {
@@ -182,8 +184,15 @@ export function NavigationOptimizedCachedPage({
     if (cached) {
       debugLog('Rendering cached content')
       return (
-        <div ref={containerRef} className="navigation-cached-page-container h-full">
-          {cached.component}
+        <div 
+          ref={containerRef} 
+          className={`navigation-cached-page-container h-full transition-opacity duration-200 ${
+            isCurrentPageTransitioning ? 'opacity-95' : 'opacity-100'
+          }`}
+        >
+          <Suspense fallback={fallback}>
+            {cached.component}
+          </Suspense>
         </div>
       )
     }
@@ -192,14 +201,27 @@ export function NavigationOptimizedCachedPage({
   // Show loading or live content
   if (isLoading && isInitialized) {
     debugLog('Showing fallback loading')
-    return fallback || <div>Loading...</div>
+    return (
+      <div className={`transition-opacity duration-200 ${
+        isCurrentPageTransitioning ? 'opacity-95' : 'opacity-100'
+      }`}>
+        {fallback || <div>Loading...</div>}
+      </div>
+    )
   }
 
   // Show live content that will be cached
   debugLog('Rendering live content for caching')
   return (
-    <div ref={containerRef} className="navigation-cached-page-container h-full">
-      {children}
+    <div 
+      ref={containerRef} 
+      className={`navigation-cached-page-container h-full transition-opacity duration-200 ${
+        isCurrentPageTransitioning ? 'opacity-95' : 'opacity-100'
+      }`}
+    >
+      <Suspense fallback={fallback}>
+        {children}
+      </Suspense>
     </div>
   )
 }

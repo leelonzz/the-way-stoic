@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AccountCancellation } from './AccountCancellation';
 
 type SettingsSection = 'account' | 'preferences' | 'notifications' | 'connections' | 'workspace' | 'ai' | 'public' | 'emoji' | 'import';
 type LayoutMode = 'traditional' | 'modal';
@@ -158,9 +159,7 @@ export function EnhancedSettingsPage({ profile }: EnhancedSettingsPageProps): JS
             />
           </div>
 
-          <Button variant="destructive" className="text-red-600 hover:text-red-700">
-            Delete my account
-          </Button>
+          <AccountCancellation />
         </div>
       </div>
     </div>

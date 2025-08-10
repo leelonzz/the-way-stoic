@@ -466,7 +466,26 @@
       "lastAccessed": "2025-08-09T09:53:07.800Z",
       "lastVerified": "2025-08-09T09:53:07.800Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1754733413411_wsqaad7sk",
+      "content": "Production Auth State Bug - Real Issue Found:\n\n## Actual Problem\nNot a CSP issue. The auth is working (SIGNED_IN event fires with user email), but the React state isn't updating properly.\n\n## Console Evidence\n- \"Auth state change: SIGNED_IN leenhatlong210@gmail.com\" (line 485)\n- \"User session found, updating auth state\" (line 494) \n- BUT the state shows: hasUser: false, isAuthenticated: false, userId: undefined\n\n## Root Cause in useAuth.ts\nLine 509-515: The setAuthState call in onAuthStateChange listener is using a function updater pattern but it's not properly merging/updating the state. The state update is being lost or overridden.\n\n## Key Issue\nThe auth state change listener (lines 491-579) calls setAuthState with a function updater:\n```\nsetAuthState(() => ({\n  user: session.user,\n  session,\n  profile: cachedProfile,\n  loading: false,\n  error: null,\n}))\n```\n\nBut this might be getting overridden by other state updates or React batching issues in production mode.\n\n## Solution Needed\n1. Remove function updater pattern, use direct object\n2. Add proper state logging to debug\n3. Ensure state updates aren't being batched/lost\n4. May need to force a re-render or use a different state management approach",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "react",
+        "authentication",
+        "react-state",
+        "production-bug",
+        "stoic-zenith",
+        "useAuth"
+      ],
+      "timestamp": "2025-08-09T09:56:53.411Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T09:56:53.411Z",
+      "lastVerified": "2025-08-09T09:56:53.411Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-09T09:53:07.800Z"
+  "lastUpdated": "2025-08-09T09:56:53.411Z"
 }
