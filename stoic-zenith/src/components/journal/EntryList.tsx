@@ -87,12 +87,14 @@ export const EntryList = React.memo(function EntryList({
     });
 
     return sortedEntries.map(entry => {
-      // Generate preview from journal entry blocks
+      // Generate stable preview from journal entry blocks
       const contentParts = entry.blocks
-        .map(block => block.text)
+        .map(block => block.text?.trim())
         .filter(Boolean);
 
-      const preview = contentParts.join(' ').slice(0, 80);
+      const fullText = contentParts.join(' ');
+      // Only generate preview if there's meaningful content (more than just whitespace)
+      const preview = fullText.length > 0 ? fullText.slice(0, 80) : '';
 
       return {
         entry: {

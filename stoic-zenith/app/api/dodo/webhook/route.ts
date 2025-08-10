@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Webhook } from 'standardwebhooks'
 import { createClient } from '@supabase/supabase-js'
 import { sendSubscriptionConfirmationEmail, sendPaymentReceiptEmail } from '@/lib/email'
+import { triggerProfileRefresh, emitWebhookCompletion, triggerSubscriptionUpdate } from '@/utils/subscriptionRefresh'
+import { markTrialAsUsed } from '@/lib/trial-prevention'
 
 // Use service role client for webhook operations
 const supabase = createClient(
@@ -454,6 +456,13 @@ async function handleSubscriptionActive(subscription: SubscriptionEvent) {
     // Trigger profile refresh for real-time updates
     await triggerProfileRefresh(userId)
 
+    // Emit activation completion event for immediate UI updates
+    await emitWebhookCompletion(userId, 'subscription_activated', {
+      subscription_id: subscription.id,
+      new_plan: 'philosopher',
+      new_status: 'active'
+    })
+
     // Update Dodo customer_id if not already set
     if (subscription.customer_id) {
       await supabase
@@ -642,8 +651,24 @@ async function handleSubscriptionCancelled(subscription: SubscriptionEvent) {
 
     console.log(`❌ User ${userId} subscription ${subscription.id} cancelled - immediately downgraded to seeker plan`)
 
+    // Mark user as having used trial to prevent future trial access
+    try {
+      await markTrialAsUsed(userId)
+      console.log(`✅ Marked trial as used for webhook cancelled subscription: ${userId}`)
+    } catch (trialError) {
+      console.error('Failed to mark trial as used:', trialError)
+      // Don't fail the whole operation if trial marking fails
+    }
+
     // Trigger profile refresh for real-time updates
     await triggerProfileRefresh(userId)
+
+    // Emit cancellation completion event for immediate UI updates
+    await emitWebhookCompletion(userId, 'subscription_cancelled', {
+      subscription_id: subscription.id,
+      new_plan: 'seeker',
+      new_status: 'cancelled'
+    })
 
     // Mark webhook as processed
     await supabase
@@ -731,6 +756,13 @@ async function handleSubscriptionFailed(subscription: SubscriptionEvent) {
     // Trigger profile refresh for real-time updates
     await triggerProfileRefresh(userId)
 
+    // Emit failure completion event for immediate UI updates
+    await emitWebhookCompletion(userId, 'subscription_failed', {
+      subscription_id: subscription.id,
+      new_plan: 'seeker',
+      new_status: 'failed'
+    })
+
   } catch (error) {
     console.error('Error handling subscription failure:', error)
     throw error
@@ -769,31 +801,16 @@ async function handleSubscriptionRenewed(subscription: SubscriptionEvent) {
     // Trigger profile refresh for real-time updates
     await triggerProfileRefresh(userId)
 
+    // Emit renewal completion event for immediate UI updates
+    await emitWebhookCompletion(userId, 'subscription_renewed', {
+      subscription_id: subscription.id,
+      new_plan: 'philosopher',
+      new_status: 'active'
+    })
+
   } catch (error) {
     console.error('Error handling subscription renewal:', error)
     throw error
   }
 }
 
-/**
- * Trigger profile refresh for real-time updates
- */
-async function triggerProfileRefresh(userId: string) {
-  try {
-    // Clear any cached profile data by updating a timestamp field
-    const { error } = await supabase
-      .from('profiles')
-      .update({ 
-        profile_refreshed_at: new Date().toISOString()
-      })
-      .eq('id', userId)
-
-    if (error) {
-      console.error('Failed to trigger profile refresh:', error)
-    } else {
-      console.log(`📱 Profile refresh triggered for user ${userId}`)
-    }
-  } catch (error) {
-    console.error('Error triggering profile refresh:', error)
-  }
-}

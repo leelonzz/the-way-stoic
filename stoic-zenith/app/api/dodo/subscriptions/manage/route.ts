@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { triggerSubscriptionUpdate } from '@/utils/subscriptionRefresh'
+import { markTrialAsUsed } from '@/lib/trial-prevention'
 
 // Use service role client for subscription management
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -180,6 +182,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Update local profile for cancellation - ALWAYS downgrade to seeker plan
     if (action === 'cancel') {
+      // First, get the user ID for real-time refresh
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('subscription_id', subscriptionId)
+        .single()
+
+      const userId = profile?.id
+
       if (cancelAtNextBilling) {
         // Cancel at next billing - mark for downgrade but keep active until then
         await supabase
@@ -202,13 +213,77 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           })
           .eq('subscription_id', subscriptionId)
       }
+
+      // Mark user as having used trial to prevent future trial access
+      if (userId) {
+        try {
+          await markTrialAsUsed(userId)
+          console.log(`✅ Marked trial as used for cancelled subscription: ${userId}`)
+        } catch (trialError) {
+          console.error('Failed to mark trial as used:', trialError)
+          // Don't fail the whole operation if trial marking fails
+        }
+      }
+
+      // Trigger real-time updates for immediate UI refresh
+      if (userId) {
+        try {
+          await triggerSubscriptionUpdate(userId, 'subscription_cancelled', {
+            subscription_id: subscriptionId,
+            new_plan: 'seeker',
+            new_status: cancelAtNextBilling ? 'active' : 'cancelled'
+          })
+          console.log(`✅ Real-time refresh triggered for manual cancellation: ${userId}`)
+        } catch (refreshError) {
+          console.error('Failed to trigger real-time refresh for cancellation:', refreshError)
+          // Don't fail the whole operation if refresh fails
+        }
+      }
+    }
+
+    // Update local profile for reactivation - upgrade back to philosopher plan
+    if (action === 'reactivate') {
+      // First, get the user ID for real-time refresh
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('subscription_id', subscriptionId)
+        .single()
+
+      const userId = profile?.id
+
+      // Reactivate subscription - upgrade back to philosopher plan
+      await supabase
+        .from('profiles')
+        .update({
+          subscription_status: 'active',
+          subscription_plan: 'philosopher', // Upgrade back to philosopher
+          updated_at: new Date().toISOString()
+        })
+        .eq('subscription_id', subscriptionId)
+
+      // Trigger real-time updates for immediate UI refresh
+      if (userId) {
+        try {
+          await triggerSubscriptionUpdate(userId, 'subscription_activated', {
+            subscription_id: subscriptionId,
+            new_plan: 'philosopher',
+            new_status: 'active'
+          })
+          console.log(`✅ Real-time refresh triggered for manual reactivation: ${userId}`)
+        } catch (refreshError) {
+          console.error('Failed to trigger real-time refresh for reactivation:', refreshError)
+          // Don't fail the whole operation if refresh fails
+        }
+      }
     }
 
     return NextResponse.json({
       success: true,
       action,
       subscription: updatedSubscription,
-      message: getActionMessage(action, cancelAtNextBilling)
+      message: getActionMessage(action, cancelAtNextBilling),
+      requiresRefresh: true // Flag to indicate frontend should trigger refresh
     })
 
   } catch (error) {

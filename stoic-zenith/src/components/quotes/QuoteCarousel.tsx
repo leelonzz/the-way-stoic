@@ -19,9 +19,19 @@ export function QuoteCarousel({
   onSave,
   onUnsave
 }: QuoteCarouselProps): JSX.Element {
-  // Initialize currentIndex from localStorage immediately
+  // Initialize currentIndex with proper validation and loading state
   const [currentIndex, setCurrentIndex] = useState(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && quotes.length > 0) {
+      // Try to get saved quote ID first
+      const savedQuoteId = localStorage.getItem('quote-carousel-quote-id')
+      if (savedQuoteId) {
+        const foundIndex = quotes.findIndex(quote => quote.id === savedQuoteId)
+        if (foundIndex >= 0) {
+          return foundIndex
+        }
+      }
+      
+      // Fallback to saved index with validation
       const savedIndex = localStorage.getItem('quote-carousel-index')
       if (savedIndex !== null) {
         const index = parseInt(savedIndex, 10)
@@ -32,38 +42,57 @@ export function QuoteCarousel({
     }
     return 0
   })
+  
   const [isLoading, setIsLoading] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(true)
   const { toast } = useToast()
 
   const currentQuote = quotes[currentIndex]
   const isSaved = currentQuote && isQuoteSaved ? isQuoteSaved(currentQuote.id) : false
 
-  // Save quote index to localStorage whenever it changes
+  // Handle initialization and prevent flash
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    const initTimer = setTimeout(() => {
+      setIsInitializing(false)
+    }, 100) // Brief delay to prevent flash
+
+    return () => clearTimeout(initTimer)
+  }, [])
+
+  // Save both quote ID and index to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && currentQuote && !isInitializing) {
       localStorage.setItem('quote-carousel-index', currentIndex.toString())
+      localStorage.setItem('quote-carousel-quote-id', currentQuote.id)
     }
-  }, [currentIndex])
+  }, [currentIndex, currentQuote, isInitializing])
+
+  // Validate current index when quotes change
+  useEffect(() => {
+    if (quotes.length > 0 && currentIndex >= quotes.length) {
+      setCurrentIndex(0)
+    }
+  }, [quotes.length, currentIndex])
 
   // Navigation functions with smooth transition
   const goToPrevious = useCallback(() => {
-    if (isTransitioning) return
+    if (isTransitioning || isInitializing) return
     setIsTransitioning(true)
     setTimeout(() => {
       setCurrentIndex(prev => prev === 0 ? quotes.length - 1 : prev - 1)
       setTimeout(() => setIsTransitioning(false), 200)
     }, 150)
-  }, [quotes.length, isTransitioning])
+  }, [quotes.length, isTransitioning, isInitializing])
 
   const goToNext = useCallback(() => {
-    if (isTransitioning) return
+    if (isTransitioning || isInitializing) return
     setIsTransitioning(true)
     setTimeout(() => {
       setCurrentIndex(prev => prev === quotes.length - 1 ? 0 : prev + 1)
       setTimeout(() => setIsTransitioning(false), 200)
     }, 150)
-  }, [quotes.length, isTransitioning])
+  }, [quotes.length, isTransitioning, isInitializing])
 
   // Keyboard navigation
   useEffect(() => {
@@ -179,10 +208,17 @@ export function QuoteCarousel({
     }
   }
 
-  if (!currentQuote) {
+  if (!currentQuote || isInitializing) {
     return (
       <div className="fixed inset-0 bg-hero flex items-center justify-center">
-        <p className="text-stone">No quotes available</p>
+        {isInitializing ? (
+          <div className="animate-pulse">
+            <div className="h-8 bg-stone/20 rounded w-64 mb-4 mx-auto"></div>
+            <div className="h-6 bg-stone/20 rounded w-48 mx-auto"></div>
+          </div>
+        ) : (
+          <p className="text-stone">No quotes available</p>
+        )}
       </div>
     )
   }
@@ -209,7 +245,7 @@ export function QuoteCarousel({
       <div className="fixed left-64 right-0 top-0 bottom-0 flex items-center justify-center px-16 md:px-24">
         <div 
           className={`max-w-4xl w-full text-center space-y-8 transition-opacity duration-300 ${
-            isTransitioning ? 'opacity-0' : 'opacity-100'
+            isTransitioning || isInitializing ? 'opacity-0' : 'opacity-100'
           }`}
         >
           <blockquote className="text-2xl md:text-3xl lg:text-4xl font-bold leading-relaxed text-ink font-inknut">

@@ -20,9 +20,9 @@ export interface JournalStats {
 export function useCachedJournalStats() {
   const { user } = useAuthContext()
 
-  // Use cache-aware query for journal entries
+  // Use cache-aware query for journal entries (separate key from main journal hook)
   const entriesQuery = useNavigationCachedQuery(
-    ['journal-entries', user?.id || 'anonymous'],
+    ['journal-entries-stats', user?.id || 'anonymous'],
     async (): Promise<JournalEntry[]> => {
       if (!user?.id) return []
       

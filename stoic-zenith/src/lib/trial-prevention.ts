@@ -23,14 +23,15 @@ export interface TrialEligibilityResult {
 }
 
 /**
- * Check if a user is eligible for a trial based on their Google account ID
+ * Check if a user is eligible for a trial based on their profile
+ * Updated to work with current database structure without Google account tracking
  */
 export async function checkTrialEligibility(userId: string): Promise<TrialEligibilityResult> {
   try {
-    // Get user profile with Google account ID
+    // Get user profile with trial and subscription information
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('google_account_id, has_used_trial, trial_used_at')
+      .select('has_used_trial, trial_used_at, subscription_status, subscription_plan, created_at')
       .eq('id', userId)
       .single()
 
@@ -42,50 +43,41 @@ export async function checkTrialEligibility(userId: string): Promise<TrialEligib
       }
     }
 
-    // If no Google account ID, cannot verify trial eligibility
-    if (!profile.google_account_id) {
+    // Check if user has already used trial
+    if (profile.has_used_trial) {
       return {
         eligible: false,
-        reason: 'Google account verification required for trial access',
+        reason: 'You have already used your free trial',
+        hasUsedTrial: true,
+        trialUsedAt: profile.trial_used_at
+      }
+    }
+
+    // Check if user has ever had a paid subscription (indicates they've had premium access)
+    // If they had a subscription before, they should not get a free trial
+    if (profile.subscription_status === 'cancelled' ||
+        profile.subscription_status === 'expired') {
+      return {
+        eligible: false,
+        reason: 'Free trial is not available for accounts that have previously had subscriptions',
+        hasUsedTrial: true, // Treat as having used trial
+        trialUsedAt: profile.trial_used_at || new Date().toISOString()
+      }
+    }
+
+    // If user currently has an active subscription, they don't need a trial
+    if (profile.subscription_status === 'active' && profile.subscription_plan === 'philosopher') {
+      return {
+        eligible: false,
+        reason: 'You already have an active premium subscription',
         hasUsedTrial: false
       }
     }
 
-    // Check if this Google account has used trial before
-    const { data: trialHistory, error: historyError } = await supabase
-      .from('trial_usage_history')
-      .select('trial_started_at, email')
-      .eq('google_account_id', profile.google_account_id)
-      .order('trial_started_at', { ascending: false })
-      .limit(1)
-
-    if (historyError) {
-      console.error('Error checking trial history:', historyError)
-      return {
-        eligible: false,
-        reason: 'Unable to verify trial eligibility',
-        hasUsedTrial: false,
-        googleAccountId: profile.google_account_id
-      }
-    }
-
-    const hasUsedTrial = profile.has_used_trial || (trialHistory && trialHistory.length > 0)
-
-    if (hasUsedTrial) {
-      const trialUsedAt = profile.trial_used_at || trialHistory?.[0]?.trial_started_at
-      return {
-        eligible: false,
-        reason: 'This Google account has already used a free trial',
-        hasUsedTrial: true,
-        trialUsedAt,
-        googleAccountId: profile.google_account_id
-      }
-    }
-
+    // User is eligible for trial if they haven't used it and haven't had a subscription
     return {
       eligible: true,
-      hasUsedTrial: false,
-      googleAccountId: profile.google_account_id
+      hasUsedTrial: false
     }
 
   } catch (error) {
@@ -102,14 +94,14 @@ export async function checkTrialEligibility(userId: string): Promise<TrialEligib
  * Record trial usage for a user
  */
 export async function recordTrialUsage(
-  userId: string, 
+  userId: string,
   planType: string = 'philosopher'
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Get user profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('google_account_id, email, has_used_trial')
+      .select('email, has_used_trial')
       .eq('id', userId)
       .single()
 
@@ -117,26 +109,23 @@ export async function recordTrialUsage(
       return { success: false, error: 'User profile not found' }
     }
 
-    if (!profile.google_account_id) {
-      return { success: false, error: 'Google account ID required' }
-    }
-
     if (profile.has_used_trial) {
       return { success: false, error: 'User has already used trial' }
     }
 
-    // Call the database function to record trial usage
-    const { error: recordError } = await supabase
-      .rpc('record_trial_usage', {
-        user_uuid: userId,
-        google_id: profile.google_account_id,
-        user_email: profile.email,
-        plan_type: planType
+    // Update user profile to mark trial as used
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        has_used_trial: true,
+        trial_used_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
+      .eq('id', userId)
 
-    if (recordError) {
-      console.error('Error recording trial usage:', recordError)
-      return { success: false, error: 'Failed to record trial usage' }
+    if (updateError) {
+      console.error('Error updating profile:', updateError)
+      return { success: false, error: 'Failed to update profile' }
     }
 
     return { success: true }
@@ -144,6 +133,34 @@ export async function recordTrialUsage(
   } catch (error) {
     console.error('Error recording trial usage:', error)
     return { success: false, error: 'Failed to record trial usage' }
+  }
+}
+
+/**
+ * Mark user as having used trial (for cancelled subscriptions)
+ * This prevents them from accessing free trials in the future
+ */
+export async function markTrialAsUsed(userId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        has_used_trial: true,
+        trial_used_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId)
+
+    if (updateError) {
+      console.error('Error marking trial as used:', updateError)
+      return { success: false, error: 'Failed to mark trial as used' }
+    }
+
+    return { success: true }
+
+  } catch (error) {
+    console.error('Error marking trial as used:', error)
+    return { success: false, error: 'Failed to mark trial as used' }
   }
 }
 

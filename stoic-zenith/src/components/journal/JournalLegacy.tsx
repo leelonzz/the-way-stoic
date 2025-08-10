@@ -38,6 +38,7 @@ export function JournalLegacy(): JSX.Element {
     handleCreateEntry: createEntry,
     handleDeleteEntry: deleteEntry,
     handleUpdateEntry: updateEntry,
+    handleUpdateEntryWithIdChange: updateEntryWithIdChange,
     handleRetrySync: retrySync,
     journalManager
   } = useCachedJournal();
@@ -194,6 +195,7 @@ export function JournalLegacy(): JSX.Element {
             <JournalNavigation
               entry={selectedEntry}
               onEntryUpdate={handleEntryUpdate}
+              onUpdateEntryWithIdChange={updateEntryWithIdChange}
               onCreateEntry={handleCreateEntryWrapper}
               onDeleteEntry={handleDeleteEntryWrapper}
               syncStatus={syncStatus === 'syncing' ? 'pending' : syncStatus}

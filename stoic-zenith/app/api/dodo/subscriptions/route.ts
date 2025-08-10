@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import DodoPayments from 'dodopayments'
 import { createClient } from '@supabase/supabase-js'
 import { getEffectiveSubscriptionPlan } from '@/utils/subscription'
+import { checkTrialEligibility } from '@/lib/trial-prevention'
 
 interface CreateSubscriptionRequest {
   productId: string
@@ -32,9 +33,16 @@ const dodoClient = new DodoPayments({
 })
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  let profile: any = null
+  let userId: string = ''
+  let productId: string = ''
+  let supabase: any = null
+
   try {
     const body: CreateSubscriptionRequest = await request.json()
-    const { productId, userId, customerData, returnUrl } = body
+    const { productId: reqProductId, userId: reqUserId, customerData, returnUrl } = body
+    userId = reqUserId
+    productId = reqProductId
 
     if (!productId || !userId || !customerData) {
       return NextResponse.json(
@@ -58,17 +66,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     })
 
     // Check if user is already on trial - prevent double subscription
-    const supabase = createClient(
+    supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('subscription_plan, subscription_status, trial_expires_at')
+      .select('subscription_plan, subscription_status, trial_expires_at, dodo_customer_id, has_used_trial')
       .eq('id', userId)
       .single()
 
+    profile = profileData
+    
     if (profileError || !profile) {
       return NextResponse.json(
         { error: 'User profile not found' },
@@ -101,8 +111,31 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       )
     }
 
+    // Determine if user is a returning customer and trial eligibility
+    // Validate customer_id format (should start with 'cust_' for Dodo)
+    const hasValidCustomerId = profile.dodo_customer_id &&
+      (profile.dodo_customer_id.startsWith('cust_') || profile.dodo_customer_id.startsWith('customer_'))
+    const isReturningCustomer = hasValidCustomerId
+
+    // Check comprehensive trial eligibility (includes cancelled subscription check)
+    const trialEligibility = await checkTrialEligibility(userId)
+    const trialPeriodDays = trialEligibility.eligible ? 7 : 0 // 7 days trial for eligible users, 0 for ineligible
+
+    // If customer_id exists but is invalid format, clear it and treat as new customer
+    if (profile.dodo_customer_id && !hasValidCustomerId) {
+      console.warn('🚨 Invalid customer_id format detected:', profile.dodo_customer_id, 'treating as new customer')
+    }
+
+    console.log('Creating subscription for user:', {
+      userId,
+      isReturningCustomer,
+      trialEligible: trialEligibility.eligible,
+      trialPeriodDays,
+      dodoCustomerId: profile.dodo_customer_id
+    })
+
     // Create subscription using Dodo Payments SDK
-    const subscription = await dodoClient.subscriptions.create({
+    const subscriptionData: any = {
       billing: {
         city: customerData.billingAddress.city,
         country: customerData.billingAddress.country as any,
@@ -110,20 +143,35 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         street: customerData.billingAddress.street,
         zipcode: customerData.billingAddress.zipcode,
       },
-      customer: {
-        email: customerData.email,
-        name: customerData.name,
-        phone_number: customerData.phone,
-        create_new_customer: true,
-      },
       product_id: productId,
       quantity: 1,
       return_url: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/subscription/success`,
       payment_link: true,
+      trial_period_days: trialPeriodDays,
       metadata: {
         user_id: userId,
       },
-    })
+    }
+
+    // Handle customer creation vs existing customer
+    if (isReturningCustomer) {
+      // Use existing customer - pass ONLY customer_id as per Dodo API docs
+      subscriptionData.customer = {
+        customer_id: profile.dodo_customer_id
+      }
+    } else {
+      // Create new customer
+      subscriptionData.customer = {
+        email: customerData.email,
+        name: customerData.name,
+        phone_number: customerData.phone,
+        create_new_customer: true,
+      }
+    }
+
+    console.log('🚀 Sending subscription data to Dodo:', JSON.stringify(subscriptionData, null, 2))
+    
+    const subscription = await dodoClient.subscriptions.create(subscriptionData)
 
     // Store the Dodo customer_id in the user's profile for webhook mapping
     if (subscription.customer?.customer_id) {
@@ -151,7 +199,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       payment_id: subscription.payment_id,
     })
   } catch (error) {
-    console.error('Dodo subscription creation error:', error)
+    console.error('🚨 Dodo subscription creation error:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      userId,
+      productId,
+      isReturningCustomer: !!profile?.dodo_customer_id,
+      hasUsedTrial: profile?.has_used_trial
+    })
     
     // Handle authentication errors specifically
     if (error instanceof Error && error.message.includes('401')) {
@@ -168,9 +223,63 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         { status: 401 }
       )
     }
+
+    // Handle 404 errors (invalid customer_id or product_id)
+    if (error instanceof Error && (error.message.includes('404') || error.message.includes('Not Found'))) {
+      console.error('🚨 Dodo API returned 404 - likely invalid customer_id or product_id')
+      
+      // If this is a returning customer with invalid customer_id, clear it and suggest retry
+      if (profile?.dodo_customer_id) {
+        // Clear the invalid customer_id
+        await supabase
+          .from('profiles')
+          .update({ 
+            dodo_customer_id: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId)
+        
+        return NextResponse.json(
+          { 
+            error: 'Customer account needs to be reset', 
+            details: 'Your customer account has been reset. Please try subscribing again.',
+            retryable: true
+          },
+          { status: 409 }
+        )
+      }
+      
+      return NextResponse.json(
+        { 
+          error: 'Subscription service error', 
+          details: 'The subscription service is temporarily unavailable. Please try again later.'
+        },
+        { status: 503 }
+      )
+    }
+
+    // Handle customer creation errors
+    if (error instanceof Error && (
+      error.message.includes('customer') || 
+      error.message.includes('Customer') ||
+      error.message.includes('duplicate')
+    )) {
+      return NextResponse.json(
+        { 
+          error: 'Customer creation failed', 
+          details: 'There may be an issue with your existing customer account. Please contact support.',
+          supportInfo: 'Please provide your user ID for assistance.'
+        },
+        { status: 409 }
+      )
+    }
     
     return NextResponse.json(
-      { error: 'Failed to create subscription', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: 'Failed to create subscription', 
+        details: error instanceof Error ? error.message : 'Unknown error occurred',
+        userMessage: 'Unable to create subscription. Please try again or contact support if the problem persists.'
+      },
       { status: 500 }
     )
   }

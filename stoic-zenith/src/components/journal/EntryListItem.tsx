@@ -11,9 +11,9 @@ interface EntryListItemProps {
   showDeleteButton?: boolean;
 }
 
-export const EntryListItem = memo(({ 
-  entry, 
-  isSelected, 
+export const EntryListItem = memo(({
+  entry,
+  isSelected,
   onSelect,
   onDelete,
   dateLabel,
@@ -78,6 +78,18 @@ export const EntryListItem = memo(({
       </div>
     </button>
   );
+}, (prevProps, nextProps) => {
+  // Custom comparison to prevent unnecessary re-renders
+  // Only re-render if selection state, entry ID, or date label changes
+  return (
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.entry.id === nextProps.entry.id &&
+    prevProps.dateLabel === nextProps.dateLabel &&
+    prevProps.showDeleteButton === nextProps.showDeleteButton &&
+    // Only check preview if it's actually displayed (not empty)
+    ((!prevProps.entry.preview && !nextProps.entry.preview) ||
+     prevProps.entry.preview === nextProps.entry.preview)
+  )
 });
 
 EntryListItem.displayName = 'EntryListItem';

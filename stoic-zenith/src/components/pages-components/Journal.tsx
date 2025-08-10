@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { toast } from '@/components/ui/use-toast'
 import { EntryList } from '@/components/journal/EntryList'
 import { JournalEntry } from '@/components/journal/types'
@@ -19,8 +19,6 @@ import {
 } from '@/lib/entryAccessTracker'
 
 export default function Journal(): JSX.Element {
-  console.log('🔍 Journal component rendering...')
-
   try {
     // Use cache-aware journal hook
     const {
@@ -33,22 +31,15 @@ export default function Journal(): JSX.Element {
       handleCreateEntry: createEntry,
       handleDeleteEntry: deleteEntry,
       handleUpdateEntry: updateEntry,
+      handleUpdateEntryWithIdChange: updateEntryWithIdChange,
       handleRetrySync: retrySync,
       journalManager,
+      isCreatingEntry, // Use the isCreatingEntry from the hook
     } = useCachedJournal()
 
-    console.log('📊 Journal state:', {
-      entriesCount: entries?.length || 0,
-      selectedEntry: selectedEntry?.id || 'none',
-      isLoadingEntries,
-      entriesError,
-      syncStatus
-    })
-
   // Legacy state for compatibility
-  const [isCreatingEntry, setIsCreatingEntry] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
-  const [lastCreateTime, setLastCreateTime] = useState<number>(0)
+  const lastCreateTimeRef = useRef<number>(0)
 
   // Wrapper functions for compatibility with existing code
   const handleSelectEntryWrapper = useCallback(
@@ -59,19 +50,13 @@ export default function Journal(): JSX.Element {
     [selectEntry]
   )
 
-  const handleCreateEntryWrapper = useCallback(async () => {
+  const handleCreateEntryWrapper = useCallback(() => {
     const now = Date.now()
-    if (now - lastCreateTime < 1000) return // Prevent double-clicks
+    if (now - lastCreateTimeRef.current < 1000) return // Prevent double-clicks
 
-    setIsCreatingEntry(true)
-    setLastCreateTime(now)
-
-    try {
-      await createEntry()
-    } finally {
-      setIsCreatingEntry(false)
-    }
-  }, [createEntry, lastCreateTime])
+    lastCreateTimeRef.current = now
+    createEntry() // The hook manages its own isCreatingEntry state
+  }, [createEntry])
 
   const handleDeleteEntryWrapper = useCallback(
     async (entryId: string) => {
@@ -211,6 +196,7 @@ export default function Journal(): JSX.Element {
             <JournalNavigation
               entry={selectedEntry}
               onEntryUpdate={handleEntryUpdate}
+              onUpdateEntryWithIdChange={updateEntryWithIdChange}
               onCreateEntry={handleCreateEntryWrapper}
               onDeleteEntry={handleDeleteEntryWrapper}
               syncStatus={syncStatus === 'syncing' ? 'pending' : syncStatus}

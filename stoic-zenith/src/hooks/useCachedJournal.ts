@@ -14,28 +14,23 @@ import { getTimeouts, exponentialBackoff } from '@/lib/environment'
  * when navigating to cached journal pages
  */
 export function useCachedJournal() {
-  console.log('🔍 useCachedJournal hook initializing...')
-
   const { user } = useAuthContext()
   const queryClient = useQueryClient()
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null)
   const [syncStatus, setSyncStatus] = useState<'syncing' | 'synced' | 'error'>('synced')
   const [isCreatingEntry, setIsCreatingEntry] = useState(false)
 
-  console.log('👤 User context:', { userId: user?.id, userEmail: user?.email })
+  // Track the last known entry ID to detect when it changes during sync
+  const [lastSelectedEntryId, setLastSelectedEntryId] = useState<string | null>(null)
+
 
   // Cache-aware query for journal entries
   const entriesQuery = useNavigationCachedQuery(
     ['journal-entries', user?.id || 'anonymous'],
     async (): Promise<JournalEntry[]> => {
-      console.log('📡 Journal query function executing...', { userId: user?.id })
-
       if (!user?.id) {
-        console.log('⚠️ No user ID, returning empty entries')
         return []
       }
-
-      console.log('🔧 Getting journal manager for user:', user.id)
       const manager = getJournalManager(user.id)
 
       // FORCE SYNC: Always sync from database first when user authenticates
@@ -50,15 +45,12 @@ export function useCachedJournal() {
         const syncWithRetry = async () => {
           return exponentialBackoff(
             async () => {
-              console.log('🔄 Starting journal sync...')
               // Force sync from database first
               await manager.retryAuthSync()
               
-              console.log('📚 Getting all entries...')
               // Get all entries (this will include database sync)
               const rawEntries = await manager.getAllEntries()
               
-              console.log('✅ Sync successful, entries:', rawEntries.length)
               setSyncStatus('synced')
               return rawEntries
             },
@@ -82,7 +74,6 @@ export function useCachedJournal() {
         // Add timeout as safeguard
         const syncPromise = new Promise<JournalEntry[]>((resolve, reject) => {
           timeoutId = setTimeout(() => {
-            console.warn('⏱️ Journal sync timeout - using local data')
             // Don't reject, resolve with local data
             manager.getAllEntries()
               .then(entries => {
@@ -105,7 +96,6 @@ export function useCachedJournal() {
                 clearTimeout(timeoutId)
                 timeoutId = null
               }
-              console.error('❌ Journal sync failed after retries:', error)
               // Try local fallback
               manager.getAllEntries()
                 .then(entries => {
@@ -118,7 +108,6 @@ export function useCachedJournal() {
 
         return await syncPromise
       } catch (error) {
-        console.error('❌ [CachedJournal] Database sync failed:', error)
         
         if (timeoutId) {
           clearTimeout(timeoutId)
@@ -128,12 +117,9 @@ export function useCachedJournal() {
 
         // Fallback to local data if sync fails
         try {
-          console.log('🔄 Attempting local fallback...')
           const rawEntries = await manager.getAllEntries()
-          console.log('⚠️ [CachedJournal] Using local data after sync failure:', rawEntries.length, 'entries')
           return rawEntries
         } catch (fallbackError) {
-          console.error('❌ [CachedJournal] Local fallback also failed:', fallbackError)
           return []
         }
       } finally {
@@ -148,7 +134,6 @@ export function useCachedJournal() {
       staleTime: 5 * 60 * 1000, // 5 minutes stale time
       gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
       retry: (failureCount, error) => {
-        console.error('❌ [CachedJournal] Query failed:', error)
         // Don't retry on auth failures
         if (error && typeof error === 'object' && 'message' in error) {
           const message = error.message as string
@@ -204,32 +189,84 @@ export function useCachedJournal() {
 
   // Auto-select entry when entries load (but not during entry creation)
   useEffect(() => {
-    if (!selectedEntry && entriesWithAccessTimes.length > 0 && !isCreatingEntry) {
-      const entriesWithAccess = entriesWithAccessTimes.filter(entry => entry.lastAccessedAt)
-      
-      let entryToSelect: typeof entriesWithAccessTimes[0] | undefined
-      
-      if (entriesWithAccess.length > 0) {
-        // Select most recently accessed entry
-        entryToSelect = entriesWithAccess.sort((a, b) => {
-          const timeA = a.lastAccessedAt?.getTime() || 0
-          const timeB = b.lastAccessedAt?.getTime() || 0
-          return timeB - timeA
-        })[0]
-      } else {
-        // Select most recently created entry
-        entryToSelect = [...entriesWithAccessTimes].sort((a, b) => {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        })[0]
-      }
-      
-      if (entryToSelect) {
-        setSelectedEntry(entryToSelect)
-        // Record access
-        recordEntryAccess(entryToSelect.id)
-      }
+    // Don't auto-select if:
+    // 1. We already have a selected entry that still exists in the entries list
+    // 2. We're in the middle of creating an entry
+    // 3. There are no entries to select from
+    if (isCreatingEntry || entriesWithAccessTimes.length === 0) {
+      return
+    }
+
+    // Check if current selected entry still exists in the entries list
+    const selectedEntryStillExists = selectedEntry &&
+      entriesWithAccessTimes.some(entry => entry.id === selectedEntry.id)
+
+    // If we have a valid selected entry that still exists, don't change it
+    if (selectedEntryStillExists) {
+      return
+    }
+
+    // Only auto-select if we don't have a valid selection
+    const entriesWithAccess = entriesWithAccessTimes.filter(entry => entry.lastAccessedAt)
+
+    let entryToSelect: typeof entriesWithAccessTimes[0] | undefined
+
+    if (entriesWithAccess.length > 0) {
+      // Select most recently accessed entry
+      entryToSelect = entriesWithAccess.sort((a, b) => {
+        const timeA = a.lastAccessedAt?.getTime() || 0
+        const timeB = b.lastAccessedAt?.getTime() || 0
+        return timeB - timeA
+      })[0]
+    } else {
+      // Select most recently created entry
+      entryToSelect = [...entriesWithAccessTimes].sort((a, b) => {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      })[0]
+    }
+
+    if (entryToSelect) {
+      setSelectedEntry(entryToSelect)
+      recordEntryAccess(entryToSelect.id)
     }
   }, [entriesWithAccessTimes, selectedEntry, isCreatingEntry])
+
+  // Handle entry ID changes during sync (temp ID -> permanent ID)
+  useEffect(() => {
+    if (!selectedEntry || !lastSelectedEntryId) {
+      // Update tracking when selection changes
+      if (selectedEntry?.id !== lastSelectedEntryId) {
+        setLastSelectedEntryId(selectedEntry?.id || null)
+      }
+      return
+    }
+
+    // Check if the selected entry ID has changed (temp -> permanent)
+    const currentEntryWithSameId = entriesWithAccessTimes.find(entry => entry.id === selectedEntry.id)
+
+    if (!currentEntryWithSameId && selectedEntry.id.startsWith('temp-')) {
+      // The temp entry is gone, try to find the permanent entry with similar content
+      const permanentEntry = entriesWithAccessTimes.find(entry => {
+        // Match by creation date (within 1 minute) and similar content
+        const timeDiff = Math.abs(new Date(entry.createdAt).getTime() - new Date(selectedEntry.createdAt).getTime())
+        const isSimilarTime = timeDiff < 60000 // 1 minute
+        const hasSimilarContent = entry.blocks.length === selectedEntry.blocks.length
+
+        // Also check first block content if it exists
+        const firstBlockMatches = entry.blocks[0]?.text === selectedEntry.blocks[0]?.text
+
+        return isSimilarTime && hasSimilarContent && firstBlockMatches && !entry.id.startsWith('temp-')
+      })
+
+      if (permanentEntry) {
+        setSelectedEntry(permanentEntry)
+        recordEntryAccess(permanentEntry.id)
+      }
+    }
+
+    // Update tracking
+    setLastSelectedEntryId(selectedEntry.id)
+  }, [entriesWithAccessTimes, selectedEntry, lastSelectedEntryId])
 
   // Record entry access function
   const recordEntryAccess = (entryId: string) => {
@@ -251,83 +288,31 @@ export function useCachedJournal() {
     recordEntryAccess(entry.id)
   }
 
-  // Create new entry function - INSTANT (0ms) - FIXED: Ensure localStorage before selection
+  // Create new entry function - Simplified and reliable
   const handleCreateEntry = () => {
-    if (!user?.id) return
+    if (!user?.id || isCreatingEntry) return
 
-    // Set creation flag to prevent auto-selection interference
     setIsCreatingEntry(true)
-    
-    // CREATION LOCK: Prevent rapid duplicate creation attempts
-    const lastCreateTime = typeof window !== 'undefined' 
-      ? parseInt(localStorage.getItem('lastJournalCreateTime') || '0') 
-      : 0
-    const now = Date.now()
-    const minimumInterval = 2000 // 2 seconds between creations
-    
-    if (now - lastCreateTime < minimumInterval) {
-      console.log('⚠️ Creation blocked - too soon after last creation')
-      toast({
-        title: "Please wait",
-        description: "Please wait a moment before creating another entry.",
-        variant: "default",
-      })
-      return
-    }
-    
+
     try {
       const manager = getJournalManager(user.id)
-      // Use timestamp format to allow multiple entries per day
-      const dateString = new Date().toISOString() // Full ISO timestamp format
+      const dateString = new Date().toISOString()
       const newEntry = manager.createEntryImmediately(dateString, 'general')
-      
-      // Update last creation time
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('lastJournalCreateTime', now.toString())
-      }
-      
-      // CRITICAL: Verify entry exists in localStorage before proceeding
-      const verifyEntry = manager.getFromLocalStorage(newEntry.id)
-      if (!verifyEntry) {
-        console.error(`🚨 Entry not found in localStorage after creation: ${newEntry.id}`)
-        throw new Error('Entry creation failed - not persisted to localStorage')
-      }
-      
-      // DEDUPLICATION: Remove any existing entries with the same ID before adding
-      const currentEntries = entriesQuery.data || []
-      const deduplicatedEntries = currentEntries.filter(entry => entry.id !== newEntry.id)
-      
-      // Record access time BEFORE updating UI to prevent race conditions
+
+      // Record access time
       recordEntryAccess(newEntry.id)
 
-      // Optimistically update the entries list immediately (0ms)
-      queryClient.setQueryData(['journal-entries', user.id], [newEntry, ...deduplicatedEntries])
+      // Update entries list immediately
+      const currentEntries = entriesQuery.data || []
+      queryClient.setQueryData(['journal-entries', user.id], [newEntry, ...currentEntries])
 
-      // Select the new entry only after localStorage verification and access recording
+      // Select the new entry
       setSelectedEntry(newEntry)
-
-      // Clear creation flag after successful creation and selection
       setIsCreatingEntry(false)
 
-      console.log(`✅ Entry created and selected: ${newEntry.id}`)
-
-      // Background refetch (non-blocking)
-      entriesQuery.refetch()
-      
     } catch (error) {
       console.error('Failed to create entry:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-
-      // Clear creation flag on error
       setIsCreatingEntry(false)
-
-      // Handle specific error cases
-      if (errorMessage.includes('creation blocked') || errorMessage.includes('another creation in progress')) {
-        // This is expected behavior - don't show error toast
-        console.log('✅ Creation appropriately blocked to prevent duplicates')
-        return
-      }
-
       toast({
         title: "Entry creation failed",
         description: "Failed to create new entry. Please try again.",
@@ -357,7 +342,6 @@ export function useCachedJournal() {
       
       // Note: No immediate refetch needed - optimistic update already removed entry from UI
       // Deleted entries list will prevent reappearing during future syncs
-      console.log(`✅ Entry ${entryId} deleted successfully - no refetch needed`)
     } catch (error) {
       console.error('Failed to delete entry:', error)
       toast({
@@ -375,19 +359,14 @@ export function useCachedJournal() {
     if (!user?.id) return
     
     try {
-      console.log(`🔍 handleUpdateEntry called with entryId: ${entryId}`)
-      
       // Check if entry exists before trying to update
       const manager = getJournalManager(user.id)
       const existingEntry = manager.getFromLocalStorage(entryId)
-      
+
       if (!existingEntry) {
-        console.warn(`⚠️ Cannot update entry ${entryId} - entry not found in localStorage. Skipping update.`)
         return
       }
-      
-      console.log(`✅ Found existing entry: ${existingEntry.id}`)
-      
+
       // Update in localStorage via journal manager
       await manager.updateEntryImmediately(entryId, blocks)
       
@@ -410,11 +389,56 @@ export function useCachedJournal() {
       // Also update selectedEntry if it's the one being edited
       if (selectedEntry?.id === entryId) {
         setSelectedEntry(updatedEntry)
-        setSelectedEntry({
-          ...selectedEntry,
-          blocks,
-          updatedAt: new Date()
-        })
+      }
+    } catch (error) {
+      console.error('Failed to update entry:', error)
+      toast({
+        title: "Save failed",
+        description: "Failed to save changes. Your content is preserved locally.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Enhanced update handler that can handle ID changes
+  const handleUpdateEntryWithIdChange = async (entryId: string, blocks: JournalBlock[], onIdChange?: (newId: string) => void) => {
+    if (!user?.id) return
+
+    try {
+      const manager = getJournalManager(user.id)
+      const existingEntry = manager.getFromLocalStorage(entryId)
+
+      if (!existingEntry) {
+        return
+      }
+
+      // Register for ID change notifications if callback provided
+      if (onIdChange && entryId.startsWith('temp')) {
+        manager.registerEntryIdChangeListener(entryId, onIdChange)
+      }
+
+      // Update in localStorage via journal manager
+      await manager.updateEntryImmediately(entryId, blocks)
+
+      // Update React Query cache immediately for real-time UI update
+      const currentEntries = entriesQuery.data || []
+      const updatedEntry = {
+        ...currentEntries.find(e => e.id === entryId),
+        id: entryId,
+        blocks,
+        updatedAt: new Date()
+      } as JournalEntry
+
+      const updatedEntries = currentEntries.map(entry =>
+        entry.id === entryId ? updatedEntry : entry
+      )
+
+      // Update the cache instantly with structural change to trigger re-render
+      queryClient.setQueryData(['journal-entries', user.id], [...updatedEntries])
+
+      // Also update selectedEntry if it's the one being edited
+      if (selectedEntry?.id === entryId) {
+        setSelectedEntry(updatedEntry)
       }
     } catch (error) {
       console.error('Failed to update entry:', error)
@@ -450,15 +474,17 @@ export function useCachedJournal() {
     syncStatus,
     isRefetching: entriesQuery.isFetching && !!entriesQuery.data,
     isCached: !entriesQuery.isLoading && !!entriesQuery.data,
-    
+    isCreatingEntry, // Export the creation state
+
     // Actions
     handleSelectEntry,
     handleCreateEntry,
     handleDeleteEntry,
     handleUpdateEntry,
+    handleUpdateEntryWithIdChange,
     handleRetrySync,
     setEntries: () => {}, // Placeholder for compatibility
-    
+
     // Journal manager for compatibility
     journalManager: getJournalManager(user?.id || null),
   }

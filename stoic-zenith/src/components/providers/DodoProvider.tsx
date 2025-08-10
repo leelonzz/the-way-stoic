@@ -53,6 +53,12 @@ export function DodoProvider({ children }: { children: React.ReactNode }) {
 
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('🚨 Subscription creation failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          requestData: { productId, userId, customerData }
+        })
         throw new Error(errorData.error || 'Failed to create subscription')
       }
 
@@ -100,6 +106,12 @@ export function DodoProvider({ children }: { children: React.ReactNode }) {
 
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('🚨 Payment creation failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          requestData: { productId, userId, customerData }
+        })
         throw new Error(errorData.error || 'Failed to create payment')
       }
 

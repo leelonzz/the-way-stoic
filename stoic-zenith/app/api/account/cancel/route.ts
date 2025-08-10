@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/auth-server'
-import { recordAccountCancellation } from '@/lib/trial-prevention'
+import { recordAccountCancellation, markTrialAsUsed } from '@/lib/trial-prevention'
 import { createClient } from '@supabase/supabase-js'
+import { triggerSubscriptionUpdate } from '@/utils/subscriptionRefresh'
 
 // Use service role client for account operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -90,13 +91,36 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       })
       .eq('id', user.id)
 
+    // Mark user as having used trial to prevent future trial access
+    try {
+      await markTrialAsUsed(user.id)
+      console.log(`✅ Marked trial as used for cancelled account: ${user.id}`)
+    } catch (trialError) {
+      console.error('Failed to mark trial as used:', trialError)
+      // Don't fail the whole operation if trial marking fails
+    }
+
+    // Trigger real-time updates for immediate UI refresh
+    try {
+      await triggerSubscriptionUpdate(user.id, 'subscription_cancelled', {
+        subscription_id: profile?.subscription_id || 'account_cancelled',
+        new_plan: 'seeker',
+        new_status: 'cancelled'
+      })
+      console.log(`✅ Real-time refresh triggered for account cancellation: ${user.id}`)
+    } catch (refreshError) {
+      console.error('Failed to trigger real-time refresh for account cancellation:', refreshError)
+      // Don't fail the whole operation if refresh fails
+    }
+
     // Note: We don't actually delete the user account from auth.users
     // This preserves the trial usage history and prevents circumventing restrictions
     // The account is marked as cancelled but the data remains for security
 
     return NextResponse.json({
       success: true,
-      message: 'Account cancelled successfully. Your trial usage history has been preserved to prevent abuse.'
+      message: 'Account cancelled successfully. Your trial usage history has been preserved to prevent abuse.',
+      requiresRefresh: true
     })
 
   } catch (error) {

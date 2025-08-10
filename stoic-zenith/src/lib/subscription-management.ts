@@ -32,6 +32,7 @@ export interface SubscriptionUpdateResponse {
   action: string
   subscription: DodoSubscription
   message: string
+  requiresRefresh?: boolean
 }
 
 /**

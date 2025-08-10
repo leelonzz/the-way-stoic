@@ -2,14 +2,14 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useUser } from '@/hooks/useUser'
+import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, Receipt, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
 export default function BillingPortalPage(): JSX.Element {
-  const { user, loading } = useUser()
+  const { user, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {

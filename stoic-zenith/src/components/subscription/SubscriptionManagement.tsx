@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,6 +23,7 @@ import {
 import {
   getUserSubscription,
   reactivateSubscription,
+  cancelSubscription,
   getSubscriptionStatusText,
   getSubscriptionStatusColor,
   canReactivateSubscription,
@@ -35,6 +36,7 @@ import {
 import { getEffectiveSubscriptionPlan } from '@/utils/subscription'
 import { completeProfileRefresh } from '@/utils/profileRefresh'
 import { useAuthContext } from '@/components/auth/AuthProvider'
+import { supabase } from '@/integrations/supabase/client'
 
 interface SubscriptionManagementProps {
   userId: string
@@ -52,7 +54,11 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
   const { toast } = useToast()
   const { refreshProfile } = useAuthContext()
 
-  const loadSubscriptionData = async () => {
+  // Use refs to store function references for stable access in real-time handler
+  const loadSubscriptionDataRef = useRef<() => Promise<void>>()
+  const refreshProfileRef = useRef<() => Promise<void>>()
+
+  const loadSubscriptionData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -65,7 +71,16 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
     } finally {
       setLoading(false)
     }
-  }
+  }, [userId])
+
+  // Update refs whenever functions change
+  useEffect(() => {
+    loadSubscriptionDataRef.current = loadSubscriptionData
+  }, [loadSubscriptionData])
+
+  useEffect(() => {
+    refreshProfileRef.current = refreshProfile
+  }, [refreshProfile])
 
   useEffect(() => {
     if (userId) {
@@ -73,7 +88,275 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
     }
   }, [userId])
 
+  // Auto-refresh profile when returning from customer portal
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('refresh') === 'true') {
+      // Clear the refresh parameter from URL without page reload
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('refresh')
+      window.history.replaceState({}, '', newUrl.toString())
 
+      // Use force refresh instead of regular sync for better reliability
+      console.log('🔄 Returning from customer portal, triggering force refresh...')
+      handleForceRefreshProfile()
+    }
+  }, [])
+
+  // Auto-refresh when tab becomes visible (user returns from another tab)
+  useEffect(() => {
+    let lastRefresh = 0
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden && userId) {
+        const now = Date.now()
+        const timeSinceLastRefresh = now - lastRefresh
+        const twoSeconds = 2 * 1000
+
+        // Only refresh if it's been more than 2 seconds since last refresh
+        // This prevents excessive refreshing but is very responsive
+        if (timeSinceLastRefresh > twoSeconds) {
+          console.log('👁️ Tab became visible, triggering immediate refresh...')
+
+          toast({
+            title: 'Auto-Refreshing',
+            description: 'Checking for subscription updates...',
+            variant: 'default',
+          })
+
+          handleForceRefreshProfile()
+          lastRefresh = now
+        } else {
+          console.log('📱 Recent refresh detected, skipping to prevent spam')
+        }
+      }
+    }
+
+    // Also listen for window focus events for even faster detection
+    const handleFocus = () => {
+      if (userId) {
+        const now = Date.now()
+        const timeSinceLastRefresh = now - lastRefresh
+        const twoSeconds = 2 * 1000
+
+        if (timeSinceLastRefresh > twoSeconds) {
+          console.log('🎯 Window focused, triggering immediate refresh...')
+
+          toast({
+            title: 'Auto-Refreshing',
+            description: 'Checking for subscription updates...',
+            variant: 'default',
+          })
+
+          handleForceRefreshProfile()
+          lastRefresh = now
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [userId])
+
+  const handleForceSync = async () => {
+    try {
+      setSyncLoading(true)
+      
+      // First refresh the auth profile
+      await refreshProfile()
+      
+      // Then reload subscription data
+      await loadSubscriptionData()
+      
+      toast({
+        title: 'Profile Synced',
+        description: 'Your subscription status has been updated.',
+        variant: 'default',
+      })
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sync profile'
+      toast({
+        title: 'Sync Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+    } finally {
+      setSyncLoading(false)
+    }
+  }
+
+  // Real-time listener for profile changes with retry mechanism
+  useEffect(() => {
+    if (!userId) return
+
+    console.log('Setting up real-time subscription for user:', userId)
+    let retryCount = 0
+    let reconnectCount = 0
+    const maxRetries = 3
+    const maxReconnects = 5
+    let retryTimeout: NodeJS.Timeout
+    let reconnectTimeout: NodeJS.Timeout
+    let currentSubscription: any = null
+
+    const handleProfileUpdate = async (payload: any) => {
+      console.log('🔥 Profile updated via webhook:', payload.new)
+      
+      try {
+        // Check if this is a meaningful update (subscription-related changes)
+        const oldData = payload.old
+        const newData = payload.new
+        
+        const subscriptionFieldsChanged = 
+          oldData?.subscription_status !== newData?.subscription_status ||
+          oldData?.subscription_plan !== newData?.subscription_plan ||
+          oldData?.subscription_expires_at !== newData?.subscription_expires_at ||
+          oldData?.updated_at !== newData?.updated_at
+        
+        if (subscriptionFieldsChanged) {
+          console.log('📱 Subscription-related fields changed, refreshing UI')
+          
+          // Debounce multiple rapid updates
+          clearTimeout(retryTimeout)
+          retryTimeout = setTimeout(async () => {
+            try {
+              // Use refs to access current functions without stale closures
+              const promises = []
+              
+              if (loadSubscriptionDataRef.current) {
+                promises.push(loadSubscriptionDataRef.current())
+              }
+              
+              if (refreshProfileRef.current) {
+                promises.push(refreshProfileRef.current())
+              }
+              
+              await Promise.all(promises)
+              retryCount = 0 // Reset retry count on success
+              console.log('✅ Profile and subscription data refreshed successfully')
+            } catch (error) {
+              console.error('❌ Error refreshing profile data:', error)
+              
+              // Retry mechanism for failed updates
+              if (retryCount < maxRetries) {
+                retryCount++
+                console.log(`🔄 Retrying profile refresh (attempt ${retryCount}/${maxRetries})`)
+                setTimeout(() => {
+                  handleProfileUpdate(payload)
+                }, 2000 * retryCount) // Exponential backoff
+              } else {
+                console.error('❌ Max retries reached for profile refresh')
+                toast({
+                  title: 'Sync Error',
+                  description: 'Profile sync failed. Please click Force Refresh to update manually.',
+                  variant: 'destructive',
+                })
+              }
+            }
+          }, 500) // 500ms debounce
+        } else {
+          console.log('📱 Non-subscription update detected, skipping refresh')
+        }
+      } catch (error) {
+        console.error('❌ Error processing profile update:', error)
+      }
+    }
+
+    const createSubscription = () => {
+      if (currentSubscription) {
+        currentSubscription.unsubscribe()
+      }
+
+      currentSubscription = supabase
+        .channel(`profile-changes-${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${userId}`
+          },
+          handleProfileUpdate
+        )
+        .subscribe((status) => {
+          console.log('Real-time subscription status:', status)
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Real-time profile subscription active')
+            reconnectCount = 0 // Reset reconnect count on successful connection
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Real-time subscription error, attempting to reconnect...')
+            
+            if (reconnectCount < maxReconnects) {
+              reconnectCount++
+              const delay = Math.min(1000 * Math.pow(2, reconnectCount - 1), 30000) // Exponential backoff, max 30s
+              
+              clearTimeout(reconnectTimeout)
+              reconnectTimeout = setTimeout(() => {
+                console.log(`🔄 Reconnecting real-time subscription (attempt ${reconnectCount}/${maxReconnects})`)
+                createSubscription()
+              }, delay)
+            } else {
+              console.error('❌ Max reconnection attempts reached for real-time subscription')
+              toast({
+                title: 'Connection Error',
+                description: 'Real-time updates unavailable. Please refresh the page or use Force Refresh.',
+                variant: 'destructive',
+              })
+            }
+          }
+        })
+    }
+
+    // Initial subscription creation
+    createSubscription()
+
+    return () => {
+      console.log('Cleaning up real-time subscription')
+      clearTimeout(retryTimeout)
+      clearTimeout(reconnectTimeout)
+      if (currentSubscription) {
+        currentSubscription.unsubscribe()
+      }
+    }
+  }, [userId]) // Only depend on userId to prevent constant re-subscriptions
+
+  const handleCancelSubscription = async (cancelAtNextBilling: boolean = true) => {
+    if (!subscriptionData?.profile.subscription_id) return
+
+    try {
+      setActionLoading(true)
+      const result = await cancelSubscription(subscriptionData.profile.subscription_id, cancelAtNextBilling)
+
+      toast({
+        title: 'Subscription Cancelled',
+        description: result.message,
+        variant: 'default',
+      })
+
+      // If API indicates refresh is needed, trigger force refresh
+      if (result.requiresRefresh) {
+        console.log('🔄 API requested refresh after cancellation, triggering force refresh...')
+        await handleForceRefreshProfile()
+      } else {
+        // Otherwise just reload subscription data
+        await loadSubscriptionData()
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to cancel subscription'
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+    } finally {
+      setActionLoading(false)
+    }
+  }
 
   const handleReactivateSubscription = async () => {
     if (!subscriptionData?.profile.subscription_id) return
@@ -88,8 +371,14 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
         variant: 'default',
       })
 
-      // Reload subscription data
-      await loadSubscriptionData()
+      // If API indicates refresh is needed, trigger force refresh
+      if (result.requiresRefresh) {
+        console.log('🔄 API requested refresh, triggering force refresh...')
+        await handleForceRefreshProfile()
+      } else {
+        // Otherwise just reload subscription data
+        await loadSubscriptionData()
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to reactivate subscription'
       toast({
@@ -441,6 +730,7 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
           <div className="space-y-2">
             <p className="text-sm text-stone">
               If your subscription status isn't updating correctly, use this to clear cached data and refresh your profile.
+              The app also automatically refreshes when you return from the billing portal or switch back to this tab.
             </p>
             <Button
               onClick={handleForceRefreshProfile}

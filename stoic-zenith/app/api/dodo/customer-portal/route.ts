@@ -58,8 +58,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       dodoCustomerId: profile.dodo_customer_id
     })
 
-    // Create customer portal session
-    const portalSession = await dodoClient.customers.customerPortal.create(profile.dodo_customer_id)
+    // Create customer portal session with return URL that triggers profile refresh
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const returnUrl = `${baseUrl}/subscription?refresh=true`
+    
+    const portalSession = await dodoClient.customers.customerPortal.create(
+      profile.dodo_customer_id,
+      { return_url: returnUrl }
+    )
 
     if (!portalSession.link) {
       throw new Error('Portal session link not generated')

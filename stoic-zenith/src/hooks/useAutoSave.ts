@@ -24,7 +24,7 @@ interface AutoSaveState {
  */
 export function useAutoSave(options: AutoSaveOptions = {}): AutoSaveState {
   const {
-    throttleMs = 500,
+    throttleMs = 1000, // Increased from 500ms to reduce conflicts with typing
     localStorageBatchMs = 2000,
     onSave,
     onSaveStatus
@@ -65,6 +65,43 @@ export function useAutoSave(options: AutoSaveOptions = {}): AutoSaveState {
         saveStatusRef.current = 'error'
         onSaveStatus?.('error')
         console.error('Auto-save failed:', error)
+        
+        // Log more details about the error
+        if (error instanceof Error) {
+          console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            blocksLength: blocks?.length,
+            hasOnSave: !!onSave
+          })
+        }
+
+        // CRITICAL FIX: Add retry mechanism for failed saves
+        // Store the failed blocks for retry
+        pendingSaveRef.current = blocks
+
+        // Retry after a longer delay to avoid conflicts
+        setTimeout(async () => {
+          try {
+            // Only retry if there's still pending content and user isn't actively typing
+            if (onSave && pendingSaveRef.current) {
+              console.log('Retrying failed auto-save...')
+              saveStatusRef.current = 'saving'
+              onSaveStatus?.('saving')
+              
+              await onSave(pendingSaveRef.current)
+              saveStatusRef.current = 'saved'
+              onSaveStatus?.('saved')
+              pendingSaveRef.current = null
+              console.log('Auto-save retry successful')
+            }
+          } catch (retryError) {
+            console.error('Auto-save retry failed:', retryError)
+            saveStatusRef.current = 'error'
+            onSaveStatus?.('error')
+            // Keep the pending save for potential manual save
+          }
+        }, 3000) // Increased retry delay to 3 seconds
       }
     } else {
       // Schedule save for later
@@ -92,6 +129,27 @@ export function useAutoSave(options: AutoSaveOptions = {}): AutoSaveState {
             saveStatusRef.current = 'error'
             onSaveStatus?.('error')
             console.error('Auto-save failed:', error)
+
+            // CRITICAL FIX: Add retry for scheduled saves too
+            setTimeout(async () => {
+              try {
+                console.log('Retrying failed scheduled auto-save...')
+                saveStatusRef.current = 'saving'
+                onSaveStatus?.('saving')
+
+                if (onSave && pendingSaveRef.current) {
+                  await onSave(pendingSaveRef.current)
+                  saveStatusRef.current = 'saved'
+                  onSaveStatus?.('saved')
+                  pendingSaveRef.current = null
+                  console.log('Scheduled auto-save retry successful')
+                }
+              } catch (retryError) {
+                console.error('Scheduled auto-save retry failed:', retryError)
+                saveStatusRef.current = 'error'
+                onSaveStatus?.('error')
+              }
+            }, 2000)
           }
         }
       }, remainingTime)

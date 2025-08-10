@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { useDodo } from '@/components/providers/DodoProvider'
 import { useToast } from '@/hooks/use-toast'
 import { useAuthContext } from '@/components/auth/AuthProvider'
-import { Loader2, Zap } from 'lucide-react'
+import { getEffectiveSubscriptionPlan } from '@/utils/subscription'
+import { Loader2, Zap, AlertTriangle } from 'lucide-react'
 
 interface DodoSubscriptionButtonProps {
   productId: string
@@ -48,6 +49,30 @@ export function DodoSubscriptionButton({
       return
     }
 
+    // Check if user is on trial - prevent trial users from subscribing
+    if (profile) {
+      const effectivePlan = getEffectiveSubscriptionPlan(profile)
+      
+      if (effectivePlan === 'philosopher' && profile.subscription_status !== 'active') {
+        toast({
+          title: 'Trial Active',
+          description: 'You cannot subscribe while on trial. Please wait for your trial to expire or contact support.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Check if user already has an active paid subscription
+      if (profile.subscription_status === 'active' && profile.subscription_plan === 'philosopher') {
+        toast({
+          title: 'Already Subscribed',
+          description: 'You already have an active subscription. Please manage it in your settings.',
+          variant: 'default',
+        })
+        return
+      }
+    }
+
     setIsLoading(true)
 
     try {
@@ -88,18 +113,39 @@ export function DodoSubscriptionButton({
     }
   }
 
+  // Check if user is on trial or already subscribed
+  const isOnTrial = profile && getEffectiveSubscriptionPlan(profile) === 'philosopher' && profile.subscription_status !== 'active'
+  const hasActiveSubscription = profile?.subscription_status === 'active' && profile?.subscription_plan === 'philosopher'
+  const isButtonDisabled = dodoLoading || isLoading || !user || isOnTrial || hasActiveSubscription
+
   return (
     <div className="space-y-2">
       <Button
         onClick={handleSubscribe}
-        disabled={dodoLoading || isLoading || !user}
-        className={`w-full bg-cta hover:bg-cta/90 text-white ${className || ''}`}
+        disabled={isButtonDisabled}
+        className={`w-full ${
+          isOnTrial 
+            ? 'bg-yellow-600 hover:bg-yellow-700 text-white cursor-not-allowed'
+            : hasActiveSubscription
+            ? 'bg-green-600 hover:bg-green-700 text-white cursor-not-allowed'
+            : 'bg-cta hover:bg-cta/90 text-white'
+        } ${className || ''}`}
         size="lg"
       >
         {(isLoading || dodoLoading) ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Processing...
+          </>
+        ) : isOnTrial ? (
+          <>
+            <AlertTriangle className="mr-2 h-4 w-4" />
+            Trial Active
+          </>
+        ) : hasActiveSubscription ? (
+          <>
+            <Zap className="mr-2 h-4 w-4" />
+            Already Subscribed
           </>
         ) : (
           <>
@@ -112,6 +158,18 @@ export function DodoSubscriptionButton({
       {!user && (
         <p className="text-xs text-stone text-center">
           Please sign in to subscribe
+        </p>
+      )}
+      
+      {isOnTrial && (
+        <p className="text-xs text-yellow-700 text-center">
+          You cannot subscribe while on trial. Wait for trial to expire or contact support.
+        </p>
+      )}
+      
+      {hasActiveSubscription && (
+        <p className="text-xs text-green-700 text-center">
+          You already have an active subscription. Manage it in your settings.
         </p>
       )}
     </div>

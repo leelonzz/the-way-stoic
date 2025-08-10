@@ -270,3 +270,13 @@ export function preserveTypography(html: string): string {
 
   return tempDiv.innerHTML
 }
+
+// Convert text with newlines to HTML with <br> tags
+export function textToHtml(text: string): string {
+  return text.replace(/\r?\n/g, '<br>')
+}
+
+// Convert HTML with <br> tags back to text with newlines
+export function htmlToText(html: string): string {
+  return html.replace(/<br\s*\/?>/gi, '\n')
+}

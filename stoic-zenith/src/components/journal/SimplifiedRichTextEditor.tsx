@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useEffect, useState } from 'react'
+import React, { useCallback, useRef, useEffect, useLayoutEffect, useState } from 'react'
 import { JournalBlock } from './types'
 import { Bold, Italic, Underline, Strikethrough, Link as LinkIcon } from 'lucide-react'
 import { sanitizeHtml } from './richTextUtils'
@@ -82,73 +82,123 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
   showPlaceholder = true, // default true for backward compatibility
 }: SimplifiedRichTextEditorProps): JSX.Element {
   const editorRef = useRef<HTMLDivElement>(null)
-  const [isUpdating, setIsUpdating] = useState(false)
   const [showToolbar, setShowToolbar] = useState(false)
   const [toolbarPosition, setToolbarPosition] = useState({ x: 0, y: 0 })
   const cursorPositionRef = useRef<{ start: number; end: number } | null>(null)
+  const isUserEditingRef = useRef(false) // Track when user is actively editing
+  const lastContentRef = useRef<string>('') // Track last known content to prevent loops
+  const shouldRestoreCursorRef = useRef(false) // Track when cursor should be restored
 
   const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-    console.log('🎯 SimplifiedRichTextEditor handleInput CALLED - isUpdating:', isUpdating, 'blockId:', block.id)
-
-    if (isUpdating) {
-      console.log('⏭️ Skipping handleInput - component is updating')
-      return
-    }
-
     const target = e.currentTarget
-    const text = target.textContent || ''
-    const html = target.innerHTML || ''
+    let text = target.textContent || ''
+    let html = target.innerHTML || ''
 
-    console.log('✏️ SimplifiedRichTextEditor handleInput - text length:', text.length, 'text preview:', text.substring(0, 50))
+    // CRITICAL FIX: Preserve line breaks consistently
+    // Convert all line break representations to a consistent format
+    
+    // Normalize HTML line breaks to preserve formatting
+    // Convert <div> and <p> tags to proper line breaks
+    html = html.replace(/<div><br><\/div>/gi, '\n')
+    html = html.replace(/<div><\/div>/gi, '\n')
+    html = html.replace(/<div>/gi, '\n')
+    html = html.replace(/<\/div>/gi, '')
+    html = html.replace(/<p><br><\/p>/gi, '\n')
+    html = html.replace(/<p><\/p>/gi, '\n')
+    html = html.replace(/<p>/gi, '')
+    html = html.replace(/<\/p>/gi, '\n')
+    html = html.replace(/<br\s*\/?>/gi, '\n')
+    
+    // Clean up multiple newlines but preserve intentional spacing
+    html = html.replace(/\n{3,}/g, '\n\n')
+    
+    // Ensure text has proper newlines from the DOM
+    // The textContent already contains newlines from the contenteditable
 
     // Immediately remove placeholder when user starts typing
     if (text.length > 0 && target.hasAttribute('data-placeholder')) {
       target.removeAttribute('data-placeholder')
     }
 
-    // Save cursor position before updating
-    if (editorRef.current) {
-      cursorPositionRef.current = saveCursorPosition(editorRef.current)
+    // Prevent duplicate updates
+    if (text === lastContentRef.current) {
+      return
     }
+    lastContentRef.current = text
 
-    // Prevent unnecessary updates if content hasn't changed
-    if (text !== block.text || html !== block.richText) {
-      console.log('🔄 Calling onChange for block:', block.id, 'with text:', text.substring(0, 50))
-      console.log('📊 Content comparison - old text length:', block.text?.length || 0, 'new text length:', text.length)
-      onChange(block.id, {
-        text,
-        richText: html,
-      })
-    } else {
-      console.log('⏭️ Skipping onChange - no content change (text same:', text === block.text, 'html same:', html === block.richText, ')')
-    }
-  }, [block.id, onChange, isUpdating, block.text, block.richText])
-
-  // Initialize content when block changes (only on mount or when block ID changes)
-  useEffect(() => {
-    if (editorRef.current && !isUpdating) {
-      setIsUpdating(true)
-      
-      // Only update if content is different to prevent unnecessary re-renders
-      const currentText = editorRef.current.textContent || ''
-      const currentHtml = editorRef.current.innerHTML || ''
-      
-      if (block.richText && currentHtml !== block.richText) {
-        editorRef.current.innerHTML = sanitizeHtml(block.richText)
-      } else if (!block.richText && currentText !== (block.text || '')) {
-        editorRef.current.textContent = block.text || ''
+    // CRITICAL FIX: Save cursor position BEFORE any state changes
+    // Store cursor immediately to prevent loss
+    if (editorRef.current && document.activeElement === editorRef.current) {
+      const cursorPos = saveCursorPosition(editorRef.current)
+      if (cursorPos) {
+        cursorPositionRef.current = cursorPos
+        shouldRestoreCursorRef.current = true
       }
-      
+    }
+
+    // Mark as user editing with longer protection window to prevent conflicts
+    isUserEditingRef.current = true
+    // Use a longer delay to prevent premature external updates
+    setTimeout(() => {
+      isUserEditingRef.current = false
+    }, 500) // Increased from 100ms to prevent cursor loss
+
+    // Always call onChange for immediate autosave
+    onChange(block.id, {
+      text, // Keep original text with newlines intact
+      richText: html, // Store normalized HTML with consistent newlines
+    })
+  }, [block.id, onChange])
+
+  // Initialize content when block changes
+  useEffect(() => {
+    if (editorRef.current && !isUserEditingRef.current) {
+      const currentText = editorRef.current.textContent || ''
+      const blockContent = block.text || ''
+
+      // Only update if content is actually different
+      if (currentText !== blockContent) {
+        // CRITICAL FIX: Use innerHTML with proper newline conversion
+        // This preserves both formatting and line breaks
+        if (block.richText) {
+          // Convert newlines in richText to <br> tags for display
+          const htmlWithBreaks = block.richText.replace(/\n/g, '<br>')
+          editorRef.current.innerHTML = sanitizeHtml(htmlWithBreaks)
+        } else if (blockContent) {
+          // Convert plain text newlines to <br> for display
+          const textWithBreaks = blockContent.replace(/\n/g, '<br>')
+          editorRef.current.innerHTML = textWithBreaks
+        } else {
+          editorRef.current.textContent = ''
+        }
+        lastContentRef.current = blockContent
+      }
+
       // Set placeholder if empty
-      if (!block.text || block.text.trim() === '') {
+      if (!blockContent || blockContent.trim() === '') {
         editorRef.current.setAttribute('data-placeholder', placeholder)
       } else {
         editorRef.current.removeAttribute('data-placeholder')
       }
-      
-      setIsUpdating(false)
     }
-  }, [block.id, placeholder, isUpdating]) // Keep dependencies minimal to prevent re-renders
+  }, [block.id, block.text, block.richText, placeholder])
+
+  // CRITICAL FIX: Restore cursor position after React re-renders
+  useLayoutEffect(() => {
+    if (shouldRestoreCursorRef.current && cursorPositionRef.current && editorRef.current) {
+      // Restore cursor immediately in layout effect for smoother experience
+      const editor = editorRef.current
+      const cursorPos = cursorPositionRef.current
+      
+      // Only restore if editor is still focused
+      if (document.activeElement === editor) {
+        restoreCursorPosition(editor, cursorPos)
+      }
+      
+      shouldRestoreCursorRef.current = false
+      cursorPositionRef.current = null
+    }
+  })
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     // Remove placeholder immediately when user starts typing any printable character
@@ -159,52 +209,26 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
       }
     }
 
-    // Save cursor position before any operations
-    if (editorRef.current) {
-      cursorPositionRef.current = saveCursorPosition(editorRef.current)
-    }
-
-    // Handle keyboard shortcuts
+    // Handle keyboard shortcuts with simplified cursor management
     if (e.ctrlKey || e.metaKey) {
       switch (e.key) {
         case 'b':
           e.preventDefault()
           document.execCommand('bold')
-          // Restore cursor after formatting
-          setTimeout(() => {
-            if (editorRef.current && cursorPositionRef.current) {
-              restoreCursorPosition(editorRef.current, cursorPositionRef.current)
-            }
-          }, 0)
           break
         case 'i':
           e.preventDefault()
           document.execCommand('italic')
-          setTimeout(() => {
-            if (editorRef.current && cursorPositionRef.current) {
-              restoreCursorPosition(editorRef.current, cursorPositionRef.current)
-            }
-          }, 0)
           break
         case 'u':
           e.preventDefault()
           document.execCommand('underline')
-          setTimeout(() => {
-            if (editorRef.current && cursorPositionRef.current) {
-              restoreCursorPosition(editorRef.current, cursorPositionRef.current)
-            }
-          }, 0)
           break
         case 'k':
           e.preventDefault()
           const url = window.prompt('Enter URL:')
           if (url) {
             document.execCommand('createLink', false, url)
-            setTimeout(() => {
-              if (editorRef.current && cursorPositionRef.current) {
-                restoreCursorPosition(editorRef.current, cursorPositionRef.current)
-              }
-            }, 0)
           }
           break
       }
@@ -231,10 +255,22 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
 
   const handleBlur = useCallback(() => {
     // Trigger immediate save on blur to ensure no data loss
-    if (editorRef.current && !isUpdating) {
+    if (editorRef.current) {
       const target = editorRef.current
-      const text = target.textContent || ''
-      const html = target.innerHTML || ''
+      let text = target.textContent || ''
+      let html = target.innerHTML || ''
+
+      // Normalize HTML line breaks consistently with handleInput
+      html = html.replace(/<div><br><\/div>/gi, '\n')
+      html = html.replace(/<div><\/div>/gi, '\n')
+      html = html.replace(/<div>/gi, '\n')
+      html = html.replace(/<\/div>/gi, '')
+      html = html.replace(/<p><br><\/p>/gi, '\n')
+      html = html.replace(/<p><\/p>/gi, '\n')
+      html = html.replace(/<p>/gi, '')
+      html = html.replace(/<\/p>/gi, '\n')
+      html = html.replace(/<br\s*\/?>/gi, '\n')
+      html = html.replace(/\n{3,}/g, '\n\n')
 
       // Force immediate save if content has changed
       if (text !== block.text || html !== block.richText) {
@@ -246,55 +282,40 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
 
       // Re-evaluate placeholder when focus is lost
       const isEmpty = !text || text.trim() === ''
-      const hasNoContent = !text || text.trim() === ''
-
-      if (isEmpty && hasNoContent) {
+      if (isEmpty) {
         target.setAttribute('data-placeholder', placeholder)
       }
     }
-  }, [block.id, block.text, block.richText, onChange, placeholder, isUpdating])
+    isUserEditingRef.current = false
+  }, [block.id, block.text, block.richText, onChange, placeholder])
 
-  // Update content when block changes externally
+  // Update content when block changes externally (simplified)
   useEffect(() => {
-    if (editorRef.current && !isUpdating) {
-      const content = block.richText || block.text || ''
-      const currentContent = editorRef.current.innerHTML
+    if (editorRef.current && !isUserEditingRef.current) {
+      const blockContent = block.text || ''
       const currentText = editorRef.current.textContent || ''
 
-      // Content integrity check - prevent overwriting with shorter content during active editing
-      const isFocused = editorRef.current.contains(document.activeElement)
-      const hasSignificantContentReduction = currentText.length > 50 && content.length < currentText.length * 0.5
-
-      if (hasSignificantContentReduction && isFocused) {
-        console.warn(`🚨 SimplifiedRichTextEditor: Preventing content overwrite during active editing`)
-        console.warn(`Current: ${currentText.length} chars, Incoming: ${content.length} chars`)
-        return
-      }
-
-      // Only update if content actually changed and we're not currently editing
-      if (currentContent !== content && !isFocused) {
-        setIsUpdating(true)
-        editorRef.current.innerHTML = sanitizeHtml(content)
-
-        // Restore cursor position if we have one saved
-        if (cursorPositionRef.current) {
-          setTimeout(() => {
-            if (editorRef.current) {
-              restoreCursorPosition(editorRef.current, cursorPositionRef.current)
-              cursorPositionRef.current = null
-            }
-            setIsUpdating(false)
-          }, 0)
+      // Only update if content actually changed
+      if (currentText !== blockContent) {
+        if (block.richText) {
+          // Convert newlines to <br> tags for proper display
+          const htmlWithBreaks = block.richText.replace(/\n/g, '<br>')
+          editorRef.current.innerHTML = sanitizeHtml(htmlWithBreaks)
+        } else if (blockContent) {
+          // Convert plain text newlines to <br> for display
+          const textWithBreaks = blockContent.replace(/\n/g, '<br>')
+          editorRef.current.innerHTML = textWithBreaks
         } else {
-          setIsUpdating(false)
+          editorRef.current.textContent = ''
         }
+        lastContentRef.current = blockContent
       }
     }
-  }, [block.richText, block.text, isUpdating])
+  }, [block.richText, block.text])
 
   // Set placeholder - only show for truly empty blocks
   useEffect(() => {
-    if (editorRef.current && !isUpdating) {
+    if (editorRef.current) {
       const isEmpty = !block.text || block.text.trim() === ''
       const hasNoContent = !editorRef.current.textContent || editorRef.current.textContent.trim() === ''
       const isFocused = editorRef.current.contains(document.activeElement)
@@ -306,7 +327,7 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
         editorRef.current.removeAttribute('data-placeholder')
       }
     }
-  }, [block.text, placeholder, isUpdating, showPlaceholder])
+  }, [block.text, placeholder, showPlaceholder])
 
   // Initialize content on mount
   useEffect(() => {
@@ -352,40 +373,16 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
   }, [])
 
   const applyFormat = useCallback((command: string): void => {
-    // Save cursor position before formatting
-    if (editorRef.current) {
-      cursorPositionRef.current = saveCursorPosition(editorRef.current)
-    }
-
     document.execCommand(command)
     editorRef.current?.focus()
-
-    // Restore cursor position after formatting
-    setTimeout(() => {
-      if (editorRef.current && cursorPositionRef.current) {
-        restoreCursorPosition(editorRef.current, cursorPositionRef.current)
-      }
-    }, 0)
   }, [])
 
   const insertLink = useCallback((): void => {
-    // Save cursor position before link insertion
-    if (editorRef.current) {
-      cursorPositionRef.current = saveCursorPosition(editorRef.current)
-    }
-
     const url = window.prompt('Enter URL:')
     if (url) {
       document.execCommand('createLink', false, url)
     }
     editorRef.current?.focus()
-
-    // Restore cursor position after link insertion
-    setTimeout(() => {
-      if (editorRef.current && cursorPositionRef.current) {
-        restoreCursorPosition(editorRef.current, cursorPositionRef.current)
-      }
-    }, 0)
   }, [])
 
   return (

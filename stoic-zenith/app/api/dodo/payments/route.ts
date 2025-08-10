@@ -79,7 +79,7 @@ export const POST = paymentRateLimit(withCSRF(async (request: NextRequest): Prom
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('subscription_plan, subscription_status, trial_expires_at')
+      .select('subscription_plan, subscription_status, trial_expires_at, dodo_customer_id, has_used_trial')
       .eq('id', userId)
       .single()
 
