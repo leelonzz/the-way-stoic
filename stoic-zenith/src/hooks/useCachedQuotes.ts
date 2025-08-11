@@ -159,8 +159,28 @@ export function useCachedQuotes(user: User | null) {
     return quotes[dayOfYear % quotes.length]
   }, [quotesQuery.data])
 
-  // Persist a stable daily quote per day to avoid UI flicker on data refresh
-  const [selectedDailyQuote, setSelectedDailyQuote] = useState<Quote | null>(null)
+  // Initialize selectedDailyQuote from localStorage to prevent flicker
+  const [selectedDailyQuote, setSelectedDailyQuote] = useState<Quote | null>(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return null
+    
+    const today = new Date()
+    const dayKey = today.toISOString().slice(0, 10)
+    const storageKey = `twstoic:daily-quote:${dayKey}`
+    
+    try {
+      const stored = localStorage.getItem(storageKey)
+      if (stored) {
+        return JSON.parse(stored) as Quote
+      }
+    } catch (e) {
+      // If parsing fails, return null
+      console.warn('Failed to parse stored daily quote:', e)
+    }
+    
+    return null
+  })
+  
   useEffect(() => {
     // Skip if we have a random override
     if (randomQuoteOverride) return
@@ -170,37 +190,24 @@ export function useCachedQuotes(user: User | null) {
     const dayKey = today.toISOString().slice(0, 10)
     const storageKey = `twstoic:daily-quote:${dayKey}`
 
-    try {
-      // If already selected for today (either from previous render or storage), use it
-      if (selectedDailyQuote) return
+    // If we already have a selected quote for today (from initial state), keep it
+    if (selectedDailyQuote) return
 
-      const stored = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null
-      if (stored) {
-        const parsed: Quote = JSON.parse(stored)
-        setSelectedDailyQuote(parsed)
-        return
-      }
-
-      // Otherwise, if we have a computed quote (from either fallback or fetched data), lock it in for today
-      if (computedDailyQuote) {
-        setSelectedDailyQuote(computedDailyQuote)
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(computedDailyQuote))
-        } catch (e) {
-          // ignore storage errors (e.g., private mode)
-        }
-      }
-    } catch (e) {
-      // If parsing or storage access fails, just rely on computedDailyQuote as a fallback without persisting
-      if (computedDailyQuote && !selectedDailyQuote) {
-        setSelectedDailyQuote(computedDailyQuote)
+    // Otherwise, if we have a computed quote (from either fallback or fetched data), lock it in for today
+    if (computedDailyQuote) {
+      setSelectedDailyQuote(computedDailyQuote)
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(computedDailyQuote))
+      } catch (e) {
+        // ignore storage errors (e.g., private mode)
       }
     }
   }, [computedDailyQuote, selectedDailyQuote, randomQuoteOverride])
 
   // Expose a stable daily quote (with optional override for refresh)
   const getDailyQuote = useMemo(() => {
-    return randomQuoteOverride || selectedDailyQuote || computedDailyQuote
+    // Prioritize in this order: manual refresh override, stored daily quote, computed quote, or fallback
+    return randomQuoteOverride || selectedDailyQuote || computedDailyQuote || FALLBACK_QUOTES[0]
   }, [randomQuoteOverride, selectedDailyQuote, computedDailyQuote])
 
   // Search quotes function

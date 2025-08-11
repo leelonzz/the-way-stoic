@@ -39,7 +39,7 @@ export class RealTimeJournalManager {
   public userId: string | null = null;
   private localStorageKey: string;
   private deletedEntriesKey: string;
-  private syncQueue: Map<string, { entry: JournalEntry; timestamp: number; retryCount: number }> = new Map();
+  private syncQueue: Map<string, { entry: JournalEntry; timestamp: number; retryCount: number; lastRetry?: number }> = new Map();
   private activelyEditedEntries: Map<string, number> = new Map(); // entryId -> lastEditTime
   private entryIdChangeListeners: Map<string, (newId: string) => void> = new Map();
   private contentIntegrityLog: Map<string, { timestamp: number; charCount: number; blockCount: number }[]> = new Map();
@@ -271,7 +271,7 @@ export class RealTimeJournalManager {
 
   private setupNetworkListeners(): void {
     if (typeof window === 'undefined') return;
-    
+
     window.addEventListener('online', () => {
       this.isOnline = true;
       this.syncPendingChanges();
@@ -281,53 +281,159 @@ export class RealTimeJournalManager {
       this.isOnline = false;
     });
 
-    // Sync before page unload
-    window.addEventListener('beforeunload', () => {
-      this.syncPendingChanges();
+    // Enhanced page unload handling for better sync reliability
+    const syncBeforeUnload = () => {
+      if (this.syncQueue.size > 0) {
+        // Use sendBeacon for more reliable sync on page unload
+        this.syncWithBeacon();
+      }
+    };
+
+    // Multiple event listeners for better coverage
+    window.addEventListener('beforeunload', syncBeforeUnload);
+    window.addEventListener('pagehide', syncBeforeUnload);
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && this.syncQueue.size > 0) {
+        this.syncWithBeacon();
+      }
     });
+
+    // Sync when user navigates away (for SPA navigation)
+    if ('navigation' in window) {
+      // @ts-ignore - Navigation API is experimental
+      window.navigation.addEventListener('navigate', () => {
+        if (this.syncQueue.size > 0) {
+          this.syncWithBeacon();
+        }
+      });
+    }
   }
 
   private startBackgroundSync(): void {
     if (typeof window === 'undefined') return;
-    
+
     // Skip immediate cleanup on startup to preserve recently deleted entries
     // The periodic cleanup will handle truly old entries (>24h)
-    
-    // Sync every 5 seconds in background
+
+    // More aggressive sync - every 2 seconds for better reliability
     this.syncInterval = setInterval(() => {
       if (this.isOnline && this.syncQueue.size > 0) {
         this.syncPendingChanges();
       }
-      
+
+      // Check for stuck sync queue and force sync if needed
+      this.checkForStuckSync();
+
       // Clean up old deleted entries every 30 minutes (less aggressive cleanup)
       const now = Date.now();
       if (!this.lastCleanup || (now - this.lastCleanup > 30 * 60 * 1000)) {
         this.cleanupOldDeletedEntries();
         this.lastCleanup = now;
       }
-    }, 5000);
+    }, 2000); // Reduced from 5000ms to 2000ms
+
+    // Additional immediate sync on focus/visibility change
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && this.isOnline && this.syncQueue.size > 0) {
+        // Immediate sync when page becomes visible
+        this.syncPendingChanges();
+      }
+    });
+
+    // Sync on window focus
+    window.addEventListener('focus', () => {
+      if (this.isOnline && this.syncQueue.size > 0) {
+        this.syncPendingChanges();
+      }
+    });
+
+    // Register service worker for background sync
+    this.registerServiceWorker();
   }
 
-  // INSTANT ENTRY CREATION (0ms delay) - FIXED: No async delays, atomic creation
+  private async registerServiceWorker(): Promise<void> {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('Service Worker registered successfully:', registration);
+
+      // Listen for sync events
+      if ('sync' in window.ServiceWorkerRegistration.prototype) {
+        // Store pending sync data for service worker
+        window.addEventListener('beforeunload', () => {
+          this.storePendingSyncData();
+        });
+      }
+    } catch (error) {
+      console.warn('Service Worker registration failed:', error);
+    }
+  }
+
+  private storePendingSyncData(): void {
+    if (this.syncQueue.size === 0) return;
+
+    try {
+      const pendingData = Array.from(this.syncQueue.entries()).map(([entryId, queueItem]) => ({
+        entryId,
+        entry: queueItem.entry,
+        operation: entryId.startsWith('temp-') ? 'create' : 'update',
+        userId: this.userId,
+        timestamp: queueItem.timestamp
+      }));
+
+      localStorage.setItem('pending_journal_sync', JSON.stringify(pendingData));
+
+      // Register for background sync if available
+      if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+        navigator.serviceWorker.ready.then(registration => {
+          // @ts-ignore - Background Sync API is experimental
+          return registration.sync.register('journal-sync');
+        }).catch(error => {
+          console.warn('Background sync registration failed:', error);
+        });
+      }
+    } catch (error) {
+      console.error('Error storing pending sync data:', error);
+    }
+  }
+
+  private checkForStuckSync(): void {
+    if (!this.isOnline || this.syncQueue.size === 0) return;
+
+    const now = Date.now();
+    const stuckThreshold = 15000; // 15 seconds
+
+    // Check for entries that have been in the queue too long
+    for (const [entryId, queueItem] of this.syncQueue.entries()) {
+      const timeInQueue = now - queueItem.timestamp;
+
+      if (timeInQueue > stuckThreshold) {
+        console.warn(`🚨 Sync appears stuck for entry ${entryId} (${Math.round(timeInQueue / 1000)}s in queue)`);
+
+        // Force immediate sync attempt
+        this.syncEntry(entryId).catch(error => {
+          console.error(`Force sync failed for stuck entry ${entryId}:`, error);
+
+          // If it's been stuck for too long, try beacon sync as last resort
+          if (timeInQueue > 30000) { // 30 seconds
+            console.warn(`🚨 Using beacon sync for critically stuck entry ${entryId}`);
+            this.syncWithBeacon();
+          }
+        });
+      }
+    }
+  }
+
+  // Stable temp ID creation - IDs remain stable during session
   createEntryImmediately(date: string, _type: 'morning' | 'evening' | 'general' = 'general'): JournalEntry {
-    // Validate user context for critical create operations
     this.validateUserContext('create journal entry');
 
     const existingEntries = this.getAllFromLocalStorage();
 
-    // FIXED: Only check if creation is actively in progress (not if any entries exist)
-    if (this.creationMutex.size > 0) {
-      // Return most recent entry only during active creation
-      if (existingEntries.length > 0) {
-        const mostRecent = existingEntries.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )[0];
-        return mostRecent;
-      }
-      // If no entries exist, allow creation to continue
-    }
-
-    // REDUCED: Check for entries created in the last 3 seconds (reduced from 30) to prevent rapid duplicates
+    // Prevent duplicate entries within 3 seconds
     const threeSecondsAgo = Date.now() - 3000;
     const recentEntry = existingEntries.find(entry =>
       new Date(entry.createdAt).getTime() > threeSecondsAgo
@@ -336,58 +442,43 @@ export class RealTimeJournalManager {
       return recentEntry;
     }
 
-    // Generate unique ID with microsecond precision to prevent duplicates
+    // Generate stable temp ID that won't change during session
     const now = new Date();
     const microTime = Date.now() * 1000 + Math.floor(Math.random() * 1000);
-    const tempId = `temp-${microTime}-${Math.random().toString(36).substring(2, 11)}`;
+    const tempId = `temp-${microTime}`; // Shorter, stable ID
 
-    // Add to mutex BEFORE any operations
-    this.creationMutex.add(tempId);
+    const newEntry: JournalEntry = {
+      id: tempId,
+      date,
+      blocks: [{
+        id: `${tempId}-initial`,
+        type: 'paragraph',
+        text: '',
+        createdAt: now
+      }],
+      createdAt: now,
+      updatedAt: now
+    };
 
-    try {
-      // Mark entry creation as in progress immediately
-      this.entryCreationInProgress.add(tempId);
-
-      // Create entry object
-      const newEntry: JournalEntry = {
-        id: tempId,
-        date,
-        blocks: [{
-          id: `${tempId}-initial`,
-          type: 'paragraph',
-          text: '',
-          createdAt: now
-        }],
-        createdAt: now,
-        updatedAt: now
-      };
-
-      // ATOMIC: Save to localStorage immediately - no delays
+    // Save locally and queue for background sync
+    this.saveToLocalStorage(newEntry);
+    
+    // Verify the save was successful
+    const verifyEntry = this.getFromLocalStorage(tempId);
+    if (!verifyEntry) {
+      console.error(`❌ Failed to save new entry ${tempId}`);
+      // Retry save
       this.saveToLocalStorage(newEntry);
-
-      // Verify save was successful immediately
-      const verifyEntry = this.getFromLocalStorage(tempId);
-      if (!verifyEntry) {
-        throw new Error(`Entry creation failed - not found in localStorage after save`);
+      const retryVerify = this.getFromLocalStorage(tempId);
+      if (!retryVerify) {
+        throw new Error(`Critical: Cannot save new entry ${tempId}`);
       }
-
-      // Add to sync queue for background database creation
-      this.syncQueue.set(tempId, { entry: newEntry, timestamp: Date.now(), retryCount: 0 });
-
-      return newEntry;
-
-    } catch (error) {
-      console.error(`🚨 Entry creation failed: ${tempId}`, error);
-      throw error;
-    } finally {
-      // Clear mutex immediately after creation
-      this.creationMutex.delete(tempId);
-      
-      // Clear creation flag after brief delay for any pending saves
-      setTimeout(() => {
-        this.entryCreationInProgress.delete(tempId);
-      }, 100); // Reduced from 500ms to 100ms
     }
+    
+    this.syncQueue.set(tempId, { entry: newEntry, timestamp: Date.now(), retryCount: 0 });
+
+    console.log(`🆕 Created stable entry: ${tempId}`);
+    return newEntry;
   }
 
   // INSTANT ENTRY DELETION (immediate UI feedback)
@@ -451,109 +542,36 @@ export class RealTimeJournalManager {
     // Get entry from localStorage using the exact ID provided
     let entry = this.getFromLocalStorage(entryId);
     if (!entry) {
-      // Fallback: Try multiple strategies to find the entry
-      const allEntries = this.getAllFromLocalStorage();
-      
-      // Strategy 1: Check if this entry is in the sync queue (might be mid-sync)
+      // Check sync queue first
       const syncingEntry = this.syncQueue.get(entryId);
       if (syncingEntry) {
         entry = syncingEntry.entry;
       }
       
-      // Strategy 2: Try to find by today's date
-      if (!entry) {
+      // If still not found, create a recovery entry for temp IDs
+      if (!entry && entryId.startsWith('temp-')) {
+        console.warn(`⚠️ Temp entry ${entryId} not found, creating recovery entry`);
         const today = new Date().toISOString().split('T')[0];
-        const todaysEntries = allEntries.filter(e => e.date.startsWith(today));
-        
-        if (todaysEntries.length === 1) {
-          entry = todaysEntries[0];
-          // Update the reference if ID has changed
-          if (entry.id !== entryId) {
-            this.notifyEntryIdChange(entryId, entry.id);
-          }
-        } else if (todaysEntries.length > 1) {
-          // Multiple entries for today, find the most recently updated one
-          entry = todaysEntries.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
-          if (entry.id !== entryId) {
-            this.notifyEntryIdChange(entryId, entry.id);
-          }
-        }
+        entry = {
+          id: entryId,
+          date: today,
+          blocks: blocks,
+          createdAt: now,
+          updatedAt: now
+        };
+        // Save it immediately
+        this.saveToLocalStorage(entry);
       }
       
-      // Strategy 3: Check if entry exists with a similar ID pattern (UUID match)
-      if (!entry && entryId.includes('-')) {
-        // Extract UUID parts and try to match
-        const idParts = entryId.split('-');
-        entry = allEntries.find(e => {
-          const eParts = e.id.split('-');
-          // Check if they share at least 2 UUID segments
-          let matches = 0;
-          for (const part of idParts) {
-            if (eParts.includes(part)) matches++;
-          }
-          return matches >= 2;
-        });
-        
-        if (entry && entry.id !== entryId) {
-          this.notifyEntryIdChange(entryId, entry.id);
-        }
-      }
-      
-      // If still not found, this is a legitimate missing entry
+      // Final check
       if (!entry) {
-        // CRITICAL: This is where autosave breaks! Entry not found after sync
-        console.error(`🚨 AUTOSAVE BREAKING: Entry ${entryId} not found after trying all strategies`);
-        console.error(`🔍 Available entries:`, this.getAllFromLocalStorage().map(e => ({ id: e.id, date: e.date })));
-        console.error(`🔍 Sync queue:`, Array.from(this.syncQueue.keys()));
-
-        // Try one more recovery attempt - create a new entry for today if this looks like a temp entry
-        if (entryId.startsWith('temp-')) {
-          console.log(`🔧 Attempting to recover temp entry ${entryId}...`);
-          const today = new Date().toISOString().split('T')[0];
-          try {
-            const recoveredEntry = await this.createEntryImmediately(today, 'general');
-            console.log(`✅ Created recovery entry: ${recoveredEntry.id}`);
-
-            // Notify about the ID change
-            this.notifyEntryIdChange(entryId, recoveredEntry.id);
-
-            // Continue with the recovered entry
-            entry = recoveredEntry;
-          } catch (error) {
-            console.error(`❌ Failed to create recovery entry:`, error);
-            return;
-          }
-        } else {
-          // For non-temp entries, this is a serious issue
-          console.error(`❌ Cannot recover non-temp entry ${entryId}`);
-          return;
-        }
+        throw new Error(`Entry ${entryId} not found and could not be recovered`);
       }
     }
     
-    // Log periodically to confirm autosave is working
+    // Simple save tracking
     this.metrics.totalSaves++;
-
-    // Log every 25 saves for better debugging
-    if (this.metrics.totalSaves % 25 === 0) {
-      console.log(`✅ Autosave active: ${this.metrics.totalSaves} saves (Entry: ${entry.id})`);
-    }
-
-    // CRITICAL: Track the last successful save for debugging
     this.metrics.lastSaveTime = Date.now();
-    this.metrics.lastSavedEntryId = entry.id;
-    
-    // Health check - warn if saves are happening too slowly
-    if (this.metrics.totalSaves > 10) {
-      const timeSinceStart = Date.now() - (this.metrics.firstSaveTime || Date.now());
-      const savesPerMinute = (this.metrics.totalSaves / timeSinceStart) * 60000;
-      
-      if (savesPerMinute < 10 && this.metrics.totalSaves % 50 === 0) {
-        console.warn(`⚠️ Autosave may be slowing down: ${savesPerMinute.toFixed(1)} saves/min`);
-      }
-    }
-    
-    // Track first save time for rate calculation
     if (!this.metrics.firstSaveTime) {
       this.metrics.firstSaveTime = Date.now();
     }
@@ -667,9 +685,16 @@ export class RealTimeJournalManager {
       console.log('Added entry to sync queue. Queue size:', this.syncQueue.size);
     }
 
-  // Trigger immediate sync for small changes
-    if (blocks.length < 10) {
-      setTimeout(() => this.syncEntry(entryId), 100);
+    // Enhanced immediate sync for better reliability
+    if (this.isOnline && this.userId) {
+      // Immediate sync for all changes, not just small ones
+      setTimeout(() => {
+        if (this.syncQueue.has(entryId)) {
+          this.syncEntry(entryId).catch(error => {
+            console.warn('Immediate sync failed, will retry in background:', error);
+          });
+        }
+      }, 200); // Reduced delay for faster sync
     }
   }
 
@@ -1119,11 +1144,18 @@ export class RealTimeJournalManager {
         if (entryId !== supabaseEntry.id) {
           this.notifyEntryIdChange(entryId, supabaseEntry.id);
 
-          // Step 3: Wait a brief moment for ID change notifications to propagate
-          await new Promise(resolve => setTimeout(resolve, 50));
+          // Step 3: Wait longer for ID change notifications to propagate
+          // This is critical for autosave stability
+          await new Promise(resolve => setTimeout(resolve, 200));
 
-          // Step 4: Remove the old temp entry
-          this.removeFromLocalStorage(entryId);
+          // Step 4: Remove the old temp entry ONLY if new entry exists
+          const verifyNewEntry = this.getFromLocalStorage(supabaseEntry.id);
+          if (verifyNewEntry) {
+            this.removeFromLocalStorage(entryId);
+            console.log(`🔄 Removed old temp entry ${entryId}, using ${supabaseEntry.id}`);
+          } else {
+            console.error(`🚨 Cannot remove temp entry - new entry ${supabaseEntry.id} not found!`);
+          }
         }
 
         // Step 5: Remove from sync queue ONLY after ID transition is complete
@@ -1200,6 +1232,91 @@ export class RealTimeJournalManager {
     );
 
     await Promise.allSettled(promises);
+  }
+
+  // Synchronous sync using sendBeacon for page unload scenarios
+  private syncWithBeacon(): void {
+    if (!this.userId || !this.isOnline || this.syncQueue.size === 0) {
+      return;
+    }
+
+    try {
+      // Prepare sync data for beacon
+      const syncData = Array.from(this.syncQueue.entries()).map(([entryId, queueItem]) => ({
+        entryId,
+        entry: queueItem.entry,
+        operation: entryId.startsWith('temp-') ? 'create' : 'update'
+      }));
+
+      // Use sendBeacon for reliable sync on page unload
+      const beaconData = JSON.stringify({
+        userId: this.userId,
+        syncData,
+        timestamp: Date.now()
+      });
+
+      // Create a Blob with the correct content type for beacon
+      const blob = new Blob([beaconData], { type: 'application/json' });
+
+      // Send to a dedicated sync endpoint that can handle beacon requests
+      const success = navigator.sendBeacon('/api/journal/sync-beacon', blob);
+
+      if (success) {
+        console.log('📡 Beacon sync initiated for', syncData.length, 'entries');
+        // Store sync attempt in localStorage for verification
+        localStorage.setItem('last_beacon_sync', JSON.stringify({
+          timestamp: Date.now(),
+          entryIds: syncData.map(s => s.entryId),
+          userId: this.userId
+        }));
+      } else {
+        console.warn('📡 Beacon sync failed - falling back to regular sync');
+        // Fallback to regular sync if beacon fails
+        this.syncPendingChanges().catch(error => {
+          console.error('Fallback sync failed:', error);
+        });
+      }
+    } catch (error) {
+      console.error('Beacon sync error:', error);
+      // Fallback to regular sync
+      this.syncPendingChanges().catch(fallbackError => {
+        console.error('Fallback sync failed:', fallbackError);
+      });
+    }
+  }
+
+  // Enhanced sync with exponential backoff for failed entries
+  private async syncPendingChangesWithRetry(): Promise<void> {
+    const maxRetries = 3;
+    const baseDelay = 1000; // 1 second
+
+    for (const [entryId, queueItem] of this.syncQueue.entries()) {
+      if (queueItem.retryCount >= maxRetries) {
+        continue; // Skip entries that have exceeded max retries
+      }
+
+      try {
+        await this.syncEntry(entryId);
+      } catch (error) {
+        console.warn(`Sync failed for entry ${entryId}, retry ${queueItem.retryCount + 1}/${maxRetries}:`, error);
+
+        // Update retry count
+        queueItem.retryCount = (queueItem.retryCount || 0) + 1;
+        queueItem.lastRetry = Date.now();
+
+        // Exponential backoff delay
+        const delay = baseDelay * Math.pow(2, queueItem.retryCount - 1);
+
+        // Schedule retry after delay
+        setTimeout(() => {
+          if (this.syncQueue.has(entryId) && this.isOnline) {
+            this.syncEntry(entryId).catch(retryError => {
+              console.error(`Retry failed for entry ${entryId}:`, retryError);
+            });
+          }
+        }, delay);
+      }
+    }
   }
 
   // Public method to get sync status

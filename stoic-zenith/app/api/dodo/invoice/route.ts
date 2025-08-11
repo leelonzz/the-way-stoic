@@ -59,8 +59,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
       // If successful, return the invoice data as PDF
       if (invoiceResponse) {
+        // Convert the response to a readable stream or blob
+        const invoiceBlob = invoiceResponse instanceof Response 
+          ? await invoiceResponse.blob() 
+          : invoiceResponse
+        
         // Set headers for PDF download
-        return new NextResponse(invoiceResponse, {
+        return new NextResponse(invoiceBlob, {
           status: 200,
           headers: {
             'Content-Type': 'application/pdf',

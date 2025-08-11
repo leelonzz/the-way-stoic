@@ -143,11 +143,25 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
       isUserEditingRef.current = false
     }, 500) // Increased from 100ms to prevent cursor loss
 
-    // Always call onChange for immediate autosave
+    // Always call onChange for immediate autosave and state sync
     onChange(block.id, {
       text, // Keep original text with newlines intact
       richText: html, // Store normalized HTML with consistent newlines
     })
+    
+    // Also trigger immediate state sync for markdown detection
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(() => {
+        // Additional sync after idle to ensure state is up to date
+        const currentText = target.textContent || ''
+        if (currentText !== text) {
+          onChange(block.id, {
+            text: currentText,
+            richText: target.innerHTML || '',
+          })
+        }
+      })
+    }
   }, [block.id, onChange])
 
   // Initialize content when block changes
@@ -462,9 +476,7 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
           minHeight: '1.5rem',
-          padding: block.type === 'bullet-list' || block.type === 'numbered-list'
-            ? '0.5rem 0.5rem 0.5rem 0' // Remove left padding for list items
-            : '0.5rem',
+          padding: '0.5rem', // Keep consistent padding for all blocks
           borderRadius: '0.375rem',
           lineHeight: '1.8',
         }}
@@ -487,6 +499,7 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
         [contenteditable]:not(:empty):before {
           display: none;
         }
+        
         
         [contenteditable] a {
           color: #ea580c;

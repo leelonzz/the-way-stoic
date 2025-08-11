@@ -106,12 +106,13 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
       )
       immediateOnChange(newBlocks)
 
-      // Handle slash command detection when text changes
+      // Handle slash command detection and markdown shortcuts when text changes
       if (updates.text !== undefined) {
         const text = updates.text
         const isSlashCommand = text.startsWith('/')
         const isSplashCommand = text.startsWith('splash')
 
+        // Handle slash commands
         if ((isSlashCommand || isSplashCommand) && !showCommandMenu) {
           // Show command menu
           const blockElement = document.querySelector(`[data-block-id="${blockId}"]`)
@@ -147,6 +148,20 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
           }
           setSearchQuery(searchQuery)
         }
+        
+        // Handle markdown pattern detection for immediate feedback
+        // This gives visual feedback as the user types shortcuts like "-" before they press space
+        if (text === '-' || text === '*' || text.match(/^\d+\.$/)) {
+          // Add a subtle visual hint that this will become a list when space is pressed
+          const blockElement = document.querySelector(`[data-block-id="${blockId}"]`)
+          if (blockElement) {
+            blockElement.classList.add('markdown-hint')
+            // Remove the hint after a short delay if no space is pressed
+            setTimeout(() => {
+              blockElement.classList.remove('markdown-hint')
+            }, 2000)
+          }
+        }
       }
     },
     [blocks, immediateOnChange, showCommandMenu]
@@ -170,63 +185,83 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
     [blocks, immediateOnChange]
   )
 
+  // Helper function to focus a block element
+  const focusBlockElement = useCallback((blockElement: HTMLElement, blockId: string, position: 'start' | 'end' = 'start') => {
+    const block = blocks.find(b => b.id === blockId)
+    if (!block) return
+
+    // For image blocks, focus the block element itself (it's now focusable)
+    if (block.type === 'image') {
+      blockElement.focus()
+      return
+    }
+
+    // For text blocks, focus the contenteditable element
+    const contentEditable = blockElement.querySelector('[contenteditable]') as HTMLElement
+    if (contentEditable) {
+      contentEditable.focus()
+
+      // Position cursor
+      const range = document.createRange()
+      const selection = window.getSelection()
+
+      if (position === 'end') {
+        // Place cursor at the end
+        range.selectNodeContents(contentEditable)
+        range.collapse(false)
+      } else {
+        // Place cursor at the start
+        // For list items, ensure cursor is positioned in the text area
+        if (block.type === 'bullet-list' || block.type === 'numbered-list') {
+          // If there's text content, position at the beginning of the text
+          if (contentEditable.textContent && contentEditable.textContent.length > 0) {
+            const textNode = contentEditable.firstChild
+            if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+              range.setStart(textNode, 0)
+            } else {
+              range.setStart(contentEditable, 0)
+            }
+          } else {
+            // For empty list items, position at the start of the contentEditable
+            range.setStart(contentEditable, 0)
+          }
+        } else {
+          range.setStart(contentEditable, 0)
+        }
+        range.collapse(true)
+      }
+
+      selection?.removeAllRanges()
+      selection?.addRange(range)
+    }
+  }, [blocks])
+
   // Helper function to focus a block and position cursor
   const focusBlock = useCallback((blockId: string, position: 'start' | 'end' = 'start') => {
     const timeout = setTimeout(() => {
       const blockElement = document.querySelector(`[data-block-id="${blockId}"]`) as HTMLElement
-      if (!blockElement) return
-
-      const block = blocks.find(b => b.id === blockId)
-      if (!block) return
-
-      // For image blocks, focus the block element itself (it's now focusable)
-      if (block.type === 'image') {
-        blockElement.focus()
+      if (!blockElement) {
+        // If block not found immediately, try once more after a longer delay
+        const retryTimeout = setTimeout(() => {
+          const retryBlockElement = document.querySelector(`[data-block-id="${blockId}"]`) as HTMLElement
+          if (!retryBlockElement) return
+          
+          focusBlockElement(retryBlockElement, blockId, position)
+          // Scroll the new block into view for better visibility
+          retryBlockElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          activeTimeoutsRef.current.delete(retryTimeout)
+        }, 100)
+        activeTimeoutsRef.current.add(retryTimeout)
         return
       }
 
-      // For text blocks, focus the contenteditable element
-      const contentEditable = blockElement.querySelector('[contenteditable]') as HTMLElement
-      if (contentEditable) {
-        contentEditable.focus()
-
-        // Position cursor
-        const range = document.createRange()
-        const selection = window.getSelection()
-
-        if (position === 'end') {
-          // Place cursor at the end
-          range.selectNodeContents(contentEditable)
-          range.collapse(false)
-        } else {
-          // Place cursor at the start
-          // For list items, ensure cursor is positioned in the text area
-          if (block.type === 'bullet-list' || block.type === 'numbered-list') {
-            // If there's text content, position at the beginning of the text
-            if (contentEditable.textContent && contentEditable.textContent.length > 0) {
-              const textNode = contentEditable.firstChild
-              if (textNode && textNode.nodeType === Node.TEXT_NODE) {
-                range.setStart(textNode, 0)
-              } else {
-                range.setStart(contentEditable, 0)
-              }
-            } else {
-              // For empty list items, position at the start of the contentEditable
-              range.setStart(contentEditable, 0)
-            }
-          } else {
-            range.setStart(contentEditable, 0)
-          }
-          range.collapse(true)
-        }
-
-        selection?.removeAllRanges()
-        selection?.addRange(range)
-      }
+      focusBlockElement(blockElement, blockId, position)
+      // Scroll the focused block into view for better visibility
+      blockElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
       activeTimeoutsRef.current.delete(timeout)
-    }, 10)
+    }, 50)
     activeTimeoutsRef.current.add(timeout)
-  }, [blocks])
+  }, [blocks, focusBlockElement])
 
   // Helper function to handle clicks on image blocks
   const handleImageBlockClick = useCallback((blockId: string, e: MouseEvent) => {
@@ -913,15 +948,90 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
               text: '',
               richText: '',
             })
+            
+            // Focus the converted paragraph block
+            setTimeout(() => {
+              focusBlock(blockId, 'start')
+            }, 50)
             return
           }
 
-          // Create a new list item of the same type
+          // Get current cursor position to split text properly
+          const selection = window.getSelection()
+          const contentEditable = (e.target as HTMLElement).closest('[contenteditable]') as HTMLElement
+          
+          if (selection && selection.rangeCount > 0 && contentEditable) {
+            // Get cursor position relative to the content
+            const range = selection.getRangeAt(0)
+            const preCaretRange = range.cloneRange()
+            preCaretRange.selectNodeContents(contentEditable)
+            preCaretRange.setEnd(range.startContainer, range.startOffset)
+            const caretPosition = preCaretRange.toString().length
+
+            // Split the text at cursor position
+            const currentText = block.text || ''
+            const textBeforeCursor = currentText.substring(0, caretPosition)
+            const textAfterCursor = currentText.substring(caretPosition)
+
+            // Update current block with text before cursor
+            updateBlock(blockId, {
+              text: textBeforeCursor,
+              richText: textBeforeCursor,
+            })
+
+            // Create a new list item with text after cursor
+            const newBlockId = addBlock(blockId, {
+              type: block.type,
+              level: block.level,
+              text: textAfterCursor,
+              richText: textAfterCursor,
+            })
+            
+            // Focus the new block at the start with proper timing
+            setTimeout(() => {
+              const newBlockElement = document.querySelector(`[data-block-id="${newBlockId}"]`) as HTMLElement
+              if (newBlockElement) {
+                const newContentEditable = newBlockElement.querySelector('[contenteditable]') as HTMLElement
+                if (newContentEditable) {
+                  newContentEditable.focus()
+                  
+                  // Position cursor at the start of the new block
+                  const newRange = document.createRange()
+                  const newSelection = window.getSelection()
+                  
+                  if (textAfterCursor) {
+                    // If there's text, position at the beginning
+                    const firstTextNode = newContentEditable.firstChild
+                    if (firstTextNode && firstTextNode.nodeType === Node.TEXT_NODE) {
+                      newRange.setStart(firstTextNode, 0)
+                    } else {
+                      newRange.setStart(newContentEditable, 0)
+                    }
+                  } else {
+                    // Empty block, position at start
+                    newRange.setStart(newContentEditable, 0)
+                  }
+                  
+                  newRange.collapse(true)
+                  newSelection?.removeAllRanges()
+                  newSelection?.addRange(newRange)
+                }
+              }
+            }, 100)
+            return
+          }
+
+          // Fallback: create empty new list item if we can't get cursor position
           const newBlockId = addBlock(blockId, {
             type: block.type,
             level: block.level,
+            text: '',
+            richText: '',
           })
-          focusBlock(newBlockId, 'start')
+          
+          setTimeout(() => {
+            focusBlock(newBlockId, 'start')
+          }, 100)
           return
         }
 
@@ -960,51 +1070,90 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
 
       // Handle markdown shortcuts on space key
       if (e.key === ' ') {
-        const currentText = block.text || ''
-
-        if (shouldTriggerAutoConversion(currentText, ' ')) {
-          e.preventDefault()
-          const pattern = detectShortcutPattern(currentText + ' ')
-          if (pattern) {
-            // Clear the DOM content to remove the markdown shortcut text
-            const element = document.querySelector(
-              `[data-block-id="${blockId}"] [contenteditable]`
-            ) as HTMLElement
-            if (element) {
-              element.innerHTML = ''
-              element.textContent = ''
-            }
-
-            updateBlock(blockId, {
-              type: pattern.type,
-              level: pattern.level as 1 | 2 | 3,
-              text: '',
-              richText: '',
+        // Allow the space to be typed first, then check for patterns
+        setTimeout(() => {
+          const selection = window.getSelection()
+          const contentEditable = (e.target as HTMLElement).closest('[contenteditable]') as HTMLElement
+          
+          if (selection && selection.rangeCount > 0 && contentEditable) {
+            // Get the actual text content from the DOM after space is typed
+            const currentDOMText = contentEditable.textContent || ''
+            
+            console.log('Markdown shortcut check AFTER space:', {
+              currentDOMText,
+              blockText: block.text
             })
-
-            // Focus the transformed block and place cursor at the beginning
-            setTimeout(() => {
-              const element = document.querySelector(
-                `[data-block-id="${blockId}"] [contenteditable]`
-              ) as HTMLElement
-              if (element) {
-                element.focus()
-                // Place cursor at the beginning
-                const range = document.createRange()
-                const selection = window.getSelection()
-                if (element.firstChild) {
-                  range.setStart(element.firstChild, 0)
-                } else {
-                  range.setStart(element, 0)
+            
+            // Check for patterns at the beginning of the text
+            const trimmedText = currentDOMText.trim()
+            console.log('Checking pattern for exact text:', `"${trimmedText}"`)
+            const pattern = detectShortcutPattern(trimmedText)
+            if (pattern) {
+              console.log('Pattern detected:', pattern, 'for text:', trimmedText)
+                
+                // Get text after the shortcut pattern (remove the shortcut part)
+                const shortcutLength = pattern.example.length
+                const textAfterPattern = currentDOMText.substring(shortcutLength).trim()
+                
+                // Clear the DOM content to remove the markdown shortcut text
+                if (contentEditable) {
+                  contentEditable.innerHTML = ''
+                  contentEditable.textContent = ''
                 }
-                range.collapse(true)
-                selection?.removeAllRanges()
-                selection?.addRange(range)
-              }
-            }, 50)
-            return
+
+                updateBlock(blockId, {
+                  type: pattern.type,
+                  level: pattern.level as 1 | 2 | 3,
+                  text: textAfterPattern,
+                  richText: textAfterPattern,
+                })
+
+                // Focus the transformed block and place cursor at the beginning
+                setTimeout(() => {
+                  const element = document.querySelector(
+                    `[data-block-id="${blockId}"] [contenteditable]`
+                  ) as HTMLElement
+                  if (element) {
+                    // Set the remaining text if any
+                    if (textAfterPattern) {
+                      element.textContent = textAfterPattern
+                    }
+                    
+                    element.focus()
+                    
+                    // Place cursor at the beginning for bullet/numbered lists, or at end if there's remaining text
+                    const range = document.createRange()
+                    const newSelection = window.getSelection()
+                    
+                    if (pattern.type === 'bullet-list' || pattern.type === 'numbered-list') {
+                      // For lists, place cursor at the beginning
+                      if (element.firstChild && element.firstChild.nodeType === Node.TEXT_NODE) {
+                        range.setStart(element.firstChild, 0)
+                      } else {
+                        range.setStart(element, 0)
+                      }
+                    } else if (textAfterPattern) {
+                      // For other blocks with remaining text, place cursor at the end
+                      if (element.firstChild && element.firstChild.nodeType === Node.TEXT_NODE) {
+                        range.setStart(element.firstChild, textAfterPattern.length)
+                      } else {
+                        range.setStart(element, 0)
+                      }
+                    } else {
+                      // Empty block, place at start
+                      range.setStart(element, 0)
+                    }
+                    
+                    range.collapse(true)
+                    newSelection?.removeAllRanges()
+                    newSelection?.addRange(range)
+                  }
+                }, 50)
+            } else {
+              console.log('No pattern found for text:', trimmedText)
+            }
           }
-        }
+        }, 10) // Small delay to let the space character be registered in DOM
       }
 
       // Handle Backspace at beginning of block
@@ -1282,6 +1431,83 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
           background: #d6d3d1;
           border-radius: 50%;
           opacity: 0.5;
+        }
+        
+        /* Markdown hint for bullet/list shortcuts */
+        .markdown-hint {
+          background-color: #fef3c7 !important;
+          transition: background-color 0.2s ease;
+          border-radius: 0.375rem;
+        }
+        
+        /* Enhanced bullet list styling - always visible */
+        [data-block-type="bullet-list"] {
+          padding-left: 2rem;
+          position: relative;
+        }
+        
+        [data-block-type="bullet-list"]::before {
+          content: '•' !important;
+          position: absolute !important;
+          left: 1rem !important;
+          top: 0.6em !important;
+          color: #57534e !important;
+          font-weight: bold !important;
+          font-size: 1.125rem !important;
+          line-height: 1 !important;
+          pointer-events: none !important;
+          z-index: 10 !important;
+          user-select: none !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+          display: block !important;
+        }
+        
+        /* Force bullets to stay visible in all states */
+        [data-block-type="bullet-list"]:focus::before,
+        [data-block-type="bullet-list"]:hover::before,
+        [data-block-type="bullet-list"]:focus-within::before,
+        [data-block-type="bullet-list"] [contenteditable]:focus::before,
+        [data-block-type="bullet-list"] [contenteditable]:hover::before,
+        [data-block-type="bullet-list"] [contenteditable]:active::before {
+          opacity: 1 !important;
+          visibility: visible !important;
+          display: block !important;
+        }
+        
+        /* Enhanced numbered list styling - always visible */
+        [data-block-type="numbered-list"] {
+          padding-left: 2rem;
+          position: relative;
+        }
+        
+        [data-block-type="numbered-list"]::before {
+          content: attr(data-list-number) '.' !important;
+          position: absolute !important;
+          left: 0.5rem !important;
+          top: 0.6em !important;
+          color: #57534e !important;
+          font-weight: 500 !important;
+          font-size: 1rem !important;
+          line-height: 1 !important;
+          pointer-events: none !important;
+          z-index: 10 !important;
+          user-select: none !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+          display: block !important;
+        }
+        
+        /* Force numbers to stay visible in all states */
+        [data-block-type="numbered-list"]:focus::before,
+        [data-block-type="numbered-list"]:hover::before,
+        [data-block-type="numbered-list"]:focus-within::before,
+        [data-block-type="numbered-list"] [contenteditable]:focus::before,
+        [data-block-type="numbered-list"] [contenteditable]:hover::before,
+        [data-block-type="numbered-list"] [contenteditable]:active::before {
+          opacity: 1 !important;
+          visibility: visible !important;
+          display: block !important;
         }
       `}</style>
 

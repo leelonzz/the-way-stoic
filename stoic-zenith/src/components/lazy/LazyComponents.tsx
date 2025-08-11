@@ -5,7 +5,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 // Lazy load heavy components with loading fallbacks
 export const LazyDailyStoicWisdom = dynamic(
-  () => import('@/components/quotes/DailyStoicWisdom'),
+  () => import('@/components/quotes/DailyStoicWisdom').then(mod => ({ default: mod.DailyStoicWisdom })),
   {
     loading: () => (
       <div className="min-h-screen bg-hero flex items-center justify-center">
@@ -29,7 +29,7 @@ export const LazyHomePage = dynamic(
 )
 
 export const LazyJournalPage = dynamic(
-  () => import('@/components/pages-components/Journal').then(mod => ({ default: mod.Journal })),
+  () => import('@/components/pages-components/Journal'),
   {
     loading: () => (
       <div className="min-h-screen p-6 flex items-center justify-center">

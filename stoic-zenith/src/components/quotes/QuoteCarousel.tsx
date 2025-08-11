@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Star, Share } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { useQuotePersistence } from '@/hooks/useQuotePersistence'
 import type { Quote as QuoteType } from '@/hooks/useCachedQuotes'
 
 interface QuoteCarouselProps {
@@ -11,88 +12,125 @@ interface QuoteCarouselProps {
   isQuoteSaved?: (quoteId: string) => boolean
   onSave?: (quoteId: string) => Promise<boolean>
   onUnsave?: (quoteId: string) => Promise<boolean>
+  searchTerm?: string
+  selectedCategory?: string | null
+  userId?: string | null
 }
 
 export function QuoteCarousel({
   quotes,
   isQuoteSaved,
   onSave,
-  onUnsave
+  onUnsave,
+  searchTerm = '',
+  selectedCategory = null,
+  userId = null
 }: QuoteCarouselProps): JSX.Element {
-  // Initialize currentIndex with proper validation and loading state
-  const [currentIndex, setCurrentIndex] = useState(() => {
-    if (typeof window !== 'undefined' && quotes.length > 0) {
-      // Try to get saved quote ID first
-      const savedQuoteId = localStorage.getItem('quote-carousel-quote-id')
-      if (savedQuoteId) {
-        const foundIndex = quotes.findIndex(quote => quote.id === savedQuoteId)
-        if (foundIndex >= 0) {
-          return foundIndex
-        }
-      }
-      
-      // Fallback to saved index with validation
-      const savedIndex = localStorage.getItem('quote-carousel-index')
-      if (savedIndex !== null) {
-        const index = parseInt(savedIndex, 10)
-        if (!isNaN(index) && index >= 0 && index < quotes.length) {
-          return index
-        }
-      }
-    }
-    return 0
+  const { toast } = useToast()
+
+  // Use quote persistence hook for state management
+  const {
+    currentIndex,
+    currentQuote,
+    setCurrentQuote,
+    getFilteredQuotes,
+    isInitialized: persistenceInitialized,
+    randomSeed,
+    hasRandomizedOrder
+  } = useQuotePersistence(quotes, {
+    storageKey: 'twstoic:carousel-state',
+    persistAcrossSessions: true,
+    userId
   })
-  
+
+  // Get filtered quotes based on search and category
+  const filteredQuotes = getFilteredQuotes(quotes)
+
   const [isLoading, setIsLoading] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isInitializing, setIsInitializing] = useState(true)
-  const { toast } = useToast()
 
-  const currentQuote = quotes[currentIndex]
-  const isSaved = currentQuote && isQuoteSaved ? isQuoteSaved(currentQuote.id) : false
+  // Use the current quote from persistence hook, fallback to first filtered quote
+  // But don't show fallback quotes if we're still initializing
+  const displayQuote = useMemo(() => {
+    if (isInitializing || !persistenceInitialized) {
+      console.log(`[QuoteCarousel] Still initializing (UI: ${isInitializing}, Persistence: ${persistenceInitialized}), not showing quote yet`)
+      return null
+    }
+
+    if (currentQuote && filteredQuotes.find(q => q.id === currentQuote.id)) {
+      console.log(`[QuoteCarousel] Using persisted quote:`, currentQuote.text.substring(0, 50) + '...')
+      return currentQuote
+    }
+
+    const fallbackQuote = filteredQuotes[0] || null
+    if (fallbackQuote) {
+      console.log(`[QuoteCarousel] Using fallback quote:`, fallbackQuote.text.substring(0, 50) + '...')
+    }
+    return fallbackQuote
+  }, [currentQuote, filteredQuotes, isInitializing, persistenceInitialized])
+
+  const isSaved = displayQuote && isQuoteSaved ? isQuoteSaved(displayQuote.id) : false
 
   // Handle initialization and prevent flash
   useEffect(() => {
+    console.log(`[QuoteCarousel] Initializing with ${quotes.length} quotes`)
     const initTimer = setTimeout(() => {
+      console.log(`[QuoteCarousel] Initialization complete`)
       setIsInitializing(false)
-    }, 100) // Brief delay to prevent flash
+    }, 300) // Longer delay to ensure persistence hook is ready
 
     return () => clearTimeout(initTimer)
   }, [])
 
-  // Save both quote ID and index to localStorage whenever it changes
+  // Debug logging for persistence and randomization
   useEffect(() => {
-    if (typeof window !== 'undefined' && currentQuote && !isInitializing) {
-      localStorage.setItem('quote-carousel-index', currentIndex.toString())
-      localStorage.setItem('quote-carousel-quote-id', currentQuote.id)
+    if (displayQuote && !isInitializing) {
+      console.log(`[QuoteCarousel] Current quote changed:`, {
+        id: displayQuote.id,
+        text: displayQuote.text.substring(0, 50) + '...',
+        author: displayQuote.author,
+        userId: userId || 'anonymous',
+        randomSeed,
+        hasRandomizedOrder
+      })
     }
-  }, [currentIndex, currentQuote, isInitializing])
+  }, [displayQuote, isInitializing, userId, randomSeed, hasRandomizedOrder])
 
-  // Validate current index when quotes change
-  useEffect(() => {
-    if (quotes.length > 0 && currentIndex >= quotes.length) {
-      setCurrentIndex(0)
-    }
-  }, [quotes.length, currentIndex])
+  // Get current index in filtered quotes
+  const getCurrentFilteredIndex = useCallback((): number => {
+    if (!displayQuote || filteredQuotes.length === 0) return 0
+    return filteredQuotes.findIndex(q => q.id === displayQuote.id)
+  }, [displayQuote, filteredQuotes])
 
   // Navigation functions with smooth transition
   const goToPrevious = useCallback(() => {
-    if (isTransitioning || isInitializing) return
+    if (isTransitioning || isInitializing || filteredQuotes.length === 0) return
     setIsTransitioning(true)
     setTimeout(() => {
-      setCurrentIndex(prev => prev === 0 ? quotes.length - 1 : prev - 1)
+      const currentFilteredIndex = getCurrentFilteredIndex()
+      const newIndex = currentFilteredIndex === 0 ? filteredQuotes.length - 1 : currentFilteredIndex - 1
+      const newQuote = filteredQuotes[newIndex]
+      if (newQuote) {
+        setCurrentQuote(newQuote)
+      }
       setTimeout(() => setIsTransitioning(false), 200)
     }, 150)
-  }, [quotes.length, isTransitioning, isInitializing])
+  }, [filteredQuotes, isTransitioning, isInitializing, getCurrentFilteredIndex, setCurrentQuote])
 
   const goToNext = useCallback(() => {
-    if (isTransitioning || isInitializing) return
+    if (isTransitioning || isInitializing || filteredQuotes.length === 0) return
     setIsTransitioning(true)
     setTimeout(() => {
-      setCurrentIndex(prev => prev === quotes.length - 1 ? 0 : prev + 1)
+      const currentFilteredIndex = getCurrentFilteredIndex()
+      const newIndex = currentFilteredIndex === filteredQuotes.length - 1 ? 0 : currentFilteredIndex + 1
+      const newQuote = filteredQuotes[newIndex]
+      if (newQuote) {
+        setCurrentQuote(newQuote)
+      }
       setTimeout(() => setIsTransitioning(false), 200)
     }, 150)
-  }, [quotes.length, isTransitioning, isInitializing])
+  }, [filteredQuotes, isTransitioning, isInitializing, getCurrentFilteredIndex, setCurrentQuote])
 
   // Keyboard navigation
   useEffect(() => {
@@ -152,13 +190,13 @@ export function QuoteCarousel({
   }, [goToPrevious, goToNext])
 
   const handleSaveToggle = async (): Promise<void> => {
-    if (!onSave || !onUnsave || !currentQuote) return
+    if (!onSave || !onUnsave || !displayQuote) return
 
     setIsLoading(true)
     try {
       const success = isSaved
-        ? await onUnsave(currentQuote.id)
-        : await onSave(currentQuote.id)
+        ? await onUnsave(displayQuote.id)
+        : await onSave(displayQuote.id)
 
       if (success) {
         toast({
@@ -178,9 +216,9 @@ export function QuoteCarousel({
   }
 
   const handleShare = async (): Promise<void> => {
-    if (!currentQuote) return
+    if (!displayQuote) return
 
-    const text = `"${currentQuote.text}" - ${currentQuote.author}${currentQuote.source ? ` (${currentQuote.source})` : ''}`
+    const text = `"${displayQuote.text}" - ${displayQuote.author}${displayQuote.source ? ` (${displayQuote.source})` : ''}`
     
     if (navigator.share) {
       try {
@@ -208,7 +246,7 @@ export function QuoteCarousel({
     }
   }
 
-  if (!currentQuote || isInitializing) {
+  if (!displayQuote || isInitializing) {
     return (
       <div className="fixed inset-0 bg-hero flex items-center justify-center">
         {isInitializing ? (
@@ -224,7 +262,7 @@ export function QuoteCarousel({
   }
 
   return (
-    <div className="fixed inset-0 bg-hero animate-fade-in">
+    <div className="fixed inset-0 bg-hero">
       {/* Left Navigation Arrow - Now goes to Next */}
       <Button
         variant="default"
@@ -249,14 +287,14 @@ export function QuoteCarousel({
           }`}
         >
           <blockquote className="text-2xl md:text-3xl lg:text-4xl font-bold leading-relaxed text-ink font-inknut">
-            &quot;{currentQuote.text}&quot;
+            &quot;{displayQuote.text}&quot;
           </blockquote>
-          
+
           <div className="text-lg md:text-xl font-medium text-stone font-inknut">
-            — {currentQuote.author}
-            {currentQuote.source && (
+            — {displayQuote.author}
+            {displayQuote.source && (
               <div className="text-base md:text-lg text-stone/70 mt-2">
-                {currentQuote.source}
+                {displayQuote.source}
               </div>
             )}
           </div>

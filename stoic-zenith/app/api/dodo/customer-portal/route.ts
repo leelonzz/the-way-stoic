@@ -54,7 +54,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     console.log('Creating customer portal session for:', {
-      userId: user.id,
+      userId: user.user?.id || userId,
       dodoCustomerId: profile.dodo_customer_id
     })
 
@@ -63,8 +63,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const returnUrl = `${baseUrl}/subscription?refresh=true`
     
     const portalSession = await dodoClient.customers.customerPortal.create(
-      profile.dodo_customer_id,
-      { return_url: returnUrl }
+      profile.dodo_customer_id
     )
 
     if (!portalSession.link) {

@@ -293,10 +293,10 @@ export const EntryList = React.memo(function EntryList({
               onCreateEntry();
             }}
             size="sm"
-            className="flex items-center gap-2"
+            className="flex items-center justify-center w-8 h-8 p-0"
+            title="New Entry"
           >
             <Plus className="h-4 w-4" />
-            New Entry
           </Button>
         </div>
 

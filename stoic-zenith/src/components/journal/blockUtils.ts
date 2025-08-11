@@ -68,10 +68,10 @@ export function getBlockClassName(
     }
 
     case 'bullet-list':
-      return `${baseClasses} ${fontClass} mb-1 text-base text-stone-700 leading-[1.4] pl-6 relative before:content-['•'] before:absolute before:left-3 before:top-1/2 before:-translate-y-1/2 before:text-stone-600 before:select-none before:font-bold before:text-base before:leading-none`
+      return `${baseClasses} ${fontClass} mb-1 text-base text-stone-700 leading-[1.4] pl-8 relative`
 
     case 'numbered-list':
-      return `${baseClasses} ${fontClass} mb-1 text-base text-stone-700 leading-[1.4] pl-6 relative before:content-[attr(data-list-number)'.'] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:text-stone-600 before:select-none before:font-medium before:text-sm before:leading-none`
+      return `${baseClasses} ${fontClass} mb-1 text-base text-stone-700 leading-[1.4] pl-8 relative`
 
     case 'quote':
       return `${baseClasses} ${fontClass} border-l-4 border-stone-300 pl-4 mb-1 italic text-stone-600 text-base leading-[1.4]`
