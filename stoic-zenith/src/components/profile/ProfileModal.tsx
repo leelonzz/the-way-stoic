@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { DodoSubscriptionButton } from '@/components/subscription/DodoSubscriptionButton';
 import { SubscriptionManagement } from '@/components/subscription/SubscriptionManagement';
 import { getEffectiveSubscriptionPlan } from '@/utils/subscription';
+import { JournalSecuritySection } from './JournalSecuritySection';
 import {
   Card,
   CardContent,
@@ -231,67 +232,9 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                           </Button>
                         </div>
 
-                        <div className="flex items-center justify-between py-4">
-                          <div>
-                            <div className="text-sm text-stone mb-1">Password</div>
-                            <div className="text-sm text-ink">Set a permanent password to login to your account.</div>
-                          </div>
-                          <Button variant="outline" size="sm" className="text-sm border-stone/30 text-ink hover:bg-stone/5">
-                            Add password
-                          </Button>
-                        </div>
-
-                        <div className="flex items-center justify-between py-4">
-                          <div>
-                            <div className="text-sm text-stone mb-1">2-step verification</div>
-                            <div className="text-sm text-ink">Add an additional layer of security to your account during login.</div>
-                          </div>
-                          <Button variant="outline" size="sm" className="text-sm border-stone/30 text-ink hover:bg-stone/5">
-                            Add verification method
-                          </Button>
-                        </div>
-
-                        <div className="flex items-center justify-between py-4">
-                          <div>
-                            <div className="text-sm text-stone mb-1">Passkeys</div>
-                            <div className="text-sm text-ink">Securely sign-in with on-device biometric authentication.</div>
-                          </div>
-                          <Button variant="outline" size="sm" className="text-sm border-stone/30 text-ink hover:bg-stone/5">
-                            Add passkey
-                          </Button>
-                        </div>
                       </div>
                     </div>
 
-                    {/* Support Section */}
-                    <div className="space-y-6">
-                      <h3 className="text-lg font-serif font-semibold text-ink">Support</h3>
-                      
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between py-4">
-                          <div>
-                            <div className="text-sm text-stone mb-1">Support access</div>
-                            <div className="text-sm text-ink">Grant support temporary access to your account so we can troubleshoot problems or recover content on your behalf. You can revoke access at any time.</div>
-                          </div>
-                          <div className="flex items-center">
-                            <div className="w-10 h-6 bg-stone/20 rounded-full relative">
-                              <div className="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 shadow-sm"></div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="pt-4">
-                          <Button
-                            variant="outline"
-                            onClick={handleSignOut}
-                            disabled={isSigningOut}
-                            className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
-                          >
-                            {isSigningOut ? 'Signing out...' : 'Sign out'}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </>
               )}
@@ -436,7 +379,18 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps): JSX.Elemen
                 </div>
               )}
 
-              {activeSection !== 'account' && activeSection !== 'upgrade' && activeSection !== 'subscription' && (
+              {activeSection === 'preferences' && (
+                <div className="space-y-8">
+                  <div className="mb-8">
+                    <h1 className="text-2xl font-serif font-semibold text-ink mb-2">Preferences</h1>
+                    <p className="text-stone">Manage your account preferences and security settings.</p>
+                  </div>
+
+                  <JournalSecuritySection />
+                </div>
+              )}
+
+              {activeSection !== 'account' && activeSection !== 'upgrade' && activeSection !== 'subscription' && activeSection !== 'preferences' && (
                 <div className="space-y-6">
                   <h1 className="text-2xl font-serif font-semibold text-ink capitalize">{activeSection.replace('-', ' ')}</h1>
                   <div className="bg-parchment rounded-lg p-6 border border-stone/20">

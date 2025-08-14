@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { Quote } from './useCachedQuotes'
+import { useQuoteSession } from './useQuoteSession'
 
 interface QuoteState {
   currentQuoteId: string | null
@@ -75,6 +76,9 @@ export function useQuotePersistence(
     userId = null
   } = options
 
+  // Get quote session for navigation
+  const quoteSession = useQuoteSession()
+
   // Track if we're still waiting for quotes to load
   const [isInitialized, setIsInitialized] = useState(false)
 
@@ -115,8 +119,50 @@ export function useQuotePersistence(
     }
   }, [state, storageKey, persistAcrossSessions])
 
-  // Find current quote based on stored ID
+  // Get randomized quotes for this user (moved up to avoid hoisting issues)
+  const getRandomizedQuotes = useCallback((): Quote[] => {
+    if (quotes.length === 0) return []
+
+    // If we have a stored randomized order and it matches current quotes, use it
+    if (state.randomizedQuoteIds.length === quotes.length && state.randomSeed) {
+      const randomizedQuotes = state.randomizedQuoteIds
+        .map(id => quotes.find(q => q.id === id))
+        .filter(Boolean) as Quote[]
+
+      // Verify all quotes are still valid
+      if (randomizedQuotes.length === quotes.length) {
+        return randomizedQuotes
+      }
+    }
+
+    // Create new randomized order for this user
+    const seed = userId ? `user-${userId}-${quotes.length}` : `anonymous-${Date.now()}`
+    const randomizedQuotes = shuffleWithSeed(quotes, seed)
+    const randomizedIds = randomizedQuotes.map(q => q.id)
+
+    console.log(`[useQuotePersistence] Creating randomized quote order for user:`, {
+      userId: userId || 'anonymous',
+      seed,
+      totalQuotes: quotes.length,
+      firstQuote: randomizedQuotes[0]?.text.substring(0, 50) + '...'
+    })
+
+    // Persist the randomized order
+    persistState({
+      randomizedQuoteIds: randomizedIds,
+      randomSeed: seed
+    })
+
+    return randomizedQuotes
+  }, [quotes, state.randomizedQuoteIds, state.randomSeed, userId, persistState])
+
+  // Find current quote based on session or stored ID
   const getCurrentQuote = useCallback((): Quote | null => {
+    // Prioritize session current quote for API-driven quotes
+    if (quoteSession.currentQuote) {
+      return quoteSession.currentQuote
+    }
+
     if (!state.currentQuoteId || quotes.length === 0) {
       console.log(`[useQuotePersistence] No current quote ID or no quotes available`, {
         currentQuoteId: state.currentQuoteId,
@@ -138,24 +184,52 @@ export function useQuotePersistence(
     }
 
     return quotes[0] || null
-  }, [state.currentQuoteId, quotes, persistState])
+  }, [state.currentQuoteId, quotes, persistState, quoteSession.currentQuote])
 
   // Get carousel index for current quote
   const getCurrentIndex = useCallback((): number => {
+    // Prioritize session current index for API-driven quotes
+    if (quoteSession.currentQuote) {
+      return quoteSession.currentIndex
+    }
+
     if (!state.currentQuoteId || quotes.length === 0) return 0
 
-    const index = quotes.findIndex(q => q.id === state.currentQuoteId)
+    // Use the stored carousel index if available, otherwise find in randomized quotes
+    if (state.carouselIndex >= 0) {
+      return state.carouselIndex
+    }
+
+    // Fallback: find the quote in randomized order
+    const randomizedQuotes = getRandomizedQuotes()
+    const index = randomizedQuotes.findIndex(q => q.id === state.currentQuoteId)
     return index >= 0 ? index : 0
-  }, [state.currentQuoteId, quotes])
+  }, [state.currentQuoteId, state.carouselIndex, quotes, getRandomizedQuotes, quoteSession.currentQuote, quoteSession.currentIndex])
 
   // Set current quote and update index
   const setCurrentQuote = useCallback((quote: Quote | null, index?: number) => {
-    const newIndex = index !== undefined ? index : (quote ? quotes.findIndex(q => q.id === quote.id) : 0)
+    let newIndex = 0
+
+    if (index !== undefined) {
+      newIndex = index
+    } else if (quote) {
+      // Find the index in randomized quotes, not original quotes
+      const randomizedQuotes = getRandomizedQuotes()
+      const foundIndex = randomizedQuotes.findIndex(q => q.id === quote.id)
+      newIndex = foundIndex >= 0 ? foundIndex : 0
+    }
+
+    console.log(`[useQuotePersistence] Setting current quote:`, {
+      quoteId: quote?.id,
+      newIndex,
+      quoteText: quote?.text?.substring(0, 50) + '...'
+    })
+
     persistState({
       currentQuoteId: quote?.id || null,
       carouselIndex: Math.max(0, newIndex)
     })
-  }, [quotes, persistState])
+  }, [quotes, persistState, getRandomizedQuotes])
 
   // Set carousel index and update current quote
   const setCarouselIndex = useCallback((index: number) => {
@@ -197,11 +271,32 @@ export function useQuotePersistence(
     }
   }, [storageKey])
 
-  // Get filtered quotes based on current search and category (using randomized order)
+
+
+  // Get filtered quotes based on current search and category
   const getFilteredQuotes = useCallback((allQuotes: Quote[]): Quote[] => {
-    // Start with randomized order for this user
-    const randomizedQuotes = getRandomizedQuotes()
-    let filtered = randomizedQuotes.length > 0 ? randomizedQuotes : allQuotes
+    // For API-driven quotes, use session quotes as the source
+    const sourceQuotes = quoteSession.allSessionQuotes.length > 0 
+      ? quoteSession.allSessionQuotes 
+      : allQuotes
+
+    // Safety check: if quotes aren't loaded yet, return empty array
+    if (!sourceQuotes || sourceQuotes.length === 0) {
+      return []
+    }
+
+    let filtered = sourceQuotes
+
+    // For non-API quotes (saved/user quotes), use randomized order
+    if (allQuotes.length > 0 && quoteSession.allSessionQuotes.length === 0) {
+      try {
+        const randomizedQuotes = getRandomizedQuotes()
+        filtered = randomizedQuotes.length > 0 ? randomizedQuotes : allQuotes
+      } catch (error) {
+        console.warn('[useQuotePersistence] Error getting randomized quotes, falling back to original order:', error)
+        filtered = allQuotes
+      }
+    }
 
     // Apply category filter
     if (state.selectedCategory) {
@@ -220,44 +315,7 @@ export function useQuotePersistence(
     }
 
     return filtered
-  }, [state.selectedCategory, state.searchTerm, getRandomizedQuotes])
-
-  // Get randomized quotes for this user
-  const getRandomizedQuotes = useCallback((): Quote[] => {
-    if (quotes.length === 0) return []
-
-    // If we have a stored randomized order and it matches current quotes, use it
-    if (state.randomizedQuoteIds.length === quotes.length && state.randomSeed) {
-      const randomizedQuotes = state.randomizedQuoteIds
-        .map(id => quotes.find(q => q.id === id))
-        .filter(Boolean) as Quote[]
-
-      // Verify all quotes are still valid
-      if (randomizedQuotes.length === quotes.length) {
-        return randomizedQuotes
-      }
-    }
-
-    // Create new randomized order for this user
-    const seed = userId ? `user-${userId}-${quotes.length}` : `anonymous-${Date.now()}`
-    const randomizedQuotes = shuffleWithSeed(quotes, seed)
-    const randomizedIds = randomizedQuotes.map(q => q.id)
-
-    console.log(`[useQuotePersistence] Creating randomized quote order for user:`, {
-      userId: userId || 'anonymous',
-      seed,
-      totalQuotes: quotes.length,
-      firstQuote: randomizedQuotes[0]?.text.substring(0, 50) + '...'
-    })
-
-    // Persist the randomized order
-    persistState({
-      randomizedQuoteIds: randomizedIds,
-      randomSeed: seed
-    })
-
-    return randomizedQuotes
-  }, [quotes, state.randomizedQuoteIds, state.randomSeed, userId, persistState])
+  }, [state.selectedCategory, state.searchTerm, getRandomizedQuotes, quoteSession.allSessionQuotes])
 
   // Initialize current quote when quotes are loaded
   useEffect(() => {
@@ -280,7 +338,7 @@ export function useQuotePersistence(
           })
         }
       } else {
-        // Verify the current quote still exists
+        // Verify the current quote still exists and update index
         const currentQuote = quotes.find(q => q.id === state.currentQuoteId)
         if (!currentQuote) {
           console.log(`[useQuotePersistence] Current quote ${state.currentQuoteId} no longer exists, resetting to randomized first`)
@@ -289,6 +347,15 @@ export function useQuotePersistence(
             persistState({
               currentQuoteId: firstQuote.id,
               carouselIndex: 0
+            })
+          }
+        } else {
+          // Update the carousel index to match the current quote's position in randomized order
+          const randomizedIndex = randomizedQuotes.findIndex(q => q.id === state.currentQuoteId)
+          if (randomizedIndex >= 0 && randomizedIndex !== state.carouselIndex) {
+            console.log(`[useQuotePersistence] Updating carousel index from ${state.carouselIndex} to ${randomizedIndex} for quote ${state.currentQuoteId}`)
+            persistState({
+              carouselIndex: randomizedIndex
             })
           }
         }

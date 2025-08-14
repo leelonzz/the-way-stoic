@@ -3,6 +3,7 @@ import { AppSidebar } from './AppSidebar';
 import { useNavigationMonitor } from '@/hooks/useNavigationMonitor';
 import { ProgressBar } from '@/components/ui/instant-loading';
 import { cn } from '@/lib/utils';
+import { DebugControl } from '@/components/debug/DebugControl';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -31,6 +32,7 @@ export function AppLayout({ children, fullWidth = false }: AppLayoutProps) {
           </div>
         )}
       </main>
+      <DebugControl />
     </div>
   );
 }

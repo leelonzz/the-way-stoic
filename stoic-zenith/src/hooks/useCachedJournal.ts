@@ -13,7 +13,7 @@ import { getTimeouts, exponentialBackoff } from '@/lib/environment'
  * Cache-aware journal hook that prevents redundant database calls
  * when navigating to cached journal pages
  */
-export function useCachedJournal() {
+export function useCachedJournal(viewMode: 'list' | 'calendar' = 'list') {
   const { user } = useAuthContext()
   const queryClient = useQueryClient()
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null)
@@ -193,7 +193,8 @@ export function useCachedJournal() {
     // 1. We already have a selected entry that still exists in the entries list
     // 2. We're in the middle of creating an entry
     // 3. There are no entries to select from
-    if (isCreatingEntry || entriesWithAccessTimes.length === 0) {
+    // 4. We're in calendar view (manual selection only)
+    if (isCreatingEntry || entriesWithAccessTimes.length === 0 || viewMode === 'calendar') {
       return
     }
 
@@ -229,7 +230,7 @@ export function useCachedJournal() {
       setSelectedEntry(entryToSelect)
       recordEntryAccess(entryToSelect.id)
     }
-  }, [entriesWithAccessTimes, selectedEntry, isCreatingEntry])
+  }, [entriesWithAccessTimes, selectedEntry, isCreatingEntry, viewMode])
 
   // Handle entry ID changes during sync (temp ID -> permanent ID)
   useEffect(() => {

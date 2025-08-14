@@ -283,24 +283,9 @@ export const EntryList = React.memo(function EntryList({
 
   return (
     <div className={`flex flex-col h-full overflow-hidden ${className}`}>
-      {/* Header - Fixed at top */}
+      {/* Simplified Header */}
       <div className="flex-shrink-0 p-4 border-b border-stone-200 bg-white">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-stone-800">Journal Entries</h2>
-          <Button
-            onClick={() => {
-              console.log('🔄 New Entry button clicked');
-              onCreateEntry();
-            }}
-            size="sm"
-            className="flex items-center justify-center w-8 h-8 p-0"
-            title="New Entry"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Search */}
+        {/* Search Only */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 h-4 w-4" />
           <Input

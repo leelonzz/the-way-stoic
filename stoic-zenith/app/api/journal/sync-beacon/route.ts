@@ -6,7 +6,7 @@ interface SyncData {
   entry: {
     id: string;
     date: string;
-    blocks: any[];
+    blocks: unknown[];
     createdAt: Date;
     updatedAt: Date;
     characterCount: number;

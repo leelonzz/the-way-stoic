@@ -3,7 +3,15 @@ export const dynamic = 'force-dynamic'
 
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import Journal from '@/components/pages-components/Journal'
+import { JournalPasswordGate } from '@/components/journal/JournalPasswordGate'
+import dynamicImport from 'next/dynamic'
+import { BrandedLoadingScreen } from '@/components/ui/loading-spinner'
+
+// Dynamically import heavy journal component with TipTap editor
+const Journal = dynamicImport(() => import('@/components/pages-components/Journal'), {
+  loading: () => <BrandedLoadingScreen message="Loading your journal..." />,
+  ssr: false, // Journal editor needs client-side rendering
+})
 import { ErrorBoundary } from 'react-error-boundary'
 import { prefetchJournal } from '@/lib/prefetch'
 import { useAuthContext } from '@/components/auth/AuthProvider'
@@ -58,7 +66,7 @@ function ErrorFallback({
 function SimpleJournalTest(): JSX.Element {
   const { user } = useAuthContext()
 
-  console.log('🧪 SimpleJournalTest rendering...', { userId: user?.id })
+  // Debug logging removed - use debug utility if needed
 
   if (!user) {
     return <div className="p-8">Loading user...</div>
@@ -99,7 +107,9 @@ export default function JournalPage(): JSX.Element {
           FallbackComponent={ErrorFallback}
           onReset={() => window.location.reload()}
         >
-          <JournalWithPrefetch />
+          <JournalPasswordGate>
+            <JournalWithPrefetch />
+          </JournalPasswordGate>
         </ErrorBoundary>
       </AppLayout>
     </ProtectedRoute>

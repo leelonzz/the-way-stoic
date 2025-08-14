@@ -631,45 +631,6 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
             )}
             {getPlanDisplayName(effectivePlan)}
           </CardTitle>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleForceRefreshProfile}
-              disabled={refreshLoading}
-              variant="outline"
-              size="sm"
-              className="border-purple-300 text-purple-700 hover:bg-purple-50"
-            >
-              {refreshLoading ? (
-                <>
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  Refreshing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                  Force Refresh
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={handleSyncSubscription}
-              disabled={syncLoading}
-              variant="outline"
-              size="sm"
-            >
-              {syncLoading ? (
-                <>
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                  Sync Status
-                </>
-              )}
-            </Button>
-          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
@@ -726,31 +687,6 @@ export function SubscriptionManagement({ userId }: SubscriptionManagementProps) 
           <CardTitle>Manage Subscription</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Force Refresh Profile Button */}
-          <div className="space-y-2">
-            <p className="text-sm text-stone">
-              If your subscription status isn't updating correctly, use this to clear cached data and refresh your profile.
-              The app also automatically refreshes when you return from the billing portal or switch back to this tab.
-            </p>
-            <Button
-              onClick={handleForceRefreshProfile}
-              disabled={refreshLoading}
-              variant="outline"
-              className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
-            >
-              {refreshLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Refreshing Profile...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Force Refresh Profile Data
-                </>
-              )}
-            </Button>
-          </div>
 
           {/* Billing Portal Button */}
           <div className="space-y-2">

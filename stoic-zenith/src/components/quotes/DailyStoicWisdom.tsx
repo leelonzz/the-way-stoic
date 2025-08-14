@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { useCachedQuotes } from '@/hooks/useCachedQuotes'
 import { useQuotePersistence } from '@/hooks/useQuotePersistence'
+import { useQuoteSession } from '@/hooks/useQuoteSession'
 import { useAuthContext } from '@/components/auth/AuthProvider'
 import type { Quote as QuoteType } from '@/hooks/useCachedQuotes'
 import { MinimalLoadingScreen } from '@/components/ui/loading-spinner'
@@ -389,17 +390,42 @@ export function DailyStoicWisdom(): JSX.Element {
     reloadCount,
     maxReloads,
     canReload,
-    isRefetching
+    isRefetching,
+    quoteSession
   } = useCachedQuotes(user)
+
+  // Use quote session from useCachedQuotes to avoid multiple instances
+  
+  // Check if we're using API quotes
+  const isUsingApiQuotes = useMemo(() => {
+    // Check if we have any quotes with API format IDs or if we have session quotes
+    const hasApiQuotes = quotes.length > 0 && quotes.some(q => q.id?.startsWith('api-quote-'))
+    const hasSessionQuotes = quoteSession.allSessionQuotes.length > 0
+    const result = hasApiQuotes || hasSessionQuotes
+    
+    console.log('[DailyStoicWisdom] isUsingApiQuotes check:', {
+      quotesLength: quotes.length,
+      sessionQuotesLength: quoteSession.allSessionQuotes.length,
+      firstQuoteId: quotes[0]?.id,
+      hasApiQuotes,
+      hasSessionQuotes,
+      result
+    })
+    return result
+  }, [quotes, quoteSession.allSessionQuotes])
 
   // Use quote persistence hook for state management
   const {
     searchTerm: persistedSearchTerm,
     selectedCategory,
     activeTab: persistedActiveTab,
+    currentQuoteId: persistedCurrentQuoteId,
+    currentQuote: persistedCurrentQuote,
+    currentIndex: persistedCurrentIndex,
     setSearchTerm: setPersistentSearchTerm,
     setSelectedCategory,
     setActiveTab: setPersistentActiveTab,
+    setCurrentQuote,
     getFilteredQuotes,
     hasPersistedState,
     randomSeed,
@@ -410,37 +436,17 @@ export function DailyStoicWisdom(): JSX.Element {
     userId: user?.id || null
   })
 
-  // Debug logging
-  useEffect(() => {
-    console.log(`[DailyStoicWisdom] Component state:`, {
-      quotesLength: quotes.length,
-      persistedSearchTerm,
-      selectedCategory,
-      activeTab,
-      hasPersistedState,
-      userId: user?.id || 'anonymous',
-      randomSeed,
-      hasRandomizedOrder,
-      firstQuoteId: quotes[0]?.id,
-      firstQuoteText: quotes[0]?.text?.substring(0, 50) + '...',
-      firstQuoteAuthor: quotes[0]?.author
-    })
-  }, [quotes.length, persistedSearchTerm, selectedCategory, activeTab, hasPersistedState, quotes, user?.id, randomSeed, hasRandomizedOrder])
+  // Debug logging removed - use debug utility if needed
 
   const dailyQuote = getDailyQuote()
   
   // Use persistent search term, fallback to local state
   const effectiveSearchTerm = persistedSearchTerm || searchTerm
 
+  // Use the persistence hook's filtered quotes which includes randomization
   const filteredQuotes = useMemo(() => {
-    let filtered = quotes
-
-    if (effectiveSearchTerm) {
-      filtered = searchQuotes(effectiveSearchTerm)
-    }
-
-    return filtered
-  }, [quotes, effectiveSearchTerm, searchQuotes])
+    return getFilteredQuotes(quotes)
+  }, [getFilteredQuotes, quotes])
 
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [refreshedQuotes, setRefreshedQuotes] = useState<Map<string, QuoteType>>(new Map())
@@ -459,11 +465,17 @@ export function DailyStoicWisdom(): JSX.Element {
     return () => clearTimeout(timer)
   }, [])
 
-  // Only show toast when manually refreshing, not on automatic refetch
+  // Show error messages to user
   useEffect(() => {
-    // Remove automatic toast on refetch to reduce UI noise
-    // Users will only see toast when manually refreshing quotes
-  }, [isRefetching, toast])
+    if (error && error !== 'Failed to fetch quote') {
+      toast({
+        title: "Connection Issue",
+        description: error,
+        variant: "default",
+        duration: 5000
+      })
+    }
+  }, [error, toast])
 
   const handleRefreshDailyQuote = async (): Promise<void> => {
     if (!canReload || isRefreshing) {
@@ -482,11 +494,11 @@ export function DailyStoicWisdom(): JSX.Element {
     try {
       // Start fade out
       await new Promise(resolve => setTimeout(resolve, 150))
-      const newQuote = refreshDailyQuote()
+      const success = await refreshDailyQuote()
       // Allow fade in
       await new Promise(resolve => setTimeout(resolve, 150))
       
-      if (newQuote) {
+      if (success) {
         const remaining = maxReloads - reloadCount - 1
         toast({
           title: "Quote refreshed!",
@@ -532,12 +544,17 @@ export function DailyStoicWisdom(): JSX.Element {
       // Start fade out
       await new Promise(resolve => setTimeout(resolve, 150))
       
-      // Use the hook's refreshDailyQuote function as fallback
-      const newQuote = refreshDailyQuote()
+      // Use the hook's refreshDailyQuote function (now async, returns boolean)
+      const success = await refreshDailyQuote()
       
-      if (newQuote) {
-        // Update the refreshed quotes map with the new quote
-        setRefreshedQuotes(prev => new Map(prev).set(quoteId, newQuote))
+      if (success) {
+        // Get the current quote after refresh from the hook
+        const currentQuote = getDailyQuote()
+        if (currentQuote) {
+          // Update the refreshed quotes map with the new quote
+          setRefreshedQuotes(prev => new Map(prev).set(quoteId, currentQuote))
+        }
+        
         // Allow fade in
         await new Promise(resolve => setTimeout(resolve, 150))
         
@@ -609,15 +626,120 @@ export function DailyStoicWisdom(): JSX.Element {
   // For library tab, show full-screen carousel
   if (activeTab === 'library') {
     if (filteredQuotes.length > 0) {
+      // For API quotes, use session's current quote
+      let displayCurrentQuote: any = null
+      let currentIndex = 0
+
+      if (isUsingApiQuotes) {
+        // Use the current quote from session
+        displayCurrentQuote = quoteSession.currentQuote
+        currentIndex = quoteSession.currentIndex
+        console.log('[DailyStoicWisdom] Using API quote from session:', {
+          quoteId: displayCurrentQuote?.id,
+          currentIndex
+        })
+      } else {
+        // For persistence-based quotes, use the persisted current quote
+        displayCurrentQuote = persistedCurrentQuote && filteredQuotes.find(q => q.id === persistedCurrentQuote.id)
+          ? getDisplayQuote(persistedCurrentQuote)
+          : (filteredQuotes.length > 0 ? getDisplayQuote(filteredQuotes[0]) : null)
+
+        // Calculate the current index within the filtered quotes array
+        currentIndex = displayCurrentQuote
+          ? Math.max(0, filteredQuotes.findIndex(q => q.id === displayCurrentQuote.id))
+          : 0
+
+        console.log('[DailyStoicWisdom] Using persisted quote:', {
+          persistedCurrentQuoteId: persistedCurrentQuote?.id,
+          displayCurrentQuoteId: displayCurrentQuote?.id,
+          currentIndex,
+          persistedCurrentIndex
+        })
+      }
+
+      // Debug logging (can be removed in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[DailyStoicWisdom] Quote carousel state:', {
+          persistedCurrentQuoteId,
+          persistedCurrentQuoteFound: !!persistedCurrentQuote,
+          displayCurrentQuoteId: displayCurrentQuote?.id,
+          currentIndex,
+          persistedCurrentIndex,
+          filteredQuotesLength: filteredQuotes.length,
+          firstFilteredQuoteId: filteredQuotes[0]?.id,
+          randomSeed,
+          hasRandomizedOrder
+        })
+      }
+
+      // Navigation functions - handle both API and persistence-based quotes
+      const handleNext = async () => {
+        console.log('[DailyStoicWisdom] handleNext called, isUsingApiQuotes:', isUsingApiQuotes)
+        
+        if (isUsingApiQuotes) {
+          // For API quotes, try to fetch next quote from session
+          console.log('[DailyStoicWisdom] Calling quoteSession.goToNext()')
+          const success = await quoteSession.goToNext()
+          console.log('[DailyStoicWisdom] goToNext result:', success)
+          if (!success) {
+            console.log('Unable to fetch next API quote')
+          }
+        } else {
+          // For persistence-based quotes, use traditional navigation and update persistence
+          console.log('[DailyStoicWisdom] Using traditional navigation')
+          const nextIndex = currentIndex === filteredQuotes.length - 1 ? 0 : currentIndex + 1
+          const nextQuote = filteredQuotes[nextIndex]
+          if (nextQuote) {
+            setCurrentQuote(nextQuote, nextIndex)
+            console.log('[DailyStoicWisdom] Set next quote:', { quoteId: nextQuote.id, nextIndex })
+          }
+        }
+      }
+
+      const handlePrevious = async () => {
+        console.log('[DailyStoicWisdom] handlePrevious called, isUsingApiQuotes:', isUsingApiQuotes)
+        
+        if (isUsingApiQuotes) {
+          // For API quotes, use session's previous navigation
+          console.log('[DailyStoicWisdom] Calling quoteSession.goToPrevious()')
+          const success = quoteSession.goToPrevious()
+          console.log('[DailyStoicWisdom] goToPrevious result:', success)
+          if (!success) {
+            console.log('Cannot go to previous API quote')
+          }
+        } else {
+          // For persistence-based quotes, use traditional navigation and update persistence
+          console.log('[DailyStoicWisdom] Using traditional navigation')
+          const prevIndex = currentIndex === 0 ? filteredQuotes.length - 1 : currentIndex - 1
+          const prevQuote = filteredQuotes[prevIndex]
+          if (prevQuote) {
+            setCurrentQuote(prevQuote, prevIndex)
+            console.log('[DailyStoicWisdom] Set previous quote:', { quoteId: prevQuote.id, prevIndex })
+          }
+        }
+      }
+
+      // Only render carousel if we have a valid quote
+      if (!displayCurrentQuote) {
+        return (
+          <div className="fixed inset-0 bg-hero flex items-center justify-center">
+            <p className="text-stone text-xl">Loading quotes...</p>
+          </div>
+        )
+      }
+
       return (
         <QuoteCarousel
-          quotes={filteredQuotes.map(originalQuote => getDisplayQuote(originalQuote))}
+          currentQuote={displayCurrentQuote}
+          currentIndex={Math.max(0, currentIndex)}
+          totalCount={isUsingApiQuotes ? quoteSession.totalQuotes : filteredQuotes.length}
           isQuoteSaved={isAuthenticated ? isQuoteSaved : undefined}
           onSave={isAuthenticated ? (quoteId: string) => saveQuote(quoteId) : undefined}
           onUnsave={isAuthenticated ? (quoteId: string) => unsaveQuote(quoteId) : undefined}
-          searchTerm={effectiveSearchTerm}
-          selectedCategory={selectedCategory}
-          userId={user?.id || null}
+          onNext={handleNext}
+          onPrevious={handlePrevious}
+          isLoading={loading}
+          quoteSession={quoteSession}
         />
       )
     } else {

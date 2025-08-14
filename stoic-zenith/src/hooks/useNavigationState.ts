@@ -202,22 +202,8 @@ export function useNavigationPerformance() {
   const { getNavigationMetrics, getNavigationRecommendations } = useNavigationState()
   
   const logPerformanceReport = useCallback(() => {
-    const metrics = getNavigationMetrics()
-    const recommendations = getNavigationRecommendations()
-    
-    console.group('📊 Navigation Performance Report')
-    console.log('Total Navigations:', metrics.totalNavigations)
-            // Cache Hit Rate logged
-    console.log('Average Navigation Time:', `${metrics.averageNavigationTime.toFixed(0)}ms`)
-    console.log('Frequent Paths:', metrics.frequentPaths)
-    
-    if (recommendations.length > 0) {
-      console.group('💡 Recommendations')
-      recommendations.forEach(rec => console.log(`• ${rec}`))
-      console.groupEnd()
-    }
-    
-    console.groupEnd()
+    // Debug logging removed - use debug utility if needed
+    // Performance reports can be enabled via debugControl.setPerformanceDebugEnabled(true)
   }, [getNavigationMetrics, getNavigationRecommendations])
   
   return {

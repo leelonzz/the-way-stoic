@@ -12,3 +12,10 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Sitemap
+Sitemap: https://thewaystoic.site/sitemap.xml
+
+# Favicon
+Allow: /favicon.ico
+Allow: /logo-icon.png

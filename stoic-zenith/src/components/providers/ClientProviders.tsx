@@ -1,9 +1,19 @@
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Toaster } from '@/components/ui/toaster'
-import { Toaster as Sonner } from '@/components/ui/sonner'
-import { TooltipProvider } from '@/components/ui/tooltip'
+import dynamic from 'next/dynamic'
+
+// Lazy load non-critical UI components
+const Toaster = dynamic(() => import('@/components/ui/toaster').then(mod => ({ default: mod.Toaster })), {
+  ssr: false,
+})
+const Sonner = dynamic(() => import('@/components/ui/sonner').then(mod => ({ default: mod.Toaster })), {
+  ssr: false,
+})
+const TooltipProvider = dynamic(() => import('@/components/ui/tooltip').then(mod => ({ default: mod.TooltipProvider })), {
+  ssr: true,
+  loading: () => null,
+})
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import { DodoProvider } from '@/components/providers/DodoProvider'
 import { PageCacheProvider } from '@/components/providers/PageCacheProvider'

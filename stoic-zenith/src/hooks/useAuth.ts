@@ -7,6 +7,7 @@ import {
 } from '@/integrations/supabase/auth'
 import { supabase } from '@/integrations/supabase/client'
 import { getTimeouts, exponentialBackoff } from '@/lib/environment'
+import { debugLog } from '@/lib/debug'
 
 export const useAuth = (): AuthState & {
   signInWithGoogle: () => Promise<void>
@@ -338,7 +339,7 @@ export const useAuth = (): AuthState & {
         const wasAuthenticated =
           localStorage.getItem('was-authenticated') === 'true'
 
-        console.log('🚀 Starting auth initialization, wasAuthenticated:', wasAuthenticated)
+        debugLog.auth.log('Starting auth initialization, wasAuthenticated:', wasAuthenticated)
 
         // Always start with loading true to prevent login screen flash
         setAuthState(prev => ({ ...prev, loading: true }))
@@ -432,7 +433,7 @@ export const useAuth = (): AuthState & {
             }
           })
           .catch((error: unknown) => {
-            console.warn('⚠️ Auth check failed:', error)
+            debugLog.auth.warn('Auth check failed:', error)
 
             if (mounted && mountedRef.current) {
               const errorMessage =
@@ -460,7 +461,7 @@ export const useAuth = (): AuthState & {
 
         await authPromise
       } catch (error) {
-        console.error('❌ Auth initialization error:', error)
+        debugLog.auth.error('Auth initialization error:', error)
 
         // Clean up timeout
         if (timeoutId) {
@@ -491,8 +492,8 @@ export const useAuth = (): AuthState & {
     const {
       data: { subscription },
     } = authHelpers.onAuthStateChange(async (event, session) => {
-      console.log(
-        '🔐 Auth state change:',
+      debugLog.auth.log(
+        'Auth state change:',
         event,
         session?.user?.email || 'no user'
       )
@@ -524,10 +525,10 @@ export const useAuth = (): AuthState & {
               }).catch(console.warn)
             }
           } else {
-            console.log('❌ No user session, event:', event)
+            debugLog.auth.log('No user session, event:', event)
             // Only clear auth state on explicit sign-out or user removal
             if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
-              console.log('🚪 Explicit logout event, clearing auth')
+              debugLog.auth.log('Explicit logout event, clearing auth')
               localStorage.removeItem('was-authenticated')
               setAuthState({
                 user: null,
@@ -538,7 +539,7 @@ export const useAuth = (): AuthState & {
               })
             } else if (event === 'TOKEN_REFRESHED') {
               // Token refresh without user means auth is invalid
-              console.warn('🔐 Token refresh failed, clearing auth')
+              debugLog.auth.warn('Token refresh failed, clearing auth')
               localStorage.removeItem('was-authenticated')
               setAuthState({
                 user: null,
@@ -548,8 +549,8 @@ export const useAuth = (): AuthState & {
                 error: null,
               })
             } else {
-              console.log(
-                '⚠️ Session lost but not explicit logout, keeping loading state'
+              debugLog.auth.log(
+                'Session lost but not explicit logout, keeping loading state'
               )
             }
           }
@@ -597,7 +598,7 @@ export const useAuth = (): AuthState & {
   
   // Debug log the current auth state
   useEffect(() => {
-    console.log('🔐 Current auth state:', {
+    debugLog.auth.log('Current auth state:', {
       hasUser: !!authState.user,
       userId: authState.user?.id,
       isAuthenticated: !!authState.user,

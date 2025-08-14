@@ -195,6 +195,7 @@ export function useTabVisibility(
     attachGlobalListener();
     
     if (enableLogging) {
+      // Logging disabled for production
     }
   }, [enableLogging]);
 
@@ -202,6 +203,7 @@ export function useTabVisibility(
     globalCallbacks.delete(id);
     
     if (enableLogging) {
+      // Logging disabled for production
     }
     
     detachGlobalListener();

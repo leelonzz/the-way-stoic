@@ -16,6 +16,9 @@ export interface UserProfile {
   has_used_trial?: boolean;
   trial_used_at?: string;
   account_cancelled_at?: string;
+  journal_password_hash?: string;
+  journal_password_enabled?: boolean;
+  journal_password_updated_at?: string;
   created_at: string;
   updated_at: string;
 }

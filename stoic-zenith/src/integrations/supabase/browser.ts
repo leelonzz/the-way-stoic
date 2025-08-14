@@ -63,7 +63,9 @@ export function createSupabaseBrowserClient() {
             try {
               const item = localStorage.getItem(key)
               if (item) return item
-            } catch {}
+            } catch {
+              // localStorage not available
+            }
             
             // Fallback to cookies
             const cookies = document.cookie.split(';')
@@ -74,7 +76,9 @@ export function createSupabaseBrowserClient() {
             // Store in both localStorage and cookies for reliability
             try {
               localStorage.setItem(key, value)
-            } catch {}
+            } catch {
+              // localStorage not available
+            }
 
             // Also store in cookies with long expiry and proper production settings
             const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year
@@ -86,7 +90,9 @@ export function createSupabaseBrowserClient() {
           removeItem: (key: string) => {
             try {
               localStorage.removeItem(key)
-            } catch {}
+            } catch {
+              // localStorage not available
+            }
             
             // Remove from cookies
             document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`

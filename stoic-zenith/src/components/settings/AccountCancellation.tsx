@@ -35,7 +35,7 @@ export function AccountCancellation({ className }: AccountCancellationProps) {
   const [confirmEmail, setConfirmEmail] = useState('')
   const [reason, setReason] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const { user, profile, signOut } = useAuthContext()
+  const { user, session, profile, signOut } = useAuthContext()
   const { toast } = useToast()
 
   const handleCancelAccount = async () => {
@@ -56,7 +56,7 @@ export function AccountCancellation({ className }: AccountCancellationProps) {
       const response = await fetch('/api/account/cancel', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${user.access_token}`,
+          'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

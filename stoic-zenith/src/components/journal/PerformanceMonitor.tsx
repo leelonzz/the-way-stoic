@@ -10,7 +10,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
   journalManager, 
   enabled = false 
 }) => {
-  const [metrics, setMetrics] = useState<any>(null);
+  const [metrics, setMetrics] = useState<unknown>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -47,12 +47,12 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
     return null;
   }
 
-  const { fastSync, syncQueueSize, activeEdits, pendingSaves, fastSyncEnabled } = metrics;
+  const { fastSync, syncQueueSize, activeEdits, pendingSaves, fastSyncEnabled } = metrics as any;
   const isFastSyncActive = journalManager.isFastSyncActive();
 
   const toggleFastSync = () => {
     const newState = !fastSyncEnabled;
-    console.log(`🔄 Toggling FastSync: ${fastSyncEnabled} → ${newState}`);
+    // Debug logging removed - use debug utility if needed
     journalManager.setFastSyncEnabled(newState);
     // Force metrics update
     setTimeout(() => {

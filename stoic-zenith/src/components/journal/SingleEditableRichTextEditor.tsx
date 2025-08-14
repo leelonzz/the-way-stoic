@@ -762,7 +762,7 @@ export function SingleEditableRichTextEditor({
           userSelect: 'text',
         }}
       >
-        {!isEditing && blocks.length === 1 && blocks[0].text === '' && !editingBlockId && (
+        {!isEditing && blocks.every(block => block.text.trim() === '') && !editingBlockId && (
           <div className="absolute top-6 left-6 text-stone-400 italic text-base leading-relaxed pointer-events-none z-0 select-none transition-opacity duration-200">
             Start writing your thoughts...
           </div>

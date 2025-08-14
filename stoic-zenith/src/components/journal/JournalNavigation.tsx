@@ -113,7 +113,7 @@ export const JournalNavigation = React.memo(function JournalNavigation({
         try {
           onEntryUpdate(updatedEntry);
         } catch (error) {
-          console.error('Failed to update parent:', error);
+          // Error logging removed - use debug utility if needed
         }
       });
     } catch (error) {
@@ -260,7 +260,7 @@ export const JournalNavigation = React.memo(function JournalNavigation({
                       variant: "default",
                     });
                   } catch (error) {
-                    console.error('Manual save failed:', error);
+                    // Error logging removed - use debug utility if needed
                     toast({
                       title: "Save failed",
                       description: "Failed to save entry. Please try again.",

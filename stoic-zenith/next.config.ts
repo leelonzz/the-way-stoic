@@ -16,6 +16,29 @@ if (process.env.ANALYZE === 'true') {
 }
 
 const nextConfig: NextConfig = {
+  // Image configuration for external domains
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
   // Experimental features for better navigation performance
   experimental: {
     // Configure router cache behavior for Next.js 15
@@ -54,12 +77,33 @@ const nextConfig: NextConfig = {
         ...config.optimization.splitChunks,
         cacheGroups: {
           ...config.optimization.splitChunks.cacheGroups,
+          // Separate heavy vendor chunks
+          tiptap: {
+            test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
+            name: 'tiptap',
+            chunks: 'all',
+            priority: 25,
+          },
+          supabase: {
+            test: /[\\/]node_modules[\\/]@supabase[\\/]/,
+            name: 'supabase',
+            chunks: 'all',
+            priority: 24,
+          },
+          radixui: {
+            test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
+            name: 'radix-ui',
+            chunks: 'all',
+            priority: 23,
+          },
           // Separate vendor chunks
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'all',
             priority: 10,
+            minSize: 20000,
+            maxSize: 200000,
           },
           // Separate journal-specific chunks
           journal: {

@@ -242,6 +242,18 @@ All colors MUST be HSL.
     font-family: var(--font-inknut-antiqua), serif;
   }
 
+  /* Course Navigation Styles */
+  .course-card-clean {
+    background: linear-gradient(145deg, 
+      hsl(var(--parchment)) 0%, 
+      hsl(var(--secondary)) 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .course-card-clean:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
   /* Conditional font utilities for typography-contentEditable conflict resolution */
   .font-conditional {
     font-family:

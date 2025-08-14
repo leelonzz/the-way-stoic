@@ -1,19 +1,13 @@
 'use client'
 
 import { useMemo, useState, useCallback, useEffect } from 'react'
-import { useNavigationCachedQuery } from './useCacheAwareQuery'
+import { useQuoteSession } from './useQuoteSession'
 import { supabase } from '@/integrations/supabase/client'
 import type { User } from '@supabase/supabase-js'
+import type { StoicQuote } from '@/services/stoicQuoteApi'
 
-export interface Quote {
-  id: string
-  text: string
-  author: string
-  source?: string
-  category: string
-  created_at: string
-  mood_tags?: string[]
-}
+// Re-export types for compatibility
+export type Quote = StoicQuote
 
 export interface SavedQuote {
   id: string
@@ -35,91 +29,48 @@ export interface UserQuote {
   updated_at: string
 }
 
-// Fallback quotes in case database is unavailable
-const FALLBACK_QUOTES: Quote[] = [
-  {
-    id: 'fallback-1',
-    text: "It's not what happens to you, but how you react to it that matters.",
-    author: "Epictetus",
-    source: "Discourses",
-    category: "perspective",
-    created_at: new Date().toISOString(),
-    mood_tags: []
-  },
-  {
-    id: 'fallback-2',
-    text: "You have power over your mind—not outside events. Realize this, and you will find strength.",
-    author: "Marcus Aurelius",
-    source: "Meditations",
-    category: "mindfulness",
-    created_at: new Date().toISOString(),
-    mood_tags: []
-  },
-  {
-    id: 'fallback-3',
-    text: "The best revenge is not to be like your enemy.",
-    author: "Marcus Aurelius",
-    source: "Meditations",
-    category: "virtue",
-    created_at: new Date().toISOString(),
-    mood_tags: []
-  }
-]
-
 /**
- * Cache-aware quotes hook that respects page navigation cache
- * Prevents redundant API calls when navigating between cached pages
+ * Hook for managing quotes with API integration and session storage
+ * Replaces database-driven quote system with external API
  */
 export function useCachedQuotes(user: User | null) {
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [reloadCount, setReloadCount] = useState(0)
-  const [randomQuoteOverride, setRandomQuoteOverride] = useState<Quote | null>(null)
 
-  // Use cache-aware query for quotes
-  const quotesQuery = useNavigationCachedQuery(
-    ['quotes', 'all'],
-    async (): Promise<Quote[]> => {
-      
-      const { data, error } = await supabase
-        .from('quotes')
-        .select('*')
-        .order('created_at', { ascending: true })
+  // Use the quote session hook for API-driven quotes
+  const quoteSession = useQuoteSession({
+    maxSessionQuotes: 50,
+    maxReloadsPerDay: 10
+  })
 
-      if (error) {
-        console.error('❌ [CachedQuotes] Supabase error:', error)
-        return FALLBACK_QUOTES
-      }
-      
-      // If no quotes from database, use fallback quotes
-      if (!data || data.length === 0) {
-        return FALLBACK_QUOTES
-      }
+  // Create a quotes array from session data for compatibility
+  const quotes = useMemo(() => {
+    return quoteSession.allSessionQuotes || []
+  }, [quoteSession.allSessionQuotes])
 
-      return data
-    },
-    {
-      cacheThreshold: 10 * 60 * 1000, // 10 minutes - longer cache for quotes
-      staleTime: 15 * 60 * 1000, // 15 minutes stale time
-      gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
-      retry: (failureCount, error) => {
-        // Don't retry on auth errors, but retry on network errors
-        if (error?.message?.includes('auth') || error?.message?.includes('permission')) {
-          return false
-        }
-        return failureCount < 2
-      },
-      // Use fallback data on error
-      placeholderData: FALLBACK_QUOTES,
+  // Merge errors from session and local state
+  const combinedError = useMemo(() => {
+    return error || quoteSession.error || null
+  }, [error, quoteSession.error])
+
+  // Loading state combines session loading
+  const loading = useMemo(() => {
+    return quoteSession.isLoading
+  }, [quoteSession.isLoading])
+
+  // User quotes still come from database (Supabase)
+  const [userQuotes, setUserQuotes] = useState<UserQuote[]>([])
+  const [userQuotesLoading, setUserQuotesLoading] = useState(false)
+
+  // Fetch user quotes from Supabase
+  const fetchUserQuotes = useCallback(async () => {
+    if (!user) {
+      setUserQuotes([])
+      return
     }
-  )
 
-  // Use cache-aware query for user quotes
-  const userQuotesQuery = useNavigationCachedQuery(
-    ['user-quotes', user?.id || 'anonymous'],
-    async (): Promise<UserQuote[]> => {
-      if (!user) return []
-      
+    setUserQuotesLoading(true)
+    try {
       const { data, error } = await supabase
         .from('user_quotes')
         .select('*')
@@ -128,92 +79,32 @@ export function useCachedQuotes(user: User | null) {
 
       if (error) {
         console.error('❌ [CachedQuotes] User quotes error:', error)
-        return []
+        setUserQuotes([])
+        return
       }
       
-      return data || []
-    },
-    {
-      cacheThreshold: 5 * 60 * 1000, // 5 minutes for user quotes
-      staleTime: 10 * 60 * 1000, // 10 minutes stale time
-      gcTime: 20 * 60 * 1000, // 20 minutes garbage collection
-      retry: (failureCount, error) => {
-        if (error?.message?.includes('auth') || error?.message?.includes('permission')) {
-          return false
-        }
-        return failureCount < 2
-      },
-      placeholderData: [],
+      setUserQuotes(data || [])
+    } catch (err) {
+      console.error('Failed to fetch user quotes:', err)
+      setUserQuotes([])
+    } finally {
+      setUserQuotesLoading(false)
     }
-  )
+  }, [user])
 
-  // Compute a deterministic quote of the day based on day-of-year and available quotes
-  const computedDailyQuote = useMemo(() => {
-    const quotes = quotesQuery.data || FALLBACK_QUOTES
-    if (!quotes || quotes.length === 0) return null
-
-    const today = new Date()
-    const dayOfYear = Math.floor(
-      (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24)
-    )
-    return quotes[dayOfYear % quotes.length]
-  }, [quotesQuery.data])
-
-  // Initialize selectedDailyQuote from localStorage to prevent flicker
-  const [selectedDailyQuote, setSelectedDailyQuote] = useState<Quote | null>(() => {
-    // Only run on client side
-    if (typeof window === 'undefined') return null
-    
-    const today = new Date()
-    const dayKey = today.toISOString().slice(0, 10)
-    const storageKey = `twstoic:daily-quote:${dayKey}`
-    
-    try {
-      const stored = localStorage.getItem(storageKey)
-      if (stored) {
-        return JSON.parse(stored) as Quote
-      }
-    } catch (e) {
-      // If parsing fails, return null
-      console.warn('Failed to parse stored daily quote:', e)
-    }
-    
-    return null
-  })
-  
+  // Fetch user quotes when user changes
   useEffect(() => {
-    // Skip if we have a random override
-    if (randomQuoteOverride) return
-    
-    // Key per calendar day (YYYY-MM-DD)
-    const today = new Date()
-    const dayKey = today.toISOString().slice(0, 10)
-    const storageKey = `twstoic:daily-quote:${dayKey}`
+    fetchUserQuotes()
+  }, [fetchUserQuotes])
 
-    // If we already have a selected quote for today (from initial state), keep it
-    if (selectedDailyQuote) return
+  // Daily quote comes from session's daily first quote
+  const getDailyQuote = useCallback(() => {
+    return quoteSession.dailyFirstQuote || quoteSession.currentQuote
+  }, [quoteSession.dailyFirstQuote, quoteSession.currentQuote])
 
-    // Otherwise, if we have a computed quote (from either fallback or fetched data), lock it in for today
-    if (computedDailyQuote) {
-      setSelectedDailyQuote(computedDailyQuote)
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(computedDailyQuote))
-      } catch (e) {
-        // ignore storage errors (e.g., private mode)
-      }
-    }
-  }, [computedDailyQuote, selectedDailyQuote, randomQuoteOverride])
-
-  // Expose a stable daily quote (with optional override for refresh)
-  const getDailyQuote = useMemo(() => {
-    // Prioritize in this order: manual refresh override, stored daily quote, computed quote, or fallback
-    return randomQuoteOverride || selectedDailyQuote || computedDailyQuote || FALLBACK_QUOTES[0]
-  }, [randomQuoteOverride, selectedDailyQuote, computedDailyQuote])
-
-  // Search quotes function
+  // Search quotes function - searches through session quotes
   const searchQuotes = useMemo(() => {
     return (searchTerm: string): Quote[] => {
-      const quotes = quotesQuery.data || FALLBACK_QUOTES
       if (!searchTerm.trim()) return quotes
 
       const term = searchTerm.toLowerCase()
@@ -224,15 +115,14 @@ export function useCachedQuotes(user: User | null) {
         quote.source?.toLowerCase().includes(term)
       )
     }
-  }, [quotesQuery.data])
+  }, [quotes])
 
-  // Get quotes by category
+  // Get quotes by category - searches through session quotes
   const getQuotesByCategory = useMemo(() => {
     return (category: string): Quote[] => {
-      const quotes = quotesQuery.data || FALLBACK_QUOTES
       return quotes.filter(quote => quote.category === category)
     }
-  }, [quotesQuery.data])
+  }, [quotes])
 
   // Fetch saved quotes function
   const fetchSavedQuotes = useCallback(async () => {
@@ -284,9 +174,9 @@ export function useCachedQuotes(user: User | null) {
     }
   }, [user])
 
-  // Force refresh function
+  // Force refresh function - now refreshes session and saved quotes
   const forceRefresh = async () => {
-    await quotesQuery.refetch()
+    quoteSession.clearSession()
     if (user) {
       await fetchSavedQuotes()
     }
@@ -301,31 +191,31 @@ export function useCachedQuotes(user: User | null) {
       setError(null)
     }
   }, [user, fetchSavedQuotes])
-  
-  // Initialize reload count from localStorage
-  useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10)
-    const reloadKey = `twstoic:reload-count:${today}`
-    const count = parseInt(localStorage.getItem(reloadKey) || '0', 10)
-    setReloadCount(count)
-  }, [])
 
   return {
-    quotes: quotesQuery.data || FALLBACK_QUOTES,
+    quotes: quotes,
     savedQuotes: savedQuotes,
-    userQuotes: userQuotesQuery.data || [],
-    loading: (quotesQuery.isLoading && !quotesQuery.data) || (userQuotesQuery.isLoading && !userQuotesQuery.data),
-    error: error, // Don't show quote fetching errors to user, only save/unsave errors
-    isRefetching: quotesQuery.isFetching && !!quotesQuery.data, // Only show refetching if we have data
-    getDailyQuote: () => getDailyQuote,
+    userQuotes: userQuotes,
+    loading: loading || userQuotesLoading,
+    error: combinedError,
+    isRefetching: quoteSession.isLoading && quotes.length > 0,
+    getDailyQuote,
     searchQuotes,
     getQuotesByCategory,
-    forceRefresh: async () => {
-      await quotesQuery.refetch()
-      await userQuotesQuery.refetch()
-      if (user) {
-        await fetchSavedQuotes()
-      }
+    forceRefresh,
+    // Expose quote session for navigation
+    quoteSession: {
+      currentQuote: quoteSession.currentQuote,
+      currentIndex: quoteSession.currentIndex,
+      totalQuotes: quoteSession.totalQuotes,
+      allSessionQuotes: quoteSession.allSessionQuotes,
+      goToNext: quoteSession.goToNext,
+      goToPrevious: quoteSession.goToPrevious,
+      goToIndex: quoteSession.goToIndex,
+      canGoNext: quoteSession.canGoNext,
+      canGoPrevious: quoteSession.canGoPrevious,
+      isLoading: quoteSession.isLoading,
+      error: quoteSession.error
     },
     // Implement save/unsave functions
     saveQuote: async (quoteId: string, notes?: string) => {
@@ -340,7 +230,7 @@ export function useCachedQuotes(user: User | null) {
       }
 
       try {
-        const quotes = quotesQuery.data || FALLBACK_QUOTES
+        // Use the quotes from session/API
         const quote = quotes.find(q => q.id === quoteId)
         if (!quote) {
           console.warn('❌ Quote not found for saving:', quoteId)
@@ -402,7 +292,6 @@ export function useCachedQuotes(user: User | null) {
           
           // If still not found, try to match by content (backward compatibility)
           if (!savedQuote) {
-            const quotes = quotesQuery.data || FALLBACK_QUOTES
             const quote = quotes.find(q => q.id === quoteId)
             
             if (quote) {
@@ -449,7 +338,6 @@ export function useCachedQuotes(user: User | null) {
       }
       
       // Fall back to content matching for backward compatibility
-      const quotes = quotesQuery.data || FALLBACK_QUOTES
       const quote = quotes.find(q => q.id === quoteId)
       if (!quote) return false
       
@@ -478,7 +366,7 @@ export function useCachedQuotes(user: User | null) {
 
         if (error) throw error
 
-        await userQuotesQuery.refetch()
+        await fetchUserQuotes()
         setError(null)
         return true
       } catch (err) {
@@ -502,7 +390,7 @@ export function useCachedQuotes(user: User | null) {
 
         if (error) throw error
 
-        await userQuotesQuery.refetch()
+        await fetchUserQuotes()
         setError(null)
         return true
       } catch (err) {
@@ -526,7 +414,7 @@ export function useCachedQuotes(user: User | null) {
 
         if (error) throw error
 
-        await userQuotesQuery.refetch()
+        await fetchUserQuotes()
         setError(null)
         return true
       } catch (err) {
@@ -535,48 +423,15 @@ export function useCachedQuotes(user: User | null) {
         return false
       }
     },
-    refreshDailyQuote: () => {
-      const quotes = quotesQuery.data || FALLBACK_QUOTES
-      if (!quotes || quotes.length === 0) return null
-      
-      // Track reload count (reset daily)
-      const today = new Date().toISOString().slice(0, 10)
-      const reloadKey = `twstoic:reload-count:${today}`
-      const currentCount = parseInt(localStorage.getItem(reloadKey) || '0', 10)
-      
-      if (currentCount >= 10) {
-        return getDailyQuote // Return current quote if quota exceeded
-      }
-      
-      // Get a random quote that's different from the current one
-      const currentQuote = getDailyQuote
-      let availableQuotes = quotes
-      if (currentQuote) {
-        availableQuotes = quotes.filter(q => q.id !== currentQuote.id)
-      }
-      
-      if (availableQuotes.length === 0) {
-        availableQuotes = quotes // Fallback if somehow all quotes are filtered out
-      }
-      
-      const randomIndex = Math.floor(Math.random() * availableQuotes.length)
-      const newQuote = availableQuotes[randomIndex]
-      
-      // Update reload count
-      localStorage.setItem(reloadKey, String(currentCount + 1))
-      setReloadCount(currentCount + 1)
-      
-      // Set the override quote
-      setRandomQuoteOverride(newQuote)
-      
-      return newQuote
+    refreshDailyQuote: async () => {
+      return await quoteSession.reloadCurrentQuote()
     },
-    reloadCount,
-    maxReloads: 10,
-    canReload: reloadCount < 10,
+    reloadCount: quoteSession.reloadCount,
+    maxReloads: quoteSession.maxReloads,
+    canReload: quoteSession.canReload,
     // Additional useful properties
-    isCached: !quotesQuery.isLoading && !!quotesQuery.data,
-    lastUpdated: quotesQuery.dataUpdatedAt,
+    isCached: quotes.length > 0 && !quoteSession.isLoading,
+    lastUpdated: quoteSession.lastFetchTime,
   }
 }
 

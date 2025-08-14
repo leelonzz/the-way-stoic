@@ -35,36 +35,36 @@ export function FormattingToolbar({
   const formatButtons = [
     {
       icon: Bold,
-      action: () => editor.chain().focus().toggleBold().run(),
-      isActive: editor.isActive('bold'),
+      action: () => (editor as any).chain().focus().toggleBold().run(),
+      isActive: (editor as any).isActive('bold'),
       title: 'Bold',
       shortcut: getShortcutDisplayString(FORMATTING_SHORTCUTS.find(s => s.action === 'bold')!),
     },
     {
       icon: Italic,
-      action: () => editor.chain().focus().toggleItalic().run(),
-      isActive: editor.isActive('italic'),
+      action: () => (editor as any).chain().focus().toggleItalic().run(),
+      isActive: (editor as any).isActive('italic'),
       title: 'Italic',
       shortcut: getShortcutDisplayString(FORMATTING_SHORTCUTS.find(s => s.action === 'italic')!),
     },
     {
       icon: Underline,
-      action: () => editor.chain().focus().toggleUnderline().run(),
-      isActive: editor.isActive('underline'),
+      action: () => (editor as any).chain().focus().toggleUnderline().run(),
+      isActive: (editor as any).isActive('underline'),
       title: 'Underline',
       shortcut: getShortcutDisplayString(FORMATTING_SHORTCUTS.find(s => s.action === 'underline')!),
     },
     {
       icon: Strikethrough,
-      action: () => editor.chain().focus().toggleStrike().run(),
-      isActive: editor.isActive('strike'),
+      action: () => (editor as any).chain().focus().toggleStrike().run(),
+      isActive: (editor as any).isActive('strike'),
       title: 'Strikethrough',
       shortcut: '',
     },
     {
       icon: Code,
-      action: () => editor.chain().focus().toggleCode().run(),
-      isActive: editor.isActive('code'),
+      action: () => (editor as any).chain().focus().toggleCode().run(),
+      isActive: (editor as any).isActive('code'),
       title: 'Inline Code',
       shortcut: getShortcutDisplayString(FORMATTING_SHORTCUTS.find(s => s.action === 'code')!),
     },
@@ -111,7 +111,7 @@ export function FormattingToolbar({
   const handleLinkAction = () => {
     const url = window.prompt('Enter URL:')
     if (url) {
-      editor.chain().focus().setLink({ href: url }).run()
+      (editor as any).chain().focus().setLink({ href: url }).run()
     }
   }
 
@@ -135,7 +135,7 @@ export function FormattingToolbar({
         <button
           onClick={handleLinkAction}
           className={`p-2 rounded hover:bg-stone-100 transition-colors ${
-            editor.isActive('link') ? 'bg-stone-200 text-stone-900' : 'text-stone-600'
+            (editor as any).isActive('link') ? 'bg-stone-200 text-stone-900' : 'text-stone-600'
           }`}
           title={`Link (${getShortcutDisplayString(FORMATTING_SHORTCUTS.find(s => s.action === 'link')!)})`}
         >
@@ -180,7 +180,7 @@ export function FormattingToolbar({
 
 // Floating toolbar that appears on text selection
 interface FloatingToolbarProps {
-  editor: any
+  editor: unknown
   onBlockAction?: (action: string) => void
 }
 
@@ -191,7 +191,7 @@ export function FloatingToolbar({ editor, onBlockAction }: FloatingToolbarProps)
     if (!editor) return
 
     const updatePosition = () => {
-      const { from, to } = editor.state.selection
+      const { from, to } = (editor as any).state.selection
       
       // Only show if there's a selection
       if (from === to) {
@@ -200,8 +200,8 @@ export function FloatingToolbar({ editor, onBlockAction }: FloatingToolbarProps)
       }
 
       // Get selection coordinates
-      const start = editor.view.coordsAtPos(from)
-      const end = editor.view.coordsAtPos(to)
+      const start = (editor as any).view.coordsAtPos(from)
+      const end = (editor as any).view.coordsAtPos(to)
       
       const x = (start.left + end.left) / 2
       const y = start.top - 60 // Position above selection
@@ -210,12 +210,12 @@ export function FloatingToolbar({ editor, onBlockAction }: FloatingToolbarProps)
     }
 
     // Update position on selection change
-    editor.on('selectionUpdate', updatePosition)
-    editor.on('transaction', updatePosition)
+    ;(editor as any).on('selectionUpdate', updatePosition)
+    ;(editor as any).on('transaction', updatePosition)
 
     return () => {
-      editor.off('selectionUpdate', updatePosition)
-      editor.off('transaction', updatePosition)
+      ;(editor as any).off('selectionUpdate', updatePosition)
+      ;(editor as any).off('transaction', updatePosition)
     }
   }, [editor])
 

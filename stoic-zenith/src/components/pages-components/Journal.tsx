@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { toast } from '@/components/ui/use-toast'
 import { EntryList } from '@/components/journal/EntryList'
+import { JournalCalendarView } from '@/components/journal/JournalCalendarView'
+import { ViewToggle, ViewMode } from '@/components/journal/ViewToggle'
 import { JournalEntry } from '@/components/journal/types'
 import { supabase } from '@/integrations/supabase/client'
 import { JournalSkeleton } from '@/components/journal/JournalSkeleton'
@@ -20,6 +22,9 @@ import {
 
 export default function Journal(): JSX.Element {
   try {
+    // View state management
+    const [viewMode, setViewMode] = useState<ViewMode>('list')
+
     // Use cache-aware journal hook
     const {
       entries,
@@ -35,7 +40,7 @@ export default function Journal(): JSX.Element {
       handleRetrySync: retrySync,
       journalManager,
       isCreatingEntry, // Use the isCreatingEntry from the hook
-    } = useCachedJournal()
+    } = useCachedJournal(viewMode)
 
   // Legacy state for compatibility
   const [userId, setUserId] = useState<string | null>(null)
@@ -167,20 +172,46 @@ export default function Journal(): JSX.Element {
 
   return (
     <div className="h-screen flex bg-stone-50">
-      {/* Entry List Sidebar */}
+      {/* Entry List/Calendar Sidebar */}
       <div className="w-80 border-r border-stone-200 bg-white flex flex-col h-full">
-        <EntryList
-          entries={entries || []}
-          selectedEntry={selectedEntry}
-          onSelectEntry={handleSelectEntryWrapper}
-          onCreateEntry={handleCreateEntryWrapper}
-          onDeleteEntry={handleDeleteEntryWrapper}
-          onEntriesChange={() => {}} // No-op since entries are managed by cache-aware hook
-          syncStatus={syncStatus === 'syncing' ? 'pending' : syncStatus}
-          onRetrySync={handleRetrySyncWrapper}
-          journalManager={journalManager}
-          showDeleteButton={false}
-        />
+        {/* Header with View Toggle */}
+        <div className="flex-shrink-0 p-4 border-b border-stone-200 bg-white">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-stone-800">Journal</h2>
+            <ViewToggle
+              currentView={viewMode}
+              onViewChange={setViewMode}
+            />
+          </div>
+        </div>
+
+        {/* Conditional View Rendering */}
+        <div className="flex-1 overflow-hidden">
+          {viewMode === 'list' ? (
+            <EntryList
+              entries={entries || []}
+              selectedEntry={selectedEntry}
+              onSelectEntry={handleSelectEntryWrapper}
+              onCreateEntry={handleCreateEntryWrapper}
+              onDeleteEntry={handleDeleteEntryWrapper}
+              onEntriesChange={() => {}} // No-op since entries are managed by cache-aware hook
+              syncStatus={syncStatus === 'syncing' ? 'pending' : syncStatus}
+              onRetrySync={handleRetrySyncWrapper}
+              journalManager={journalManager}
+              showDeleteButton={false}
+              className="h-full"
+            />
+          ) : (
+            <JournalCalendarView
+              entries={entries || []}
+              selectedEntry={selectedEntry}
+              onSelectEntry={handleSelectEntryWrapper}
+              onDeleteEntry={handleDeleteEntryWrapper}
+              showDeleteButton={false}
+              className="h-full"
+            />
+          )}
+        </div>
       </div>
 
       {/* Journal Editor */}
@@ -206,20 +237,14 @@ export default function Journal(): JSX.Element {
         ) : (
           <div className="flex-1 flex items-center justify-center bg-white">
             <div className="text-center p-8">
-              <h2 className="text-2xl font-semibold text-stone-700 mb-4">
-                Welcome to your Journal
+              <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+                <svg className="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-medium text-stone-700 mb-2">
+                Choose entry and it will show here
               </h2>
-              <p className="text-stone-600 mb-6">
-                Select an entry from the sidebar or create a new one to start
-                writing.
-              </p>
-              <button
-                onClick={handleCreateEntryWrapper}
-                disabled={isCreatingEntry}
-                className="px-6 py-3 bg-stone-800 text-white rounded-lg hover:bg-stone-700 transition-colors disabled:opacity-50"
-              >
-                {isCreatingEntry ? 'Creating...' : 'Create New Entry'}
-              </button>
             </div>
           </div>
         )}

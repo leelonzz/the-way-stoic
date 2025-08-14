@@ -198,7 +198,7 @@ export function getShortcutDisplayString(shortcut: KeyboardShortcut): string {
 // Handle keyboard shortcuts for rich text formatting
 export function handleFormattingShortcut(
   event: KeyboardEvent,
-  editor: any, // TipTap editor instance
+  editor: unknown, // TipTap editor instance
   onBlockAction?: (action: string) => void
 ): boolean {
   const shortcut = findMatchingShortcut(event)
@@ -208,35 +208,37 @@ export function handleFormattingShortcut(
 
   switch (shortcut.action) {
     case 'bold':
-      editor?.chain().focus().toggleBold().run()
+      (editor as any)?.chain().focus().toggleBold().run()
       return true
     case 'italic':
-      editor?.chain().focus().toggleItalic().run()
+      (editor as any)?.chain().focus().toggleItalic().run()
       return true
     case 'underline':
-      editor?.chain().focus().toggleUnderline().run()
+      (editor as any)?.chain().focus().toggleUnderline().run()
       return true
     case 'code':
-      editor?.chain().focus().toggleCode().run()
+      (editor as any)?.chain().focus().toggleCode().run()
       return true
-    case 'link':
+    case 'link': {
       // Handle link creation/editing
       const url = window.prompt('Enter URL:')
       if (url) {
-        editor?.chain().focus().setLink({ href: url }).run()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (editor as any)?.chain().focus().setLink({ href: url }).run()
       }
       return true
+    }
     case 'undo':
-      editor?.chain().focus().undo().run()
+      (editor as any)?.chain().focus().undo().run()
       return true
     case 'redo':
-      editor?.chain().focus().redo().run()
+      (editor as any)?.chain().focus().redo().run()
       return true
     case 'selectAll':
-      editor?.chain().focus().selectAll().run()
+      (editor as any)?.chain().focus().selectAll().run()
       return true
     case 'lineBreak':
-      editor?.chain().focus().setHardBreak().run()
+      (editor as any)?.chain().focus().setHardBreak().run()
       return true
     
     // Block-level actions

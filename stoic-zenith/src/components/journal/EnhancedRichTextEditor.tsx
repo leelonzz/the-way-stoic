@@ -13,6 +13,8 @@ import { updateNumberedListCounters, getBlockClassName } from './blockUtils'
 import {
   detectShortcutPattern,
   shouldTriggerAutoConversion,
+  detectLineShortcutPattern,
+  shouldTriggerLineConversion,
 } from './shortcutPatterns'
 import { SelectionManager } from './selectionUtils'
 
@@ -149,19 +151,6 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
           setSearchQuery(searchQuery)
         }
         
-        // Handle markdown pattern detection for immediate feedback
-        // This gives visual feedback as the user types shortcuts like "-" before they press space
-        if (text === '-' || text === '*' || text.match(/^\d+\.$/)) {
-          // Add a subtle visual hint that this will become a list when space is pressed
-          const blockElement = document.querySelector(`[data-block-id="${blockId}"]`)
-          if (blockElement) {
-            blockElement.classList.add('markdown-hint')
-            // Remove the hint after a short delay if no space is pressed
-            setTimeout(() => {
-              blockElement.classList.remove('markdown-hint')
-            }, 2000)
-          }
-        }
       }
     },
     [blocks, immediateOnChange, showCommandMenu]
@@ -262,6 +251,56 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
     }, 50)
     activeTimeoutsRef.current.add(timeout)
   }, [blocks, focusBlockElement])
+
+  // Helper functions for line-based markdown detection
+  const getCurrentLineInfo = useCallback((contentEditable: HTMLElement, selection: Selection) => {
+    if (!selection.rangeCount) return null
+
+    const range = selection.getRangeAt(0)
+    const fullText = contentEditable.textContent || ''
+    
+    // Get cursor position in the text
+    const preCaretRange = range.cloneRange()
+    preCaretRange.selectNodeContents(contentEditable)
+    preCaretRange.setEnd(range.startContainer, range.startOffset)
+    const caretPosition = preCaretRange.toString().length
+
+    // Find the current line by looking for line breaks
+    const textBeforeCaret = fullText.substring(0, caretPosition)
+    const textAfterCaret = fullText.substring(caretPosition)
+    
+    // Find the last line break before cursor (or start of text)
+    const lastLineBreakBefore = textBeforeCaret.lastIndexOf('\n')
+    const lineStart = lastLineBreakBefore === -1 ? 0 : lastLineBreakBefore + 1
+    
+    // Find the next line break after cursor (or end of text) 
+    const nextLineBreakAfter = textAfterCaret.indexOf('\n')
+    const lineEnd = nextLineBreakAfter === -1 ? fullText.length : caretPosition + nextLineBreakAfter
+    
+    // Extract current line text
+    const currentLineText = fullText.substring(lineStart, lineEnd)
+    const cursorPositionInLine = caretPosition - lineStart
+    
+    // Check if text before cursor could be a markdown pattern
+    const textBeforeCursor = currentLineText.substring(0, cursorPositionInLine)
+    const isAtLineStart = cursorPositionInLine === 0 ||
+                         !!textBeforeCursor.match(/^(#{1,3}|-|\*|>|```|\d+\.)$/)
+    
+    return {
+      lineText: currentLineText,
+      lineStart,
+      lineEnd,
+      cursorPositionInLine,
+      caretPosition,
+      fullText,
+      isAtLineStart
+    }
+  }, [])
+
+  const isAtStartOfLine = useCallback((contentEditable: HTMLElement, selection: Selection): boolean => {
+    const lineInfo = getCurrentLineInfo(contentEditable, selection)
+    return lineInfo ? lineInfo.isAtLineStart : false
+  }, [getCurrentLineInfo])
 
   // Helper function to handle clicks on image blocks
   const handleImageBlockClick = useCallback((blockId: string, e: MouseEvent) => {
@@ -1035,6 +1074,113 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
           return
         }
 
+        // Handle paragraph blocks - create new block instead of allowing default behavior
+        if (block.type === 'paragraph' || !block.type) {
+          e.preventDefault()
+          
+          // Check if Shift+Enter was pressed - allow line break within block
+          if (e.shiftKey) {
+            // Allow line break within the current block
+            document.execCommand('insertLineBreak')
+            return
+          }
+
+          // Get current cursor position to split text properly
+          const selection = window.getSelection()
+          const contentEditable = (e.target as HTMLElement).closest('[contenteditable]') as HTMLElement
+          
+          if (selection && selection.rangeCount > 0 && contentEditable) {
+            // Get cursor position relative to the content
+            const range = selection.getRangeAt(0)
+            const preCaretRange = range.cloneRange()
+            preCaretRange.selectNodeContents(contentEditable)
+            preCaretRange.setEnd(range.startContainer, range.startOffset)
+            const caretPosition = preCaretRange.toString().length
+
+            // Special case: When cursor is at the very start of the line (position 0)
+            if (caretPosition === 0) {
+              // Create a new empty block BEFORE the current block
+              const blockIndex = blocks.findIndex(b => b.id === blockId)
+              const newBlock = createNewBlock()
+              const newBlocks = [
+                ...blocks.slice(0, blockIndex),
+                newBlock,
+                ...blocks.slice(blockIndex)
+              ]
+              onChange(newBlocks)
+              
+              // Focus the current block (which is now the second block)
+              setTimeout(() => {
+                focusBlock(blockId, 'start')
+              }, 50)
+              return
+            }
+
+            // For all other positions, split the text at cursor position
+            const currentText = block.text || ''
+            const textBeforeCursor = currentText.substring(0, caretPosition)
+            const textAfterCursor = currentText.substring(caretPosition)
+
+            // Update current block with text before cursor
+            updateBlock(blockId, {
+              text: textBeforeCursor,
+              richText: textBeforeCursor,
+            })
+
+            // Create a new paragraph block with text after cursor
+            const newBlockId = addBlock(blockId, {
+              type: 'paragraph',
+              text: textAfterCursor,
+              richText: textAfterCursor,
+            })
+            
+            // Focus the new block at the start
+            setTimeout(() => {
+              const newBlockElement = document.querySelector(`[data-block-id="${newBlockId}"]`) as HTMLElement
+              if (newBlockElement) {
+                const newContentEditable = newBlockElement.querySelector('[contenteditable]') as HTMLElement
+                if (newContentEditable) {
+                  newContentEditable.focus()
+                  
+                  // Position cursor at the start of the new block
+                  const newRange = document.createRange()
+                  const newSelection = window.getSelection()
+                  
+                  if (textAfterCursor) {
+                    // If there's text, position at the beginning
+                    const firstTextNode = newContentEditable.firstChild
+                    if (firstTextNode && firstTextNode.nodeType === Node.TEXT_NODE) {
+                      newRange.setStart(firstTextNode, 0)
+                    } else {
+                      newRange.setStart(newContentEditable, 0)
+                    }
+                  } else {
+                    // Empty block, position at start
+                    newRange.setStart(newContentEditable, 0)
+                  }
+                  
+                  newRange.collapse(true)
+                  newSelection?.removeAllRanges()
+                  newSelection?.addRange(newRange)
+                }
+              }
+            }, 50)
+            return
+          }
+
+          // Fallback: create empty new paragraph if we can't get cursor position
+          const newBlockId = addBlock(blockId, {
+            type: 'paragraph',
+            text: '',
+            richText: '',
+          })
+          
+          setTimeout(() => {
+            focusBlock(newBlockId, 'start')
+          }, 50)
+          return
+        }
+
         // For other block types, allow default Enter behavior (line breaks within blocks)
       }
 
@@ -1068,92 +1214,85 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
         }
       }
 
-      // Handle markdown shortcuts on space key
+      // Handle markdown shortcuts on space key - ENHANCED with line-based detection
       if (e.key === ' ') {
-        // Allow the space to be typed first, then check for patterns
-        setTimeout(() => {
-          const selection = window.getSelection()
-          const contentEditable = (e.target as HTMLElement).closest('[contenteditable]') as HTMLElement
+        const selection = window.getSelection()
+        const contentEditable = (e.target as HTMLElement).closest('[contenteditable]') as HTMLElement
+        
+        if (selection && selection.rangeCount > 0 && contentEditable) {
+          // Check if we're at the start of a line BEFORE the space is typed
+          const lineInfo = getCurrentLineInfo(contentEditable, selection)
           
-          if (selection && selection.rangeCount > 0 && contentEditable) {
-            // Get the actual text content from the DOM after space is typed
-            const currentDOMText = contentEditable.textContent || ''
+          if (lineInfo && lineInfo.isAtLineStart) {
+            // Get the text that will exist after the space is typed
+            const textBeforeSpace = lineInfo.lineText.substring(0, lineInfo.cursorPositionInLine)
+            const futureLineText = textBeforeSpace + ' '
             
-            console.log('Markdown shortcut check AFTER space:', {
-              currentDOMText,
-              blockText: block.text
-            })
+            // Check if this will match a markdown pattern
+            const pattern = detectShortcutPattern(futureLineText)
             
-            // Check for patterns at the beginning of the text
-            const trimmedText = currentDOMText.trim()
-            console.log('Checking pattern for exact text:', `"${trimmedText}"`)
-            const pattern = detectShortcutPattern(trimmedText)
             if (pattern) {
-              console.log('Pattern detected:', pattern, 'for text:', trimmedText)
+              e.preventDefault() // Prevent the space from being typed
+              
+              // Get text after the shortcut pattern (exclude the pattern itself)
+              const textAfterPattern = lineInfo.lineText.substring(lineInfo.cursorPositionInLine)
+              
+              // For multi-line blocks, we need to handle the conversion differently
+              if (lineInfo.lineStart > 0) {
+                // We're on line 2+ within a block - split the block
+                const beforeLines = lineInfo.fullText.substring(0, lineInfo.lineStart - 1) // -1 to exclude the \n
+                const afterLines = lineInfo.lineEnd < lineInfo.fullText.length ? 
+                  lineInfo.fullText.substring(lineInfo.lineEnd) : ''
                 
-                // Get text after the shortcut pattern (remove the shortcut part)
-                const shortcutLength = pattern.example.length
-                const textAfterPattern = currentDOMText.substring(shortcutLength).trim()
-                
-                // Clear the DOM content to remove the markdown shortcut text
-                if (contentEditable) {
-                  contentEditable.innerHTML = ''
-                  contentEditable.textContent = ''
+                // Update the current block with content before the converted line
+                if (beforeLines.trim()) {
+                  updateBlock(blockId, {
+                    text: beforeLines,
+                    richText: beforeLines,
+                  })
+                } else {
+                  // If no content before, delete the current block
+                  deleteBlock(blockId)
                 }
-
+                
+                // Create a new block with the converted type
+                const newBlockId = addBlock(blockId, {
+                  type: pattern.type,
+                  level: pattern.level as 1 | 2 | 3,
+                  text: textAfterPattern,
+                  richText: textAfterPattern,
+                })
+                
+                // If there's content after, create another block
+                if (afterLines.trim()) {
+                  addBlock(newBlockId, {
+                    type: 'paragraph',
+                    text: afterLines,
+                    richText: afterLines,
+                  })
+                }
+                
+                // Focus the new converted block
+                setTimeout(() => {
+                  focusBlock(newBlockId, 'start')
+                }, 50)
+              } else {
+                // We're on the first line - convert the entire block
                 updateBlock(blockId, {
                   type: pattern.type,
                   level: pattern.level as 1 | 2 | 3,
                   text: textAfterPattern,
                   richText: textAfterPattern,
                 })
-
-                // Focus the transformed block and place cursor at the beginning
+                
+                // Focus the converted block
                 setTimeout(() => {
-                  const element = document.querySelector(
-                    `[data-block-id="${blockId}"] [contenteditable]`
-                  ) as HTMLElement
-                  if (element) {
-                    // Set the remaining text if any
-                    if (textAfterPattern) {
-                      element.textContent = textAfterPattern
-                    }
-                    
-                    element.focus()
-                    
-                    // Place cursor at the beginning for bullet/numbered lists, or at end if there's remaining text
-                    const range = document.createRange()
-                    const newSelection = window.getSelection()
-                    
-                    if (pattern.type === 'bullet-list' || pattern.type === 'numbered-list') {
-                      // For lists, place cursor at the beginning
-                      if (element.firstChild && element.firstChild.nodeType === Node.TEXT_NODE) {
-                        range.setStart(element.firstChild, 0)
-                      } else {
-                        range.setStart(element, 0)
-                      }
-                    } else if (textAfterPattern) {
-                      // For other blocks with remaining text, place cursor at the end
-                      if (element.firstChild && element.firstChild.nodeType === Node.TEXT_NODE) {
-                        range.setStart(element.firstChild, textAfterPattern.length)
-                      } else {
-                        range.setStart(element, 0)
-                      }
-                    } else {
-                      // Empty block, place at start
-                      range.setStart(element, 0)
-                    }
-                    
-                    range.collapse(true)
-                    newSelection?.removeAllRanges()
-                    newSelection?.addRange(range)
-                  }
+                  focusBlock(blockId, 'start')
                 }, 50)
-            } else {
-              console.log('No pattern found for text:', trimmedText)
+              }
             }
           }
-        }, 10) // Small delay to let the space character be registered in DOM
+        }
       }
 
       // Handle Backspace at beginning of block
@@ -1182,13 +1321,17 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
         }
       }
 
-      // Handle slash commands - don't prevent default, let the "/" be typed
+      // Handle slash commands - ENHANCED with line-based detection
       if (e.key === '/') {
         const selection = window.getSelection()
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0)
-          if (range.startOffset === 0 && block.text.trim() === '') {
-            // Only show command menu if we're at the beginning of an empty block
+        const contentEditable = (e.target as HTMLElement).closest('[contenteditable]') as HTMLElement
+        
+        if (selection && selection.rangeCount > 0 && contentEditable) {
+          // Check if we're at the start of a line (empty or at the beginning)
+          const lineInfo = getCurrentLineInfo(contentEditable, selection)
+          
+          if (lineInfo && (lineInfo.cursorPositionInLine === 0 || lineInfo.lineText.trim() === '')) {
+            // Allow the "/" to be typed first, then show command menu
             setTimeout(() => {
               setActiveBlockId(blockId)
               setShowCommandMenu(true)
@@ -1201,6 +1344,7 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
                 x: rect.left,
                 y: rect.bottom + 5,
               })
+              
             }, 10) // Small delay to let the "/" character be typed first
           }
         }
@@ -1314,13 +1458,10 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
     [activeBlockId, blocks, immediateOnChange, handleImageUpload]
   )
 
-  // Compute if all blocks are empty
-  const allBlocksEmpty = blocks.every(block => !block.text || block.text.trim() === '')
-
   const renderBlock = (block: JournalBlock, index: number): JSX.Element => {
     const blockClassName = getBlockClassName(block, isEditing)
-    // Only pass showPlaceholder to the first block
-    const showPlaceholder = index === 0 && allBlocksEmpty
+    // Only show placeholder for the first block if it's empty
+    const showPlaceholder = index === 0 && (!block.text || block.text.trim() === '')
 
     // Handle image blocks specially
     if (block.type === 'image') {
@@ -1330,7 +1471,7 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
           data-block-id={block.id}
           data-block-type={block.type}
           data-block-level={block.level}
-          className={`${blockClassName} mb-4`}
+          className={blockClassName}
         >
           {block.imageUrl ? (
             <img
@@ -1433,12 +1574,6 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
           opacity: 0.5;
         }
         
-        /* Markdown hint for bullet/list shortcuts */
-        .markdown-hint {
-          background-color: #fef3c7 !important;
-          transition: background-color 0.2s ease;
-          border-radius: 0.375rem;
-        }
         
         /* Enhanced bullet list styling - always visible */
         [data-block-type="bullet-list"] {

@@ -91,25 +91,14 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
 
   const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
     const target = e.currentTarget
-    let text = target.textContent || ''
+    const text = target.textContent || ''
     let html = target.innerHTML || ''
 
-    // CRITICAL FIX: Preserve line breaks consistently
-    // Convert all line break representations to a consistent format
-    
-    // Normalize HTML line breaks to preserve formatting
-    // Convert <div> and <p> tags to proper line breaks
-    html = html.replace(/<div><br><\/div>/gi, '\n')
-    html = html.replace(/<div><\/div>/gi, '\n')
-    html = html.replace(/<div>/gi, '\n')
-    html = html.replace(/<\/div>/gi, '')
-    html = html.replace(/<p><br><\/p>/gi, '\n')
-    html = html.replace(/<p><\/p>/gi, '\n')
-    html = html.replace(/<p>/gi, '')
-    html = html.replace(/<\/p>/gi, '\n')
+    // Simplified HTML normalization - only handle essential line breaks
+    // Since Enter key handling is now controlled, we don't need aggressive normalization
     html = html.replace(/<br\s*\/?>/gi, '\n')
     
-    // Clean up multiple newlines but preserve intentional spacing
+    // Clean up excessive newlines but preserve intentional line breaks
     html = html.replace(/\n{3,}/g, '\n\n')
     
     // Ensure text has proper newlines from the DOM
@@ -238,13 +227,14 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
           e.preventDefault()
           document.execCommand('underline')
           break
-        case 'k':
+        case 'k': {
           e.preventDefault()
           const url = window.prompt('Enter URL:')
           if (url) {
             document.execCommand('createLink', false, url)
           }
           break
+        }
       }
     }
 
@@ -271,18 +261,10 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
     // Trigger immediate save on blur to ensure no data loss
     if (editorRef.current) {
       const target = editorRef.current
-      let text = target.textContent || ''
+      const text = target.textContent || ''
       let html = target.innerHTML || ''
 
-      // Normalize HTML line breaks consistently with handleInput
-      html = html.replace(/<div><br><\/div>/gi, '\n')
-      html = html.replace(/<div><\/div>/gi, '\n')
-      html = html.replace(/<div>/gi, '\n')
-      html = html.replace(/<\/div>/gi, '')
-      html = html.replace(/<p><br><\/p>/gi, '\n')
-      html = html.replace(/<p><\/p>/gi, '\n')
-      html = html.replace(/<p>/gi, '')
-      html = html.replace(/<\/p>/gi, '\n')
+      // Simplified HTML normalization consistent with handleInput
       html = html.replace(/<br\s*\/?>/gi, '\n')
       html = html.replace(/\n{3,}/g, '\n\n')
 
@@ -345,11 +327,10 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
 
   // Initialize content on mount
   useEffect(() => {
-    if (editorRef.current && !editorRef.current.innerHTML) {
+    if (editorRef.current) {
       const content = block.richText || block.text || ''
-      if (content) {
-        editorRef.current.innerHTML = sanitizeHtml(content)
-      }
+      // Always set innerHTML, even for empty content
+      editorRef.current.innerHTML = sanitizeHtml(content || '')
     }
   }, []) // Only run on mount
 

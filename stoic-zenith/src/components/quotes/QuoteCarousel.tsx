@@ -1,152 +1,150 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, Star, Share } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { useQuotePersistence } from '@/hooks/useQuotePersistence'
 import type { Quote as QuoteType } from '@/hooks/useCachedQuotes'
 
 interface QuoteCarouselProps {
-  quotes: QuoteType[]
+  currentQuote: QuoteType | null
+  currentIndex: number
+  totalCount: number
   isQuoteSaved?: (quoteId: string) => boolean
   onSave?: (quoteId: string) => Promise<boolean>
   onUnsave?: (quoteId: string) => Promise<boolean>
-  searchTerm?: string
-  selectedCategory?: string | null
-  userId?: string | null
+  onNext: () => void
+  onPrevious: () => void
+  isLoading?: boolean
+  quoteSession?: {
+    currentQuote: QuoteType | null
+    currentIndex: number
+    totalQuotes: number
+    allSessionQuotes: QuoteType[]
+    goToNext: () => Promise<boolean>
+    goToPrevious: () => boolean
+    canGoNext: boolean
+    canGoPrevious: boolean
+    isLoading: boolean
+    error: string | null
+  }
 }
 
 export function QuoteCarousel({
-  quotes,
+  currentQuote,
+  currentIndex,
+  totalCount,
   isQuoteSaved,
   onSave,
   onUnsave,
-  searchTerm = '',
-  selectedCategory = null,
-  userId = null
+  onNext,
+  onPrevious,
+  isLoading: externalLoading = false,
+  quoteSession
 }: QuoteCarouselProps): JSX.Element {
   const { toast } = useToast()
 
-  // Use quote persistence hook for state management
-  const {
-    currentIndex,
-    currentQuote,
-    setCurrentQuote,
-    getFilteredQuotes,
-    isInitialized: persistenceInitialized,
-    randomSeed,
-    hasRandomizedOrder
-  } = useQuotePersistence(quotes, {
-    storageKey: 'twstoic:carousel-state',
-    persistAcrossSessions: true,
-    userId
-  })
-
-  // Get filtered quotes based on search and category
-  const filteredQuotes = getFilteredQuotes(quotes)
-
-  const [isLoading, setIsLoading] = useState(false)
+  const [isActionLoading, setIsActionLoading] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isInitializing, setIsInitializing] = useState(true)
 
-  // Use the current quote from persistence hook, fallback to first filtered quote
-  // But don't show fallback quotes if we're still initializing
-  const displayQuote = useMemo(() => {
-    if (isInitializing || !persistenceInitialized) {
-      console.log(`[QuoteCarousel] Still initializing (UI: ${isInitializing}, Persistence: ${persistenceInitialized}), not showing quote yet`)
-      return null
-    }
+  // Check if we're using API quotes - look at session quotes presence too
+  const isUsingApiQuotes = (currentQuote?.id?.startsWith('api-quote-') || (quoteSession && quoteSession.totalQuotes > 0)) || false
+  console.log('[QuoteCarousel] isUsingApiQuotes:', isUsingApiQuotes, 'currentQuote ID:', currentQuote?.id, 'session quotes:', quoteSession?.totalQuotes)
 
-    if (currentQuote && filteredQuotes.find(q => q.id === currentQuote.id)) {
-      console.log(`[QuoteCarousel] Using persisted quote:`, currentQuote.text.substring(0, 50) + '...')
-      return currentQuote
-    }
-
-    const fallbackQuote = filteredQuotes[0] || null
-    if (fallbackQuote) {
-      console.log(`[QuoteCarousel] Using fallback quote:`, fallbackQuote.text.substring(0, 50) + '...')
-    }
-    return fallbackQuote
-  }, [currentQuote, filteredQuotes, isInitializing, persistenceInitialized])
-
+  // Use session quote if available (API quotes), otherwise use passed quote
+  const displayQuote = isUsingApiQuotes && quoteSession && quoteSession.currentQuote ? quoteSession.currentQuote : currentQuote
   const isSaved = displayQuote && isQuoteSaved ? isQuoteSaved(displayQuote.id) : false
+  
+  // Use session counts for API quotes, passed props for others
+  const displayCurrentIndex = isUsingApiQuotes && quoteSession ? quoteSession.currentIndex : currentIndex
+  const displayTotalCount = isUsingApiQuotes && quoteSession ? quoteSession.totalQuotes : totalCount
+
+  // Check if we can navigate in each direction
+  const canGoNext = isUsingApiQuotes && quoteSession ? quoteSession.canGoNext : displayCurrentIndex < displayTotalCount - 1
+  const canGoPrevious = isUsingApiQuotes && quoteSession ? quoteSession.canGoPrevious : displayCurrentIndex > 0
+
+  console.log('[QuoteCarousel] Display state:', {
+    isUsingApiQuotes,
+    displayQuoteId: displayQuote?.id,
+    displayCurrentIndex,
+    displayTotalCount,
+    canGoNext,
+    canGoPrevious,
+    sessionCurrentIndex: quoteSession?.currentIndex,
+    sessionTotalQuotes: quoteSession?.totalQuotes
+  })
 
   // Handle initialization and prevent flash
   useEffect(() => {
-    console.log(`[QuoteCarousel] Initializing with ${quotes.length} quotes`)
     const initTimer = setTimeout(() => {
-      console.log(`[QuoteCarousel] Initialization complete`)
       setIsInitializing(false)
-    }, 300) // Longer delay to ensure persistence hook is ready
+    }, 100) // Shorter delay for better responsiveness, especially with persistence
 
     return () => clearTimeout(initTimer)
   }, [])
 
-  // Debug logging for persistence and randomization
-  useEffect(() => {
-    if (displayQuote && !isInitializing) {
-      console.log(`[QuoteCarousel] Current quote changed:`, {
-        id: displayQuote.id,
-        text: displayQuote.text.substring(0, 50) + '...',
-        author: displayQuote.author,
-        userId: userId || 'anonymous',
-        randomSeed,
-        hasRandomizedOrder
-      })
-    }
-  }, [displayQuote, isInitializing, userId, randomSeed, hasRandomizedOrder])
-
-  // Get current index in filtered quotes
-  const getCurrentFilteredIndex = useCallback((): number => {
-    if (!displayQuote || filteredQuotes.length === 0) return 0
-    return filteredQuotes.findIndex(q => q.id === displayQuote.id)
-  }, [displayQuote, filteredQuotes])
-
   // Navigation functions with smooth transition
-  const goToPrevious = useCallback(() => {
-    if (isTransitioning || isInitializing || filteredQuotes.length === 0) return
+  const handlePrevious = useCallback(async () => {
+    if (isTransitioning || isInitializing || externalLoading || !canGoPrevious) return
     setIsTransitioning(true)
-    setTimeout(() => {
-      const currentFilteredIndex = getCurrentFilteredIndex()
-      const newIndex = currentFilteredIndex === 0 ? filteredQuotes.length - 1 : currentFilteredIndex - 1
-      const newQuote = filteredQuotes[newIndex]
-      if (newQuote) {
-        setCurrentQuote(newQuote)
+    
+    setTimeout(async () => {
+      if (isUsingApiQuotes && quoteSession) {
+        // For API quotes, use session navigation
+        console.log('[QuoteCarousel] Calling quoteSession.goToPrevious()')
+        const success = quoteSession.goToPrevious()
+        console.log('[QuoteCarousel] goToPrevious result:', success)
+        if (!success) {
+          console.log('Cannot go to previous API quote')
+        }
+      } else {
+        // For persistence-based quotes, use passed callback
+        console.log('[QuoteCarousel] Using passed onPrevious callback')
+        onPrevious()
       }
       setTimeout(() => setIsTransitioning(false), 200)
     }, 150)
-  }, [filteredQuotes, isTransitioning, isInitializing, getCurrentFilteredIndex, setCurrentQuote])
+  }, [isTransitioning, isInitializing, externalLoading, canGoPrevious, onPrevious, isUsingApiQuotes, quoteSession])
 
-  const goToNext = useCallback(() => {
-    if (isTransitioning || isInitializing || filteredQuotes.length === 0) return
+  const handleNext = useCallback(async () => {
+    // For API quotes, always allow since they can fetch more. For others, check canGoNext
+    if (isTransitioning || isInitializing || externalLoading || (!isUsingApiQuotes && !canGoNext)) return
     setIsTransitioning(true)
-    setTimeout(() => {
-      const currentFilteredIndex = getCurrentFilteredIndex()
-      const newIndex = currentFilteredIndex === filteredQuotes.length - 1 ? 0 : currentFilteredIndex + 1
-      const newQuote = filteredQuotes[newIndex]
-      if (newQuote) {
-        setCurrentQuote(newQuote)
+    
+    setTimeout(async () => {
+      if (isUsingApiQuotes && quoteSession) {
+        // For API quotes, use session navigation to fetch next
+        console.log('[QuoteCarousel] Calling quoteSession.goToNext()')
+        const success = await quoteSession.goToNext()
+        console.log('[QuoteCarousel] goToNext result:', success)
+        if (!success) {
+          console.log('Unable to fetch next API quote')
+        }
+      } else {
+        // For persistence-based quotes, use passed callback
+        console.log('[QuoteCarousel] Using passed onNext callback')
+        onNext()
       }
       setTimeout(() => setIsTransitioning(false), 200)
     }, 150)
-  }, [filteredQuotes, isTransitioning, isInitializing, getCurrentFilteredIndex, setCurrentQuote])
+  }, [isTransitioning, isInitializing, externalLoading, canGoNext, onNext, isUsingApiQuotes, quoteSession])
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent): void => {
       if (event.key === 'ArrowLeft') {
         event.preventDefault()
-        goToNext()
+        handleNext()
       } else if (event.key === 'ArrowRight') {
         event.preventDefault()
-        goToPrevious()
+        handlePrevious()
       }
     }
 
     window.addEventListener('keydown', handleKeyPress)
     return (): void => window.removeEventListener('keydown', handleKeyPress)
-  }, [goToPrevious, goToNext])
+  }, [handlePrevious, handleNext])
 
   // Touch/swipe support
   useEffect(() => {
@@ -163,16 +161,16 @@ export function QuoteCarousel({
 
       const endX = e.changedTouches[0].clientX
       const endY = e.changedTouches[0].clientY
-      
+
       const diffX = startX - endX
       const diffY = startY - endY
 
       // Only trigger swipe if horizontal movement is greater than vertical
       if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
         if (diffX > 0) {
-          goToPrevious() // Swipe left = previous
+          handlePrevious() // Swipe left = previous
         } else {
-          goToNext() // Swipe right = next
+          handleNext() // Swipe right = next
         }
       }
 
@@ -182,17 +180,17 @@ export function QuoteCarousel({
 
     window.addEventListener('touchstart', handleTouchStart)
     window.addEventListener('touchend', handleTouchEnd)
-    
+
     return (): void => {
       window.removeEventListener('touchstart', handleTouchStart)
       window.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [goToPrevious, goToNext])
+  }, [handlePrevious, handleNext])
 
   const handleSaveToggle = async (): Promise<void> => {
     if (!onSave || !onUnsave || !displayQuote) return
 
-    setIsLoading(true)
+    setIsActionLoading(true)
     try {
       const success = isSaved
         ? await onUnsave(displayQuote.id)
@@ -211,7 +209,7 @@ export function QuoteCarousel({
         })
       }
     } finally {
-      setIsLoading(false)
+      setIsActionLoading(false)
     }
   }
 
@@ -267,16 +265,25 @@ export function QuoteCarousel({
       <Button
         variant="default"
         size="lg"
-        onClick={goToNext}
-        disabled={isTransitioning}
-        className="fixed left-72 top-1/2 -translate-y-1/2 p-3 bg-stone hover:bg-stone/80 rounded-full text-white shadow-lg transition-all duration-200 z-50 disabled:opacity-50"
-        aria-label="Next quote"
-        style={{ 
-          minWidth: '56px', 
+        onClick={handleNext}
+        disabled={isTransitioning || externalLoading || (!canGoNext && !isUsingApiQuotes)}
+        className={`fixed left-72 top-1/2 -translate-y-1/2 p-3 rounded-full shadow-lg transition-all duration-200 z-50 ${
+          (!canGoNext && !isUsingApiQuotes)
+            ? 'bg-stone/30 text-stone/50 cursor-not-allowed opacity-30' 
+            : 'bg-stone hover:bg-stone/80 text-white'
+        }`}
+        aria-label={canGoNext || isUsingApiQuotes ? "Next quote" : "At last quote"}
+        title={canGoNext || isUsingApiQuotes ? "Go to next quote" : "You're at the last quote"}
+        style={{
+          minWidth: '56px',
           minHeight: '56px'
         }}
       >
-        <ChevronLeft className="w-8 h-8 text-white" />
+        {isUsingApiQuotes && quoteSession?.isLoading ? (
+          <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full" />
+        ) : (
+          <ChevronLeft className="w-8 h-8" />
+        )}
       </Button>
 
       {/* Quote Content - Perfectly Centered with smooth transition */}
@@ -298,6 +305,14 @@ export function QuoteCarousel({
               </div>
             )}
           </div>
+
+          {/* Loading indicator for API quotes */}
+          {isUsingApiQuotes && quoteSession?.isLoading && (
+            <div className="flex items-center justify-center gap-2 text-stone/70 text-sm">
+              <div className="animate-spin w-4 h-4 border-2 border-stone/70 border-t-transparent rounded-full" />
+              <span>Loading more wisdom...</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -305,16 +320,21 @@ export function QuoteCarousel({
       <Button
         variant="default"
         size="lg"
-        onClick={goToPrevious}
-        disabled={isTransitioning}
-        className="fixed right-4 md:right-8 top-1/2 -translate-y-1/2 p-3 bg-stone hover:bg-stone/80 rounded-full text-white shadow-lg transition-all duration-200 z-50 disabled:opacity-50"
-        aria-label="Previous quote"
-        style={{ 
-          minWidth: '56px', 
+        onClick={handlePrevious}
+        disabled={isTransitioning || externalLoading || !canGoPrevious}
+        className={`fixed right-4 md:right-8 top-1/2 -translate-y-1/2 p-3 rounded-full shadow-lg transition-all duration-200 z-50 ${
+          !canGoPrevious 
+            ? 'bg-stone/30 text-stone/50 cursor-not-allowed opacity-30' 
+            : 'bg-stone hover:bg-stone/80 text-white'
+        }`}
+        aria-label={canGoPrevious ? "Previous quote" : "At first quote"}
+        title={canGoPrevious ? "Go to previous quote" : "You're at the first quote"}
+        style={{
+          minWidth: '56px',
           minHeight: '56px'
         }}
       >
-        <ChevronRight className="w-8 h-8 text-white" />
+        <ChevronRight className="w-8 h-8" />
       </Button>
 
       {/* Bottom Controls */}
@@ -324,10 +344,10 @@ export function QuoteCarousel({
             variant="ghost"
             size="lg"
             onClick={handleSaveToggle}
-            disabled={isLoading}
+            disabled={isActionLoading}
             className={`p-4 hover:bg-transparent transition-colors ${
-              isSaved 
-                ? 'text-cta hover:text-cta/80' 
+              isSaved
+                ? 'text-cta hover:text-cta/80'
                 : 'text-stone hover:text-cta'
             }`}
             aria-label={isSaved ? "Remove from favorites" : "Add to favorites"}
@@ -348,8 +368,13 @@ export function QuoteCarousel({
       </div>
 
       {/* Quote Counter */}
-      <div className="absolute bottom-8 right-8 text-stone/70 text-sm z-10">
-        {currentIndex + 1} / {quotes.length}
+      <div className="fixed bottom-8 right-8 text-stone/70 text-sm z-10">
+        {displayCurrentIndex + 1} / {isUsingApiQuotes ? `${displayTotalCount}${quoteSession?.canGoNext ? '+' : ''}` : displayTotalCount}
+        {isUsingApiQuotes && displayTotalCount >= 200 && (
+          <div className="text-xs text-stone/50 mt-1">
+            Infinite scrolling enabled
+          </div>
+        )}
       </div>
     </div>
   )

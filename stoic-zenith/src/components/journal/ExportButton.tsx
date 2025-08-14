@@ -17,7 +17,7 @@ export function ExportButton({ entry, className = '' }: ExportButtonProps): JSX.
     try {
       const element = document.querySelector('[data-export-area]') as HTMLElement;
       if (!element) {
-        console.error('Export area not found');
+        // Error logging removed - use debug utility if needed
         return;
       }
 
@@ -33,7 +33,7 @@ export function ExportButton({ entry, className = '' }: ExportButtonProps): JSX.
       link.href = canvas.toDataURL();
       link.click();
     } catch (error) {
-      console.error('Error exporting as image:', error);
+      // Error logging removed - use debug utility if needed
     } finally {
       setIsExporting(false);
     }

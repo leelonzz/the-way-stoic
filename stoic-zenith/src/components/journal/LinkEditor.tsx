@@ -47,7 +47,7 @@ export function LinkEditor({
 
     try {
       // Basic URL validation
-      const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
+      const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/
       setIsValidUrl(urlPattern.test(url))
     } catch {
       setIsValidUrl(false)

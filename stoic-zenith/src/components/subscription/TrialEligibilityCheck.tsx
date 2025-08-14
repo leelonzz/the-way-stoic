@@ -39,7 +39,7 @@ export function TrialEligibilityCheck({
   const [eligibility, setEligibility] = useState<TrialEligibilityResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [startingTrial, setStartingTrial] = useState(false)
-  const { user, profile } = useAuthContext()
+  const { user, session, profile } = useAuthContext()
   const { toast } = useToast()
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export function TrialEligibilityCheck({
       setLoading(true)
       const response = await fetch('/api/trial/eligibility', {
         headers: {
-          'Authorization': `Bearer ${user.access_token}`,
+          'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json',
         },
       })
@@ -86,7 +86,7 @@ export function TrialEligibilityCheck({
       const response = await fetch('/api/trial/eligibility', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${user.access_token}`,
+          'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ planType: 'philosopher' }),

@@ -60,30 +60,30 @@ export function getBlockClassName(
   switch (block.type) {
     case 'heading': {
       const headingClasses = {
-        1: 'text-3xl font-bold text-stone-800 mb-2 leading-tight',
-        2: 'text-2xl font-semibold text-stone-800 mb-1 leading-tight',
-        3: 'text-xl font-medium text-stone-800 mb-1 leading-tight',
+        1: 'text-3xl font-bold text-stone-800 leading-tight',
+        2: 'text-2xl font-semibold text-stone-800 leading-tight',
+        3: 'text-xl font-medium text-stone-800 leading-tight',
       }
       return `${baseClasses} ${fontClass} ${headingClasses[block.level || 1]}`
     }
 
     case 'bullet-list':
-      return `${baseClasses} ${fontClass} mb-1 text-base text-stone-700 leading-[1.4] pl-8 relative`
+      return `${baseClasses} ${fontClass} text-base text-stone-700 leading-[1.4] pl-8 relative`
 
     case 'numbered-list':
-      return `${baseClasses} ${fontClass} mb-1 text-base text-stone-700 leading-[1.4] pl-8 relative`
+      return `${baseClasses} ${fontClass} text-base text-stone-700 leading-[1.4] pl-8 relative`
 
     case 'quote':
-      return `${baseClasses} ${fontClass} border-l-4 border-stone-300 pl-4 mb-1 italic text-stone-600 text-base leading-[1.4]`
+      return `${baseClasses} ${fontClass} border-l-4 border-stone-300 pl-4 italic text-stone-600 text-base leading-[1.4]`
 
     case 'code':
-      return `${baseClasses} bg-stone-100 rounded-lg p-4 mb-1 font-mono text-sm text-stone-800 leading-[1.4]`
+      return `${baseClasses} bg-stone-100 rounded-lg p-4 font-mono text-sm text-stone-800 leading-[1.4]`
 
     case 'image':
-      return `${baseClasses} mb-1`
+      return `${baseClasses}`
 
     default:
-      return `${baseClasses} ${fontClass} mb-1 text-base text-stone-700 leading-[1.4]`
+      return `${baseClasses} ${fontClass} text-base text-stone-700 leading-[1.4]`
   }
 }
 

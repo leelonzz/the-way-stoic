@@ -45,7 +45,7 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps): Rea
     if (isLoading && !quickTimeout) {
       const quickTimeoutId = setTimeout(() => {
         setQuickTimeout(true);
-      }, 8000); // 8 second quick timeout - more patient for auth
+      }, 3000); // 3 second quick timeout - faster UX
 
       return () => clearTimeout(quickTimeoutId);
     }
@@ -59,7 +59,7 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps): Rea
         if (!isAuthenticated && !isLoading) {
           console.warn('⏱️ Auth state not updated after initial delay, starting timeout');
 
-          // Longer timeout as fallback - be more patient (8 seconds)
+          // Longer timeout as fallback - be more patient (5 seconds)
           const longTimeoutId = setTimeout(() => {
             if (!isAuthenticated) {
               console.warn('🔐 Auth timeout - clearing session');
@@ -68,7 +68,7 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps): Rea
               setAuthTimeoutReached(true);
               window.dispatchEvent(new Event('localStorageChanged'));
             }
-          }, 8000); // 8 second timeout for safety
+          }, 5000); // 5 second timeout for safety
 
           return () => {
             clearTimeout(longTimeoutId);

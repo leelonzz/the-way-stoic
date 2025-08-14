@@ -104,7 +104,7 @@ export function toggleInlineFormatting(
 // Create a link with proper validation
 export function createLink(text: string, url: string, title?: string): string {
   // Basic URL validation
-  const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
+  const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/
   
   if (!urlPattern.test(url)) {
     // If no protocol, add https://
