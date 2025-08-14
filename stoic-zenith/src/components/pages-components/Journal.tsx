@@ -38,6 +38,7 @@ export default function Journal(): JSX.Element {
       handleUpdateEntry: updateEntry,
       handleUpdateEntryWithIdChange: updateEntryWithIdChange,
       handleRetrySync: retrySync,
+      clearSelection,
       journalManager,
       isCreatingEntry, // Use the isCreatingEntry from the hook
     } = useCachedJournal(viewMode)
@@ -45,6 +46,15 @@ export default function Journal(): JSX.Element {
   // Legacy state for compatibility
   const [userId, setUserId] = useState<string | null>(null)
   const lastCreateTimeRef = useRef<number>(0)
+
+  // Handle view mode changes with selection clearing
+  const handleViewModeChange = useCallback((newViewMode: ViewMode) => {
+    setViewMode(newViewMode)
+    // Clear selection when switching to calendar view
+    if (newViewMode === 'calendar') {
+      clearSelection()
+    }
+  }, [clearSelection])
 
   // Wrapper functions for compatibility with existing code
   const handleSelectEntryWrapper = useCallback(
@@ -180,7 +190,7 @@ export default function Journal(): JSX.Element {
             <h2 className="text-lg font-semibold text-stone-800">Journal</h2>
             <ViewToggle
               currentView={viewMode}
-              onViewChange={setViewMode}
+              onViewChange={handleViewModeChange}
             />
           </div>
         </div>
@@ -243,7 +253,10 @@ export default function Journal(): JSX.Element {
                 </svg>
               </div>
               <h2 className="text-lg font-medium text-stone-700 mb-2">
-                Choose entry and it will show here
+                {(!entries || entries.length === 0)
+                  ? "Start writing your thoughts..."
+                  : "Choose entry and it will show here"
+                }
               </h2>
             </div>
           </div>

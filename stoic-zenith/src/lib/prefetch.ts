@@ -84,25 +84,48 @@ export const prefetchCalendar = async (queryClient: QueryClient, userId?: string
 export const prefetchJournal = async (queryClient: QueryClient, userId?: string): Promise<void> => {
   if (!userId) return
   
-  // Prefetch today's journal entry
-  const today = new Date().toISOString().split('T')[0]
-  await queryClient.prefetchQuery({
-    queryKey: ['journal-entry', today],
-    queryFn: async () => {
-      const { supabase } = await import('@/integrations/supabase/client')
-      const { data } = await supabase
-        .from('journal_entries')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('entry_date', today)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-      return data
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes for journal entries
-    gcTime: 5 * 60 * 1000
-  })
+  try {
+    // Prefetch recent journal entries (last 10 entries) for instant loading
+    await queryClient.prefetchQuery({
+      queryKey: ['journal-entries', userId],
+      queryFn: async () => {
+        const { getJournalManager } = await import('@/lib/journal')
+        const manager = getJournalManager(userId)
+        
+        // Get cached entries first for instant display
+        const entries = await manager.getAllEntries()
+        
+        // Return the 10 most recent entries for quick access
+        return entries
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 10)
+      },
+      staleTime: 1 * 60 * 1000, // 1 minute stale time for quick prefetch
+      gcTime: 5 * 60 * 1000
+    })
+
+    // Also prefetch today's entry separately for quick access
+    const today = new Date().toISOString().split('T')[0]
+    await queryClient.prefetchQuery({
+      queryKey: ['journal-entry', today],
+      queryFn: async () => {
+        const { supabase } = await import('@/integrations/supabase/client')
+        const { data } = await supabase
+          .from('journal_entries')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('entry_date', today)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+        return data
+      },
+      staleTime: 2 * 60 * 1000, // 2 minutes for journal entries
+      gcTime: 5 * 60 * 1000
+    })
+  } catch (error) {
+    console.warn('Failed to prefetch journal entries:', error)
+  }
 }
 
 // Navigation prefetch handler

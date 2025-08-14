@@ -21,11 +21,13 @@ import { SelectionManager } from './selectionUtils'
 interface EnhancedRichTextEditorProps {
   blocks: JournalBlock[]
   onChange: (blocks: JournalBlock[]) => void
+  showPlaceholder?: boolean
 }
 
 export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor({
   blocks,
   onChange,
+  showPlaceholder = true,
 }: EnhancedRichTextEditorProps): JSX.Element {
   const [showCommandMenu, setShowCommandMenu] = useState(false)
   const [commandMenuPosition, setCommandMenuPosition] = useState({ x: 0, y: 0 })
@@ -1522,6 +1524,11 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
     type: JournalBlock['type'],
     blockIndex: number
   ): string => {
+    // Don't show any placeholder if showPlaceholder is false
+    if (!showPlaceholder) {
+      return ''
+    }
+
     switch (type) {
       case 'heading':
         return 'Heading'

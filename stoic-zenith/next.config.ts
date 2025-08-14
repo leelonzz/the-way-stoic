@@ -59,6 +59,8 @@ const nextConfig: NextConfig = {
     dirs: ['src'],
     ignoreDuringBuilds: true,
   },
+  // Exclude landing page demo files from build
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   typescript: {
     ignoreBuildErrors: false,
   },

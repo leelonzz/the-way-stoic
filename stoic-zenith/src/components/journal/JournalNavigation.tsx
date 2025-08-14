@@ -37,6 +37,7 @@ interface JournalNavigationProps {
   isCreatingEntry?: boolean;
   syncStatus?: 'synced' | 'pending' | 'error';
   journalManager: RealTimeJournalManager;
+  hasOtherEntries?: boolean;
 }
 
 export const JournalNavigation = React.memo(function JournalNavigation({

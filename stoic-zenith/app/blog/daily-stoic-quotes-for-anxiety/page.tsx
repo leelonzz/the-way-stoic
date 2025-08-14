@@ -59,8 +59,8 @@ export default function DailyStoicQuotesForAnxietyPage() {
         <p className="mt-2 text-sm text-gray-500" style={{ fontFamily: 'Inknut Antiqua, serif' }}>Published on January 15, 2025</p>
       </header>
 
-      <div className="grid grid-cols-1 gap-10 md:grid-cols-[1fr_280px]">
-        <main>
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_280px]">
+        <main className="min-w-0 overflow-hidden">
           <article className="prose prose-neutral max-w-none prose-headings:font-bold prose-h1:text-4xl prose-h1:mt-8 prose-h1:mb-8 prose-h1:text-gray-900 prose-h2:text-3xl prose-h2:mt-10 prose-h2:mb-6 prose-h2:text-gray-900 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-4 prose-h3:text-gray-800 prose-p:mb-6 prose-p:leading-relaxed prose-p:text-gray-700 prose-strong:font-semibold prose-em:italic prose-ol:my-6 prose-ul:my-6 prose-li:mb-2 prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:bg-gray-50 prose-blockquote:py-4 prose-blockquote:my-6" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
 
             <div className="mb-8">
@@ -441,15 +441,15 @@ export default function DailyStoicQuotesForAnxietyPage() {
           </article>
         </main>
 
-        <aside className="order-first md:order-last">
-          <div className="sticky top-20 rounded-md border p-4">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-500">On this page</p>
-            <ul className="space-y-2 text-sm">
-              <li><a className="hover:underline" href="#understanding-anxiety-through-stoic-philosophy">Understanding Anxiety</a></li>
-              <li><a className="hover:underline" href="#daily-stoic-quotes-for-anxiety-relief">Daily Quotes</a></li>
-              <li><a className="hover:underline" href="#practical-exercises-for-daily-application">Practical Exercises</a></li>
-              <li><a className="hover:underline" href="#common-challenges-and-solutions">Common Challenges</a></li>
-              <li><a className="hover:underline" href="#building-long-term-resilience">Building Resilience</a></li>
+        <aside className="order-first lg:order-last">
+          <div className="sticky top-20 rounded-md border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-500" style={{ fontFamily: 'Inknut Antiqua, serif' }}>On this page</p>
+            <ul className="space-y-2 text-sm" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
+              <li><a className="text-gray-600 hover:text-gray-900 hover:underline transition-colors" href="#understanding-anxiety-through-stoic-philosophy">Understanding Anxiety</a></li>
+              <li><a className="text-gray-600 hover:text-gray-900 hover:underline transition-colors" href="#daily-stoic-quotes-for-anxiety-relief">Daily Quotes</a></li>
+              <li><a className="text-gray-600 hover:text-gray-900 hover:underline transition-colors" href="#practical-exercises-for-daily-application">Practical Exercises</a></li>
+              <li><a className="text-gray-600 hover:text-gray-900 hover:underline transition-colors" href="#common-challenges-and-solutions">Common Challenges</a></li>
+              <li><a className="text-gray-600 hover:text-gray-900 hover:underline transition-colors" href="#building-long-term-resilience">Building Resilience</a></li>
             </ul>
           </div>
         </aside>

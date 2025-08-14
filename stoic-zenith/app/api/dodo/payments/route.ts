@@ -117,8 +117,7 @@ export const POST = paymentRateLimit(withCSRF(async (request: NextRequest): Prom
       customer: {
         email: customerData.email,
         name: customerData.name,
-        create_new_customer: true,
-      },
+      } as any, // Type assertion for Dodo API compatibility
       product_cart: [{
         product_id: productId,
         quantity: 1,

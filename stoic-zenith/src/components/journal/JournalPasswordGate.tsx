@@ -16,7 +16,7 @@ export function JournalPasswordGate({ children }: JournalPasswordGateProps) {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Check if journal is password protected and if session is unlocked
+  // Optimized password protection check with faster resolution
   useEffect(() => {
     if (!user || !profile) return
 
@@ -29,16 +29,26 @@ export function JournalPasswordGate({ children }: JournalPasswordGateProps) {
         const sessionUnlocked = sessionStorage.getItem('journal:unlocked') === 'true'
         setIsUnlocked(sessionUnlocked)
         setShowPasswordDialog(!sessionUnlocked)
+        setIsLoading(false) // Set loading false immediately for protected journals
       } else {
-        // No password protection, allow access
+        // No password protection, allow access immediately
         setIsUnlocked(true)
         setShowPasswordDialog(false)
+        setIsLoading(false)
       }
-
-      setIsLoading(false)
     }
 
-    checkPasswordProtection()
+    // Use setTimeout to prevent blocking the main thread
+    const timeoutId = setTimeout(checkPasswordProtection, 0)
+    return () => clearTimeout(timeoutId)
+  }, [user, profile])
+
+  // Early return for known unlocked state to reduce render cycles
+  useEffect(() => {
+    if (user && profile && profile.journal_password_enabled !== true) {
+      setIsLoading(false)
+      setIsUnlocked(true)
+    }
   }, [user, profile])
 
   const handlePasswordVerified = () => {

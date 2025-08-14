@@ -11,7 +11,10 @@
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
-    "perf:journal": "echo 'Testing journal performance...' && npm run build && npm run start"
+    "perf:journal": "echo 'Testing journal performance...' && npm run build && npm run start",
+    "analyze": "ANALYZE=true npm run build",
+    "perf:bundle": "npm run analyze && echo 'Bundle analysis complete. Check .next/analyze/ for results'",
+    "perf:dev": "echo 'Starting development server with performance monitoring...' && npm run dev:turbo"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

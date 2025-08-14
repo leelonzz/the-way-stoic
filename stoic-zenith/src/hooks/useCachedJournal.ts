@@ -24,7 +24,7 @@ export function useCachedJournal(viewMode: 'list' | 'calendar' = 'list') {
   const [lastSelectedEntryId, setLastSelectedEntryId] = useState<string | null>(null)
 
 
-  // Cache-aware query for journal entries
+  // Progressive loading query - show cached data first, sync in background
   const entriesQuery = useNavigationCachedQuery(
     ['journal-entries', user?.id || 'anonymous'],
     async (): Promise<JournalEntry[]> => {
@@ -33,100 +33,25 @@ export function useCachedJournal(viewMode: 'list' | 'calendar' = 'list') {
       }
       const manager = getJournalManager(user.id)
 
-      // FORCE SYNC: Always sync from database first when user authenticates
-      // This ensures entries persist after clearing site data
-      setSyncStatus('syncing')
-
-      const timeouts = getTimeouts()
-      let timeoutId: NodeJS.Timeout | null = null
-
+      // PROGRESSIVE LOADING: Show local data immediately, sync in background
+      // 1. Get local data first for instant display
+      let localEntries: JournalEntry[] = []
       try {
-        // Use exponential backoff for production resilience
-        const syncWithRetry = async () => {
-          return exponentialBackoff(
-            async () => {
-              // Force sync from database first
-              await manager.retryAuthSync()
-              
-              // Get all entries (this will include database sync)
-              const rawEntries = await manager.getAllEntries()
-              
-              setSyncStatus('synced')
-              return rawEntries
-            },
-            {
-              maxRetries: 2,
-              shouldRetry: (error: unknown) => {
-                // Don't retry on auth errors
-                const errorMessage = error instanceof Error ? error.message : String(error)
-                if (errorMessage?.includes('401') || 
-                    errorMessage?.includes('403') ||
-                    errorMessage?.includes('unauthorized')) {
-                  return false
-                }
-                // Retry on network/timeout errors
-                return true
-              }
-            }
-          )
+        localEntries = await manager.getAllEntries() // This reads from localStorage first
+        // Return local data immediately if we have it
+        if (localEntries.length > 0) {
+          // Start background sync but don't wait for it
+          setImmediate(() => backgroundSync(manager))
+          setSyncStatus('synced') // Show as synced since we have local data
+          return localEntries
         }
-
-        // Add timeout as safeguard
-        const syncPromise = new Promise<JournalEntry[]>((resolve, reject) => {
-          timeoutId = setTimeout(() => {
-            // Don't reject, resolve with local data
-            manager.getAllEntries()
-              .then(entries => {
-                setSyncStatus('error')
-                resolve(entries)
-              })
-              .catch(() => resolve([]))
-          }, timeouts.journalSync)
-
-          syncWithRetry()
-            .then(entries => {
-              if (timeoutId) {
-                clearTimeout(timeoutId)
-                timeoutId = null
-              }
-              resolve(entries)
-            })
-            .catch(error => {
-              if (timeoutId) {
-                clearTimeout(timeoutId)
-                timeoutId = null
-              }
-              // Try local fallback
-              manager.getAllEntries()
-                .then(entries => {
-                  setSyncStatus('error')
-                  resolve(entries)
-                })
-                .catch(() => resolve([]))
-            })
-        })
-
-        return await syncPromise
       } catch (error) {
-        
-        if (timeoutId) {
-          clearTimeout(timeoutId)
-        }
-
-        setSyncStatus('error')
-
-        // Fallback to local data if sync fails
-        try {
-          const rawEntries = await manager.getAllEntries()
-          return rawEntries
-        } catch (fallbackError) {
-          return []
-        }
-      } finally {
-        if (timeoutId) {
-          clearTimeout(timeoutId)
-        }
+        console.warn('Failed to load local entries:', error)
       }
+
+      // 2. If no local data, do initial sync
+      setSyncStatus('syncing')
+      return await performInitialSync(manager)
     },
     {
       enabled: !!user?.id,
@@ -270,6 +195,99 @@ export function useCachedJournal(viewMode: 'list' | 'calendar' = 'list') {
   }, [entriesWithAccessTimes, selectedEntry, lastSelectedEntryId])
 
   // Record entry access function
+  // Background sync helper - runs asynchronously without blocking UI
+  const backgroundSync = async (manager: ReturnType<typeof getJournalManager>) => {
+    try {
+      setSyncStatus('syncing')
+      await manager.retryAuthSync()
+      
+      // Update cache with fresh data
+      const freshEntries = await manager.getAllEntries()
+      queryClient.setQueryData(['journal-entries', user?.id || 'anonymous'], freshEntries)
+      
+      setSyncStatus('synced')
+    } catch (error) {
+      console.warn('Background sync failed:', error)
+      setSyncStatus('error')
+    }
+  }
+
+  // Initial sync for new users - with timeout and fallback
+  const performInitialSync = async (manager: ReturnType<typeof getJournalManager>): Promise<JournalEntry[]> => {
+    const timeouts = getTimeouts()
+    let timeoutId: NodeJS.Timeout | null = null
+
+    try {
+      // Use exponential backoff for production resilience
+      const syncWithRetry = async () => {
+        return exponentialBackoff(
+          async () => {
+            // Force sync from database first
+            await manager.retryAuthSync()
+            
+            // Get all entries (this will include database sync)
+            const rawEntries = await manager.getAllEntries()
+            
+            setSyncStatus('synced')
+            return rawEntries
+          },
+          {
+            maxRetries: 2,
+            shouldRetry: (error: unknown) => {
+              // Don't retry on auth errors
+              const errorMessage = error instanceof Error ? error.message : String(error)
+              if (errorMessage?.includes('401') || 
+                  errorMessage?.includes('403') ||
+                  errorMessage?.includes('unauthorized')) {
+                return false
+              }
+              // Retry on network/timeout errors
+              return true
+            }
+          }
+        )
+      }
+
+      // Add timeout as safeguard
+      const syncPromise = new Promise<JournalEntry[]>((resolve) => {
+        timeoutId = setTimeout(() => {
+          // Don't reject, resolve with empty array for new users
+          setSyncStatus('error')
+          resolve([])
+        }, timeouts.journalSync)
+
+        syncWithRetry()
+          .then(entries => {
+            if (timeoutId) {
+              clearTimeout(timeoutId)
+              timeoutId = null
+            }
+            resolve(entries)
+          })
+          .catch(() => {
+            if (timeoutId) {
+              clearTimeout(timeoutId)
+              timeoutId = null
+            }
+            setSyncStatus('error')
+            resolve([])
+          })
+      })
+
+      return await syncPromise
+    } catch (error) {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      setSyncStatus('error')
+      return []
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }
+
   const recordEntryAccess = (entryId: string) => {
     if (typeof window === 'undefined') return
     
@@ -467,6 +485,11 @@ export function useCachedJournal(viewMode: 'list' | 'calendar' = 'list') {
     }
   }
 
+  // Clear selection function
+  const clearSelection = () => {
+    setSelectedEntry(null)
+  }
+
   return {
     entries: entriesWithAccessTimes,
     selectedEntry,
@@ -484,6 +507,7 @@ export function useCachedJournal(viewMode: 'list' | 'calendar' = 'list') {
     handleUpdateEntry,
     handleUpdateEntryWithIdChange,
     handleRetrySync,
+    clearSelection,
     setEntries: () => {}, // Placeholder for compatibility
 
     // Journal manager for compatibility
