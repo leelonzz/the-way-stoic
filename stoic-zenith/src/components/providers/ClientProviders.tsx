@@ -20,7 +20,6 @@ import { PageCacheProvider } from '@/components/providers/PageCacheProvider'
 import { PrefetchProvider } from '@/components/providers/PrefetchProvider'
 import { InstantNavigationProvider } from '@/components/providers/InstantNavigationProvider'
 import { AggressivePrefetchProvider } from '@/components/providers/AggressivePrefetchProvider'
-import { ImmediatePrefetchProvider } from '@/components/providers/ImmediatePrefetchProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ReactNode, useState } from 'react'
 
@@ -75,28 +74,26 @@ export function ClientProviders({ children }: ClientProvidersProps): JSX.Element
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ImmediatePrefetchProvider>
-          <TooltipProvider>
-            <AuthProvider>
-              <PrefetchProvider>
-                <DodoProvider>
-                  <PageCacheProvider
-                    maxCacheSize={20} // Increased cache size for better performance
-                    maxAge={45 * 60 * 1000} // 45 minutes - balanced cache duration
-                  >
-                    <InstantNavigationProvider>
-                      <AggressivePrefetchProvider>
-                        {children}
-                        <Toaster />
-                        <Sonner />
-                      </AggressivePrefetchProvider>
-                    </InstantNavigationProvider>
-                  </PageCacheProvider>
-                </DodoProvider>
-              </PrefetchProvider>
-            </AuthProvider>
-          </TooltipProvider>
-        </ImmediatePrefetchProvider>
+        <TooltipProvider>
+          <AuthProvider>
+            <PrefetchProvider>
+              <DodoProvider>
+                <PageCacheProvider
+                  maxCacheSize={20} // Increased cache size for better performance
+                  maxAge={45 * 60 * 1000} // 45 minutes - balanced cache duration
+                >
+                  <InstantNavigationProvider>
+                    <AggressivePrefetchProvider>
+                      {children}
+                      <Toaster />
+                      <Sonner />
+                    </AggressivePrefetchProvider>
+                  </InstantNavigationProvider>
+                </PageCacheProvider>
+              </DodoProvider>
+            </PrefetchProvider>
+          </AuthProvider>
+        </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   )

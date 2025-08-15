@@ -21,8 +21,8 @@ export function AggressivePrefetchProvider({ children }: AggressivePrefetchProvi
       '/quotes?tab=my-quotes',
       '/mentors'
     ],
-    delayMs: 0, // No delay - start immediately
-    onIdle: false, // Don't wait for idle
+    delayMs: 3000, // Wait 3 seconds to avoid blocking auth
+    onIdle: true, // Wait for browser idle time
     prefetchData: true
   })
 

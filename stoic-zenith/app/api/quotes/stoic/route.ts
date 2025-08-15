@@ -53,12 +53,46 @@ const FALLBACK_QUOTES: StoicQuote[] = [
   }
 ]
 
+function cleanQuoteText(text: string): string {
+  let cleanText = text.trim()
+  
+  // Remove common patterns of author names and artifacts at the end of quotes
+  
+  // Pattern 1: Remove "@." at the end (appears to be an API artifact)
+  cleanText = cleanText.replace(/\s*@\.\s*$/, '')
+  
+  // Pattern 2: Quote ending with ". Name" or ". Name."
+  cleanText = cleanText.replace(/\.\s+[A-Z][a-zA-Z]*\.?\s*$/, '.')
+  
+  // Pattern 3: Quote ending with " Name" or " Name." (without period before name)
+  cleanText = cleanText.replace(/\s+[A-Z][a-zA-Z]*\.?\s*$/, '')
+  
+  // Pattern 4: Quote ending with ", Name" or ", Name."
+  cleanText = cleanText.replace(/,\s+[A-Z][a-zA-Z]*\.?\s*$/, '')
+  
+  // Pattern 5: Quote ending with "— Name" or "- Name"
+  cleanText = cleanText.replace(/[—-]\s*[A-Z][a-zA-Z]*\.?\s*$/, '')
+  
+  // Pattern 6: More specific patterns for multi-word names like "William B."
+  cleanText = cleanText.replace(/\s+[A-Z][a-zA-Z]*\s+[A-Z]\.?\s*$/, '')
+  
+  // Pattern 7: Remove social media handles and symbols at end
+  cleanText = cleanText.replace(/\s*[@#]\w*\.?\s*$/, '')
+  
+  // Ensure the quote ends with proper punctuation
+  if (cleanText && !cleanText.match(/[.!?]$/)) {
+    cleanText += '.'
+  }
+  
+  return cleanText
+}
+
 function transformApiResponse(data: ApiQuoteResponse): StoicQuote {
   const quoteId = `api-quote-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   
   return {
     id: quoteId,
-    text: data.data.quote.trim(),
+    text: cleanQuoteText(data.data.quote),
     author: data.data.author.trim(),
     source: 'Stoic Philosophy',
     category: 'wisdom',
@@ -103,9 +137,14 @@ export async function GET(request: NextRequest) {
 
       const data: ApiQuoteResponse = await response.json()
 
-      if (!data.data || !data.data.quote || !data.data.author) {
+      if (!data.data || !data.data.quote || !data.data.quote.trim()) {
         console.warn('[Stoic API Proxy] Invalid API response format:', data)
         throw new Error('Invalid API response format')
+      }
+      
+      // If author is empty, use a default
+      if (!data.data.author || !data.data.author.trim()) {
+        data.data.author = 'Unknown'
       }
 
       // Transform and return the quote

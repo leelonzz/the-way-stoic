@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal, Plus, Trash2, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { MoreHorizontal, Plus, Trash2, Save, AlertCircle, CheckCircle, BookTemplate } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import {
@@ -38,6 +38,7 @@ interface JournalNavigationProps {
   syncStatus?: 'synced' | 'pending' | 'error';
   journalManager: RealTimeJournalManager;
   hasOtherEntries?: boolean;
+  onOpenTemplates?: () => void;
 }
 
 export const JournalNavigation = React.memo(function JournalNavigation({
@@ -49,7 +50,9 @@ export const JournalNavigation = React.memo(function JournalNavigation({
   onDeleteEntry,
   isCreatingEntry: _isCreatingEntry = false,
   syncStatus = 'synced',
-  journalManager
+  journalManager,
+  hasOtherEntries = false,
+  onOpenTemplates
 }: JournalNavigationProps): JSX.Element {
   const [currentEntry, setCurrentEntry] = useState<JournalEntry>(entry);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -216,27 +219,18 @@ export const JournalNavigation = React.memo(function JournalNavigation({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Enhanced Save Status Indicator - Notion Style */}
-          <div className="flex items-center gap-2 text-xs">
-            {saveStatus === 'saving' && (
-              <>
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                <span className="text-blue-600 font-medium">Saving...</span>
-              </>
-            )}
-            {saveStatus === 'saved' && (
-              <>
-                <div className="w-2 h-2 bg-green-500 rounded-full" />
-                <span className="text-green-600 font-medium">Saved</span>
-              </>
-            )}
-            {saveStatus === 'error' && (
-              <>
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-red-600 font-medium">Save failed</span>
-              </>
-            )}
-          </div>
+          {/* Templates Button */}
+          {onOpenTemplates && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={onOpenTemplates}
+              className="flex items-center gap-2"
+            >
+              <BookTemplate className="h-4 w-4" />
+              Templates
+            </Button>
+          )}
 
           {/* Actions */}
           <DropdownMenu>
@@ -308,6 +302,7 @@ export const JournalNavigation = React.memo(function JournalNavigation({
               key={currentEntry.id} // Stable key based on entry ID
               blocks={currentEntry.blocks}
               onChange={handleBlocksChange}
+              showPlaceholder={!hasOtherEntries}
             />
           </SafeEditorWrapper>
         </ErrorBoundary>

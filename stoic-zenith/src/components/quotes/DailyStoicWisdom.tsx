@@ -607,8 +607,9 @@ export function DailyStoicWisdom(): JSX.Element {
     }
   }
 
-  // Show loading screen only for initial load or when no quotes exist
-  if (loading || (isRefetching && quotes.length === 0) || (isInitialLoad && quotes.length === 0)) {
+  // Show loading screen only for initial load when no quotes exist at all
+  // Don't show loading for pre-fetched quotes or when we have quotes available
+  if ((loading && quotes.length === 0) || (isInitialLoad && quotes.length === 0)) {
     return <MinimalLoadingScreen />
   }
 
@@ -738,7 +739,7 @@ export function DailyStoicWisdom(): JSX.Element {
           onUnsave={isAuthenticated ? (quoteId: string) => unsaveQuote(quoteId) : undefined}
           onNext={handleNext}
           onPrevious={handlePrevious}
-          isLoading={loading}
+          isLoading={loading && quotes.length === 0}
           quoteSession={quoteSession}
         />
       )

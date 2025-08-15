@@ -26,11 +26,13 @@ import { selectionManager } from './selectionUtils'
 interface SingleEditableRichTextEditorProps {
   blocks: JournalBlock[]
   onChange: (blocks: JournalBlock[]) => void
+  showPlaceholder?: boolean
 }
 
 export function SingleEditableRichTextEditor({
   blocks,
   onChange,
+  showPlaceholder = true,
 }: SingleEditableRichTextEditorProps): JSX.Element {
 
   const [showCommandMenu, setShowCommandMenu] = useState(false)
@@ -477,8 +479,55 @@ export function SingleEditableRichTextEditor({
       updateBlock(blockId, { text: cleanText })
 
       // Enhanced slash command and splash command debugging
-      const isSlashCommand = cleanText.startsWith('/')
-      const isSplashCommand = cleanText.toLowerCase().startsWith('splash')
+      // Get current line text for line-based command detection
+      const selection = window.getSelection()
+      let currentLineText = cleanText
+
+      // Find the actual contenteditable element within the block
+      let contentEditableElement: HTMLElement | null = null
+      if (blockElement) {
+        // Look for contenteditable element within the block wrapper
+        contentEditableElement = blockElement.querySelector('[contenteditable="true"]') as HTMLElement
+        if (!contentEditableElement && blockElement.hasAttribute('contenteditable')) {
+          // The wrapper itself might be contenteditable
+          contentEditableElement = blockElement as HTMLElement
+        }
+      }
+
+      // If we have selection and contenteditable element, try to get the current line
+      if (selection && selection.rangeCount > 0 && contentEditableElement) {
+        try {
+          const range = selection.getRangeAt(0)
+          const fullText = contentEditableElement.textContent || ''
+
+          // Get cursor position in the text
+          const preCaretRange = range.cloneRange()
+          preCaretRange.selectNodeContents(contentEditableElement)
+          preCaretRange.setEnd(range.startContainer, range.startOffset)
+          const caretPosition = preCaretRange.toString().length
+
+          // Find the current line by looking for line breaks
+          const textBeforeCaret = fullText.substring(0, caretPosition)
+          const textAfterCaret = fullText.substring(caretPosition)
+
+          // Find the last line break before cursor (or start of text)
+          const lastLineBreakBefore = textBeforeCaret.lastIndexOf('\n')
+          const lineStart = lastLineBreakBefore === -1 ? 0 : lastLineBreakBefore + 1
+
+          // Find the next line break after cursor (or end of text)
+          const nextLineBreakAfter = textAfterCaret.indexOf('\n')
+          const lineEnd = nextLineBreakAfter === -1 ? fullText.length : caretPosition + nextLineBreakAfter
+
+          // Extract current line text
+          currentLineText = fullText.substring(lineStart, lineEnd)
+        } catch (error) {
+          // Fallback to full text if line detection fails
+          currentLineText = cleanText
+        }
+      }
+
+      const isSlashCommand = currentLineText.startsWith('/')
+      const isSplashCommand = currentLineText.toLowerCase().startsWith('splash')
       const menuCurrentlyShown = showCommandMenu
 
       // Always trigger editing state for proper typography switching
@@ -497,9 +546,9 @@ export function SingleEditableRichTextEditor({
         // Extract search query based on trigger type
         let searchQuery = ''
         if (isSlashCommand) {
-          searchQuery = cleanText.slice(1)
+          searchQuery = currentLineText.slice(1)
         } else if (isSplashCommand) {
-          searchQuery = cleanText.slice(6) // Remove "splash" (6 characters)
+          searchQuery = currentLineText.slice(6) // Remove "splash" (6 characters)
         }
 
         setCommandMenuPosition(position)
@@ -512,9 +561,9 @@ export function SingleEditableRichTextEditor({
         // Update search query based on trigger type
         let newQuery = ''
         if (isSlashCommand) {
-          newQuery = cleanText.slice(1)
+          newQuery = currentLineText.slice(1)
         } else if (isSplashCommand) {
-          newQuery = cleanText.slice(6) // Remove "splash" (6 characters)
+          newQuery = currentLineText.slice(6) // Remove "splash" (6 characters)
         }
         
         setSearchQuery(newQuery)
@@ -762,7 +811,7 @@ export function SingleEditableRichTextEditor({
           userSelect: 'text',
         }}
       >
-        {!isEditing && blocks.every(block => block.text.trim() === '') && !editingBlockId && (
+        {showPlaceholder && !isEditing && blocks.every(block => block.text.trim() === '') && !editingBlockId && (
           <div className="absolute top-6 left-6 text-stone-400 italic text-base leading-relaxed pointer-events-none z-0 select-none transition-opacity duration-200">
             Start writing your thoughts...
           </div>

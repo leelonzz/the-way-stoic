@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -50,6 +51,7 @@ function HomeSkeleton(): JSX.Element {
 }
 
 function AppContent() {
+  const searchParams = useSearchParams();
   const [showAuth, setShowAuth] = useState(false);
   const { isAuthenticated, isLoading } = useAuthContext();
 
@@ -60,6 +62,14 @@ function AppContent() {
     }
     return false;
   }, []);
+
+  // Check for auth parameter in URL and show login screen
+  useEffect(() => {
+    const authParam = searchParams.get('auth');
+    if (authParam === 'true' && !isAuthenticated) {
+      setShowAuth(true);
+    }
+  }, [searchParams, isAuthenticated]);
 
   // Memoize the fallback to prevent unnecessary re-renders
   const fallback = useMemo(() => {

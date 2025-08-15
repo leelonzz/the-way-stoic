@@ -23,43 +23,43 @@ export const metadata: Metadata = {
 export default function DailyStoicQuotesForAnxietyPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-10" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
-      <nav aria-label="Breadcrumb" className="mb-6 text-sm text-gray-500">
-        <ol className="flex items-center gap-2">
-          <li><Link href="/" className="hover:underline">Home</Link></li>
-          <li>/</li>
-          <li><Link href="/blog" className="hover:underline">Blog</Link></li>
-          <li>/</li>
-          <li aria-current="page" className="text-gray-700">daily-stoic-quotes-for-anxiety</li>
-        </ol>
-      </nav>
+        <nav aria-label="Breadcrumb" className="mb-6 text-sm text-gray-500">
+          <ol className="flex items-center gap-2">
+            <li><Link href="/" className="hover:underline">Home</Link></li>
+            <li>/</li>
+            <li><Link href="/blog" className="hover:underline">Blog</Link></li>
+            <li>/</li>
+            <li aria-current="page" className="text-gray-700">daily-stoic-quotes-for-anxiety</li>
+          </ol>
+        </nav>
 
-      <header className="mb-8 text-center">
-        <p className="text-xs uppercase tracking-wider text-gray-500" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
-          daily • anxiety • stoic philosophy
-        </p>
-        <h1 className="mt-2 text-4xl md:text-5xl font-bold leading-tight text-gray-900" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
-          Daily Stoic Quotes for Anxiety Relief
-        </h1>
+        <header className="mb-8 text-center">
+          <p className="text-xs uppercase tracking-wider text-gray-500" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
+            daily • anxiety • stoic philosophy
+          </p>
+          <h1 className="mt-2 text-4xl md:text-5xl font-bold leading-relaxed text-gray-900" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
+            Daily Stoic Quotes for Anxiety Relief
+          </h1>
 
-        {/* Hero Image - moved below title */}
-        <div className="my-6 flex justify-center">
-          <Image
-            src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80"
-            alt="Serene mountain landscape at sunrise representing inner peace and Stoic philosophy for anxiety relief"
-            width={800}
-            height={400}
-            className="rounded-lg shadow-lg object-cover"
-            priority
-          />
-        </div>
+          {/* Hero Image - moved below title */}
+          <div className="my-6 flex justify-center">
+            <Image
+              src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80"
+              alt="Serene mountain landscape at sunrise representing inner peace and Stoic philosophy for anxiety relief"
+              width={800}
+              height={400}
+              className="rounded-lg shadow-lg object-cover"
+              priority
+            />
+          </div>
 
-        <p className="mt-3 text-lg text-gray-700" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
-          Discover daily Stoic quotes for anxiety designed to calm modern stress. Learn how ancient Stoic philosophy helps manage anxiety and find inner peace. Start transforming worry today.
-        </p>
-        <p className="mt-2 text-sm text-gray-500" style={{ fontFamily: 'Inknut Antiqua, serif' }}>Published on January 15, 2025</p>
+          <p className="mt-3 text-lg text-gray-700" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
+            Discover daily Stoic quotes for anxiety designed to calm modern stress. Learn how ancient Stoic philosophy helps manage anxiety and find inner peace. Start transforming worry today.
+          </p>
+                  <p className="mt-2 text-sm text-gray-500" style={{ fontFamily: 'Inknut Antiqua, serif' }}>Published on January 15, 2025</p>
       </header>
 
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_280px]">
+      <div className="max-w-4xl mx-auto">
         <main className="min-w-0 overflow-hidden">
           <article className="prose prose-neutral max-w-none prose-headings:font-bold prose-h1:text-4xl prose-h1:mt-8 prose-h1:mb-8 prose-h1:text-gray-900 prose-h2:text-3xl prose-h2:mt-10 prose-h2:mb-6 prose-h2:text-gray-900 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-4 prose-h3:text-gray-800 prose-p:mb-6 prose-p:leading-relaxed prose-p:text-gray-700 prose-strong:font-semibold prose-em:italic prose-ol:my-6 prose-ul:my-6 prose-li:mb-2 prose-blockquote:border-l-4 prose-blockquote:border-gray-300 prose-blockquote:pl-6 prose-blockquote:italic prose-blockquote:text-gray-600 prose-blockquote:bg-gray-50 prose-blockquote:py-4 prose-blockquote:my-6" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
 
@@ -84,7 +84,7 @@ export default function DailyStoicQuotesForAnxietyPage() {
 
             <h3 className="text-xl font-bold mt-8 mb-6 text-gray-800" style={{ fontFamily: 'Inknut Antiqua, serif' }}>The Dichotomy of Control</h3>
 
-            <blockquote className="border-l-4 border-gray-300 pl-6 italic text-gray-600 bg-gray-50 py-4 my-6 rounded-r-lg">
+            <blockquote className="border-l-4 border-black pl-6 italic text-gray-600 py-4 my-6">
               "Some things are within our power, while others are not." — Epictetus
             </blockquote>
 
@@ -92,7 +92,7 @@ export default function DailyStoicQuotesForAnxietyPage() {
               Epictetus, who lived as a slave before becoming one of philosophy's greatest teachers, articulated this principle most clearly. This simple yet profound insight forms the foundation of Stoic anxiety management. Our thoughts, judgments, values, and responses are entirely within our control. Everything else—other people's actions, natural disasters, economic conditions, even our own mortality—lies outside our sphere of influence.
             </p>
 
-            <blockquote className="border-l-4 border-gray-300 pl-6 italic text-gray-600 bg-gray-50 py-4 my-6 rounded-r-lg">
+            <blockquote className="border-l-4 border-black pl-6 italic text-gray-600 py-4 my-6">
               "Confine yourself to the present." — Marcus Aurelius
             </blockquote>
 
@@ -119,7 +119,7 @@ export default function DailyStoicQuotesForAnxietyPage() {
             <h2 id="daily-stoic-quotes-for-anxiety-relief" className="text-3xl font-bold mt-12 mb-8 text-gray-900" style={{ fontFamily: 'Inknut Antiqua, serif' }}>Daily Stoic Quotes for Anxiety Relief</h2>
 
             <div className="mb-10">
-              <blockquote className="border-l-4 border-blue-400 pl-6 italic text-gray-700 bg-blue-50 py-6 my-8 rounded-r-lg text-xl leading-relaxed">
+              <blockquote className="border-l-4 border-black pl-6 italic text-gray-700 py-6 my-8 text-xl leading-relaxed">
                 "You have power over your mind—not outside events. Realize this, and you will find strength."
                 <footer className="text-sm text-gray-600 mt-3 not-italic font-medium">— Marcus Aurelius</footer>
               </blockquote>
@@ -138,7 +138,7 @@ export default function DailyStoicQuotesForAnxietyPage() {
             </div>
 
             <div className="mb-10">
-              <blockquote className="border-l-4 border-green-400 pl-6 italic text-gray-700 bg-green-50 py-6 my-8 rounded-r-lg text-xl leading-relaxed">
+              <blockquote className="border-l-4 border-black pl-6 italic text-gray-700 py-6 my-8 text-xl leading-relaxed">
                 "Today I escaped anxiety. Or no, I discarded it, because it was within me, in my own perceptions—not outside."
                 <footer className="text-sm text-gray-600 mt-3 not-italic font-medium">— Marcus Aurelius</footer>
               </blockquote>
@@ -153,7 +153,7 @@ export default function DailyStoicQuotesForAnxietyPage() {
             </div>
 
             <div className="mb-10">
-              <blockquote className="border-l-4 border-purple-400 pl-6 italic text-gray-700 bg-purple-50 py-6 my-8 rounded-r-lg text-xl leading-relaxed">
+              <blockquote className="border-l-4 border-black pl-6 italic text-gray-700 py-6 my-8 text-xl leading-relaxed">
                 "Don't demand that things happen as you wish—wish that they happen as they do happen, and you will go on well."
                 <footer className="text-sm text-gray-600 mt-3 not-italic font-medium">— Epictetus</footer>
               </blockquote>
@@ -168,7 +168,7 @@ export default function DailyStoicQuotesForAnxietyPage() {
             </div>
 
             <div className="mb-10">
-              <blockquote className="border-l-4 border-orange-400 pl-6 italic text-gray-700 bg-orange-50 py-6 my-8 rounded-r-lg text-xl leading-relaxed">
+              <blockquote className="border-l-4 border-black pl-6 italic text-gray-700 py-6 my-8 text-xl leading-relaxed">
                 "How much trouble he avoids who does not look to see what his neighbor says or does."
                 <footer className="text-sm text-gray-600 mt-3 not-italic font-medium">— Marcus Aurelius</footer>
               </blockquote>
@@ -183,7 +183,7 @@ export default function DailyStoicQuotesForAnxietyPage() {
             </div>
 
             <div className="mb-10">
-              <blockquote className="border-l-4 border-red-400 pl-6 italic text-gray-700 bg-red-50 py-6 my-8 rounded-r-lg text-xl leading-relaxed">
+              <blockquote className="border-l-4 border-black pl-6 italic text-gray-700 py-6 my-8 text-xl leading-relaxed">
                 "The mind that pursues the good, whether it succeeds or not, is honored by the very attempt."
                 <footer className="text-sm text-gray-600 mt-3 not-italic font-medium">— Seneca</footer>
               </blockquote>
@@ -198,7 +198,7 @@ export default function DailyStoicQuotesForAnxietyPage() {
             </div>
 
             <div className="mb-10">
-              <blockquote className="border-l-4 border-indigo-400 pl-6 italic text-gray-700 bg-indigo-50 py-6 my-8 rounded-r-lg text-xl leading-relaxed">
+              <blockquote className="border-l-4 border-black pl-6 italic text-gray-700 py-6 my-8 text-xl leading-relaxed">
                 "We suffer more often in imagination than in reality."
                 <footer className="text-sm text-gray-600 mt-3 not-italic font-medium">— Seneca</footer>
               </blockquote>
@@ -440,19 +440,6 @@ export default function DailyStoicQuotesForAnxietyPage() {
             </nav>
           </article>
         </main>
-
-        <aside className="order-first lg:order-last">
-          <div className="sticky top-20 rounded-md border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-500" style={{ fontFamily: 'Inknut Antiqua, serif' }}>On this page</p>
-            <ul className="space-y-2 text-sm" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
-              <li><a className="text-gray-600 hover:text-gray-900 hover:underline transition-colors" href="#understanding-anxiety-through-stoic-philosophy">Understanding Anxiety</a></li>
-              <li><a className="text-gray-600 hover:text-gray-900 hover:underline transition-colors" href="#daily-stoic-quotes-for-anxiety-relief">Daily Quotes</a></li>
-              <li><a className="text-gray-600 hover:text-gray-900 hover:underline transition-colors" href="#practical-exercises-for-daily-application">Practical Exercises</a></li>
-              <li><a className="text-gray-600 hover:text-gray-900 hover:underline transition-colors" href="#common-challenges-and-solutions">Common Challenges</a></li>
-              <li><a className="text-gray-600 hover:text-gray-900 hover:underline transition-colors" href="#building-long-term-resilience">Building Resilience</a></li>
-            </ul>
-          </div>
-        </aside>
       </div>
     </div>
   )

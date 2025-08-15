@@ -3,10 +3,12 @@ import { toast } from '@/components/ui/use-toast'
 import { EntryList } from '@/components/journal/EntryList'
 import { JournalCalendarView } from '@/components/journal/JournalCalendarView'
 import { ViewToggle, ViewMode } from '@/components/journal/ViewToggle'
-import { JournalEntry } from '@/components/journal/types'
+import { JournalEntry, JournalTemplate, JournalBlock } from '@/components/journal/types'
 import { supabase } from '@/integrations/supabase/client'
 import { JournalSkeleton } from '@/components/journal/JournalSkeleton'
 import { useCachedJournal } from '@/hooks/useCachedJournal'
+import { TemplateGallery } from '@/components/journal/TemplateGallery'
+import { TemplateEditor } from '@/components/journal/TemplateEditor'
 
 // Lazy load the heavy JournalNavigation component (rich text editor)
 const JournalNavigation = lazy(() =>
@@ -24,6 +26,10 @@ export default function Journal(): JSX.Element {
   try {
     // View state management
     const [viewMode, setViewMode] = useState<ViewMode>('list')
+    
+    // Template system state
+    const [showTemplateGallery, setShowTemplateGallery] = useState(false)
+    const [showTemplateEditor, setShowTemplateEditor] = useState(false)
 
     // Use cache-aware journal hook
     const {
@@ -156,6 +162,125 @@ export default function Journal(): JSX.Element {
     [updateEntry]
   )
 
+  // Template system handlers
+  const handleOpenTemplates = useCallback(() => {
+    setShowTemplateGallery(true)
+  }, [])
+
+  const handleCloseTemplates = useCallback(() => {
+    setShowTemplateGallery(false)
+  }, [])
+
+  const handleOpenTemplateEditor = useCallback(() => {
+    setShowTemplateGallery(false)
+    setShowTemplateEditor(true)
+  }, [])
+
+  const handleCloseTemplateEditor = useCallback(() => {
+    setShowTemplateEditor(false)
+  }, [])
+
+  const handleApplyTemplate = useCallback(async (template: JournalTemplate) => {
+    if (!selectedEntry) {
+      toast({
+        title: 'No Entry Selected',
+        description: 'Please select or create a journal entry first.',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    try {
+      // Generate new IDs for template blocks to avoid conflicts
+      const templateBlocks: JournalBlock[] = template.template_content.blocks.map((block, index) => ({
+        ...block,
+        id: `template-${Date.now()}-${index}`,
+        createdAt: new Date()
+      }))
+
+      // Ensure selectedEntry.blocks exists, fallback to empty array
+      const currentBlocks = selectedEntry.blocks || []
+
+      // Check if the entry only has the initial empty block(s)
+      const hasOnlyInitialBlocks = currentBlocks.length <= 1 && 
+        currentBlocks.every(block => 
+          block.text.trim() === '' && 
+          (block.id.includes('initial') || block.type === 'paragraph')
+        )
+
+      let combinedBlocks: JournalBlock[]
+      
+      if (hasOnlyInitialBlocks) {
+        // Replace the empty initial block(s) with template blocks
+        combinedBlocks = templateBlocks
+      } else {
+        // Append template blocks to existing content
+        combinedBlocks = [...currentBlocks, ...templateBlocks]
+      }
+      
+      // Update the entry
+      await updateEntry(selectedEntry.id, combinedBlocks)
+      
+      toast({
+        title: 'Template Applied',
+        description: `"${template.name}" template has been added to your journal entry.`,
+      })
+    } catch (error) {
+      console.error('Failed to apply template:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to apply template. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }, [selectedEntry, updateEntry])
+
+  const handleSaveTemplate = useCallback(async (templateData: Omit<JournalTemplate, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'is_system'>) => {
+    try {
+      const response = await fetch('/api/templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(templateData)
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save template')
+      }
+
+      const { template } = await response.json()
+      console.log('Template saved:', template)
+      
+    } catch (error) {
+      console.error('Failed to save template:', error)
+      throw error
+    }
+  }, [])
+
+  const handleSaveToMyTemplates = useCallback(async (template: JournalTemplate) => {
+    try {
+      const response = await fetch(`/api/templates/${template.id}`, {
+        method: 'POST'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save template')
+      }
+
+      const { template: savedTemplate } = await response.json()
+      console.log('Template saved to my templates:', savedTemplate)
+      
+    } catch (error) {
+      console.error('Failed to save template to my templates:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to save template to your collection. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }, [])
+
   // Show loading state while entries are loading
   if (isLoadingEntries) {
     return <JournalSkeleton />
@@ -242,6 +367,8 @@ export default function Journal(): JSX.Element {
               onDeleteEntry={handleDeleteEntryWrapper}
               syncStatus={syncStatus === 'syncing' ? 'pending' : syncStatus}
               journalManager={journalManager}
+              hasOtherEntries={entries && entries.length > 1}
+              onOpenTemplates={handleOpenTemplates}
             />
           </Suspense>
         ) : (
@@ -262,6 +389,22 @@ export default function Journal(): JSX.Element {
           </div>
         )}
       </div>
+
+      {/* Template Gallery Modal */}
+      <TemplateGallery
+        isOpen={showTemplateGallery}
+        onClose={handleCloseTemplates}
+        onApplyTemplate={handleApplyTemplate}
+        onCreateTemplate={handleOpenTemplateEditor}
+        onSaveToMyTemplates={handleSaveToMyTemplates}
+      />
+
+      {/* Template Editor Modal */}
+      <TemplateEditor
+        isOpen={showTemplateEditor}
+        onClose={handleCloseTemplateEditor}
+        onSaveTemplate={handleSaveTemplate}
+      />
     </div>
   )
   } catch (error) {

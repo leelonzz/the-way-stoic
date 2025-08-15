@@ -3,6 +3,23 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getAllPhilosophers, getPhilosopherBiography, generatePhilosopherStructuredData } from '@/lib/philosopherData'
 
+// Helper function to render markdown-style bold text
+function renderBoldText(text: string): JSX.Element {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          const boldText = part.slice(2, -2)
+          return <strong key={index} className="font-semibold">{boldText}</strong>
+        }
+        return <span key={index}>{part}</span>
+      })}
+    </>
+  )
+}
+
 export async function generateStaticParams() {
   const philosophers = getAllPhilosophers()
   return philosophers.map((philosopher) => ({
@@ -125,47 +142,49 @@ export default async function BiographyPage({
                 </span>
               </div>
               
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 font-inknut">
                 {biography.h1 || biography.fullName}
               </h1>
               
               <div className="space-y-4 text-lg">
                 <div className="flex items-center gap-4">
-                  <span className="font-semibold text-gray-900">Name:</span>
-                  <span className="text-gray-700">{biography.fullName}</span>
+                  <span className="font-semibold text-gray-900 font-inknut">Name:</span>
+                  <span className="text-gray-700 font-poppins font-light">{biography.fullName}</span>
                 </div>
                 
                 <div className="flex items-center gap-4">
-                  <span className="font-semibold text-gray-900">Born:</span>
-                  <span className="text-gray-700">
+                  <span className="font-semibold text-gray-900 font-inknut">Born:</span>
+                  <span className="text-gray-700 font-poppins font-light">
                     {bornYear} in {biography.birthPlace}
                   </span>
                 </div>
                 
                 <div className="flex items-center gap-4">
-                  <span className="font-semibold text-gray-900">Died:</span>
-                  <span className="text-gray-700">{diedYear}</span>
+                  <span className="font-semibold text-gray-900 font-inknut">Died:</span>
+                  <span className="text-gray-700 font-poppins font-light">{diedYear}</span>
                 </div>
                 
                 <div className="flex items-start gap-4">
-                  <span className="font-semibold text-gray-900">Role:</span>
-                  <span className="text-gray-700">{biography.role}</span>
+                  <span className="font-semibold text-gray-900 font-inknut">Role:</span>
+                  <span className="text-gray-700 font-poppins font-light">{biography.role}</span>
                 </div>
               </div>
             </div>
             
             {/* Right Column - Image */}
             <div className="flex justify-center md:justify-end">
-              <div className="w-80 h-96 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg shadow-lg flex items-center justify-center">
-                {biography.slug === 'marcus-aurelius' ? (
-                  <div className="text-center p-6">
-                    <div className="w-24 h-24 bg-amber-200 rounded-full mx-auto mb-4 flex items-center justify-center">
-                      <span className="text-2xl font-bold text-amber-800">MA</span>
-                    </div>
-                    <p className="text-sm text-gray-600">Portrait of Marcus Aurelius</p>
-                    <p className="text-xs text-gray-500 mt-1">Roman Emperor & Philosopher</p>
-                  </div>
-                ) : (
+              {biography.slug === 'marcus-aurelius' ? (
+                <div className="relative w-80 h-96 rounded-lg shadow-lg overflow-hidden">
+                  <Image
+                    src="/images/philosophers/marcus-aurelius-portrait.jpg"
+                    alt="Marcus Aurelius portrait from Figma design"
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                </div>
+              ) : (
+                <div className="w-80 h-96 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg shadow-lg flex items-center justify-center">
                   <div className="text-center p-6">
                     <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
                       <span className="text-2xl font-bold text-gray-600">
@@ -174,14 +193,14 @@ export default async function BiographyPage({
                     </div>
                     <p className="text-sm text-gray-600">Portrait of {biography.name}</p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
           
           {/* Description */}
           <div className="mt-8">
-            <p className="text-xl text-gray-700 leading-relaxed">
+            <p className="text-xl text-gray-700 leading-relaxed font-poppins font-light">
               {biography.description}
             </p>
           </div>
@@ -194,16 +213,16 @@ export default async function BiographyPage({
             {/* Life Story Sections */}
             {biography.lifeStory.length > 0 && (
               <section className="mb-12">
-                <h2 className="text-3xl font-bold text-gray-900 mb-8">Life Story</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-8 font-inknut">Life Story</h2>
                 
                 {biography.lifeStory.map((section, index) => (
                   <div key={index} className="mb-8">
-                    <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+                    <h3 className="text-2xl font-semibold text-gray-800 mb-4 font-inknut">
                       {section.title}
                     </h3>
-                    <div className="text-gray-700 leading-relaxed space-y-4">
+                    <div className="text-gray-700 leading-relaxed space-y-4 font-poppins font-light">
                       {section.content.split('\n\n').map((paragraph, pIndex) => (
-                        <p key={pIndex}>{paragraph}</p>
+                        <p key={pIndex}>{renderBoldText(paragraph)}</p>
                       ))}
                     </div>
                   </div>
@@ -214,15 +233,15 @@ export default async function BiographyPage({
             {/* Philosophy & Quotes */}
             {biography.quotes.length > 0 && (
               <section className="mb-12">
-                <h2 className="text-3xl font-bold text-gray-900 mb-8">Key Quotes & Philosophy</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-8 font-inknut">Key Quotes & Philosophy</h2>
                 
                 <div className="space-y-8">
                   {biography.quotes.map((quote, index) => (
                     <div key={index} className="border-l-4 border-amber-500 pl-6">
-                      <blockquote className="text-xl font-medium text-gray-800 mb-4 italic">
+                      <blockquote className="text-xl font-medium text-gray-800 mb-4 italic font-inknut">
                         "{quote.text}"
                       </blockquote>
-                      <p className="text-gray-600 leading-relaxed">
+                      <p className="text-gray-600 leading-relaxed font-poppins font-light">
                         {quote.explanation}
                       </p>
                     </div>
@@ -233,17 +252,17 @@ export default async function BiographyPage({
 
             {/* Works & Influence */}
             <section className="mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">Works & Influence</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6 font-inknut">Works & Influence</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-3">Notable Works</h3>
-                  <p className="text-gray-700">{biography.notableWorks}</p>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-3 font-inknut">Notable Works</h3>
+                  <p className="text-gray-700 font-poppins font-light">{biography.notableWorks}</p>
                 </div>
                 
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-3">Influences</h3>
-                  <p className="text-gray-700">{biography.influences}</p>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-3 font-inknut">Influences</h3>
+                  <p className="text-gray-700 font-poppins font-light">{biography.influences}</p>
                 </div>
               </div>
             </section>
@@ -253,22 +272,22 @@ export default async function BiographyPage({
           <aside className="space-y-6">
             {/* Quick Facts */}
             <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Facts</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 font-inknut">Quick Facts</h3>
               
               <div className="space-y-3 text-sm">
                 <div>
-                  <span className="font-medium text-gray-600">School:</span>
-                  <span className="ml-2 text-gray-800">{biography.school}</span>
+                  <span className="font-medium text-gray-600 font-inknut">School:</span>
+                  <span className="ml-2 text-gray-800 font-poppins font-light">{biography.school}</span>
                 </div>
                 
                 <div>
-                  <span className="font-medium text-gray-600">Active Period:</span>
-                  <span className="ml-2 text-gray-800">{biography.activePeriod}</span>
+                  <span className="font-medium text-gray-600 font-inknut">Active Period:</span>
+                  <span className="ml-2 text-gray-800 font-poppins font-light">{biography.activePeriod}</span>
                 </div>
                 
                 <div>
-                  <span className="font-medium text-gray-600">Language:</span>
-                  <span className="ml-2 text-gray-800">{biography.primaryLanguage}</span>
+                  <span className="font-medium text-gray-600 font-inknut">Language:</span>
+                  <span className="ml-2 text-gray-800 font-poppins font-light">{biography.primaryLanguage}</span>
                 </div>
               </div>
             </div>
@@ -276,11 +295,11 @@ export default async function BiographyPage({
             {/* Related Philosophers */}
             {biography.relatedAuthors && (
               <div className="bg-amber-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Related Philosophers</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 font-inknut">Related Philosophers</h3>
                 
                 <div className="space-y-2 text-sm">
                   {biography.relatedAuthors.split(';').map((author, index) => (
-                    <div key={index} className="text-amber-800">
+                    <div key={index} className="text-amber-800 font-poppins font-light">
                       {author.trim()}
                     </div>
                   ))}
@@ -291,13 +310,13 @@ export default async function BiographyPage({
             {/* Tags */}
             {biography.popularTags && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Topics</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 font-inknut">Topics</h3>
                 
                 <div className="flex flex-wrap gap-2">
                   {biography.popularTags.split(';').map((tag, index) => (
                     <span 
                       key={index}
-                      className="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full"
+                      className="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full font-poppins font-light"
                     >
                       {tag.trim()}
                     </span>
@@ -307,6 +326,32 @@ export default async function BiographyPage({
             )}
           </aside>
         </div>
+
+        {/* Call to Action Section - Wider Layout */}
+        <section className="mt-16">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+              <div className="text-center">
+                <h3 className="text-2xl font-semibold text-gray-900 mb-3 font-inknut">
+                  Start your stoic journey today
+                </h3>
+                <p className="text-gray-600 text-lg mb-6 font-poppins">
+                  Begin your path to wisdom and inner peace
+                </p>
+
+                {/* Buttons */}
+                <div className="flex justify-center">
+                  <Link
+                    href="/?auth=true"
+                    className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white text-base font-medium rounded-lg transition-colors font-poppins inline-block text-center"
+                  >
+                    Start your journal
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Navigation */}
         <footer className="mt-12 pt-8 border-t border-gray-200">

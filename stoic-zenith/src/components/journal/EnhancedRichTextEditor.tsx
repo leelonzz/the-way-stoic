@@ -113,43 +113,31 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
       // Handle slash command detection and markdown shortcuts when text changes
       if (updates.text !== undefined) {
         const text = updates.text
-        const isSlashCommand = text.startsWith('/')
-        const isSplashCommand = text.startsWith('splash')
 
-        // Handle slash commands
-        if ((isSlashCommand || isSplashCommand) && !showCommandMenu) {
-          // Show command menu
-          const blockElement = document.querySelector(`[data-block-id="${blockId}"]`)
-          if (blockElement) {
-            const rect = blockElement.getBoundingClientRect()
+        // Handle slash commands (splash commands are now handled in SimplifiedRichTextEditor)
+        const isSlashCommand = text.startsWith('/')
+
+        if (isSlashCommand && !showCommandMenu) {
+          // Show command menu for slash commands
+          const blockWrapper = document.querySelector(`[data-block-id="${blockId}"]`)
+          if (blockWrapper) {
+            const rect = blockWrapper.getBoundingClientRect()
             setCommandMenuPosition({
               x: rect.left,
               y: rect.bottom + 5,
             })
 
-            // Extract search query based on trigger type
-            let searchQuery = ''
-            if (isSlashCommand) {
-              searchQuery = text.slice(1)
-            } else if (isSplashCommand) {
-              searchQuery = text.slice(6) // Remove "splash" (6 characters)
-            }
-
+            const searchQuery = text.slice(1)
             setSearchQuery(searchQuery)
             setActiveBlockId(blockId)
             setShowCommandMenu(true)
           }
-        } else if (!isSlashCommand && !isSplashCommand && showCommandMenu) {
-          // Hide command menu
+        } else if (!isSlashCommand && showCommandMenu && activeBlockId === blockId) {
+          // Hide command menu if no longer a slash command and this is the active block
           setShowCommandMenu(false)
-        } else if ((isSlashCommand || isSplashCommand) && showCommandMenu) {
-          // Update search query based on trigger type
-          let searchQuery = ''
-          if (isSlashCommand) {
-            searchQuery = text.slice(1)
-          } else if (isSplashCommand) {
-            searchQuery = text.slice(6) // Remove "splash" (6 characters)
-          }
+        } else if (isSlashCommand && showCommandMenu && activeBlockId === blockId) {
+          // Update search query for slash commands
+          const searchQuery = text.slice(1)
           setSearchQuery(searchQuery)
         }
         
@@ -1396,6 +1384,27 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
     [updateBlock]
   )
 
+  const handleSplashCommand = useCallback(
+    (blockId: string, searchQuery: string): void => {
+      console.log('🚀 Splash command triggered from SimplifiedRichTextEditor:', { blockId, searchQuery })
+
+      // Find the block element for positioning
+      const blockWrapper = document.querySelector(`[data-block-id="${blockId}"]`)
+      if (blockWrapper) {
+        const rect = blockWrapper.getBoundingClientRect()
+        setCommandMenuPosition({
+          x: rect.left,
+          y: rect.bottom + 5,
+        })
+
+        setSearchQuery(searchQuery)
+        setActiveBlockId(blockId)
+        setShowCommandMenu(true)
+      }
+    },
+    []
+  )
+
   const handleCommandSelect = useCallback(
     (command: CommandOption): void => {
       if (!activeBlockId) return
@@ -1513,6 +1522,7 @@ export const EnhancedRichTextEditor = React.memo(function EnhancedRichTextEditor
           block={block}
           onChange={updateBlock}
           onKeyDown={handleBlockKeyDown}
+          onSplashCommand={handleSplashCommand}
           placeholder={getPlaceholderForBlockType(block.type, index)}
           showPlaceholder={showPlaceholder}
         />

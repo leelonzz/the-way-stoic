@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useCallback, useEffect } from 'react'
 import { useQuoteSession } from './useQuoteSession'
+import { quotePrefetchService } from '@/services/quotePrefetchService'
 import { supabase } from '@/integrations/supabase/client'
 import type { User } from '@supabase/supabase-js'
 import type { StoicQuote } from '@/services/stoicQuoteApi'
@@ -37,10 +38,11 @@ export function useCachedQuotes(user: User | null) {
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  // Use the quote session hook for API-driven quotes
+  // Use the quote session hook for API-driven quotes with pre-fetching
   const quoteSession = useQuoteSession({
-    maxSessionQuotes: 50,
-    maxReloadsPerDay: 10
+    maxSessionQuotes: 200, // Increased to handle pre-fetched quotes
+    maxReloadsPerDay: 10,
+    backgroundFetchThreshold: 10 // Trigger background fetch when 10 quotes remaining
   })
 
   // Create a quotes array from session data for compatibility
@@ -174,12 +176,18 @@ export function useCachedQuotes(user: User | null) {
     }
   }, [user])
 
-  // Force refresh function - now refreshes session and saved quotes
+  // Force refresh function - clears cache and pre-fetched quotes, refreshes everything
   const forceRefresh = async () => {
+    console.log('[CachedQuotes] Force refresh triggered - clearing all caches')
     quoteSession.clearSession()
+    quotePrefetchService.clearCache()
     if (user) {
       await fetchSavedQuotes()
     }
+    // Trigger fresh pre-fetch after clearing
+    quotePrefetchService.backgroundFetch().catch(error => {
+      console.warn('[CachedQuotes] Background pre-fetch after force refresh failed:', error)
+    })
   }
 
   // Fetch saved quotes when user changes
@@ -432,6 +440,13 @@ export function useCachedQuotes(user: User | null) {
     // Additional useful properties
     isCached: quotes.length > 0 && !quoteSession.isLoading,
     lastUpdated: quoteSession.lastFetchTime,
+    // Pre-fetch service status
+    prefetchStatus: quotePrefetchService.getStatus(),
+    triggerPrefetch: () => {
+      quotePrefetchService.backgroundFetch().catch(error => {
+        console.warn('[CachedQuotes] Manual pre-fetch failed:', error)
+      })
+    },
   }
 }
 

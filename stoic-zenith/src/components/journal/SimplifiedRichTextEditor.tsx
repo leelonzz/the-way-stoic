@@ -7,6 +7,8 @@ interface SimplifiedRichTextEditorProps {
   block: JournalBlock
   onChange: (blockId: string, updates: Partial<JournalBlock>) => void
   onKeyDown?: (e: KeyboardEvent, blockId: string) => void
+  onSplashCommand?: (blockId: string, searchQuery: string) => void // NEW PROP for splash command
+  onSplashCommandHide?: (blockId: string) => void // NEW PROP to hide splash command
   className?: string
   placeholder?: string
   showPlaceholder?: boolean // NEW PROP
@@ -77,6 +79,7 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
   block,
   onChange,
   onKeyDown,
+  onSplashCommand,
   className = '',
   placeholder = 'Type something...',
   showPlaceholder = true, // default true for backward compatibility
@@ -131,6 +134,63 @@ export const SimplifiedRichTextEditor = React.memo(function SimplifiedRichTextEd
     setTimeout(() => {
       isUserEditingRef.current = false
     }, 500) // Increased from 100ms to prevent cursor loss
+
+    // Check for splash command on current line
+    if (onSplashCommand && editorRef.current) {
+      const selection = window.getSelection()
+      if (selection && selection.rangeCount > 0) {
+        try {
+          const range = selection.getRangeAt(0)
+          const fullText = editorRef.current.textContent || ''
+
+          // Get cursor position in the text
+          const preCaretRange = range.cloneRange()
+          preCaretRange.selectNodeContents(editorRef.current)
+          preCaretRange.setEnd(range.startContainer, range.startOffset)
+          const caretPosition = preCaretRange.toString().length
+
+          // Find the current line by looking for line breaks
+          const textBeforeCaret = fullText.substring(0, caretPosition)
+          const textAfterCaret = fullText.substring(caretPosition)
+
+          // Find the last line break before cursor (or start of text)
+          const lastLineBreakBefore = textBeforeCaret.lastIndexOf('\n')
+          const lineStart = lastLineBreakBefore === -1 ? 0 : lastLineBreakBefore + 1
+
+          // Find the next line break after cursor (or end of text)
+          const nextLineBreakAfter = textAfterCaret.indexOf('\n')
+          const lineEnd = nextLineBreakAfter === -1 ? fullText.length : caretPosition + nextLineBreakAfter
+
+          // Extract current line text
+          const currentLineText = fullText.substring(lineStart, lineEnd)
+
+          // Check if current line starts with splash
+          if (currentLineText.toLowerCase().startsWith('splash')) {
+            const searchQuery = currentLineText.slice(6) // Remove "splash" (6 characters)
+            console.log('🎯 Splash command detected in SimplifiedRichTextEditor:', {
+              blockId: block.id,
+              currentLineText,
+              searchQuery,
+              fullText,
+              caretPosition
+            })
+            onSplashCommand(block.id, searchQuery)
+          }
+        } catch (error) {
+          console.warn('Error detecting splash command:', error)
+        }
+      }
+    }
+
+    // Debug logging for splash command
+    if (text.includes('splash')) {
+      console.log('📝 SimplifiedRichTextEditor input:', {
+        blockId: block.id,
+        text,
+        html,
+        blockType: block.type
+      })
+    }
 
     // Always call onChange for immediate autosave and state sync
     onChange(block.id, {

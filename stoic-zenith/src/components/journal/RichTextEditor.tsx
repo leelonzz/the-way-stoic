@@ -218,8 +218,52 @@ export function RichTextEditor({
       updateBlock(blockId, { text })
 
       // Handle slash commands and splash commands
-      const isSlashCommand = text.startsWith('/')
-      const isSplashCommand = text.toLowerCase().startsWith('splash')
+      // Get current line text for line-based command detection
+      const selection = window.getSelection()
+      let currentLineText = text
+
+      // Find the actual contenteditable element
+      let contentEditableElement: HTMLElement | null = target
+
+      // If target is not contenteditable, look for one within it
+      if (target && !target.hasAttribute('contenteditable')) {
+        contentEditableElement = target.querySelector('[contenteditable="true"]') as HTMLElement
+      }
+
+      // If we have selection and contenteditable element, try to get the current line
+      if (selection && selection.rangeCount > 0 && contentEditableElement) {
+        try {
+          const range = selection.getRangeAt(0)
+          const fullText = contentEditableElement.textContent || ''
+
+          // Get cursor position in the text
+          const preCaretRange = range.cloneRange()
+          preCaretRange.selectNodeContents(contentEditableElement)
+          preCaretRange.setEnd(range.startContainer, range.startOffset)
+          const caretPosition = preCaretRange.toString().length
+
+          // Find the current line by looking for line breaks
+          const textBeforeCaret = fullText.substring(0, caretPosition)
+          const textAfterCaret = fullText.substring(caretPosition)
+
+          // Find the last line break before cursor (or start of text)
+          const lastLineBreakBefore = textBeforeCaret.lastIndexOf('\n')
+          const lineStart = lastLineBreakBefore === -1 ? 0 : lastLineBreakBefore + 1
+
+          // Find the next line break after cursor (or end of text)
+          const nextLineBreakAfter = textAfterCaret.indexOf('\n')
+          const lineEnd = nextLineBreakAfter === -1 ? fullText.length : caretPosition + nextLineBreakAfter
+
+          // Extract current line text
+          currentLineText = fullText.substring(lineStart, lineEnd)
+        } catch (error) {
+          // Fallback to full text if line detection fails
+          currentLineText = text
+        }
+      }
+
+      const isSlashCommand = currentLineText.startsWith('/')
+      const isSplashCommand = currentLineText.toLowerCase().startsWith('splash')
       
       if ((isSlashCommand || isSplashCommand) && !showCommandMenu) {
         const rect = target.getBoundingClientRect()
@@ -231,9 +275,9 @@ export function RichTextEditor({
         // Extract search query based on trigger type
         let searchQuery = ''
         if (isSlashCommand) {
-          searchQuery = text.slice(1)
+          searchQuery = currentLineText.slice(1)
         } else if (isSplashCommand) {
-          searchQuery = text.slice(6) // Remove "splash" (6 characters)
+          searchQuery = currentLineText.slice(6) // Remove "splash" (6 characters)
         }
         
         setSearchQuery(searchQuery)
@@ -245,9 +289,9 @@ export function RichTextEditor({
         // Update search query based on trigger type
         let searchQuery = ''
         if (isSlashCommand) {
-          searchQuery = text.slice(1)
+          searchQuery = currentLineText.slice(1)
         } else if (isSplashCommand) {
-          searchQuery = text.slice(6) // Remove "splash" (6 characters)
+          searchQuery = currentLineText.slice(6) // Remove "splash" (6 characters)
         }
         setSearchQuery(searchQuery)
       }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import { quotePrefetchService } from '@/services/quotePrefetchService';
 
 interface TabVisibilityState {
   isVisible: boolean;
@@ -17,6 +18,7 @@ interface UseTabVisibilityOptions {
   refreshThreshold?: number; // milliseconds
   enableLogging?: boolean;
   trackNavigation?: boolean; // Track SPA navigation
+  enableBackgroundPrefetch?: boolean; // Enable background pre-fetching
 }
 
 interface UseTabVisibilityReturn extends TabVisibilityState {
@@ -60,6 +62,12 @@ const handleGlobalVisibilityChange = async (): Promise<void> => {
     // Tab became visible - calculate actual hidden duration
     wasHiddenDuration = now - hiddenStartTime;
     hiddenStartTime = null;
+    
+    // Trigger background pre-fetching when tab becomes visible
+    console.log('[TabVisibility] Tab became visible, triggering background pre-fetch')
+    quotePrefetchService.backgroundFetch().catch(error => {
+      console.warn('[TabVisibility] Background pre-fetch failed:', error)
+    })
   }
 
   globalVisibilityState = {
@@ -67,7 +75,6 @@ const handleGlobalVisibilityChange = async (): Promise<void> => {
     lastVisibilityChange: now,
     wasHiddenDuration
   };
-
 
   // Execute callbacks based on visibility change
   const callbackPromises: Promise<void>[] = [];
@@ -156,7 +163,12 @@ const handleNavigationChange = async (pathname: string): Promise<void> => {
 export function useTabVisibility(
   options: UseTabVisibilityOptions = {}
 ): UseTabVisibilityReturn {
-  const { refreshThreshold = 2000, enableLogging = true, trackNavigation = true } = options;
+  const { 
+    refreshThreshold = 2000, 
+    enableLogging = true, 
+    trackNavigation = true,
+    enableBackgroundPrefetch = true
+  } = options;
   const [state, setState] = useState<TabVisibilityState>(globalVisibilityState);
   const callbackIdRef = useRef<string>(`tab-visibility-${Date.now()}-${Math.random()}`);
   const pathname = usePathname();

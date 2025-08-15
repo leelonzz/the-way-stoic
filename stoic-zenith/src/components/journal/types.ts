@@ -58,3 +58,26 @@ export interface CommandOption {
   level?: number
   icon: string
 }
+
+// Template-related types
+export interface JournalTemplate {
+  id: string
+  user_id?: string
+  name: string
+  description?: string
+  category: 'getting_started' | 'reflections' | 'custom'
+  icon: string
+  template_content: {
+    blocks: JournalBlock[]
+  }
+  is_system: boolean
+  created_at: Date
+  updated_at: Date
+}
+
+export interface TemplateCategory {
+  id: string
+  name: string
+  description: string
+  templates: JournalTemplate[]
+}

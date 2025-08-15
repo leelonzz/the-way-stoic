@@ -332,7 +332,7 @@ export const useAuth = (): AuthState & {
 
     const initializeAuth = async (): Promise<void> => {
       const timeouts = getTimeouts()
-      const timeoutId: NodeJS.Timeout | null = null
+      let timeoutId: NodeJS.Timeout | null = null
 
       try {
         // Check if user was previously authenticated
@@ -344,12 +344,30 @@ export const useAuth = (): AuthState & {
         // Always start with loading true to prevent login screen flash
         setAuthState(prev => ({ ...prev, loading: true }))
 
+        // Create a timeout promise to prevent infinite loading
+        const timeoutPromise = new Promise<void>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            console.warn(`⏱️ Auth initialization timeout after ${timeouts.authInit}ms`)
+            reject(new Error(`Auth initialization timeout after ${timeouts.authInit}ms`))
+          }, timeouts.authInit)
+        })
+
         // Try to get session first (faster than getUser)
         const sessionPromise = supabase.auth.getSession()
-        
-        // Check session immediately without timeout for production
-        const authPromise = sessionPromise
-          .then(async result => {
+
+        // Race between auth promise and timeout
+        const authPromise = Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]).then(async (result: any) => {
+          // Clear timeout on successful completion
+          if (timeoutId) {
+            clearTimeout(timeoutId)
+            timeoutId = null
+          }
+
+          // Handle the result if it's not from timeout
+          if (result && typeof result === 'object' && 'data' in result) {
             if (mounted && mountedRef.current) {
               const session = result?.data?.session
               const user = session?.user
@@ -431,9 +449,16 @@ export const useAuth = (): AuthState & {
                 setAuthState(prev => ({ ...prev, loading: false }))
               }
             }
-          })
-          .catch((error: unknown) => {
+          }
+        })
+        .catch((error: unknown) => {
             debugLog.auth.warn('Auth check failed:', error)
+
+            // Clear timeout on error
+            if (timeoutId) {
+              clearTimeout(timeoutId)
+              timeoutId = null
+            }
 
             if (mounted && mountedRef.current) {
               const errorMessage =
@@ -442,8 +467,10 @@ export const useAuth = (): AuthState & {
                 errorMessage?.includes('401') ||
                 errorMessage?.includes('403') ||
                 errorMessage?.includes('Invalid token')
+              const isTimeoutError = errorMessage?.includes('timeout')
 
               if (isAuthError) {
+                console.warn('🔐 Auth error detected, clearing session')
                 localStorage.removeItem('was-authenticated')
                 setAuthState({
                   user: null,
@@ -452,8 +479,13 @@ export const useAuth = (): AuthState & {
                   loading: false,
                   error: null,
                 })
+              } else if (isTimeoutError) {
+                console.warn('⏱️ Auth initialization timeout, stopping loading')
+                // Don't clear was-authenticated for timeout - might be temporary
+                setAuthState(prev => ({ ...prev, loading: false }))
               } else {
-                // Network/timeout error - just stop loading
+                // Network/other error - just stop loading
+                console.warn('🌐 Network/other error during auth, stopping loading')
                 setAuthState(prev => ({ ...prev, loading: false }))
               }
             }
@@ -579,10 +611,19 @@ export const useAuth = (): AuthState & {
       }
     })
 
+    // Final safety timeout - ensure loading never gets stuck indefinitely
+    const safetyTimeoutId = setTimeout(() => {
+      if (mounted && authState.loading) {
+        console.warn('🚨 Safety timeout reached - forcing loading to false')
+        setAuthState(prev => ({ ...prev, loading: false }))
+      }
+    }, getTimeouts().loadingScreen) // Use the loading screen timeout from environment
+
     return (): void => {
       mounted = false
       initializingRef.current = false
       subscription.unsubscribe()
+      clearTimeout(safetyTimeoutId)
     }
   }, [updateAuthState, setError, isClient, getCachedProfile, setCachedProfile])
 

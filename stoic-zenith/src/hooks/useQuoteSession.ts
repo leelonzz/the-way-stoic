@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { stoicQuoteApi, type StoicQuote, FALLBACK_QUOTES } from '@/services/stoicQuoteApi'
+import { quotePrefetchService } from '@/services/quotePrefetchService'
 
 interface QuoteSessionData {
   quotes: StoicQuote[]
@@ -332,7 +333,7 @@ export function useQuoteSession(options: QuoteSessionOptions = {}) {
     return sessionDate === todayKey
   }, [getTodayKey])
 
-  // Initialize session with daily first quote or fetch new one
+  // Initialize session with pre-fetched quotes first, then daily quote
   const initializeSession = useCallback(async () => {
     if (isInitialized.current) return
 
@@ -360,6 +361,11 @@ export function useQuoteSession(options: QuoteSessionOptions = {}) {
           reloadCount, // Update reload count from localStorage
           lastFetchTime: Date.now()
         }))
+        
+        // Trigger background pre-fetching to ensure we have fresh quotes
+        quotePrefetchService.backgroundFetch().catch(error => {
+          console.warn('[useQuoteSession] Background pre-fetch failed:', error)
+        })
         return
       }
 
@@ -373,13 +379,47 @@ export function useQuoteSession(options: QuoteSessionOptions = {}) {
           reloadCount,
           lastFetchTime: Date.now()
         }))
+        
+        // Trigger background pre-fetching for fresh quotes
+        quotePrefetchService.backgroundFetch().catch(error => {
+          console.warn('[useQuoteSession] Background pre-fetch failed:', error)
+        })
         return
       }
 
       // Session is either empty or from previous day, need to initialize/reset
       console.log('[useQuoteSession] Session empty or from previous day, initializing...')
       
-      // Load daily first quote
+      // FIRST: Try to load pre-fetched quotes from the pre-fetch service
+      try {
+        console.log('[useQuoteSession] Attempting to load pre-fetched quotes...')
+        const prefetchedQuotes = await quotePrefetchService.getPrefetchedQuotes()
+        
+        if (prefetchedQuotes && prefetchedQuotes.length > 0) {
+          console.log(`[useQuoteSession] Loaded ${prefetchedQuotes.length} pre-fetched quotes`)
+          const reloadCount = loadReloadCount()
+          
+          // Use first pre-fetched quote as daily quote
+          const firstQuote = prefetchedQuotes[0]
+          saveDailyFirstQuote(firstQuote)
+          
+          updateSessionData(prev => ({
+            ...prev,
+            quotes: prefetchedQuotes,
+            currentIndex: 0,
+            dailyFirstQuote: firstQuote,
+            reloadCount,
+            sessionStartTime: Date.now(),
+            lastFetchTime: Date.now()
+          }))
+          return
+        }
+      } catch (prefetchError) {
+        console.warn('[useQuoteSession] Pre-fetch service failed:', prefetchError)
+        // Continue with fallback logic
+      }
+      
+      // FALLBACK: Load daily first quote from storage or fetch from API
       const dailyFirstQuote = loadDailyFirstQuote()
       const reloadCount = loadReloadCount()
 
@@ -417,6 +457,12 @@ export function useQuoteSession(options: QuoteSessionOptions = {}) {
           }))
         }
       }
+      
+      // Start background pre-fetching for future quotes
+      quotePrefetchService.backgroundFetch().catch(error => {
+        console.warn('[useQuoteSession] Initial background pre-fetch failed:', error)
+      })
+      
     } catch (error) {
       console.error('Failed to initialize quote session:', error)
       setError('Failed to load quotes')
@@ -446,7 +492,7 @@ export function useQuoteSession(options: QuoteSessionOptions = {}) {
     return sessionData.quotes[index] || null
   }, [sessionData.quotes, sessionData.currentIndex])
 
-  // Navigate to next quote (fetch new if needed)
+  // Navigate to next quote (use pre-fetched quotes first, then fetch from API)
   const goToNext = useCallback(async (): Promise<boolean> => {
     console.log('[useQuoteSession] goToNext called, current index:', sessionData.currentIndex)
     const nextIndex = sessionData.currentIndex + 1
@@ -455,6 +501,16 @@ export function useQuoteSession(options: QuoteSessionOptions = {}) {
     if (nextIndex < sessionData.quotes.length) {
       console.log('[useQuoteSession] Using existing quote at index', nextIndex)
       updateSessionData(prev => ({ ...prev, currentIndex: nextIndex }))
+      
+      // Trigger background pre-fetch when running low on quotes
+      const remainingQuotes = sessionData.quotes.length - nextIndex - 1
+      if (remainingQuotes <= opts.backgroundFetchThreshold) {
+        console.log(`[useQuoteSession] Running low on quotes (${remainingQuotes} remaining), triggering background fetch`)
+        quotePrefetchService.backgroundFetch().catch(error => {
+          console.warn('[useQuoteSession] Background pre-fetch failed:', error)
+        })
+      }
+      
       return true
     }
     
@@ -464,7 +520,37 @@ export function useQuoteSession(options: QuoteSessionOptions = {}) {
       return false
     }
     
-    // Fetch a new quote
+    // Try to get quotes from pre-fetch service first
+    console.log('[useQuoteSession] No more quotes in session, checking pre-fetch service...')
+    try {
+      const prefetchedQuotes = await quotePrefetchService.getPrefetchedQuotes()
+      
+      // Filter out quotes we already have
+      const newQuotesFromPrefetch = prefetchedQuotes.filter(prefetchedQuote => 
+        !sessionData.quotes.some(existingQuote => 
+          existingQuote.id === prefetchedQuote.id ||
+          (existingQuote.text === prefetchedQuote.text && existingQuote.author === prefetchedQuote.author)
+        )
+      )
+      
+      if (newQuotesFromPrefetch.length > 0) {
+        console.log(`[useQuoteSession] Adding ${newQuotesFromPrefetch.length} pre-fetched quotes to session`)
+        
+        // Add new quotes and move to the first new one
+        updateSessionData(prev => ({
+          ...prev,
+          quotes: [...prev.quotes, ...newQuotesFromPrefetch.slice(0, Math.min(10, newQuotesFromPrefetch.length))], // Add up to 10 quotes at a time
+          currentIndex: prev.quotes.length, // Point to the first new quote
+          lastFetchTime: Date.now()
+        }))
+        
+        return true
+      }
+    } catch (error) {
+      console.warn('[useQuoteSession] Pre-fetch service failed, falling back to API:', error)
+    }
+    
+    // Fallback: Fetch a single quote from API
     console.log('[useQuoteSession] Fetching new quote from API...')
     setIsLoading(true)
     try {
@@ -490,7 +576,7 @@ export function useQuoteSession(options: QuoteSessionOptions = {}) {
     } finally {
       setIsLoading(false)
     }
-  }, [sessionData.currentIndex, sessionData.quotes.length, opts.maxSessionQuotes, updateSessionData, fetchNewQuote])
+  }, [sessionData.currentIndex, sessionData.quotes.length, opts.maxSessionQuotes, opts.backgroundFetchThreshold, updateSessionData, fetchNewQuote])
 
   // Navigate to previous quote
   const goToPrevious = useCallback((): boolean => {

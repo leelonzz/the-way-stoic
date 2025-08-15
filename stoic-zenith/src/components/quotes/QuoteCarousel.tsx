@@ -135,10 +135,10 @@ export function QuoteCarousel({
     const handleKeyPress = (event: KeyboardEvent): void => {
       if (event.key === 'ArrowLeft') {
         event.preventDefault()
-        handleNext()
+        handlePrevious()
       } else if (event.key === 'ArrowRight') {
         event.preventDefault()
-        handlePrevious()
+        handleNext()
       }
     }
 
@@ -168,9 +168,9 @@ export function QuoteCarousel({
       // Only trigger swipe if horizontal movement is greater than vertical
       if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
         if (diffX > 0) {
-          handlePrevious() // Swipe left = previous
+          handleNext() // Swipe left = next
         } else {
-          handleNext() // Swipe right = next
+          handlePrevious() // Swipe right = previous
         }
       }
 
@@ -261,29 +261,25 @@ export function QuoteCarousel({
 
   return (
     <div className="fixed inset-0 bg-hero">
-      {/* Left Navigation Arrow - Now goes to Next */}
+      {/* Left Navigation Arrow - Goes to Previous */}
       <Button
         variant="default"
         size="lg"
-        onClick={handleNext}
-        disabled={isTransitioning || externalLoading || (!canGoNext && !isUsingApiQuotes)}
+        onClick={handlePrevious}
+        disabled={isTransitioning || externalLoading || !canGoPrevious}
         className={`fixed left-72 top-1/2 -translate-y-1/2 p-3 rounded-full shadow-lg transition-all duration-200 z-50 ${
-          (!canGoNext && !isUsingApiQuotes)
+          !canGoPrevious
             ? 'bg-stone/30 text-stone/50 cursor-not-allowed opacity-30' 
             : 'bg-stone hover:bg-stone/80 text-white'
         }`}
-        aria-label={canGoNext || isUsingApiQuotes ? "Next quote" : "At last quote"}
-        title={canGoNext || isUsingApiQuotes ? "Go to next quote" : "You're at the last quote"}
+        aria-label={canGoPrevious ? "Previous quote" : "At first quote"}
+        title={canGoPrevious ? "Go to previous quote" : "You're at the first quote"}
         style={{
           minWidth: '56px',
           minHeight: '56px'
         }}
       >
-        {isUsingApiQuotes && quoteSession?.isLoading ? (
-          <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full" />
-        ) : (
-          <ChevronLeft className="w-8 h-8" />
-        )}
+        <ChevronLeft className="w-8 h-8" />
       </Button>
 
       {/* Quote Content - Perfectly Centered with smooth transition */}
@@ -316,25 +312,29 @@ export function QuoteCarousel({
         </div>
       </div>
 
-      {/* Right Navigation Arrow - Now goes to Previous */}
+      {/* Right Navigation Arrow - Goes to Next */}
       <Button
         variant="default"
         size="lg"
-        onClick={handlePrevious}
-        disabled={isTransitioning || externalLoading || !canGoPrevious}
+        onClick={handleNext}
+        disabled={isTransitioning || externalLoading || (!canGoNext && !isUsingApiQuotes)}
         className={`fixed right-4 md:right-8 top-1/2 -translate-y-1/2 p-3 rounded-full shadow-lg transition-all duration-200 z-50 ${
-          !canGoPrevious 
+          (!canGoNext && !isUsingApiQuotes)
             ? 'bg-stone/30 text-stone/50 cursor-not-allowed opacity-30' 
             : 'bg-stone hover:bg-stone/80 text-white'
         }`}
-        aria-label={canGoPrevious ? "Previous quote" : "At first quote"}
-        title={canGoPrevious ? "Go to previous quote" : "You're at the first quote"}
+        aria-label={canGoNext || isUsingApiQuotes ? "Next quote" : "At last quote"}
+        title={canGoNext || isUsingApiQuotes ? "Go to next quote" : "You're at the last quote"}
         style={{
           minWidth: '56px',
           minHeight: '56px'
         }}
       >
-        <ChevronRight className="w-8 h-8" />
+        {isUsingApiQuotes && quoteSession?.isLoading ? (
+          <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full" />
+        ) : (
+          <ChevronRight className="w-8 h-8" />
+        )}
       </Button>
 
       {/* Bottom Controls */}

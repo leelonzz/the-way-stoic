@@ -24,6 +24,7 @@ export default {
 				'serif': ['Crimson Text', 'Georgia', 'serif'],
 				'inknut': ['var(--font-inknut-antiqua)', 'serif'],
 				'inika': ['var(--font-inika)', 'serif'],
+				'poppins': ['var(--font-poppins)', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',

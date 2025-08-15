@@ -192,22 +192,37 @@ export const JournalCalendarView: React.FC<JournalCalendarViewProps> = ({
           </div>
         ) : (
           <div className="p-3 space-y-2">
-            {entriesForSelectedDate.map((entry, index) => (
-              <div
-                key={entry.id}
-                className="group relative"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <EntryListItem
-                  entry={entry}
-                  isSelected={selectedEntry?.id === entry.id}
-                  onSelect={() => onSelectEntry(entry)}
-                  onDelete={() => handleDeleteEntry(entry.id)}
-                  dateLabel={format(new Date(entry.createdAt), 'h:mm a')}
-                  showDeleteButton={showDeleteButton}
-                />
-              </div>
-            ))}
+            {entriesForSelectedDate.map((entry, index) => {
+              // Generate preview from entry blocks
+              const contentParts = entry.blocks
+                .map(block => block.text?.trim())
+                .filter(Boolean);
+              
+              const fullText = contentParts.join(' ');
+              const preview = fullText.length > 0 ? fullText.slice(0, 80) : '';
+              
+              const entryWithPreview = {
+                ...entry,
+                preview
+              };
+
+              return (
+                <div
+                  key={entry.id}
+                  className="group relative"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <EntryListItem
+                    entry={entryWithPreview}
+                    isSelected={selectedEntry?.id === entry.id}
+                    onSelect={() => onSelectEntry(entry)}
+                    onDelete={() => handleDeleteEntry(entry.id)}
+                    dateLabel={format(new Date(entry.createdAt), 'h:mm a')}
+                    showDeleteButton={showDeleteButton}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

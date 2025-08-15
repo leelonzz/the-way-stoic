@@ -1,20 +1,29 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
-import { Inknut_Antiqua, Inika } from 'next/font/google'
+import { Inknut_Antiqua, Inika, Poppins } from 'next/font/google'
 import './globals.css'
 import { ClientProviders } from '@/components/providers/ClientProviders'
 
 const inknutAntiqua = Inknut_Antiqua({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '600'], // Reduced weights for faster loading
   variable: '--font-inknut-antiqua',
+  display: 'swap', // Fast text rendering
 })
 
 const inika = Inika({
   subsets: ['latin'],
   weight: ['400', '700'],
   variable: '--font-inika',
+  display: 'swap',
+})
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['300', '400', '600'], // Reduced weights for faster loading
+  variable: '--font-poppins',
+  display: 'swap',
 })
 
 
@@ -82,23 +91,6 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/logo-icon.png" />
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
-        <link
-          rel="preconnect"
-          href="https://fonts.googleapis.com"
-        />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin=""
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inknut+Antiqua:wght@300;400;500;600;700&display=swap"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inika:wght@400;700&display=swap"
-        />
         <style>{`
 html {
   font-family: ${GeistSans.style.fontFamily};
@@ -106,11 +98,12 @@ html {
   --font-mono: ${GeistMono.variable};
   --font-inknut-antiqua: ${inknutAntiqua.style.fontFamily};
   --font-inika: ${inika.style.fontFamily};
+  --font-poppins: ${poppins.style.fontFamily};
 }
         `}</style>
       </head>
       <body
-        className={`${GeistSans.variable} ${GeistMono.variable} ${inknutAntiqua.variable} ${inika.variable}`}
+        className={`${GeistSans.variable} ${GeistMono.variable} ${inknutAntiqua.variable} ${inika.variable} ${poppins.variable}`}
       >
         <ClientProviders>
           {children}
