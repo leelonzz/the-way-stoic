@@ -300,7 +300,7 @@ export class RealTimeJournalManager {
 
     // Sync when user navigates away (for SPA navigation)
     if ('navigation' in window) {
-      // @ts-ignore - Navigation API is experimental
+      // @ts-expect-error - Navigation API is experimental
       window.navigation.addEventListener('navigate', () => {
         if (this.syncQueue.size > 0) {
           this.syncWithBeacon();
@@ -389,7 +389,7 @@ export class RealTimeJournalManager {
       // Register for background sync if available
       if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
         navigator.serviceWorker.ready.then(registration => {
-          // @ts-ignore - Background Sync API is experimental
+          // @ts-expect-error - Background Sync API is experimental
           return registration.sync.register('journal-sync');
         }).catch(error => {
           console.warn('Background sync registration failed:', error);
@@ -1025,9 +1025,7 @@ export class RealTimeJournalManager {
       // Get deleted entries list for filtering
       const deletedEntries = this.getDeletedEntriesWithTimestamps();
       const deletedIds = Object.keys(deletedEntries);
-      
-      if (deletedIds.length > 0) {
-      }
+      // Note: if there are deleted IDs, filtering below will exclude them
       
       // Filter out any entries that are marked as deleted (extra safety)
       const nonDeletedEntries = entries.filter((entry: JournalEntry) => {
@@ -1431,7 +1429,6 @@ export class RealTimeJournalManager {
           const deletedEntries = parsed as Record<string, number>;
           return deletedEntries;
         }
-      } else {
       }
     } catch (error) {
       console.warn('Failed to get deleted entries:', error);
@@ -1505,13 +1502,11 @@ export class RealTimeJournalManager {
         if (deletedAt < cutoffTime) {
           delete deletedEntries[entryId];
           cleanedCount++;
-        } else {
         }
       });
 
       if (cleanedCount > 0) {
         localStorage.setItem(this.deletedEntriesKey, JSON.stringify(deletedEntries));
-      } else {
       }
     } catch (error) {
       console.warn('Failed to cleanup old deleted entries:', error);

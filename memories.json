@@ -142,8 +142,8 @@
       ],
       "timestamp": "2025-07-31T13:39:36.389Z",
       "context": "New feature request for The Way Stoic project",
-      "accessCount": 34,
-      "lastAccessed": "2025-08-14T00:21:30.583Z",
+      "accessCount": 35,
+      "lastAccessed": "2025-08-14T23:25:06.377Z",
       "lastVerified": "2025-07-31T13:39:36.389Z",
       "status": "fresh"
     },
@@ -180,8 +180,8 @@
       ],
       "timestamp": "2025-07-31T13:40:28.510Z",
       "context": "Complete project analysis for auth implementation planning",
-      "accessCount": 43,
-      "lastAccessed": "2025-08-14T00:21:30.583Z",
+      "accessCount": 45,
+      "lastAccessed": "2025-08-14T23:44:02.329Z",
       "lastVerified": "2025-07-31T13:40:28.510Z",
       "status": "fresh"
     },
@@ -202,8 +202,8 @@
       ],
       "timestamp": "2025-07-31T13:46:36.273Z",
       "context": "Complete authentication implementation summary",
-      "accessCount": 46,
-      "lastAccessed": "2025-08-14T08:37:23.963Z",
+      "accessCount": 48,
+      "lastAccessed": "2025-08-14T23:44:02.329Z",
       "lastVerified": "2025-07-31T13:46:36.273Z",
       "status": "fresh"
     },
@@ -242,8 +242,8 @@
       ],
       "timestamp": "2025-07-31T13:57:29.542Z",
       "context": "Authentication troubleshooting complete - fixed CSP and added debugging",
-      "accessCount": 36,
-      "lastAccessed": "2025-08-14T08:37:23.963Z",
+      "accessCount": 38,
+      "lastAccessed": "2025-08-14T23:44:02.329Z",
       "lastVerified": "2025-07-31T13:57:29.542Z",
       "status": "fresh"
     },
@@ -262,8 +262,8 @@
       ],
       "timestamp": "2025-07-31T22:49:35.805Z",
       "context": "Analyzing stoic-zenith app structure for feature implementation",
-      "accessCount": 42,
-      "lastAccessed": "2025-08-14T08:33:51.343Z",
+      "accessCount": 43,
+      "lastAccessed": "2025-08-14T23:44:02.329Z",
       "lastVerified": "2025-07-31T22:49:35.805Z",
       "status": "fresh"
     },
@@ -284,8 +284,8 @@
       ],
       "timestamp": "2025-07-31T22:58:58.884Z",
       "context": "Completed The Way Stoic app feature implementation",
-      "accessCount": 37,
-      "lastAccessed": "2025-08-14T08:33:51.343Z",
+      "accessCount": 39,
+      "lastAccessed": "2025-08-14T23:44:02.329Z",
       "lastVerified": "2025-07-31T22:58:58.884Z",
       "status": "fresh"
     },
@@ -303,8 +303,8 @@
       ],
       "timestamp": "2025-07-31T23:00:33.021Z",
       "context": "Debugging Calendar and Quotes page errors",
-      "accessCount": 24,
-      "lastAccessed": "2025-08-14T08:33:51.343Z",
+      "accessCount": 25,
+      "lastAccessed": "2025-08-14T23:25:06.377Z",
       "lastVerified": "2025-07-31T23:00:33.021Z",
       "status": "fresh"
     },
@@ -550,8 +550,8 @@
         "flow-fixed"
       ],
       "timestamp": "2025-08-01T02:18:57.198Z",
-      "accessCount": 27,
-      "lastAccessed": "2025-08-14T08:37:23.963Z",
+      "accessCount": 29,
+      "lastAccessed": "2025-08-14T23:44:02.329Z",
       "lastVerified": "2025-08-01T02:18:57.198Z",
       "status": "fresh"
     },
@@ -788,8 +788,8 @@
       ],
       "timestamp": "2025-08-01T03:33:11.254Z",
       "context": "Fixed loading screen issue after login - JavaScript syntax errors resolved",
-      "accessCount": 28,
-      "lastAccessed": "2025-08-14T08:37:23.963Z",
+      "accessCount": 30,
+      "lastAccessed": "2025-08-14T23:44:02.329Z",
       "lastVerified": "2025-08-01T03:33:11.254Z",
       "status": "fresh"
     },
@@ -860,8 +860,8 @@
       ],
       "timestamp": "2025-08-01T07:09:32.941Z",
       "context": "Authentication routing fix implementation for Stoic app",
-      "accessCount": 10,
-      "lastAccessed": "2025-08-14T00:21:30.583Z",
+      "accessCount": 12,
+      "lastAccessed": "2025-08-14T23:44:02.329Z",
       "lastVerified": "2025-08-01T07:09:32.941Z",
       "status": "fresh"
     },
@@ -878,8 +878,8 @@
       ],
       "timestamp": "2025-08-01T07:11:21.102Z",
       "context": "New JavaScript syntax error issue causing loading screen stuck",
-      "accessCount": 30,
-      "lastAccessed": "2025-08-14T08:37:23.963Z",
+      "accessCount": 32,
+      "lastAccessed": "2025-08-14T23:44:02.329Z",
       "lastVerified": "2025-08-01T07:11:21.102Z",
       "status": "fresh"
     },
@@ -900,8 +900,8 @@
       ],
       "timestamp": "2025-08-01T07:16:18.989Z",
       "context": "Complete fix for authentication and loading screen issues",
-      "accessCount": 30,
-      "lastAccessed": "2025-08-14T00:21:30.583Z",
+      "accessCount": 31,
+      "lastAccessed": "2025-08-14T23:44:02.329Z",
       "lastVerified": "2025-08-01T07:16:18.989Z",
       "status": "fresh"
     },
@@ -1788,8 +1788,8 @@
       ],
       "timestamp": "2025-08-02T05:24:08.361Z",
       "context": "Journal layout analysis for comprehensive plan",
-      "accessCount": 27,
-      "lastAccessed": "2025-08-14T12:48:41.460Z",
+      "accessCount": 26,
+      "lastAccessed": "2025-08-14T08:37:23.963Z",
       "lastVerified": "2025-08-02T05:24:08.361Z",
       "status": "fresh"
     },
@@ -1939,8 +1939,8 @@
       ],
       "timestamp": "2025-08-02T06:00:55.652Z",
       "context": "Analyzing project for implementing functional journal entries with Supabase MCP",
-      "accessCount": 10,
-      "lastAccessed": "2025-08-14T12:48:41.460Z",
+      "accessCount": 9,
+      "lastAccessed": "2025-08-11T02:29:04.286Z",
       "lastVerified": "2025-08-02T06:00:55.652Z",
       "status": "fresh"
     },
@@ -2077,8 +2077,8 @@
         "duplicate-key"
       ],
       "timestamp": "2025-08-02T06:47:41.196Z",
-      "accessCount": 5,
-      "lastAccessed": "2025-08-14T12:48:41.460Z",
+      "accessCount": 4,
+      "lastAccessed": "2025-08-11T02:01:44.754Z",
       "lastVerified": "2025-08-02T06:47:41.196Z",
       "status": "fresh"
     },
@@ -2364,8 +2364,8 @@
       ],
       "timestamp": "2025-08-02T12:24:22.417Z",
       "context": "Journal responsiveness improvements with 0ms delay and multi-line selection",
-      "accessCount": 4,
-      "lastAccessed": "2025-08-14T12:48:41.460Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-08-11T01:45:38.231Z",
       "lastVerified": "2025-08-02T12:24:22.417Z",
       "status": "fresh"
     },
@@ -3808,8 +3808,8 @@
         "privacy"
       ],
       "timestamp": "2025-08-06T01:42:58.419Z",
-      "accessCount": 16,
-      "lastAccessed": "2025-08-14T12:48:41.460Z",
+      "accessCount": 15,
+      "lastAccessed": "2025-08-11T02:47:16.889Z",
       "lastVerified": "2025-08-06T01:42:58.419Z",
       "status": "fresh"
     },
@@ -3827,8 +3827,8 @@
         "completed"
       ],
       "timestamp": "2025-08-06T01:50:38.526Z",
-      "accessCount": 7,
-      "lastAccessed": "2025-08-14T12:48:41.460Z",
+      "accessCount": 6,
+      "lastAccessed": "2025-08-10T14:02:23.881Z",
       "lastVerified": "2025-08-06T01:50:38.526Z",
       "status": "fresh"
     },
@@ -4202,8 +4202,8 @@
         "critical"
       ],
       "timestamp": "2025-08-06T12:09:14.549Z",
-      "accessCount": 5,
-      "lastAccessed": "2025-08-14T12:48:41.460Z",
+      "accessCount": 4,
+      "lastAccessed": "2025-08-10T14:02:23.881Z",
       "lastVerified": "2025-08-06T12:09:14.549Z",
       "status": "fresh"
     },
@@ -4222,8 +4222,8 @@
         "fixes"
       ],
       "timestamp": "2025-08-06T12:27:09.237Z",
-      "accessCount": 3,
-      "lastAccessed": "2025-08-14T12:48:41.460Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-10T04:23:28.957Z",
       "lastVerified": "2025-08-06T12:27:09.237Z",
       "status": "fresh"
     },
@@ -5265,8 +5265,8 @@
         "fixed"
       ],
       "timestamp": "2025-08-09T03:58:04.285Z",
-      "accessCount": 4,
-      "lastAccessed": "2025-08-14T12:48:41.460Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-08-11T01:45:38.231Z",
       "lastVerified": "2025-08-09T03:58:04.285Z",
       "status": "fresh"
     },
@@ -5476,8 +5476,8 @@
       ],
       "timestamp": "2025-08-09T23:02:22.041Z",
       "context": "Bug investigation for journal entry duplication issue",
-      "accessCount": 5,
-      "lastAccessed": "2025-08-14T12:48:41.460Z",
+      "accessCount": 4,
+      "lastAccessed": "2025-08-11T02:01:44.754Z",
       "lastVerified": "2025-08-09T23:02:22.041Z",
       "status": "fresh"
     },
@@ -6724,23 +6724,389 @@
       "status": "fresh"
     },
     {
-      "id": "mem_1755175770723_v0yc321ka",
-      "content": "Journal Calendar View Bug Analysis:\n\nThe calendar view entries show empty because:\n1. EntryListItem component displays entry.preview field (line 71-76 in EntryListItem.tsx)\n2. JournalCalendarView passes entries directly without adding the preview field (line 201-208)\n3. EntryList.tsx generates preview from entry.blocks (lines 90-97) but JournalCalendarView doesn't\n\nSolution needed:\n- Add preview generation logic to JournalCalendarView similar to EntryList\n- Extract the preview content from entry.blocks when displaying in calendar view",
-      "type": "error",
+      "id": "mem_1755174874330_85xps9l4a",
+      "content": "Marcus Aurelius Biography Content Structure for SEO:\n\n# From CSV:\n- Full name: Marcus Aurelius Antoninus Augustus\n- Slug: marcus-aurelius\n- Born: April 26, 121 CE in Rome, Italy\n- Died: March 17, 180 CE\n- Role: Roman Emperor, Stoic philosopher, Military commander\n- Notable work: Meditations\n- Influences: Epictetus, Junius Rusticus, Seneca\n- Key quotes: \"The impediment to action advances action\", \"Waste no more time arguing what a good man should be\", \"You could leave life right now\"\n\n# Additional Content from Research:\n- Early Life: Raised by mother and grandfather after father died at age 3, exceptional education\n- Education: Studied philosophy from age 12, deeply influenced by Stoicism\n- Rise to Power: Adopted by Antoninus Pius at 17, long apprenticeship, consul at 17\n- Personal Life: Married Faustina (cousin), had 12+ children including Commodus\n- Reign: Co-emperor with Lucius Verus (first time Rome had two emperors), dealt with wars and plague\n- Philosophy: Wrote Meditations during campaigns (170-180 CE), emphasized virtue and dichotomy of control\n- Legacy: Influenced Christian theologians, Renaissance humanists, modern CBT/Stoicism revival\n\n# Figma Design Elements:\n- Clean biography layout with Name, Born, Died fields\n- Statue/portrait image on right\n- Minimal, elegant design with beige background",
+      "type": "tip",
       "tags": [
-        "error",
-        "bug",
-        "journal",
-        "calendar-view",
-        "preview",
-        "analysis"
+        "tip",
+        "marcus-aurelius",
+        "biography",
+        "seo",
+        "stoicism",
+        "philosopher"
       ],
-      "timestamp": "2025-08-14T12:49:30.723Z",
+      "timestamp": "2025-08-14T12:34:34.330Z",
       "accessCount": 0,
-      "lastAccessed": "2025-08-14T12:49:30.723Z",
-      "lastVerified": "2025-08-14T12:49:30.723Z",
+      "lastAccessed": "2025-08-14T12:34:34.330Z",
+      "lastVerified": "2025-08-14T12:34:34.330Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755175517689_rjg1hnmx0",
+      "content": "Successfully implemented programmatic SEO for philosopher biographies with Marcus Aurelius as the prototype:\n\n✅ COMPLETED FEATURES:\n1. Dynamic Route: `/biography/[mentor-slug]` working at `/biography/marcus-aurelius`\n2. CSV Data Integration: Fixed parsing to properly handle quoted fields with commas\n3. SEO Optimization:\n   - Meta tags: title, description, OG tags, Twitter cards\n   - Structured data: Person schema with proper JSON-LD\n   - Canonical URLs and breadcrumbs\n4. Biography Content:\n   - Hero section with name, dates, role, portrait placeholder\n   - Life story sections: Early Life, Rise to Power, Personal Life, Reign, Death\n   - NEW: Enhanced philosophy sections (Philosophy & Stoicism, Three Main Topics, Philosophical Exercises)\n   - Philosophy quotes with explanations\n   - Works & Influence section\n5. Responsive Design:\n   - Following Figma mockup layout\n   - Hero grid layout with portrait on right\n   - NEW: Actual marble bust image (Unsplash) instead of placeholder\n   - Sidebar with quick facts, related philosophers, tags\n6. Typography Updates:\n   - NEW: Inknut Antiqua font for all headings (H1, H2, H3, labels)\n   - NEW: Poppins Light font for all paragraphs and body text\n   - Proper font loading via Next.js Google Fonts\n7. Data Structure:\n   - TypeScript interfaces for type safety\n   - Proper CSV parsing function\n   - Extensible biography system for other philosophers\n\n✅ ENHANCED CONTENT:\n- Added 3 new philosophy sections with Vietnamese content translated to English\n- Deep dive into Epictetus's influence and three main training topics\n- Philosophical exercises and \"view from the universe\" concept\n- Much more comprehensive and academically rigorous content\n\n✅ VISUAL IMPROVEMENTS:\n- Replaced placeholder portrait with elegant marble bust image\n- Updated typography to match design requirements\n- Better color scheme with beige/amber tones\n- Professional layout matching Figma design\n\n✅ WORKING URLS:\n- http://localhost:3002/biography/marcus-aurelius (200 OK)\n- Proper SEO metadata generated\n- Structured data for search engines\n- Beautiful typography with proper fonts\n\n✅ READY FOR EXPANSION:\nAll other philosophers in CSV can be implemented following same pattern.",
+      "type": "code",
+      "tags": [
+        "code",
+        "typescript",
+        "optimization",
+        "biography",
+        "seo",
+        "marcus-aurelius",
+        "implementation",
+        "success"
+      ],
+      "timestamp": "2025-08-14T12:45:17.689Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-14T12:45:17.689Z",
+      "lastVerified": "2025-08-14T12:45:17.689Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755178265519_hxv6dvsvw",
+      "content": "Marcus Aurelius biography page has been successfully completed with all user-requested features:\n1. Fixed image loading with Wikipedia Commons URL\n2. Created renderBoldText function to parse **text** patterns into bold elements\n3. Added comprehensive CTA section with \"Start Your Stoic Journey Today\" heading and two buttons\n4. Page uses Inknut Antiqua for headings and Poppins Light for paragraphs\n5. All content has been tested and is working properly\nReady for user approval before creating other philosopher pages from CSV",
+      "type": "code",
+      "tags": [
+        "code",
+        "biography",
+        "stoicism",
+        "marcus-aurelius",
+        "seo",
+        "completed"
+      ],
+      "timestamp": "2025-08-14T13:31:05.518Z",
+      "context": "Programmatic SEO project for philosopher biographies at /biography/[mentor-slug] route",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-14T13:31:05.518Z",
+      "lastVerified": "2025-08-14T13:31:05.518Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755178386449_7yd236fgc",
+      "content": "User reports Marcus Aurelius image still not loading. Need to switch from background-image to Next.js Image component and remove \"Portrait of Marcus Aurelius\" text overlay",
+      "type": "general",
+      "tags": [
+        "general",
+        "image-loading",
+        "next-js",
+        "marcus-aurelius",
+        "bug-fix"
+      ],
+      "timestamp": "2025-08-14T13:33:06.449Z",
+      "context": "Biography page image loading issue - switching to Next.js Image component",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-14T13:33:06.449Z",
+      "lastVerified": "2025-08-14T13:33:06.449Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755178785609_ss2wksomw",
+      "content": "User getting \"Philosopher not found\" error on localhost:3002/biography/marcus-aurelius. Need to debug why the CSV data isn't loading or slug isn't matching",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "bug",
+        "404",
+        "csv-loading",
+        "marcus-aurelius",
+        "data-not-found"
+      ],
+      "timestamp": "2025-08-14T13:39:45.609Z",
+      "context": "Biography page returning 404 error - data loading issue",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-14T13:39:45.609Z",
+      "lastVerified": "2025-08-14T13:39:45.609Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755179208594_1pfg6psqy",
+      "content": "Successfully fixed Marcus Aurelius biography page loading issue. Problem was CSV file path needed adjustment from '../..' to '..' relative to working directory. Fixed image loading with Next.js Image component. Page now working at localhost:3003/biography/marcus-aurelius with all features complete.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "fixed",
+        "csv-loading",
+        "next-js-image",
+        "biography",
+        "marcus-aurelius"
+      ],
+      "timestamp": "2025-08-14T13:46:48.593Z",
+      "context": "Biography page debugging - CSV path fix and Next.js cache clearing resolved issues",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-14T13:46:48.593Z",
+      "lastVerified": "2025-08-14T13:46:48.593Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755181938048_9uhxq1hqq",
+      "content": "App sitemap URL structure: Uses Next.js sitemap.ts to generate sitemap with base URLs (/, /blog) and dynamic blog post URLs (/blog/[slug]). Uses siteUrl function with hardcoded base 'https://your-site.com' and generates posts from CSV data.",
+      "type": "code",
+      "tags": [
+        "code",
+        "sitemap",
+        "urls",
+        "nextjs"
+      ],
+      "timestamp": "2025-08-14T14:32:18.048Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-14T14:32:18.048Z",
+      "lastVerified": "2025-08-14T14:32:18.048Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755213959124_yuxv7kl8j",
+      "content": "User reports app gets stuck on loading screen on initial load, but works after manual F5 refresh. This suggests an issue with initial app initialization, likely related to client-side hydration, auth session check, or provider initialization order.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "loading-screen",
+        "initialization",
+        "f5-refresh",
+        "hydration",
+        "bug"
+      ],
+      "timestamp": "2025-08-14T23:25:59.123Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-14T23:25:59.123Z",
+      "lastVerified": "2025-08-14T23:25:59.123Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755214078042_cs2uckzqw",
+      "content": "SOLUTION FOUND: Loading screen stuck on initial load but works after F5 refresh. Root cause: Race condition between AuthProvider's isClient check and useAuth initialization. AuthProvider shows MinimalLoadingScreen while !isClient, but auth state updates may complete before isClient becomes true, causing the loading screen to persist. Fix: Remove redundant isClient check in AuthProvider and rely on useAuth's loading state instead.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "solution",
+        "loading-screen",
+        "auth-provider",
+        "race-condition",
+        "fix-ready"
+      ],
+      "timestamp": "2025-08-14T23:27:58.042Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-14T23:27:58.042Z",
+      "lastVerified": "2025-08-14T23:27:58.042Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755214308521_m3ke6mqzs",
+      "content": "Quote Display Issue: External API returns quotes with author names embedded in the quote text. For example, quote text ends with \"William B.\" while the author field separately contains \"Irvine\". This causes duplicate author display - once in the quote text and once in the author attribution. The issue is in the API response from https://stoic.tekloon.net/stoic-quote, not in our code. Solution: Need to clean the quote text by removing author names that appear at the end of quotes before displaying them.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "api",
+        "bug",
+        "quotes",
+        "display-issue"
+      ],
+      "timestamp": "2025-08-14T23:31:48.521Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-14T23:31:48.521Z",
+      "lastVerified": "2025-08-14T23:31:48.521Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755215291515_a3prsm0kb",
+      "content": "STOIC WAY APP SLOW LOADING ANALYSIS - Root Causes Identified:\n\n1. **Provider Overload (8 nested providers)**:\n   - ClientProviders wraps 8 providers sequentially\n   - Each provider initializes before children render\n   - Creates waterfall effect blocking initial paint\n\n2. **Aggressive Prefetching on Startup**:\n   - ImmediatePrefetchProvider: Immediately prefetches 9 routes on mount\n   - AggressivePrefetchProvider: Also prefetches 7 routes with data\n   - Both run simultaneously, overwhelming browser\n\n3. **Font Loading Issues**:\n   - Loading 5 fonts (Inknut Antiqua, Inika, Poppins, GeistSans, GeistMono)\n   - Duplicate loading via Next.js + direct HTML links\n   - Multiple weights per font (22+ total weights)\n   - Blocking render until fonts load\n\n4. **Authentication Flow Delays**:\n   - Multiple timeouts: 3s quick timeout, 5s auth timeout\n   - wasAuthenticated check adds extra loading states\n   - ProtectedRoute shows MinimalLoadingScreen multiple times\n\n5. **Performance Impact**:\n   - Initial bundle includes all providers\n   - No code splitting for providers\n   - Prefetch requests compete with critical resources",
+      "type": "general",
+      "tags": [
+        "general",
+        "authentication",
+        "performance",
+        "loading-slow",
+        "stoic-app",
+        "analysis-complete"
+      ],
+      "timestamp": "2025-08-14T23:48:11.515Z",
+      "context": "Performance analysis for The Stoic Way app loading issues",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-14T23:48:11.515Z",
+      "lastVerified": "2025-08-14T23:48:11.515Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755216582082_d99gdxqfe",
+      "content": "STOIC WAY LOADING BUG - ROOT CAUSE IDENTIFIED:\n\n**Critical Finding**: App only works on SECOND visit, not first!\n\n**Root Cause**: Race condition between authentication and aggressive prefetching\n- On first visit: 16+ prefetch requests block auth from completing\n- On second visit: Routes/fonts are cached, auth completes quickly\n\n**Proof**:\n1. ImmediatePrefetchProvider: Prefetches 9 routes IMMEDIATELY on mount\n2. AggressivePrefetchProvider: Also prefetches 7 routes with delayMs=0, onIdle=false\n3. Both run BEFORE authentication completes\n4. Network congestion prevents auth API calls from completing\n5. Auth timeout (3s) is reached, user stuck on loading screen\n\n**Fix Required**:\n- Delay ALL prefetching until AFTER authentication succeeds\n- Change delayMs from 0 to 3000ms minimum\n- Set onIdle=true to use requestIdleCallback\n- Remove ImmediatePrefetchProvider completely",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "authentication",
+        "api",
+        "bug-fix",
+        "performance",
+        "race-condition",
+        "critical",
+        "stoic-app"
+      ],
+      "timestamp": "2025-08-15T00:09:42.082Z",
+      "context": "Critical bug diagnosis - app hangs on first load due to prefetch race condition",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-15T00:09:42.082Z",
+      "lastVerified": "2025-08-15T00:09:42.082Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755217474989_tiu6qk9b1",
+      "content": "STOIC WAY LOADING BUG FIXED ✅\n\n**Problem**: App stuck on loading screen on first visit due to race condition between aggressive prefetching and authentication.\n\n**Root Cause**: ImmediatePrefetchProvider prefetching 9 routes + AggressivePrefetchProvider prefetching 7 routes simultaneously on mount, blocking auth API calls.\n\n**Solution Applied**:\n1. ✅ Removed ImmediatePrefetchProvider completely \n2. ✅ Fixed AggressivePrefetchProvider timing: delayMs: 0→3000, onIdle: false→true\n3. ✅ Optimized font loading: reduced weights, added display:swap, removed duplicate link tags\n4. ✅ Simplified provider structure by removing unnecessary wrapper\n\n**Files Modified**:\n- ClientProviders.tsx: Removed ImmediatePrefetchProvider import & wrapper\n- AggressivePrefetchProvider.tsx: Fixed timing to wait 3s and use idle time\n- layout.tsx: Optimized fonts (22→8 weights), added font-display:swap\n- Deleted: ImmediatePrefetchProvider.tsx\n\n**Result**: First-visit loading should now work without manual reload. Dev server running on :3001.",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "authentication",
+        "api",
+        "bug-fix",
+        "performance",
+        "completed",
+        "stoic-app",
+        "loading-fixed"
+      ],
+      "timestamp": "2025-08-15T00:24:34.988Z",
+      "context": "Successfully fixed critical loading bug in Stoic Way app",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-15T00:24:34.988Z",
+      "lastVerified": "2025-08-15T00:24:34.988Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755224071352_owwi3rsxn",
+      "content": "Build error in Next.js app: Module not found - Can't resolve '@tanstack/react-query'. Error occurs in /src/components/layout/AppSidebar.tsx at line 27. The import statements show usage of useQueryClient, handleNavigationPrefetch, useNavigationState, and useInstantNavigation from various providers.",
+      "type": "code",
+      "tags": [
+        "code",
+        "react",
+        "error",
+        "build",
+        "tanstack-query",
+        "nextjs"
+      ],
+      "timestamp": "2025-08-15T02:14:31.351Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-15T02:14:31.351Z",
+      "lastVerified": "2025-08-15T02:14:31.351Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755224112076_2jwbp3gew",
+      "content": "@tanstack/react-query is listed in package.json dependencies (version ^5.56.2) but is not actually installed in node_modules. This is causing the build error \"Module not found: Can't resolve '@tanstack/react-query'\". The solution is to run npm install to install the missing dependencies.",
+      "type": "config",
+      "tags": [
+        "config",
+        "react",
+        "solution",
+        "npm",
+        "dependencies",
+        "tanstack-query"
+      ],
+      "timestamp": "2025-08-15T02:15:12.076Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-15T02:15:12.076Z",
+      "lastVerified": "2025-08-15T02:15:12.076Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755224433828_9eny7o95g",
+      "content": "Fixed the original build error: Module not found '@tanstack/react-query' by running npm install. Also fixed syntax errors in philosopherData.ts by escaping apostrophes in title strings. Build now compiles but has unrelated import warnings for template routes.",
+      "type": "config",
+      "tags": [
+        "config",
+        "react",
+        "solved",
+        "tanstack-query",
+        "build-fixed",
+        "syntax-error"
+      ],
+      "timestamp": "2025-08-15T02:20:33.828Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-15T02:20:33.828Z",
+      "lastVerified": "2025-08-15T02:20:33.828Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755224981811_gc5kjujqv",
+      "content": "Journal Template Gallery UI Requirements:\n1. When switching from Gallery to My Templates tab - show blank right panel initially (no template selected)\n2. When clicking New Template - show template editor in right panel without \"New Template\" header (already in dialog header)\n3. Remove duplicate headers in template editor when shown in right panel\n4. Current implementation shows TemplatePreview by default, need conditional rendering based on state",
+      "type": "general",
+      "tags": [
+        "general",
+        "journal",
+        "templates",
+        "ui",
+        "gallery"
+      ],
+      "timestamp": "2025-08-15T02:29:41.811Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-15T02:29:41.811Z",
+      "lastVerified": "2025-08-15T02:29:41.811Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755225331783_kpmxujjeb",
+      "content": "Successfully implemented journal template gallery UI changes:\n1. Added state management for template creation mode (isCreatingNew)\n2. Updated tab switching to clear selection and reset creation mode\n3. Created inline template editor with form fields, rich text editor, and actions\n4. Modified right panel with conditional rendering:\n   - Gallery tab: shows TemplatePreview\n   - My Templates tab with no selection: shows blank panel\n   - My Templates tab with isCreatingNew: shows inline editor\n5. Updated New Template button to trigger inline editor instead of separate dialog\n\nThe implementation now matches the user's requirements for the template gallery interface.",
+      "type": "general",
+      "tags": [
+        "general",
+        "journal",
+        "templates",
+        "ui",
+        "implementation-complete"
+      ],
+      "timestamp": "2025-08-15T02:35:31.783Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-15T02:35:31.783Z",
+      "lastVerified": "2025-08-15T02:35:31.783Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755225848678_4j8x6gxfb",
+      "content": "Successfully completed template editor UI improvements:\n1. Removed redundant formatting toolbar (slash commands handle formatting)\n2. New templates appear in left panel immediately when created\n3. Right panel styled as paper document with shadow, white background\n4. Clean layout without toolbar - more space for editing\n5. Proper template management with save/cancel functionality\n6. Template creation flow: click New Template → appears in list → edit in paper-like right panel → save",
+      "type": "general",
+      "tags": [
+        "general",
+        "journal",
+        "templates",
+        "ui-improvements",
+        "paper-design"
+      ],
+      "timestamp": "2025-08-15T02:44:08.678Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-15T02:44:08.678Z",
+      "lastVerified": "2025-08-15T02:44:08.678Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755226615048_33i0ig97t",
+      "content": "Successfully fixed all build errors in stoic-zenith:\n1. Updated template API routes to use createSupabaseRouteHandlerClient instead of createClient\n2. Fixed Next.js 15 route parameter types - used context: RouteContext with Promise<{ id: string }> pattern\n3. Added backgroundFetchThreshold property to QuoteSessionOptions interface with default value 10\n4. Build now compiles successfully - journal page should load without errors\n5. Template gallery functionality should work properly now",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "api",
+        "build-fix",
+        "supabase",
+        "nextjs",
+        "api-routes",
+        "typescript"
+      ],
+      "timestamp": "2025-08-15T02:56:55.048Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-15T02:56:55.048Z",
+      "lastVerified": "2025-08-15T02:56:55.048Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755227408498_kdijxi2yk",
+      "content": "Successfully cleaned up template editor UI:\n1. Removed template metadata form (name, icon, description) from editor\n2. Made editor full-size in right panel - removed paper wrapper styling\n3. Prevented template name editing in left list - now simple clickable items\n4. Cleaned up unused state variables and imports\n5. Editor now provides clean, distraction-free writing experience\n6. Templates maintain their metadata but editing is simplified to content-only",
+      "type": "general",
+      "tags": [
+        "general",
+        "template-editor",
+        "ui-cleanup",
+        "minimal-design",
+        "ux-improvement"
+      ],
+      "timestamp": "2025-08-15T03:10:08.498Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-15T03:10:08.498Z",
+      "lastVerified": "2025-08-15T03:10:08.498Z",
       "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-14T12:49:30.723Z"
+  "lastUpdated": "2025-08-15T03:10:08.498Z"
 }

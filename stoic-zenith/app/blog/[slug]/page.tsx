@@ -1,263 +1,254 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getAllPosts, getPostBySlug, siteUrl } from '@/lib/blogData'
+import Image from 'next/image'
+import { notFound } from 'next/navigation'
+import { sanityFetch } from '@/lib/sanity.fetch'
+import { blogPostQuery, blogPostsQuery } from '@/lib/sanity.queries'
+import { urlFor } from '@/lib/sanity.image'
+import { PortableText } from '@/components/PortableText'
 
-export async function generateStaticParams() {
-  const posts = getAllPosts()
-  return posts.map((p) => ({ slug: p.slug }))
+interface BlogPost {
+  _id: string
+  title: string
+  slug: { current: string }
+  author: string
+  excerpt?: string
+  mainImage?: {
+    asset: {
+      _ref: string
+    }
+    alt?: string
+  }
+  categories?: string[]
+  tags?: string[]
+  publishedAt: string
+  body?: any[]
+  featured?: boolean
+  seo?: {
+    metaTitle?: string
+    metaDescription?: string
+  }
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateStaticParams() {
+  const posts = await sanityFetch<Pick<BlogPost, 'slug'>[]>({
+    query: `*[_type == "blogPost"]{slug}`,
+    tags: ['blogPost'],
+  })
+  
+  return posts.map((post) => ({
+    slug: post.slug.current,
+  }))
+}
+
+export async function generateMetadata({ 
+  params 
+}: { 
+  params: Promise<{ slug: string }> 
+}): Promise<Metadata> {
   const resolvedParams = await params
-  const post = getPostBySlug(resolvedParams.slug)
-  if (!post) return {}
-  const url = siteUrl(`/blog/${post.slug}`)
-  const title = post.pageTitle || 'Blog Post'
-  const description = post.metaDescription || post.introduction || ''
+  const post = await sanityFetch<BlogPost>({
+    query: blogPostQuery,
+    params: { slug: resolvedParams.slug },
+    tags: ['blogPost'],
+  })
+
+  if (!post) {
+    return {
+      title: 'Post Not Found',
+      description: 'The requested blog post could not be found.',
+    }
+  }
+
+  const title = post.seo?.metaTitle || post.title
+  const description = post.seo?.metaDescription || post.excerpt || ''
+  const imageUrl = post.mainImage 
+    ? urlFor(post.mainImage).width(1200).height(630).url()
+    : '/images/default-og-image.jpg'
+
   return {
     title,
     description,
-    alternates: { canonical: url },
     openGraph: {
       type: 'article',
       title,
       description,
-      url,
-      siteName: 'The Stoic Way',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: post.mainImage?.alt || post.title,
+        },
+      ],
+      publishedTime: post.publishedAt,
+      authors: [post.author],
     },
-    twitter: { card: 'summary_large_image', title, description },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [imageUrl],
+    },
   }
 }
 
-function extractDocId(url: string | undefined): string | null {
-  if (!url) return null
-  try {
-    const u = new URL(url)
-    const parts = u.pathname.split('/').filter(Boolean)
-    const idx = parts.indexOf('d')
-    if (idx >= 0 && parts[idx + 1]) return parts[idx + 1]
-  } catch {}
-  return null
-}
-
-async function fetchGoogleDocContent(docId: string): Promise<string> {
-  // For now, return the actual content from the Google Doc
-  // In production, this would use the Google Docs API or MCP tool
-  if (docId === '11kbxSM59gz2arEUhzekNj3w9v765dPXZkb7-ktnjqhw') {
-    return `
-# Daily Stoic Quotes for Anxiety: Ancient Wisdom for Modern Peace
-
-## Introduction
-
-In our hyperconnected world, anxiety has become an unwelcome companion for millions. The constant stream of notifications, societal pressures, and uncertainty about the future can leave us feeling overwhelmed and powerless. Yet, over two thousand years ago, ancient philosophers developed a practical system for managing these very human struggles—a philosophy that remains remarkably relevant today.
-
-Stoicism, founded in ancient Athens and refined by great minds like Marcus Aurelius, Seneca, and Epictetus, offers a powerful framework for understanding and managing anxiety. Unlike modern quick fixes or temporary solutions, Stoic philosophy addresses anxiety at its root by transforming how we perceive and respond to life's challenges.
-
-## Understanding Anxiety Through Stoic Philosophy
-
-Anxiety, from a Stoic perspective, stems from our misunderstanding of what we can and cannot control. The ancient Stoics identified this fundamental error in thinking as the root cause of most human suffering. When we worry about outcomes beyond our influence, other people's opinions, future events, or external circumstances, we create unnecessary mental turmoil.
-
-### The Dichotomy of Control
-
-Epictetus, who lived as a slave before becoming one of philosophy's greatest teachers, articulated this principle most clearly: "Some things are within our power, while others are not." This simple yet profound insight forms the foundation of Stoic anxiety management.
-
-Marcus Aurelius, writing in his personal journal that became the *Meditations*, frequently returned to this theme. As Roman Emperor, he faced immense pressures yet maintained inner peace by focusing solely on his own virtue and responses.
-
-## Daily Stoic Quotes for Anxiety Relief
-
-### "You have power over your mind—not outside events. Realize this, and you will find strength." - Marcus Aurelius
-
-This fundamental Stoic principle directly addresses anxiety's core mechanism. When we feel anxious, we're typically focusing on external circumstances—a job interview, relationship conflict, or health concern. Marcus Aurelius reminds us that while we cannot control these external events, we possess complete authority over our mental responses.
-
-**Practical Application:** When anxiety strikes, immediately ask yourself: "What aspect of this situation can I actually control?" Focus exclusively on your preparation, effort, and attitude.
-
-### "We suffer more often in imagination than in reality." - Seneca
-
-This insightful observation addresses anxiety's tendency toward catastrophic thinking. Seneca recognized that we often torture ourselves with imagined disasters that never materialize. Our mental rehearsals of worst-case scenarios create real suffering over fictional events.
-
-**Application:** When caught in anxious thoughts about future scenarios, ask: "Is this actually happening now, or am I suffering over something imagined?" Return attention to present reality.
-
-### "Today I escaped anxiety. Or no, I discarded it, because it was within me, in my own perceptions—not outside." - Marcus Aurelius
-
-This quote reveals anxiety's true nature: it's not imposed by external circumstances but generated by our internal interpretations. Marcus Aurelius uses the word "discarded" deliberately—anxiety is something we can choose to release.
-
-## Practical Exercises for Daily Application
-
-### Exercise 1: The Morning Reflection (5-10 minutes daily)
-
-Begin each day by reading one Stoic quote about anxiety and reflecting on its application to your current challenges. Write down one specific situation where you can apply this wisdom today.
-
-**Step-by-step Instructions:**
-1. Choose a quiet moment after waking
-2. Read a selected Stoic quote slowly, twice
-3. Identify one current anxiety or concern
-4. Write how the quote's wisdom applies to this situation
-5. Set an intention to practice this application throughout the day
-
-### Exercise 2: The Control Inventory (Throughout the day)
-
-When anxiety arises, immediately categorize your concerns into "within my control" and "outside my control." Focus all mental energy on the first category.
-
-**Step-by-step Instructions:**
-1. Notice the first signs of anxiety (physical tension, racing thoughts)
-2. Pause and take three deep breaths
-3. List your specific worries
-4. Sort each worry into "my control" or "not my control"
-5. Consciously redirect attention to actionable items only
-
-### Exercise 3: Present Moment Anchoring (As needed)
-
-When overwhelmed by anxious thoughts about past or future, use Stoic principles to anchor yourself in the present moment.
-
-**Step-by-step Instructions:**
-1. Notice when your mind drifts to anxious future scenarios or past regrets
-2. Recall Marcus Aurelius' advice to "confine yourself to the present"
-3. Identify three things you can control right now
-4. Take one small virtuous action immediately
-5. Appreciate your power to choose your response in this moment
-
-## Building Long-term Resilience
-
-### Establishing Sustainable Habits
-
-Long-term anxiety management requires consistent daily practices rather than crisis interventions. Begin with small, manageable habits that gradually build mental strength.
-
-Start each morning by reading one Stoic quote and reflecting on its application to the day ahead. This philosophical grounding provides a framework for interpreting challenges through Stoic principles rather than anxious assumptions.
-
-### Integration with Modern Approaches
-
-Stoic practices complement rather than replace modern anxiety treatments. If you're working with a therapist or taking medication, discuss how Stoic principles can enhance your treatment plan. Many therapists appreciate clients who bring philosophical tools to their healing journey.
-
-The combination of ancient wisdom and contemporary understanding creates a comprehensive approach to anxiety management that addresses both symptoms and root causes.
-    `
-  }
-  return ''
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
-function mdHeadingsToHtml(md: string): string {
-  const lines = md.split(/\r?\n/)
-  const out: string[] = []
-  for (const raw of lines) {
-    const line = raw.trimEnd()
-    if (!line.trim()) { out.push(''); continue }
-    if (line.startsWith('### ')) out.push(`<h3 class="mt-8 text-lg font-semibold">${escapeHtml(line.slice(4))}</h3>`)
-    else if (line.startsWith('## ')) out.push(`<h2 class="mt-10 text-2xl md:text-3xl font-semibold">${escapeHtml(line.slice(3))}</h2>`)
-    else if (line.startsWith('# ')) out.push(`<h1 class="mt-12 text-3xl md:text-4xl font-semibold">${escapeHtml(line.slice(2))}</h1>`)
-    else out.push(`<p>${escapeHtml(line)}</p>`)
-  }
-  return out.join('\n')
-}
-
-
-export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+export default async function BlogPostPage({ 
+  params 
+}: { 
+  params: Promise<{ slug: string }> 
+}) {
   const resolvedParams = await params
-  const post = getPostBySlug(resolvedParams.slug)
+  const post = await sanityFetch<BlogPost>({
+    query: blogPostQuery,
+    params: { slug: resolvedParams.slug },
+    tags: ['blogPost'],
+  })
+
   if (!post) {
-    return (
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <h1 className="text-2xl font-semibold">Post not found</h1>
-        <p className="mt-4"><Link href="/blog" className="text-blue-600 underline">Back to Blog</Link></p>
-      </div>
-    )
+    notFound()
   }
 
-  const title = post.pageTitle
-  const description = post.metaDescription || post.introduction
+  const publishedDate = new Date(post.publishedAt).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
 
-
-  // Fetch Google Doc content and render markdown-style headings
-  let contentHtml = ''
-  const docId = extractDocId(post.coreContentUrl)
-  if (docId) {
-    const txt = await fetchGoogleDocContent(docId)
-    if (txt) {
-      contentHtml = mdHeadingsToHtml(txt)
-    } else {
-      // Fallback content if Google Doc fetch fails
-      contentHtml = `
-        <h2>Understanding Anxiety Through Stoic Philosophy</h2>
-        <p>Anxiety, from a Stoic perspective, stems from our misunderstanding of what we can and cannot control. The ancient Stoics identified this fundamental error in thinking as the root cause of most human suffering.</p>
-
-        <h2>Daily Stoic Quotes for Anxiety Relief</h2>
-        <blockquote>"You have power over your mind—not outside events. Realize this, and you will find strength." - Marcus Aurelius</blockquote>
-        <p>This fundamental Stoic principle directly addresses anxiety's core mechanism. Focus on what you can control: your preparation, effort, and attitude.</p>
-
-        <blockquote>"We suffer more often in imagination than in reality." - Seneca</blockquote>
-        <p>Seneca recognized that we often torture ourselves with imagined disasters that never materialize. Return attention to present reality.</p>
-
-        <h2>Practical Exercises for Daily Application</h2>
-        <h3>Morning Reflection</h3>
-        <p>Begin each day by reading one Stoic quote about anxiety and reflecting on its application to your current challenges.</p>
-
-        <h3>Control Inventory</h3>
-        <p>When anxiety arises, categorize your concerns into "within my control" and "outside my control." Focus all mental energy on the first category.</p>
-      `
-    }
-  }
-
-  // Published date formatted (no author/socials)
-  const published = post.publishedDate ? new Date(post.publishedDate) : null
-  const dateStr = published ? published.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : null
+  const imageUrl = post.mainImage
+    ? urlFor(post.mainImage).width(1200).height(600).url()
+    : null
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
-      <nav aria-label="Breadcrumb" className="mb-6 text-sm text-gray-500">
+    <article className="mx-auto max-w-4xl px-6 py-12">
+      {/* Breadcrumb */}
+      <nav className="mb-8 text-sm text-gray-500">
         <ol className="flex items-center gap-2">
           <li><Link href="/" className="hover:underline">Home</Link></li>
           <li>/</li>
           <li><Link href="/blog" className="hover:underline">Blog</Link></li>
           <li>/</li>
-          <li aria-current="page" className="text-gray-700">{post.slug}</li>
+          <li className="text-gray-700 truncate">{post.title}</li>
         </ol>
       </nav>
 
-      <header className="mb-8">
-        <p className="text-xs uppercase tracking-wider text-gray-500">
-          {post.modifier || 'daily'} • {post.lifeArea || ''} • {post.headTerm || ''}
-        </p>
-        <h1 className="mt-2 text-4xl md:text-5xl font-semibold leading-tight">{title}</h1>
-        {description ? <p className="mt-3 text-lg text-gray-700">{description}</p> : null}
-        {dateStr ? <p className="mt-2 text-sm text-gray-500">{dateStr}</p> : null}
+      {/* Header */}
+      <header className="mb-12">
+        {post.categories && post.categories.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {post.categories.map((category) => (
+              <span
+                key={category}
+                className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full font-medium"
+              >
+                {category}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-6">
+          {post.title}
+        </h1>
+
+        {post.excerpt && (
+          <p className="text-xl text-gray-600 leading-relaxed mb-8">
+            {post.excerpt}
+          </p>
+        )}
+
+        {/* Author info */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-lg font-semibold">
+              {post.author.charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900">{post.author}</p>
+            <p className="text-gray-600">Published on {publishedDate}</p>
+          </div>
+        </div>
+
+        {/* Featured image */}
+        {imageUrl && (
+          <div className="mb-12">
+            <Image
+              src={imageUrl}
+              alt={post.mainImage?.alt || post.title}
+              width={1200}
+              height={600}
+              className="rounded-xl shadow-lg w-full"
+              priority
+            />
+            {post.mainImage?.alt && (
+              <p className="text-sm text-gray-600 mt-3 text-center italic">
+                {post.mainImage.alt}
+              </p>
+            )}
+          </div>
+        )}
       </header>
 
-      <div className="grid grid-cols-1 gap-10 md:grid-cols-[1fr_280px]">
+      {/* Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-12">
         <main>
-          {contentHtml ? (
-            <section id="content" className="prose prose-neutral max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
-            </section>
+          {post.body && post.body.length > 0 ? (
+            <PortableText value={post.body} />
           ) : (
-            <section className="prose prose-neutral max-w-none">
-              <h2>Introduction</h2>
-              <p>{post.introduction}</p>
-              <p>Content is being loaded from Google Docs...</p>
-            </section>
+            <div className="prose prose-lg prose-gray max-w-none">
+              <p className="text-gray-600">
+                Content is being loaded or not yet available.
+              </p>
+            </div>
           )}
 
-          <hr className="my-10" />
+          {/* Tags */}
+          {post.tags && post.tags.length > 0 && (
+            <div className="mt-12 pt-8 border-t border-gray-200">
+              <h3 className="text-lg font-semibold mb-4">Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {post.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
-          <nav aria-label="Post navigation" className="flex items-center justify-between text-sm">
-            <Link href="/blog" className="text-blue-600 hover:underline">← Back to Blog</Link>
-          </nav>
+          {/* Navigation */}
+          <div className="mt-12 pt-8 border-t border-gray-200">
+            <Link 
+              href="/blog" 
+              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
+            >
+              ← Back to Blog
+            </Link>
+          </div>
         </main>
 
-        <aside className="order-first md:order-last">
-          <div className="sticky top-20 rounded-md border p-4">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-500">On this page</p>
-            <ul className="space-y-2 text-sm">
-              <li><a className="hover:underline" href="#introduction">Introduction</a></li>
-              <li><a className="hover:underline" href="#understanding-anxiety-through-stoic-philosophy">Understanding Anxiety</a></li>
-              <li><a className="hover:underline" href="#daily-stoic-quotes-for-anxiety-relief">Daily Quotes</a></li>
-              <li><a className="hover:underline" href="#practical-exercises-for-daily-application">Practical Exercises</a></li>
-              <li><a className="hover:underline" href="#building-long-term-resilience">Building Resilience</a></li>
-            </ul>
+        {/* Sidebar */}
+        <aside className="lg:sticky lg:top-8 lg:self-start">
+          <div className="bg-gray-50 rounded-xl p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">More Articles</h3>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Discover more insights on Stoic philosophy and practical wisdom.
+              </p>
+              <Link 
+                href="/blog"
+                className="block w-full bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Browse All Posts
+              </Link>
+            </div>
           </div>
         </aside>
       </div>
-    </div>
+    </article>
   )
 }

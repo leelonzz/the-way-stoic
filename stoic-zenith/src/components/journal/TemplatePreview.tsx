@@ -30,7 +30,7 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
     const baseClasses = "mb-3"
     
     switch (block.type) {
-      case 'heading':
+      case 'heading': {
         const headingClasses = {
           1: "text-2xl font-bold text-gray-900",
           2: "text-xl font-semibold text-gray-800", 
@@ -45,6 +45,7 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
         } else {
           return <h2 key={index} className={className}>{block.text}</h2>
         }
+      }
       
       case 'paragraph':
         if (block.text.includes('TODAY I AM GRATEFUL FOR') || 
@@ -84,7 +85,7 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
           </div>
         )
       
-      case 'numbered-list':
+      case 'numbered-list': {
         const number = block.text.match(/^\d+/)?.[0] || '1'
         return (
           <div key={index} className={`${baseClasses} flex items-start`}>
@@ -92,6 +93,7 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
             <span className="text-gray-500 text-sm">Add your content here...</span>
           </div>
         )
+      }
       
       case 'todo':
         return (
@@ -113,7 +115,7 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   return (
     <div className="flex-1 flex flex-col bg-white">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-gray-200 bg-white">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">{template.name}</h2>
         {template.description && (
           <p className="text-gray-600">{template.description}</p>
@@ -128,7 +130,7 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       </div>
 
       {/* Actions */}
-      <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+      <div className="p-6 border-t border-gray-200 flex justify-end gap-3 bg-white">
         {showSaveOption && onSaveToMyTemplates && (
           <Button 
             variant="outline"

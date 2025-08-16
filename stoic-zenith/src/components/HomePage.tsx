@@ -220,8 +220,14 @@ function HomePage(): JSX.Element {
                   }}
                   onClick={e => {
                     e.stopPropagation()
-                    // Use Next.js router for client-side navigation
-                    router.push('/journal')
+                    // Check if user is logged in and redirect accordingly
+                    if (user) {
+                      // User is logged in, go directly to journal
+                      router.push('/journal')
+                    } else {
+                      // User is not logged in, go to login page
+                      router.push('/login')
+                    }
                   }}
                 >
                   Start your day

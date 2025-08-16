@@ -389,7 +389,8 @@ export function RichTextEditor({
   )
 
   // Memoized block renderer for better performance
-  const MemoizedBlock = useMemo(() => React.memo(({ block }: { block: JournalBlock }) => {
+  const MemoizedBlock = useMemo(() => {
+    const BlockComponent = React.memo(({ block }: { block: JournalBlock }) => {
     const commonProps = {
       key: block.id,
       ref: (el: HTMLElement | null): void => setBlockRef(el, block.id),
@@ -504,14 +505,19 @@ export function RichTextEditor({
           />
         )
     }
-  }), [
-    blocks,
-    handleInput,
-    handleKeyDown,
-    handleImageUpload,
-    setBlockRef,
-    isAutoConverting,
-  ])
+  })
+  
+  MemoizedBlock.displayName = 'MemoizedBlock'
+  
+  return MemoizedBlock
+}, [
+  blocks,
+  handleInput,
+  handleKeyDown,
+  handleImageUpload,
+  setBlockRef,
+  isAutoConverting,
+])
 
   const renderBlock = useCallback(
     (block: JournalBlock): JSX.Element => {

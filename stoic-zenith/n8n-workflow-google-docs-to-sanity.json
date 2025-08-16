@@ -1,0 +1,247 @@
+{
+  "name": "Google Docs to Sanity Blog Post with AI SEO",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "get",
+        "documentId": "={{ $json.documentId || '1BvAI8txvyrp3t6mOyj-caRRT9BPHt0bG-Rj2E8Mi78w' }}",
+        "simple": false
+      },
+      "id": "c5d5d4f4-1234-4567-8901-123456789abc",
+      "name": "Google Docs",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "credentials": {
+        "googleDocumentsOAuth2Api": {
+          "id": "your-google-docs-credential-id",
+          "name": "Google Docs OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and clean text content from Google Docs\nconst docData = $input.first().json;\n\n// Extract title (first heading or document title)\nlet title = '';\nlet content = '';\n\n// Process document content\nif (docData.body && docData.body.content) {\n  const elements = docData.body.content;\n  \n  for (const element of elements) {\n    if (element.paragraph) {\n      const paragraph = element.paragraph;\n      let paragraphText = '';\n      \n      if (paragraph.elements) {\n        for (const textElement of paragraph.elements) {\n          if (textElement.textRun && textElement.textRun.content) {\n            paragraphText += textElement.textRun.content;\n          }\n        }\n      }\n      \n      // First substantial paragraph becomes title if not set\n      if (!title && paragraphText.trim().length > 5) {\n        title = paragraphText.trim();\n      } else if (paragraphText.trim()) {\n        content += paragraphText.trim() + '\\n\\n';\n      }\n    }\n  }\n}\n\n// Clean up content\ncontent = content.trim();\n\n// Fallback title\nif (!title) {\n  title = docData.title || 'Untitled Document';\n}\n\nreturn {\n  originalTitle: title,\n  rawContent: content,\n  documentId: docData.documentId,\n  wordCount: content.split(' ').length\n};"
+      },
+      "id": "d6e6e5f5-2345-5678-9012-234567890bcd",
+      "name": "Extract Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "message",
+        "model": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert SEO content optimizer for a Stoic philosophy blog called 'The Way Stoic'. Your task is to analyze content and generate SEO-optimized metadata and tags. Always focus on Stoic philosophy themes, practical wisdom, and modern applications of ancient principles."
+            },
+            {
+              "role": "user", 
+              "content": "=\"Analyze this content and generate SEO metadata for a Stoic philosophy blog:\\n\\nTitle: \" + $json.originalTitle + \"\\n\\nContent: \" + $json.rawContent + \"\\n\\nPlease respond with ONLY a valid JSON object containing:\\n- optimizedTitle: (50-60 chars, SEO-friendly, includes 'Stoic' if relevant)\\n- metaDescription: (150-160 chars, compelling, includes keywords)\\n- excerpt: (100-150 words summary)\\n- categories: (array of 2-3 relevant categories from: Stoic Philosophy, Daily Practice, Ancient Wisdom, Modern Applications, Mindfulness, Resilience, Ethics, Practical Stoicism)\\n- tags: (array of 5-7 relevant tags like: marcus-aurelius, seneca, epictetus, stoic-quotes, anxiety, meditation, virtue, wisdom)\\n- slug: (URL-friendly version of title)\\n- suggestedFeaturedImage: (description of what image would work best)\""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e7f7f6g6-3456-6789-0123-345678901cde",
+      "name": "AI SEO Generator",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "your-openai-credential-id",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI response and combine with content\nconst aiResponse = $input.first().json.message.content;\nconst extractedData = $('Extract Content').first().json;\n\nlet seoData;\ntry {\n  // Remove any markdown code blocks if present\n  const cleanResponse = aiResponse.replace(/```json\\n?|```\\n?/g, '').trim();\n  seoData = JSON.parse(cleanResponse);\n} catch (error) {\n  console.log('Error parsing AI response:', error);\n  console.log('AI Response:', aiResponse);\n  \n  // Fallback SEO data\n  seoData = {\n    optimizedTitle: extractedData.originalTitle,\n    metaDescription: extractedData.rawContent.substring(0, 150) + '...',\n    excerpt: extractedData.rawContent.substring(0, 200) + '...',\n    categories: ['Stoic Philosophy', 'Daily Practice'],\n    tags: ['stoicism', 'philosophy', 'wisdom'],\n    slug: extractedData.originalTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),\n    suggestedFeaturedImage: 'Ancient Greek or Roman philosophical scene'\n  };\n}\n\n// Generate current timestamp\nconst now = new Date().toISOString();\n\n// Create slug if not provided\nif (!seoData.slug) {\n  seoData.slug = seoData.optimizedTitle.toLowerCase()\n    .replace(/[^a-z0-9]+/g, '-')\n    .replace(/^-|-$/g, '')\n    .substring(0, 96);\n}\n\n// Convert content to basic Portable Text blocks\nconst contentBlocks = [];\nconst paragraphs = extractedData.rawContent.split('\\n\\n');\n\nfor (const paragraph of paragraphs) {\n  if (paragraph.trim()) {\n    contentBlocks.push({\n      _type: 'block',\n      _key: 'block_' + Math.random().toString(36).substr(2, 9),\n      style: 'normal',\n      children: [{\n        _type: 'span',\n        _key: 'span_' + Math.random().toString(36).substr(2, 9),\n        text: paragraph.trim(),\n        marks: []\n      }],\n      markDefs: []\n    });\n  }\n}\n\nreturn {\n  title: seoData.optimizedTitle,\n  slug: {\n    _type: 'slug',\n    current: seoData.slug\n  },\n  author: 'Content Team',\n  excerpt: seoData.excerpt,\n  categories: seoData.categories,\n  tags: seoData.tags,\n  publishedAt: now,\n  body: contentBlocks,\n  featured: false,\n  seo: {\n    metaTitle: seoData.optimizedTitle,\n    metaDescription: seoData.metaDescription\n  },\n  _type: 'blogPost',\n  suggestedFeaturedImage: seoData.suggestedFeaturedImage,\n  originalDocumentId: extractedData.documentId\n};"
+      },
+      "id": "f8g8g7h7-4567-7890-1234-456789012def",
+      "name": "Format for Sanity",
+      "type": "n8n-nodes-base.code", 
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $env.SANITY_PROJECT_ID }}.api.sanity.io/v{{ $env.SANITY_API_VERSION || '2024-01-01' }}/data/mutate/{{ $env.SANITY_DATASET || 'production' }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization", 
+              "value": "=Bearer {{ $env.SANITY_API_WRITE_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={ \"mutations\": [{ \"create\": $json }] }",
+        "options": {}
+      },
+      "id": "g9h9h8i8-5678-8901-2345-567890123efg",
+      "name": "Create Sanity Blog Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "your-sanity-auth-credential-id",
+          "name": "Sanity API Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process the Sanity API response\nconst sanityResponse = $input.first().json;\n\nif (sanityResponse.results && sanityResponse.results.length > 0) {\n  const result = sanityResponse.results[0];\n  \n  if (result.operation === 'create' && result.document) {\n    const doc = result.document;\n    \n    return {\n      success: true,\n      message: 'Blog post created successfully!',\n      documentId: doc._id,\n      title: doc.title,\n      slug: doc.slug.current,\n      publishedAt: doc.publishedAt,\n      studioUrl: `https://{{ $env.SANITY_PROJECT_ID }}.sanity.studio/structure/blogPost;${doc._id}`,\n      blogUrl: `https://your-domain.com/blog/${doc.slug.current}`,\n      suggestedFeaturedImage: doc.suggestedFeaturedImage || 'No suggestion provided'\n    };\n  }\n}\n\n// Handle errors\nreturn {\n  success: false,\n  message: 'Failed to create blog post',\n  error: sanityResponse.error || 'Unknown error',\n  response: sanityResponse\n};"
+      },
+      "id": "h0i0i9j9-6789-9012-3456-678901234fgh",
+      "name": "Process Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "operation": "webhook",
+        "httpMethod": "POST",
+        "path": "google-docs-to-sanity",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b1b2c2-0123-1234-5678-012345678901",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [40, 300],
+      "webhookId": "google-docs-to-sanity-webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "i1j1j0k0-7890-0123-4567-789012345ghi",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Docs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Docs": {
+      "main": [
+        [
+          {
+            "node": "Extract Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Content": {
+      "main": [
+        [
+          {
+            "node": "AI SEO Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI SEO Generator": {
+      "main": [
+        [
+          {
+            "node": "Format for Sanity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format for Sanity": {
+      "main": [
+        [
+          {
+            "node": "Create Sanity Blog Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Sanity Blog Post": {
+      "main": [
+        [
+          {
+            "node": "Process Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Result": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "tag1",
+      "name": "content-automation"
+    },
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z", 
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "tag2",
+      "name": "ai-seo"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

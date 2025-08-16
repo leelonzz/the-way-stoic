@@ -2,11 +2,13 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getAllPhilosophers, getPhilosopherBiography, generatePhilosopherStructuredData } from '@/lib/philosopherData'
+import { formatLastUpdatedWithPrefix } from '@/lib/dateUtils'
+import { YouTubeEmbed } from '@/components/ui/youtube-embed'
 
 // Helper function to render markdown-style bold text
 function renderBoldText(text: string): JSX.Element {
   const parts = text.split(/(\*\*[^*]+\*\*)/g)
-  
+
   return (
     <>
       {parts.map((part, index) => {
@@ -15,6 +17,80 @@ function renderBoldText(text: string): JSX.Element {
           return <strong key={index} className="font-semibold">{boldText}</strong>
         }
         return <span key={index}>{part}</span>
+      })}
+    </>
+  )
+}
+
+// Helper function to add internal links to philosopher names
+function addPhilosopherLinks(text: string, allPhilosophers: any[]): JSX.Element {
+  // Create a map of philosopher names to their slugs
+  const philosopherMap = new Map<string, string>()
+
+  allPhilosophers.forEach(philosopher => {
+    // Add full name
+    philosopherMap.set(philosopher.fullName, philosopher.slug)
+    // Add short name
+    philosopherMap.set(philosopher.name, philosopher.slug)
+    // Add common variations
+    if (philosopher.name === 'Seneca') {
+      philosopherMap.set('Seneca the Younger', philosopher.slug)
+    }
+    if (philosopher.name === 'Cato the Younger') {
+      philosopherMap.set('Cato', philosopher.slug)
+    }
+  })
+
+  // Sort philosopher names by length (longest first) to avoid partial matches
+  const sortedNames = Array.from(philosopherMap.keys()).sort((a, b) => b.length - a.length)
+
+  // Split text into sentences/paragraphs to ensure only first occurrence per paragraph is linked
+  const paragraphs = text.split('\n\n')
+
+  return (
+    <>
+      {paragraphs.map((paragraph, pIndex) => {
+        const paragraphLinkedNames = new Set<string>()
+        let processedParagraph = paragraph
+
+        // Process each philosopher name
+        sortedNames.forEach(name => {
+          if (paragraphLinkedNames.has(name)) return
+
+          const slug = philosopherMap.get(name)!
+          const regex = new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+
+          if (regex.test(processedParagraph)) {
+            processedParagraph = processedParagraph.replace(regex, `__LINK_${name}_${slug}__`)
+            paragraphLinkedNames.add(name)
+          }
+        })
+
+        // Convert the processed paragraph back to JSX
+        const parts = processedParagraph.split(/(__LINK_[^_]+_[^_]+__)/g)
+
+        return (
+          <p key={pIndex} className="mb-4">
+            {parts.map((part, partIndex) => {
+              if (part.startsWith('__LINK_')) {
+                const match = part.match(/__LINK_(.+)_([^_]+)__/)
+                if (match) {
+                  const [, linkText, slug] = match
+                  return (
+                    <Link
+                      key={partIndex}
+                      href={`/biography/${slug}`}
+                      className="text-amber-700 hover:text-amber-900 underline font-medium"
+                    >
+                      {linkText}
+                    </Link>
+                  )
+                }
+              }
+              return <span key={partIndex}>{renderBoldText(part)}</span>
+            })}
+          </p>
+        )
       })}
     </>
   )
@@ -69,14 +145,15 @@ export async function generateMetadata({
   }
 }
 
-export default async function BiographyPage({ 
-  params 
-}: { 
-  params: Promise<{ 'mentor-slug': string }> 
+export default async function BiographyPage({
+  params
+}: {
+  params: Promise<{ 'mentor-slug': string }>
 }) {
   const resolvedParams = await params
   const slug = resolvedParams['mentor-slug']
   const biography = getPhilosopherBiography(slug)
+  const allPhilosophers = getAllPhilosophers()
   
   if (!biography) {
     return (
@@ -107,6 +184,9 @@ export default async function BiographyPage({
 
   const bornYear = formatDate(biography.birthDate)
   const diedYear = formatDate(biography.deathDate)
+
+  // Last updated date formatted
+  const lastUpdatedStr = formatLastUpdatedWithPrefix(biography.lastUpdated)
   
   return (
     <>
@@ -133,7 +213,11 @@ export default async function BiographyPage({
 
         {/* Hero Section */}
         <header className="mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          <div className={`grid gap-8 items-start ${
+            ['diogenes-of-babylon', 'panaetius-of-rhodes', 'hecato-of-rhodes'].includes(biography.slug)
+              ? 'grid-cols-1'
+              : 'grid-cols-1 md:grid-cols-2'
+          }`}>
             {/* Left Column - Text */}
             <div>
               <div className="mb-4">
@@ -168,41 +252,57 @@ export default async function BiographyPage({
                   <span className="font-semibold text-gray-900 font-inknut">Role:</span>
                   <span className="text-gray-700 font-poppins font-light">{biography.role}</span>
                 </div>
+
+                {/* Last Updated Date */}
+                {lastUpdatedStr && (
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <p className="text-sm text-gray-600 font-medium">{lastUpdatedStr}</p>
+                  </div>
+                )}
               </div>
             </div>
             
             {/* Right Column - Image */}
-            <div className="flex justify-center md:justify-end">
-              {biography.slug === 'marcus-aurelius' ? (
-                <div className="relative w-80 h-96 rounded-lg shadow-lg overflow-hidden">
-                  <Image
-                    src="/images/philosophers/marcus-aurelius-portrait.jpg"
-                    alt="Marcus Aurelius portrait from Figma design"
-                    fill
-                    className="object-cover"
-                    priority
-                  />
-                </div>
-              ) : (
-                <div className="w-80 h-96 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg shadow-lg flex items-center justify-center">
-                  <div className="text-center p-6">
-                    <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
-                      <span className="text-2xl font-bold text-gray-600">
-                        {biography.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">Portrait of {biography.name}</p>
+            {!['diogenes-of-babylon', 'panaetius-of-rhodes', 'hecato-of-rhodes'].includes(biography.slug) && (
+              <div className="flex justify-center md:justify-end">
+                {biography.imageUrl ? (
+                  <div className="relative w-80 h-96 rounded-lg shadow-lg overflow-hidden">
+                    <Image
+                      src={biography.imageUrl}
+                      alt={`${biography.name} portrait`}
+                      fill
+                      className={`object-cover ${
+                        biography.slug === 'musonius-rufus' ? 'object-left' :
+                        biography.slug === 'zeno-of-citium' ? 'object-top' :
+                        biography.slug === 'faustina-the-younger' ? 'object-top' :
+                        biography.slug === 'faustina-the-elder' ? 'object-top' :
+                        biography.slug === 'bruttia-crispina' ? 'object-top' :
+                        biography.slug === 'hadrian' ? 'object-top' : ''
+                      }`}
+                      priority
+                    />
                   </div>
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="w-80 h-96 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg shadow-lg flex items-center justify-center">
+                    <div className="text-center p-6">
+                      <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <span className="text-2xl font-bold text-gray-600">
+                          {biography.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">Portrait of {biography.name}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           {/* Description */}
           <div className="mt-8">
-            <p className="text-xl text-gray-700 leading-relaxed font-poppins font-light">
-              {biography.description}
-            </p>
+            <div className="text-xl text-gray-700 leading-relaxed font-poppins font-light">
+              {addPhilosopherLinks(biography.description, allPhilosophers)}
+            </div>
           </div>
         </header>
 
@@ -227,6 +327,33 @@ export default async function BiographyPage({
                     </div>
                   </div>
                 ))}
+              </section>
+            )}
+
+            {/* Video Section */}
+            {biography.videoUrl && (
+              <section className="mb-12">
+                <div className="text-center mb-8">
+                  <div className="mb-4">
+                    <span className="inline-block px-3 py-1 text-xs font-medium uppercase tracking-wider bg-blue-100 text-blue-800 rounded-full">
+                      Video
+                    </span>
+                  </div>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-4 font-inknut">
+                    Watch: Learn About {biography.name}
+                  </h2>
+                  <p className="text-lg text-gray-600 font-poppins font-light max-w-2xl mx-auto">
+                    Discover the life and philosophy of {biography.fullName} through this engaging documentary
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 md:p-8">
+                  <YouTubeEmbed
+                    videoUrl={biography.videoUrl}
+                    title={`Documentary about ${biography.fullName}`}
+                    className="max-w-4xl mx-auto"
+                  />
+                </div>
               </section>
             )}
 
@@ -296,13 +423,37 @@ export default async function BiographyPage({
             {biography.relatedAuthors && (
               <div className="bg-amber-50 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 font-inknut">Related Philosophers</h3>
-                
+
                 <div className="space-y-2 text-sm">
-                  {biography.relatedAuthors.split(';').map((author, index) => (
-                    <div key={index} className="text-amber-800 font-poppins font-light">
-                      {author.trim()}
-                    </div>
-                  ))}
+                  {biography.relatedAuthors.split(';').map((author, index) => {
+                    const authorName = author.trim()
+                    // Find matching philosopher
+                    const matchingPhilosopher = allPhilosophers.find(p =>
+                      p.name === authorName ||
+                      p.fullName === authorName ||
+                      (authorName === 'Seneca the Younger' && p.name === 'Seneca') ||
+                      (authorName === 'Cato' && p.name === 'Cato the Younger')
+                    )
+
+                    if (matchingPhilosopher) {
+                      return (
+                        <div key={index}>
+                          <Link
+                            href={`/biography/${matchingPhilosopher.slug}`}
+                            className="text-amber-700 hover:text-amber-900 underline font-medium font-poppins"
+                          >
+                            {authorName}
+                          </Link>
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div key={index} className="text-amber-800 font-poppins font-light">
+                        {authorName}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -356,15 +507,15 @@ export default async function BiographyPage({
         {/* Navigation */}
         <footer className="mt-12 pt-8 border-t border-gray-200">
           <div className="flex items-center justify-between">
-            <Link 
-              href="/mentors" 
+            <Link
+              href="/mentors"
               className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
             >
               ← Back to All Mentors
             </Link>
-            
+
             {biography.link && (
-              <a 
+              <a
                 href={biography.link}
                 target="_blank"
                 rel="noopener noreferrer"

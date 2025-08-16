@@ -18,12 +18,13 @@ export type Post = {
   relatedQuotes: string
   status: string
   publishedDate: string
+  lastUpdated: string
 }
 
-const CSV_RELATIVE_PATH = '../books/Content Matrix-Grid view.csv'
+const CSV_RELATIVE_PATH = 'books/Content Matrix-Grid view.csv'
 
 function getCsvPath(): string {
-  // Resolve relative to the stoic-zenith app working directory
+  // Resolve relative to the project root (stoic-zenith directory)
   return path.resolve(process.cwd(), CSV_RELATIVE_PATH)
 }
 
@@ -96,7 +97,7 @@ function safeSlug(input: string): string {
       const parts = u.pathname.split('/').filter(Boolean)
       return parts[parts.length - 1] || parts[parts.length - 2] || 'post'
     }
-  } catch (_) {}
+  } catch (_e) { void 0 }
   return input
     .toLowerCase()
     .replace(/[^a-z0-9\-\s_/]/g, '')
@@ -142,6 +143,7 @@ export function loadPosts(): Post[] {
       relatedQuotes: (r['Related_Quotes'] || '').trim(),
       status: (r['Status'] || '').trim(),
       publishedDate: (r['Published_Date'] || '').trim(),
+      lastUpdated: (r['Last_Updated'] || '').trim(),
     }
   })
   // Filter out items without a slug
@@ -161,7 +163,8 @@ export function getPostBySlug(slug: string): Post | undefined {
 }
 
 export function siteUrl(pathname: string = ''): string {
-  const base = 'https://your-site.com'
+  // Use the main domain
+  const base = process.env.NEXT_PUBLIC_APP_URL || 'https://thewaystoic.site'
   if (!pathname) return base
   return `${base}${pathname.startsWith('/') ? pathname : `/${pathname}`}`
 }

@@ -113,7 +113,7 @@ export function QuoteCard({
                   onClick={handleShare}
                   className="text-stone hover:text-cta hover:bg-cta/10"
                 >
-                  <Share className="w-4 h-4" />
+                  <Share className="w-3 h-3" />
                 </Button>
                 
                 {(onSave || onUnsave) && (
@@ -129,9 +129,9 @@ export function QuoteCard({
                     }`}
                   >
                     {isSaved ? (
-                      <BookmarkCheck className="w-4 h-4" />
+                      <BookmarkCheck className="w-3 h-3" />
                     ) : (
-                      <Bookmark className="w-4 h-4" />
+                      <Bookmark className="w-3 h-3" />
                     )}
                   </Button>
                 )}

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import { Search, X, BookTemplate, Heart, Sunrise, Target, Moon, Calendar, FileText, Plus, Camera } from 'lucide-react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { Search, X, BookTemplate, Heart, Sunrise, Target, Moon, Calendar, FileText, Plus, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -9,6 +9,7 @@ import {
 import { JournalTemplate, JournalBlock } from './types'
 import { toast } from '@/components/ui/use-toast'
 import { TemplatePreview } from './TemplatePreview'
+import { EnhancedRichTextEditor } from './EnhancedRichTextEditor'
 
 interface TemplateGalleryProps {
   isOpen: boolean
@@ -28,10 +29,10 @@ const getTemplateIcon = (iconName: string) => {
     'calendar-week': Calendar,
     'file-text': FileText,
     'book-template': BookTemplate,
-    'camera': Camera,
   }
   return iconMap[iconName as keyof typeof iconMap] || FileText
 }
+
 
 // Mock system templates (will be replaced with API call)
 const SYSTEM_TEMPLATES: JournalTemplate[] = [
@@ -53,9 +54,10 @@ const SYSTEM_TEMPLATES: JournalTemplate[] = [
         },
         {
           id: '2',
-          type: 'paragraph',
+          type: 'heading',
+          level: 2,
           text: 'TODAY I AM GRATEFUL FOR:',
-          richText: '<p><strong>TODAY I AM GRATEFUL FOR:</strong></p>',
+          richText: '<h2>TODAY I AM GRATEFUL FOR:</h2>',
           createdAt: new Date()
         },
         {
@@ -208,120 +210,6 @@ const SYSTEM_TEMPLATES: JournalTemplate[] = [
           type: 'bullet-list',
           text: '• ',
           richText: '<ul><li></li></ul>',
-          createdAt: new Date()
-        }
-      ] as JournalBlock[]
-    },
-    is_system: true,
-    created_at: new Date(),
-    updated_at: new Date()
-  },
-  {
-    id: 'one-photo',
-    name: 'One photo',
-    description: 'Capture and reflect on a meaningful moment with a photo',
-    category: 'getting_started',
-    icon: 'camera',
-    template_content: {
-      blocks: [
-        {
-          id: '1',
-          type: 'heading',
-          level: 2,
-          text: 'Photo Reflection',
-          richText: '<h2>Photo Reflection</h2>',
-          createdAt: new Date()
-        },
-        {
-          id: '2',
-          type: 'paragraph',
-          text: 'Add a photo that represents your day:',
-          richText: '<p><strong>Add a photo that represents your day:</strong></p>',
-          createdAt: new Date()
-        },
-        {
-          id: '3',
-          type: 'paragraph',
-          text: '[Photo placeholder]',
-          richText: '<p><em>[Photo placeholder]</em></p>',
-          createdAt: new Date()
-        },
-        {
-          id: '4',
-          type: 'paragraph',
-          text: 'What does this photo represent to you?',
-          richText: '<p><strong>What does this photo represent to you?</strong></p>',
-          createdAt: new Date()
-        },
-        {
-          id: '5',
-          type: 'paragraph',
-          text: '',
-          richText: '<p></p>',
-          createdAt: new Date()
-        }
-      ] as JournalBlock[]
-    },
-    is_system: true,
-    created_at: new Date(),
-    updated_at: new Date()
-  },
-  {
-    id: 'todo-list',
-    name: 'To-Do List',
-    description: 'Organize your tasks and track your productivity',
-    category: 'getting_started',
-    icon: 'target',
-    template_content: {
-      blocks: [
-        {
-          id: '1',
-          type: 'heading',
-          level: 2,
-          text: 'Today\'s Tasks',
-          richText: '<h2>Today\'s Tasks</h2>',
-          createdAt: new Date()
-        },
-        {
-          id: '2',
-          type: 'paragraph',
-          text: 'High Priority:',
-          richText: '<p><strong>High Priority:</strong></p>',
-          createdAt: new Date()
-        },
-        {
-          id: '3',
-          type: 'todo',
-          text: '□ ',
-          richText: '<p>□ </p>',
-          createdAt: new Date()
-        },
-        {
-          id: '4',
-          type: 'todo',
-          text: '□ ',
-          richText: '<p>□ </p>',
-          createdAt: new Date()
-        },
-        {
-          id: '5',
-          type: 'paragraph',
-          text: 'Medium Priority:',
-          richText: '<p><strong>Medium Priority:</strong></p>',
-          createdAt: new Date()
-        },
-        {
-          id: '6',
-          type: 'todo',
-          text: '□ ',
-          richText: '<p>□ </p>',
-          createdAt: new Date()
-        },
-        {
-          id: '7',
-          type: 'todo',
-          text: '□ ',
-          richText: '<p>□ </p>',
           createdAt: new Date()
         }
       ] as JournalBlock[]
@@ -527,6 +415,11 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('gallery')
   const [selectedTemplate, setSelectedTemplate] = useState<JournalTemplate | null>(null)
+  const [isCreatingNew, setIsCreatingNew] = useState(false)
+  
+  // Template editor state
+  const [templateBlocks, setTemplateBlocks] = useState<JournalBlock[]>([])
+  const [isSaving, setIsSaving] = useState(false)
 
   // Load templates when modal opens
   useEffect(() => {
@@ -600,6 +493,118 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     }
   }
 
+  // Template editor handlers
+  const handleBlocksChange = useCallback((blocks: JournalBlock[]) => {
+    setTemplateBlocks(blocks)
+  }, [])
+
+  const handleNewTemplate = () => {
+    setIsCreatingNew(true)
+    
+    // Create a new template placeholder
+    const newTemplateId = `new-${Date.now()}`
+    const newTemplate: JournalTemplate = {
+      id: newTemplateId,
+      name: 'New Template',
+      description: '',
+      category: 'custom',
+      icon: 'file-text',
+      template_content: {
+        blocks: [
+          {
+            id: '1',
+            type: 'heading',
+            level: 2,
+            text: 'Template Title',
+            richText: '<h2>Template Title</h2>',
+            createdAt: new Date()
+          },
+          {
+            id: '2',
+            type: 'paragraph',
+            text: 'Start typing your template content here...',
+            richText: '<p>Start typing your template content here...</p>',
+            createdAt: new Date()
+          }
+        ]
+      },
+      is_system: false,
+      created_at: new Date(),
+      updated_at: new Date()
+    }
+    
+    // Add to userTemplates and select it
+    setUserTemplates(prev => [...prev, newTemplate])
+    setSelectedTemplate(newTemplate)
+    
+    // Initialize editor with template blocks
+    setTemplateBlocks(newTemplate.template_content.blocks)
+  }
+
+  const handleSaveTemplate = async () => {
+    if (templateBlocks.length === 0) {
+      toast({
+        title: 'Template Content Required',
+        description: 'Please add some content to your template.',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      // Keep the current name or use the selected template's name
+      const templateName = selectedTemplate?.name || 'New Template'
+      
+      const updatedTemplate: JournalTemplate = {
+        id: selectedTemplate?.id || `custom-${Date.now()}`,
+        name: templateName,
+        description: selectedTemplate?.description,
+        category: 'custom',
+        icon: selectedTemplate?.icon || 'file-text',
+        template_content: {
+          blocks: templateBlocks
+        },
+        is_system: false,
+        created_at: selectedTemplate?.created_at || new Date(),
+        updated_at: new Date()
+      }
+
+      // Update the existing template in userTemplates
+      setUserTemplates(prev => 
+        prev.map(template => 
+          template.id === selectedTemplate?.id ? updatedTemplate : template
+        )
+      )
+      
+      setIsCreatingNew(false)
+      setSelectedTemplate(updatedTemplate)
+      
+      toast({
+        title: 'Template Saved',
+        description: `Template "${templateName}" has been saved successfully.`,
+      })
+    } catch (error) {
+      console.error('Failed to save template:', error)
+      toast({
+        title: 'Save Failed',
+        description: 'Failed to save template. Please try again.',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCancelTemplate = () => {
+    // Remove the new template if it was just created
+    if (selectedTemplate && selectedTemplate.id.startsWith('new-')) {
+      setUserTemplates(prev => prev.filter(template => template.id !== selectedTemplate.id))
+    }
+    setIsCreatingNew(false)
+    setSelectedTemplate(null)
+  }
+
   const TemplateCard: React.FC<{ template: JournalTemplate, showSaveOption?: boolean }> = ({ 
     template, 
     showSaveOption = false 
@@ -617,9 +622,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
         onClick={() => setSelectedTemplate(template)}
       >
         <div className="flex items-center gap-3">
-          <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-            isSelected ? 'bg-blue-100' : 'bg-gray-100'
-          }`}>
+          <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center`}>
             <IconComponent className={`h-4 w-4 ${
               isSelected ? 'text-blue-600' : 'text-gray-600'
             }`} />
@@ -658,9 +661,9 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
         </div>
 
         {/* Split Panel Layout */}
-        <div className="flex h-[calc(90vh-80px)]">
+        <div className="flex h-[calc(90vh-80px)] bg-white">
           {/* Left Sidebar */}
-          <div className="w-80 border-r border-gray-200 flex flex-col">
+          <div className="w-80 border-r border-gray-200 flex flex-col bg-white">
             {/* Tab Navigation */}
             <div className="p-4">
               <div className="flex bg-gray-200 rounded-lg p-1">
@@ -680,7 +683,11 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
-                  onClick={() => setActiveTab('my-templates')}
+                  onClick={() => {
+                    setActiveTab('my-templates')
+                    setSelectedTemplate(null)
+                    setIsCreatingNew(false)
+                  }}
                 >
                   My templates
                 </button>
@@ -701,7 +708,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
             </div>
 
             {/* Template List */}
-            <div className="flex-1 overflow-y-auto px-4 pb-4">
+            <div className="flex-1 overflow-y-auto px-4 pb-6">
               {activeTab === 'gallery' && (
                 <div className="space-y-6">
                   {/* Getting Started Section */}
@@ -744,7 +751,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                 <div className="space-y-4">
                   {/* New Template Button */}
                   <Button 
-                    onClick={onCreateTemplate}
+                    onClick={handleNewTemplate}
                     className="w-full border-2 border-dashed border-gray-300 bg-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors justify-start h-auto p-3"
                     variant="outline"
                   >
@@ -774,13 +781,67 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
             </div>
           </div>
 
-          {/* Right Panel - Template Preview */}
-          <TemplatePreview
-            template={selectedTemplate}
-            onUseNow={handleApplyTemplate}
-            onSaveToMyTemplates={onSaveToMyTemplates ? handleSaveToMyTemplates : undefined}
-            showSaveOption={activeTab === 'gallery'}
-          />
+          {/* Right Panel - Conditional Content */}
+          {isCreatingNew ? (
+            // Full-Size Template Editor
+            <div className="flex-1 flex flex-col">
+              {/* Full Editor Area */}
+              <div className="flex-1 overflow-hidden">
+                <div className="h-full overflow-auto p-6 bg-white">
+                  <EnhancedRichTextEditor
+                    blocks={templateBlocks}
+                    onChange={handleBlocksChange}
+                    showPlaceholder={true}
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="p-6 bg-white border-t border-gray-200 flex justify-end gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={handleCancelTemplate}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSaveTemplate}
+                  disabled={isSaving}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          ) : activeTab === 'my-templates' && !selectedTemplate ? (
+            // Blank panel for My Templates
+            <div className="flex-1 flex items-center justify-center bg-gray-50">
+              <div className="text-center text-gray-500">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                <p className="text-lg font-medium mb-2">No template selected</p>
+                <p className="text-sm">Choose a template from the list or create a new one</p>
+              </div>
+            </div>
+          ) : (
+            // Template Preview
+            <TemplatePreview
+              template={selectedTemplate}
+              onUseNow={handleApplyTemplate}
+              onSaveToMyTemplates={onSaveToMyTemplates ? handleSaveToMyTemplates : undefined}
+              showSaveOption={activeTab === 'gallery'}
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>

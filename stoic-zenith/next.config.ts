@@ -76,12 +76,12 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  // Enable source maps for debugging
-  productionBrowserSourceMaps: true,
+  // Disable source maps in production for security
+  productionBrowserSourceMaps: false,
   // Performance optimizations
   compiler: {
-    // Keep console statements for debugging - disable console removal
-    removeConsole: false,
+    // Remove console statements in production
+    removeConsole: process.env.NODE_ENV === 'production',
   },
   // Bundle optimization
   webpack: (config: NextConfig & { optimization?: { splitChunks?: { cacheGroups?: Record<string, unknown> } } }, { dev, isServer }: { dev: boolean; isServer: boolean }) => {
@@ -169,7 +169,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://accounts.google.com https://vercel.live https://*.vercel.app; style-src 'self' 'unsafe-inline' https://accounts.google.com https://*.vercel.app; img-src 'self' data: https: *.googleusercontent.com *.supabase.co; font-src 'self' data: https://accounts.google.com; connect-src 'self' https://*.supabase.co https://accounts.google.com https://oauth2.googleapis.com https://generativelanguage.googleapis.com https://*.vercel.app; frame-src https://accounts.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://accounts.google.com https://vercel.live https://*.vercel.app; style-src 'self' 'unsafe-inline' https://accounts.google.com https://*.vercel.app; img-src 'self' data: https: *.googleusercontent.com *.supabase.co *.sanity.io; font-src 'self' data: https://accounts.google.com; connect-src 'self' https://*.supabase.co https://accounts.google.com https://oauth2.googleapis.com https://generativelanguage.googleapis.com https://*.vercel.app https://*.sanity.io; frame-src https://accounts.google.com https://www.youtube.com https://youtube.com https://*.sanity.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
           },
         ],
       },

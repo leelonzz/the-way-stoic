@@ -1,21 +1,116 @@
+# ========== OPENAI ==========
+# Search (shows webpages as links inside ChatGPT search). NOT used for model training.
+User-agent: OAI-SearchBot
+Allow: /
+
+# User-driven browsing from ChatGPT and Custom GPTs. Acts after a human click.
+User-agent: ChatGPT-User
+User-agent: ChatGPT-User/2.0
+Allow: /
+
+# Model-training crawler. Allow for content discovery and training.
+User-agent: GPTBot
+Allow: /
+
+# ========== ANTHROPIC (Claude) ==========
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: claude-web
+Allow: /
+
+# ========== PERPLEXITY ==========
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+# ========== GOOGLE (Gemini) ==========
+User-agent: Google-Extended
+Allow: /
+
 User-agent: Googlebot
 Allow: /
 
-User-agent: Bingbot
+# ========== MICROSOFT (Bing / Copilot) ==========
+User-agent: BingBot
 Allow: /
 
-User-agent: Twitterbot
+# ========== AMAZON ==========
+User-agent: Amazonbot
+Allow: /
+
+# ========== APPLE ==========
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# ========== META ==========
+User-agent: FacebookBot
 Allow: /
 
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: meta-externalagent
+Allow: /
+
+# ========== LINKEDIN ==========
+User-agent: LinkedInBot
+Allow: /
+
+# ========== BYTEDANCE ==========
+User-agent: Bytespider
+Allow: /
+
+# ========== DUCKDUCKGO ==========
+User-agent: DuckAssistBot
+Allow: /
+
+# ========== COHERE ==========
+User-agent: cohere-ai
+Allow: /
+
+# ========== RESEARCH & ACADEMIC ==========
+User-agent: AI2Bot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Diffbot
+Allow: /
+
+User-agent: omgili
+Allow: /
+
+# ========== EMERGING SEARCH STARTUPS ==========
+User-agent: TimpiBot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+User-agent: MistralAI-User
+Allow: /
+
+# ========== SOCIAL MEDIA ==========
+User-agent: Twitterbot
+Allow: /
+
+# ========== DEFAULT ==========
 User-agent: *
 Allow: /
 
-# Sitemap
+# ========== SITEMAP ==========
 Sitemap: https://thewaystoic.site/sitemap.xml
 
-# Favicon
+# ========== STATIC ASSETS ==========
 Allow: /favicon.ico
 Allow: /logo-icon.png

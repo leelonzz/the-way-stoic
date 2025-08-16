@@ -21,10 +21,8 @@ export function DebugControl({ className = '' }: DebugControlProps): JSX.Element
     performance: false
   })
 
-  // Only show in development
-  if (process.env.NODE_ENV === 'production') {
-    return null
-  }
+  // Ensure hooks are never called conditionally
+  const isProduction = process.env.NODE_ENV === 'production'
 
   useEffect(() => {
     setDebugStatus(debugControl.getDebugStatus())
@@ -61,6 +59,11 @@ export function DebugControl({ className = '' }: DebugControlProps): JSX.Element
       performance: false
     })
     debugLog.log('All debug settings cleared')
+  }
+
+  // Don't render in production
+  if (isProduction) {
+    return null
   }
 
   if (!isOpen) {

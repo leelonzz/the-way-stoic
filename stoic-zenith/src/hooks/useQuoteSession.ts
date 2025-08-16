@@ -19,6 +19,7 @@ interface QuoteSessionOptions {
   dailyStorageKey?: string
   reloadStorageKey?: string
   maxReloadsPerDay?: number
+  backgroundFetchThreshold?: number
 }
 
 const DEFAULT_OPTIONS: Required<QuoteSessionOptions> = {
@@ -26,7 +27,8 @@ const DEFAULT_OPTIONS: Required<QuoteSessionOptions> = {
   sessionStorageKey: 'twstoic:quote-session',
   dailyStorageKey: 'twstoic:daily-quote',
   reloadStorageKey: 'twstoic:reload-count',
-  maxReloadsPerDay: 10
+  maxReloadsPerDay: 10,
+  backgroundFetchThreshold: 10
 }
 
 // Memory management constants

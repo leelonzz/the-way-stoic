@@ -4,6 +4,7 @@ import { GeistMono } from 'geist/font/mono'
 import { Inknut_Antiqua, Inika, Poppins } from 'next/font/google'
 import './globals.css'
 import { ClientProviders } from '@/components/providers/ClientProviders'
+import { ConditionalHeader } from '@/components/layout/ConditionalHeader'
 
 const inknutAntiqua = Inknut_Antiqua({
   subsets: ['latin'],
@@ -28,6 +29,7 @@ const poppins = Poppins({
 
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://thewaystoic.site'),
   title: 'The Stoic Way - Philosophy for Daily Life',
   description:
     'Transform your daily practice with ancient Stoic wisdom. Build resilience, find clarity, and cultivate inner strength through guided reflection and timeless teachings.',
@@ -35,9 +37,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/images/logo-icon.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon-16.png', type: 'image/png', sizes: '16x16' },
+      { url: '/favicon-32.png', type: 'image/png', sizes: '32x32' },
     ],
-    apple: '/images/logo-icon.png',
+    apple: '/apple-touch-icon.png',
     shortcut: '/favicon.ico',
   },
   openGraph: {
@@ -47,7 +50,7 @@ export const metadata: Metadata = {
     siteName: 'The Stoic Way',
     images: [
       {
-        url: '/images/logo-icon.png',
+        url: '/apple-touch-icon.png',
         width: 1200,
         height: 630,
         alt: 'The Stoic Way - Philosophy for Daily Life',
@@ -60,7 +63,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'The Stoic Way - Philosophy for Daily Life',
     description: 'Transform your daily practice with ancient Stoic wisdom. Build resilience, find clarity, and cultivate inner strength through guided reflection and timeless teachings.',
-    images: ['/images/logo-icon.png'],
+    images: ['/apple-touch-icon.png'],
   },
   robots: {
     index: true,
@@ -106,7 +109,10 @@ html {
         className={`${GeistSans.variable} ${GeistMono.variable} ${inknutAntiqua.variable} ${inika.variable} ${poppins.variable}`}
       >
         <ClientProviders>
-          {children}
+          <ConditionalHeader />
+          <main>
+            {children}
+          </main>
         </ClientProviders>
       </body>
     </html>

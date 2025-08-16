@@ -15,12 +15,12 @@ interface CourseModule {
 
 const courseModules: CourseModule[] = [
   {
-    id: "start-here",
-    title: "START HERE",
-    subtitle: "Let's get you off on the right foot",
-    icon: "🚀",
+    id: "stoic-mindset",
+    title: "The Stoic Mindset",
+    subtitle: "Foundation of Stoic Philosophy and Practical Wisdom",
+    icon: "🧠",
     progress: 0,
-    path: "/courses/start-here"
+    path: "/courses/stoic-mindset"
   },
   {
     id: "learn-n8n",

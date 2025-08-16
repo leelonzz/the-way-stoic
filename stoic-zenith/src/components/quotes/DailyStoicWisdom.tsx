@@ -266,7 +266,7 @@ function SimplifiedQuoteCard({
         <div className="space-y-4">
           {/* Quote Content */}
           <div className="space-y-3">
-            <blockquote className="text-xs font-medium italic text-ink leading-relaxed">
+            <blockquote className="text-lg font-medium italic text-ink leading-relaxed">
               &ldquo;{quote.text}&rdquo;
             </blockquote>
             
@@ -294,9 +294,9 @@ function SimplifiedQuoteCard({
                   }`}
                 >
                   {isSaved ? (
-                    <Star className="w-4 h-4 fill-current" />
+                    <Star className="w-3 h-3 fill-current" />
                   ) : (
-                    <Star className="w-4 h-4" />
+                    <Star className="w-3 h-3" />
                   )}
                 </Button>
               )}
@@ -307,7 +307,7 @@ function SimplifiedQuoteCard({
                 onClick={handleShare}
                 className="text-stone hover:text-cta hover:bg-transparent p-2"
               >
-                <Share className="w-4 h-4" />
+                <Share className="w-3 h-3" />
               </Button>
             </div>
             
@@ -840,7 +840,7 @@ export function DailyStoicWisdom(): JSX.Element {
                                 size="sm"
                                 className="text-stone hover:text-cta hover:bg-transparent p-2"
                               >
-                                <Share className="w-4 h-4" />
+                                <Share className="w-3 h-3" />
                               </Button>
                             </div>
                             
@@ -851,7 +851,7 @@ export function DailyStoicWisdom(): JSX.Element {
                                 onClick={() => handleDeleteUserQuote(quote.id)}
                                 className="text-red-600 hover:text-red-700 hover:bg-transparent p-2"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3 h-3" />
                               </Button>
                             </div>
                           </div>
