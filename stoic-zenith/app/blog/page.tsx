@@ -1,8 +1,10 @@
+import type { Metadata } from 'next'
 import { sanityFetch } from '@/lib/sanity.fetch'
 import { blogPostsQuery } from '@/lib/sanity.queries'
 import { urlFor } from '@/lib/sanity.image'
 import Image from 'next/image'
 import Link from 'next/link'
+import { calculateReadingTime } from '@/lib/readingTime'
 
 interface BlogPost {
   _id: string
@@ -19,7 +21,39 @@ interface BlogPost {
   categories?: string[]
   tags?: string[]
   publishedAt: string
+  body?: any[]
   featured?: boolean
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: 'Blog - The Stoic Way | Ancient Wisdom for Modern Living',
+    description: 'Discover ancient Stoic wisdom for modern living through our comprehensive blog. Read articles on Stoic philosophy, practical exercises, mindfulness, and timeless insights from Marcus Aurelius, Epictetus, and Seneca.',
+    keywords: 'stoic philosophy, stoicism blog, ancient wisdom, marcus aurelius, epictetus, seneca, mindfulness, philosophy articles, daily stoic, stoic practices',
+    openGraph: {
+      title: 'Blog - The Stoic Way | Ancient Wisdom for Modern Living',
+      description: 'Discover ancient Stoic wisdom for modern living through our comprehensive blog. Read articles on Stoic philosophy, practical exercises, mindfulness, and timeless insights.',
+      type: 'website',
+      url: 'https://thewaystoic.site/blog',
+      images: [
+        {
+          url: '/apple-touch-icon.png',
+          width: 1200,
+          height: 630,
+          alt: 'The Stoic Way Blog - Ancient Wisdom for Modern Living',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Blog - The Stoic Way | Ancient Wisdom for Modern Living',
+      description: 'Discover ancient Stoic wisdom for modern living through our comprehensive blog.',
+      images: ['/apple-touch-icon.png'],
+    },
+    alternates: {
+      canonical: 'https://thewaystoic.site/blog',
+    },
+  }
 }
 
 export default async function BlogPage() {
@@ -93,6 +127,8 @@ function BlogCard({ post }: { post: BlogPost }) {
     day: 'numeric'
   })
 
+  const readingTime = calculateReadingTime(post.body || [])
+
   return (
     <article className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100">
       <Link href={`/blog/${post.slug.current}`} className="block">
@@ -125,6 +161,8 @@ function BlogCard({ post }: { post: BlogPost }) {
             </div>
             <span className="text-gray-400">•</span>
             <time className="text-sm text-gray-500">{publishedDate}</time>
+            <span className="text-gray-400">•</span>
+            <span className="text-sm text-gray-500">{readingTime.text}</span>
           </div>
 
           <h2 className="text-xl font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">

@@ -41,6 +41,7 @@
   ],
   "exclude": [
     "node_modules",
-    "plugins_disabled"
+    "plugins_disabled",
+    "plugins_disabled_temp"
   ]
 }

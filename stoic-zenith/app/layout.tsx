@@ -5,6 +5,7 @@ import { Inknut_Antiqua, Inika, Poppins } from 'next/font/google'
 import './globals.css'
 import { ClientProviders } from '@/components/providers/ClientProviders'
 import { ConditionalHeader } from '@/components/layout/ConditionalHeader'
+import { MainContent } from '@/components/layout/MainContent'
 
 const inknutAntiqua = Inknut_Antiqua({
   subsets: ['latin'],
@@ -94,6 +95,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/logo-icon.png" />
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
+        <link rel="alternate" type="application/rss+xml" title="The Stoic Way - Blog RSS Feed" href="/api/rss" />
         <style>{`
 html {
   font-family: ${GeistSans.style.fontFamily};
@@ -108,11 +110,39 @@ html {
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} ${inknutAntiqua.variable} ${inika.variable} ${poppins.variable}`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "The Stoic Way",
+              "description": "Transform your daily practice with ancient Stoic wisdom. Build resilience, find clarity, and cultivate inner strength through guided reflection and timeless teachings.",
+              "url": "https://thewaystoic.site",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": {
+                  "@type": "EntryPoint",
+                  "urlTemplate": "https://thewaystoic.site/search?q={search_term_string}"
+                },
+                "query-input": "required name=search_term_string"
+              },
+              "publisher": {
+                "@type": "Organization",
+                "name": "The Stoic Way",
+                "logo": {
+                  "@type": "ImageObject",
+                  "url": "https://thewaystoic.site/apple-touch-icon.png"
+                }
+              }
+            })
+          }}
+        />
         <ClientProviders>
           <ConditionalHeader />
-          <main>
+          <MainContent>
             {children}
-          </main>
+          </MainContent>
         </ClientProviders>
       </body>
     </html>

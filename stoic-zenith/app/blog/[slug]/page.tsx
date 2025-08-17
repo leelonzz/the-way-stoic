@@ -3,9 +3,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { sanityFetch } from '@/lib/sanity.fetch'
-import { blogPostQuery, blogPostsQuery } from '@/lib/sanity.queries'
+import { blogPostQuery, relatedBlogPostsQuery } from '@/lib/sanity.queries'
 import { urlFor } from '@/lib/sanity.image'
 import { PortableText } from '@/components/PortableText'
+import { calculateReadingTime } from '@/lib/readingTime'
 
 interface BlogPost {
   _id: string
@@ -90,6 +91,9 @@ export async function generateMetadata({
       description,
       images: [imageUrl],
     },
+    alternates: {
+      canonical: `https://thewaystoic.site/blog/${resolvedParams.slug}`,
+    },
   }
 }
 
@@ -109,17 +113,63 @@ export default async function BlogPostPage({
     notFound()
   }
 
+  // Fetch related posts
+  const relatedPosts = await sanityFetch<BlogPost[]>({
+    query: relatedBlogPostsQuery,
+    params: { 
+      currentId: post._id,
+      categories: post.categories || [],
+      tags: post.tags || []
+    },
+    tags: ['blogPost'],
+  })
+
   const publishedDate = new Date(post.publishedAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   })
 
+  const readingTime = calculateReadingTime(post.body || [])
+
   const imageUrl = post.mainImage
-    ? urlFor(post.mainImage).width(1200).height(600).url()
+    ? urlFor(post.mainImage).width(1400).height(800).url()
     : null
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": post.title,
+    "description": post.excerpt || post.title,
+    "image": imageUrl || "https://thewaystoic.site/apple-touch-icon.png",
+    "author": {
+      "@type": "Person",
+      "name": post.author
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "The Stoic Way",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://thewaystoic.site/apple-touch-icon.png"
+      }
+    },
+    "datePublished": post.publishedAt,
+    "dateModified": post.publishedAt,
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://thewaystoic.site/blog/${resolvedParams.slug}`
+    },
+    "keywords": post.tags?.join(", ") || "stoic philosophy, wisdom, mindfulness",
+    "articleSection": post.categories?.join(", ") || "Philosophy"
+  }
+
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     <div className="mx-auto max-w-4xl px-6 py-10" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="mb-6 text-sm text-gray-500">
@@ -150,17 +200,21 @@ export default async function BlogPostPage({
           </p>
         )}
 
-        <p className="mt-2 text-sm text-gray-500" style={{ fontFamily: 'Inknut Antiqua, serif' }}>Published on {publishedDate}</p>
+        <div className="mt-2 flex items-center gap-3 text-sm text-gray-500" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
+          <time dateTime={post.publishedAt}>Published on {publishedDate}</time>
+          <span>•</span>
+          <span>{readingTime.text}</span>
+        </div>
 
         {/* Featured image */}
         {imageUrl && (
-          <div className="my-6 flex justify-center">
+          <div className="my-8 flex justify-center">
             <Image
               src={imageUrl}
               alt={post.mainImage?.alt || post.title}
-              width={800}
-              height={400}
-              className="rounded-lg shadow-lg object-cover"
+              width={1200}
+              height={700}
+              className="rounded-lg shadow-lg object-cover w-full max-w-5xl"
               priority
             />
           </div>
@@ -183,11 +237,72 @@ export default async function BlogPostPage({
 
           <hr className="my-10" />
 
+          {/* Related Posts */}
+          {relatedPosts.length > 0 && (
+            <section className="mb-10">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
+                Related Articles
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {relatedPosts.map((relatedPost) => (
+                  <RelatedPostCard key={relatedPost._id} post={relatedPost} />
+                ))}
+              </div>
+            </section>
+          )}
+
           <nav aria-label="Post navigation" className="flex items-center justify-between text-sm">
             <Link href="/blog" className="text-blue-600 hover:underline">← Back to Blog</Link>
           </nav>
         </main>
       </div>
     </div>
+    </>
+  )
+}
+
+function RelatedPostCard({ post }: { post: BlogPost }) {
+  const imageUrl = post.mainImage
+    ? urlFor(post.mainImage).width(400).height(200).url()
+    : '/apple-touch-icon.png'
+
+  const publishedDate = new Date(post.publishedAt).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+
+  return (
+    <article className="group bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100">
+      <Link href={`/blog/${post.slug.current}`} className="block">
+        <div className="aspect-[2/1] relative overflow-hidden bg-gray-100">
+          <Image
+            src={imageUrl}
+            alt={post.mainImage?.alt || post.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 768px) 100vw, 33vw"
+          />
+        </div>
+        
+        <div className="p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
+            {post.title}
+          </h3>
+
+          {post.excerpt && (
+            <p className="text-gray-600 text-sm leading-relaxed line-clamp-2 mb-3" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
+              {post.excerpt}
+            </p>
+          )}
+
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span>{post.author}</span>
+            <span>•</span>
+            <time dateTime={post.publishedAt}>{publishedDate}</time>
+          </div>
+        </div>
+      </Link>
+    </article>
   )
 }
