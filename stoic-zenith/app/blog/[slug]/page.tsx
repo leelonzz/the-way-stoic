@@ -120,81 +120,59 @@ export default async function BlogPostPage({
     : null
 
   return (
-    <article className="mx-auto max-w-4xl px-6 py-12">
+    <div className="mx-auto max-w-4xl px-6 py-10" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
       {/* Breadcrumb */}
-      <nav className="mb-8 text-sm text-gray-500">
+      <nav aria-label="Breadcrumb" className="mb-6 text-sm text-gray-500">
         <ol className="flex items-center gap-2">
           <li><Link href="/" className="hover:underline">Home</Link></li>
           <li>/</li>
           <li><Link href="/blog" className="hover:underline">Blog</Link></li>
           <li>/</li>
-          <li className="text-gray-700 truncate">{post.title}</li>
+          <li aria-current="page" className="text-gray-700 truncate">{post.title}</li>
         </ol>
       </nav>
 
       {/* Header */}
-      <header className="mb-12">
+      <header className="mb-8 text-center">
         {post.categories && post.categories.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {post.categories.map((category) => (
-              <span
-                key={category}
-                className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full font-medium"
-              >
-                {category}
-              </span>
-            ))}
-          </div>
+          <p className="text-xs uppercase tracking-wider text-gray-500 mb-2" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
+            {post.categories.join(' • ')}
+          </p>
         )}
 
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-6">
+        <h1 className="mt-2 text-4xl md:text-5xl font-bold leading-relaxed text-gray-900 mb-6" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
           {post.title}
         </h1>
 
         {post.excerpt && (
-          <p className="text-xl text-gray-600 leading-relaxed mb-8">
+          <p className="mt-3 text-lg text-gray-700 mb-6" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
             {post.excerpt}
           </p>
         )}
 
-        {/* Author info */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-lg font-semibold">
-              {post.author.charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <div>
-            <p className="font-semibold text-gray-900">{post.author}</p>
-            <p className="text-gray-600">Published on {publishedDate}</p>
-          </div>
-        </div>
+        <p className="mt-2 text-sm text-gray-500" style={{ fontFamily: 'Inknut Antiqua, serif' }}>Published on {publishedDate}</p>
 
         {/* Featured image */}
         {imageUrl && (
-          <div className="mb-12">
+          <div className="my-6 flex justify-center">
             <Image
               src={imageUrl}
               alt={post.mainImage?.alt || post.title}
-              width={1200}
-              height={600}
-              className="rounded-xl shadow-lg w-full"
+              width={800}
+              height={400}
+              className="rounded-lg shadow-lg object-cover"
               priority
             />
-            {post.mainImage?.alt && (
-              <p className="text-sm text-gray-600 mt-3 text-center italic">
-                {post.mainImage.alt}
-              </p>
-            )}
           </div>
         )}
       </header>
 
-      {/* Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-12">
-        <main>
+      <div className="max-w-4xl mx-auto">
+        <main className="min-w-0 overflow-hidden">
           {post.body && post.body.length > 0 ? (
-            <PortableText value={post.body} />
+            <article>
+              <PortableText value={post.body} />
+            </article>
           ) : (
             <div className="prose prose-lg prose-gray max-w-none">
               <p className="text-gray-600">
@@ -203,52 +181,13 @@ export default async function BlogPostPage({
             </div>
           )}
 
-          {/* Tags */}
-          {post.tags && post.tags.length > 0 && (
-            <div className="mt-12 pt-8 border-t border-gray-200">
-              <h3 className="text-lg font-semibold mb-4">Tags</h3>
-              <div className="flex flex-wrap gap-2">
-                {post.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          <hr className="my-10" />
 
-          {/* Navigation */}
-          <div className="mt-12 pt-8 border-t border-gray-200">
-            <Link 
-              href="/blog" 
-              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
-            >
-              ← Back to Blog
-            </Link>
-          </div>
+          <nav aria-label="Post navigation" className="flex items-center justify-between text-sm">
+            <Link href="/blog" className="text-blue-600 hover:underline">← Back to Blog</Link>
+          </nav>
         </main>
-
-        {/* Sidebar */}
-        <aside className="lg:sticky lg:top-8 lg:self-start">
-          <div className="bg-gray-50 rounded-xl p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">More Articles</h3>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Discover more insights on Stoic philosophy and practical wisdom.
-              </p>
-              <Link 
-                href="/blog"
-                className="block w-full bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                Browse All Posts
-              </Link>
-            </div>
-          </div>
-        </aside>
       </div>
-    </article>
+    </div>
   )
 }

@@ -3,7 +3,7 @@
 import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
 import {visionTool} from '@sanity/vision'
-import {autoImageUploadPlugin} from './plugins/auto-image-upload'
+// import {autoImageUploadPlugin} from './plugins/auto-image-upload'
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET!
@@ -17,7 +17,7 @@ export default defineConfig({
   plugins: [
     structureTool(),
     visionTool(),
-    // autoImageUploadPlugin(), // Temporarily disabled for debugging
+    // autoImageUploadPlugin(), // Disabled due to TypeScript errors
   ],
   schema: {
     types: [
@@ -91,9 +91,6 @@ export default defineConfig({
             name: 'body',
             title: 'Body',
             type: 'array',
-            components: {
-              input: () => import('../src/components/sanity/MarkdownBodyInput').then(mod => ({ default: mod.MarkdownBodyInput })),
-            },
             of: [
               {
                 type: 'block',

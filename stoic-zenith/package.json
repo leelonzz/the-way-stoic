@@ -52,6 +52,7 @@
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.4",
     "@sanity/image-url": "^1.1.0",
+    "@sanity/portable-text-editor": "^3.48.1",
     "@sanity/vision": "^4.4.1",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.53.0",
@@ -70,6 +71,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/crypto-js": "^4.2.2",
     "@types/dompurify": "^3.0.5",
+    "@types/jsdom": "^21.1.7",
     "@types/marked": "^5.0.2",
     "@types/react-window": "^1.8.8",
     "bcryptjs": "^3.0.2",
@@ -89,6 +91,7 @@
     "helmet": "^8.1.0",
     "html2canvas": "^1.4.1",
     "input-otp": "^1.2.4",
+    "jsdom": "^26.1.0",
     "lucide-react": "^0.462.0",
     "marked": "^16.1.2",
     "nanoid": "^5.1.5",
@@ -107,6 +110,7 @@
     "recharts": "^2.12.7",
     "resend": "^6.0.0",
     "sanity": "^4.4.1",
+    "semver": "^7.7.2",
     "sonner": "^1.5.0",
     "standardwebhooks": "^1.0.0",
     "styled-components": "^6.1.19",
@@ -114,6 +118,9 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.3",
     "zod": "^3.25.76"
+  },
+  "overrides": {
+    "@jridgewell/gen-mapping": "0.3.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",

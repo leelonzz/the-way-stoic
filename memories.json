@@ -142,8 +142,8 @@
       ],
       "timestamp": "2025-07-31T13:39:36.389Z",
       "context": "New feature request for The Way Stoic project",
-      "accessCount": 35,
-      "lastAccessed": "2025-08-14T23:25:06.377Z",
+      "accessCount": 37,
+      "lastAccessed": "2025-08-16T11:13:26.612Z",
       "lastVerified": "2025-07-31T13:39:36.389Z",
       "status": "fresh"
     },
@@ -180,8 +180,8 @@
       ],
       "timestamp": "2025-07-31T13:40:28.510Z",
       "context": "Complete project analysis for auth implementation planning",
-      "accessCount": 45,
-      "lastAccessed": "2025-08-14T23:44:02.329Z",
+      "accessCount": 47,
+      "lastAccessed": "2025-08-16T11:13:26.612Z",
       "lastVerified": "2025-07-31T13:40:28.510Z",
       "status": "fresh"
     },
@@ -202,8 +202,8 @@
       ],
       "timestamp": "2025-07-31T13:46:36.273Z",
       "context": "Complete authentication implementation summary",
-      "accessCount": 48,
-      "lastAccessed": "2025-08-14T23:44:02.329Z",
+      "accessCount": 50,
+      "lastAccessed": "2025-08-16T11:13:26.612Z",
       "lastVerified": "2025-07-31T13:46:36.273Z",
       "status": "fresh"
     },
@@ -222,8 +222,8 @@
       ],
       "timestamp": "2025-07-31T13:54:18.341Z",
       "context": "Authentication debugging - login failing with CORS errors",
-      "accessCount": 23,
-      "lastAccessed": "2025-08-13T12:40:58.611Z",
+      "accessCount": 25,
+      "lastAccessed": "2025-08-16T11:13:26.612Z",
       "lastVerified": "2025-07-31T13:54:18.341Z",
       "status": "fresh"
     },
@@ -242,8 +242,8 @@
       ],
       "timestamp": "2025-07-31T13:57:29.542Z",
       "context": "Authentication troubleshooting complete - fixed CSP and added debugging",
-      "accessCount": 38,
-      "lastAccessed": "2025-08-14T23:44:02.329Z",
+      "accessCount": 40,
+      "lastAccessed": "2025-08-16T11:13:26.612Z",
       "lastVerified": "2025-07-31T13:57:29.542Z",
       "status": "fresh"
     },
@@ -262,8 +262,8 @@
       ],
       "timestamp": "2025-07-31T22:49:35.805Z",
       "context": "Analyzing stoic-zenith app structure for feature implementation",
-      "accessCount": 43,
-      "lastAccessed": "2025-08-14T23:44:02.329Z",
+      "accessCount": 45,
+      "lastAccessed": "2025-08-16T11:13:26.612Z",
       "lastVerified": "2025-07-31T22:49:35.805Z",
       "status": "fresh"
     },
@@ -284,8 +284,8 @@
       ],
       "timestamp": "2025-07-31T22:58:58.884Z",
       "context": "Completed The Way Stoic app feature implementation",
-      "accessCount": 39,
-      "lastAccessed": "2025-08-14T23:44:02.329Z",
+      "accessCount": 41,
+      "lastAccessed": "2025-08-16T11:13:26.612Z",
       "lastVerified": "2025-07-31T22:58:58.884Z",
       "status": "fresh"
     },
@@ -303,8 +303,8 @@
       ],
       "timestamp": "2025-07-31T23:00:33.021Z",
       "context": "Debugging Calendar and Quotes page errors",
-      "accessCount": 25,
-      "lastAccessed": "2025-08-14T23:25:06.377Z",
+      "accessCount": 27,
+      "lastAccessed": "2025-08-16T11:13:26.612Z",
       "lastVerified": "2025-07-31T23:00:33.021Z",
       "status": "fresh"
     },
@@ -343,8 +343,8 @@
       ],
       "timestamp": "2025-07-31T23:17:13.996Z",
       "context": "Implementation completion summary",
-      "accessCount": 33,
-      "lastAccessed": "2025-08-13T12:40:58.611Z",
+      "accessCount": 35,
+      "lastAccessed": "2025-08-16T11:13:26.612Z",
       "lastVerified": "2025-07-31T23:17:13.996Z",
       "status": "fresh"
     },
@@ -550,8 +550,8 @@
         "flow-fixed"
       ],
       "timestamp": "2025-08-01T02:18:57.198Z",
-      "accessCount": 29,
-      "lastAccessed": "2025-08-14T23:44:02.329Z",
+      "accessCount": 31,
+      "lastAccessed": "2025-08-16T11:13:26.612Z",
       "lastVerified": "2025-08-01T02:18:57.198Z",
       "status": "fresh"
     },
@@ -7106,7 +7106,198 @@
       "lastAccessed": "2025-08-15T03:10:08.498Z",
       "lastVerified": "2025-08-15T03:10:08.498Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1755342612686_euj0o5n3k",
+      "content": "Sanity CMS \"Invalid list values\" error in body field - transaction ID: Csdd80pLvugiOUK0y3AoA9\n\nRoot Cause: The body field is receiving non-object values (likely strings) when it expects an array of Portable Text block objects.\n\nError Sources Identified:\n1. Custom HtmlBodyInput component may produce invalid data during conversion\n2. n8n workflow (Google Docs to Sanity) might send incorrectly formatted data\n3. Existing corrupted data in the database\n\nKey Files:\n- sanity.config.ts: Defines body field as array of blocks\n- MarkdownBodyInput.tsx: Custom input component with HTML conversion\n- markdownToPortableText.ts: Conversion logic using @portabletext/block-tools\n- n8n-workflow-google-docs-to-sanity.json: External data source\n\nFix Strategy:\n1. Add validation to prevent non-object values\n2. Clean existing invalid data\n3. Fix data sources (n8n workflow, conversion functions)\n4. Add error boundaries and recovery mechanisms",
+      "type": "config",
+      "tags": [
+        "config",
+        "database",
+        "sanity-cms",
+        "error",
+        "portable-text",
+        "validation",
+        "body-field"
+      ],
+      "timestamp": "2025-08-16T11:10:12.686Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T11:10:12.686Z",
+      "lastVerified": "2025-08-16T11:10:12.686Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755342721755_iik0lkd6v",
+      "content": "Investigating Sanity CMS error with transaction ID: Csdd80pLvugiOUK0y3AoA9. User sees \"Invalid list values\" error - some items in list are not objects. Need to check API endpoints and blog post submission logic.",
+      "type": "error",
+      "tags": [
+        "error",
+        "api",
+        "sanity",
+        "api-error",
+        "blog",
+        "debugging"
+      ],
+      "timestamp": "2025-08-16T11:12:01.755Z",
+      "context": "Bug investigation - Sanity Studio API error",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T11:12:01.755Z",
+      "lastVerified": "2025-08-16T11:12:01.755Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755342866622_o8psj23ko",
+      "content": "Root cause analysis for Sanity \"Invalid list values\" error (transaction ID: Csdd80pLvugiOUK0y3AoA9):\n\nPROBLEM: The MarkdownBodyInput.tsx component is broken with syntax errors and missing variables:\n- Line 122: References undefined `debouncedAutoConvert` (should be `debouncedAutoSave`)\n- Missing state variables: `activeTab`, `setActiveTab`, `isConverting`, `setIsConverting`, `previewBlocks`, `setPreviewBlocks`, `autoConvert`, `setAutoConvert`\n- Missing import for `convertToPortableText` function\n- Component renders UI elements that depend on these missing variables\n\nROOT CAUSE: Incomplete refactoring where the component was partially changed from auto-convert to auto-save functionality, leaving it in a broken state.\n\nIMMEDIATE ISSUE: When the component tries to save data to Sanity, it may produce invalid data structures due to the broken conversion logic, causing the \"Invalid list values\" error.",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "sanity",
+        "bug",
+        "critical",
+        "markdownbodyinput"
+      ],
+      "timestamp": "2025-08-16T11:14:26.621Z",
+      "context": "Sanity CMS debugging - component broken",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T11:14:26.621Z",
+      "lastVerified": "2025-08-16T11:14:26.621Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755343147669_ontgne6bz",
+      "content": "REAL ROOT CAUSE - Sanity \"Invalid list values\" error:\n\nThe issue is that someone is trying to save a STRING containing JSON (the Sanity API response) as the body content:\n```\n\"{\\n  \\\"transactionId\\\": \\\"jKwgQNCsrs019jNuQAbRYu\\\",\\n  \\\"results\\\": [{\\\"operation\\\": \\\"create\\\"}]\\n}\"\n```\n\nThis string is being passed to the body field, but Sanity expects an ARRAY of Portable Text blocks.\n\nThe problem occurs when:\n1. n8n workflow or API call successfully creates a blog post\n2. Gets back a response with transactionId\n3. Someone/something tries to save THAT response as the body of another blog post\n4. The body field receives a string instead of array of objects\n\nThe MarkdownBodyInput component tries to handle this with htmlToPortableText but the JSON string isn't valid HTML either, causing the validation to fail.",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "api",
+        "sanity",
+        "n8n",
+        "bug-fix",
+        "portable-text"
+      ],
+      "timestamp": "2025-08-16T11:19:07.669Z",
+      "context": "Bug diagnosis complete - n8n workflow sending wrong data",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T11:19:07.669Z",
+      "lastVerified": "2025-08-16T11:19:07.669Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755394898271_pdd62i9hd",
+      "content": "Next.js dev server error: Cannot find module './browsers' in caniuse-lite package. This is typically caused by corrupted or incomplete node_modules installation.",
+      "type": "error",
+      "tags": [
+        "error",
+        "nextjs",
+        "caniuse-lite",
+        "node_modules"
+      ],
+      "timestamp": "2025-08-17T01:41:38.271Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-17T01:41:38.271Z",
+      "lastVerified": "2025-08-17T01:41:38.271Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755395995735_v9aerr39c",
+      "content": "Found npm dependency conflict: next-sanity@10.0.12 requires React 19 but project uses React 18.3.1. Need to use --legacy-peer-deps to resolve.",
+      "type": "general",
+      "tags": [
+        "general",
+        "react",
+        "npm",
+        "dependency-conflict",
+        "next-sanity"
+      ],
+      "timestamp": "2025-08-17T01:59:55.735Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-17T01:59:55.735Z",
+      "lastVerified": "2025-08-17T01:59:55.735Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755397344901_x939bqqfi",
+      "content": "Faster solution for caniuse-lite error: Instead of full reinstall, just install the specific corrupted package: npm install caniuse-lite --legacy-peer-deps",
+      "type": "config",
+      "tags": [
+        "config",
+        "npm",
+        "caniuse-lite",
+        "quick-fix"
+      ],
+      "timestamp": "2025-08-17T02:22:24.901Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-17T02:22:24.901Z",
+      "lastVerified": "2025-08-17T02:22:24.901Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755397839114_6k3p51y2i",
+      "content": "The npm error indicates file locks preventing updates. Need to kill all Node processes and do a clean reinstall. Quick fix: rm -rf node_modules && npm install --legacy-peer-deps is still the fastest reliable solution.",
+      "type": "config",
+      "tags": [
+        "config",
+        "npm",
+        "file-locks",
+        "node-processes"
+      ],
+      "timestamp": "2025-08-17T02:30:39.114Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-17T02:30:39.114Z",
+      "lastVerified": "2025-08-17T02:30:39.114Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755411178113_8u4xet1vp",
+      "content": "User is looking for a blog post in Sanity with transaction ID: Csdd80pLvugiOUK0y3iiUX",
+      "type": "general",
+      "tags": [
+        "general",
+        "sanity",
+        "blog",
+        "transaction-id",
+        "search"
+      ],
+      "timestamp": "2025-08-17T06:12:58.113Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-17T06:12:58.113Z",
+      "lastVerified": "2025-08-17T06:12:58.113Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755411246869_7t0xohra2",
+      "content": "Transaction ID Csdd80pLvugiOUK0y3iiUX is a Sanity transaction ID. Based on the screenshot, this appears to be a create operation for a blog post. To find this document, we need to:\n1. Query Sanity using the transaction history API or \n2. Search for the document created around the time of this transaction\n3. The transaction ID format suggests this is from Sanity's mutation/transaction system",
+      "type": "general",
+      "tags": [
+        "general",
+        "api",
+        "sanity",
+        "transaction-id",
+        "blog-post",
+        "query-method"
+      ],
+      "timestamp": "2025-08-17T06:14:06.869Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-17T06:14:06.869Z",
+      "lastVerified": "2025-08-17T06:14:06.869Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755411585481_6jhv9glcw",
+      "content": "User provided Sanity write token: skqEzotEwniXr9IJ6DoFxOpCkm4wZvq8ZciGqUsA6DqYXwqS7PdxYfaxoH8vau6A9vYRYt6nHPhISPfutdTLxw2KtSx5YhDLbnJU7IBhWMXrj3QVISM3Vx7atnOhvqbjqA3ax348rXg1tS52H0IH6iKkhjlTaQnNnFa6HJSLWxPoPqej1X8o - This allows write operations including delete",
+      "type": "general",
+      "tags": [
+        "general",
+        "sanity",
+        "write-token",
+        "delete-permissions"
+      ],
+      "timestamp": "2025-08-17T06:19:45.481Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-17T06:19:45.481Z",
+      "lastVerified": "2025-08-17T06:19:45.481Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-15T03:10:08.498Z"
+  "lastUpdated": "2025-08-17T06:19:45.481Z"
 }

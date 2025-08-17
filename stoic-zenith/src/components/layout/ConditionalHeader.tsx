@@ -7,8 +7,8 @@ import { Header } from './Header'
 export const ConditionalHeader: React.FC = () => {
   const pathname = usePathname()
 
-  // Don't render header on the home page or app routes (journal, etc.)
-  if (pathname === '/' || pathname.startsWith('/journal') || pathname.startsWith('/calendar') || pathname.startsWith('/quotes') || pathname.startsWith('/mentors') || pathname.startsWith('/settings')) {
+  // Don't render header on the home page, login page, or app routes (journal, etc.)
+  if (pathname === '/' || pathname === '/login' || pathname.startsWith('/journal') || pathname.startsWith('/calendar') || pathname.startsWith('/quotes') || pathname.startsWith('/mentors') || pathname.startsWith('/settings')) {
     return null
   }
 
