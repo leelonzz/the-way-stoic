@@ -1,8 +1,8 @@
 'use client'
 
-import {defineConfig} from 'sanity'
-import {structureTool} from 'sanity/structure'
-import {visionTool} from '@sanity/vision'
+import { defineConfig } from 'sanity'
+import { structureTool } from 'sanity/structure'
+import { visionTool } from '@sanity/vision'
 // import {autoImageUploadPlugin} from './plugins/auto-image-upload'
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!
@@ -30,7 +30,7 @@ export default defineConfig({
             name: 'title',
             title: 'Title',
             type: 'string',
-            validation: (Rule) => Rule.required(),
+            validation: Rule => Rule.required(),
           },
           {
             name: 'slug',
@@ -40,13 +40,13 @@ export default defineConfig({
               source: 'title',
               maxLength: 96,
             },
-            validation: (Rule) => Rule.required(),
+            validation: Rule => Rule.required(),
           },
           {
             name: 'author',
             title: 'Author',
             type: 'string',
-            validation: (Rule) => Rule.required(),
+            validation: Rule => Rule.required(),
           },
           {
             name: 'excerpt',
@@ -73,19 +73,19 @@ export default defineConfig({
             name: 'categories',
             title: 'Categories',
             type: 'array',
-            of: [{type: 'string'}],
+            of: [{ type: 'string' }],
           },
           {
             name: 'tags',
             title: 'Tags',
             type: 'array',
-            of: [{type: 'string'}],
+            of: [{ type: 'string' }],
           },
           {
             name: 'publishedAt',
             title: 'Published at',
             type: 'datetime',
-            validation: (Rule) => Rule.required(),
+            validation: Rule => Rule.required(),
           },
           {
             name: 'body',
@@ -95,18 +95,18 @@ export default defineConfig({
               {
                 type: 'block',
                 styles: [
-                  {title: 'Normal', value: 'normal'},
-                  {title: 'H1', value: 'h1'},
-                  {title: 'H2', value: 'h2'},
-                  {title: 'H3', value: 'h3'},
-                  {title: 'H4', value: 'h4'},
-                  {title: 'Quote', value: 'blockquote'},
+                  { title: 'Normal', value: 'normal' },
+                  { title: 'H1', value: 'h1' },
+                  { title: 'H2', value: 'h2' },
+                  { title: 'H3', value: 'h3' },
+                  { title: 'H4', value: 'h4' },
+                  { title: 'Quote', value: 'blockquote' },
                 ],
                 marks: {
                   decorators: [
-                    {title: 'Strong', value: 'strong'},
-                    {title: 'Emphasis', value: 'em'},
-                    {title: 'Code', value: 'code'},
+                    { title: 'Strong', value: 'strong' },
+                    { title: 'Emphasis', value: 'em' },
+                    { title: 'Code', value: 'code' },
                   ],
                   annotations: [
                     {
@@ -126,7 +126,7 @@ export default defineConfig({
               },
               {
                 type: 'image',
-                options: {hotspot: true},
+                options: { hotspot: true },
                 fields: [
                   {
                     name: 'alt',
@@ -142,6 +142,13 @@ export default defineConfig({
             title: 'Featured Post',
             type: 'boolean',
             description: 'Mark this post as featured',
+          },
+          {
+            name: 'published',
+            title: 'Published',
+            type: 'boolean',
+            description: 'Post is live and visible on the blog',
+            initialValue: false,
           },
           {
             name: 'seo',
@@ -169,7 +176,7 @@ export default defineConfig({
             media: 'mainImage',
           },
           prepare(selection) {
-            const {author} = selection
+            const { author } = selection
             return Object.assign({}, selection, {
               subtitle: author && `by ${author}`,
             })
@@ -185,7 +192,7 @@ export default defineConfig({
             name: 'title',
             title: 'Course Title',
             type: 'string',
-            validation: (Rule) => Rule.required(),
+            validation: Rule => Rule.required(),
           },
           {
             name: 'slug',
@@ -195,14 +202,14 @@ export default defineConfig({
               source: 'title',
               maxLength: 96,
             },
-            validation: (Rule) => Rule.required(),
+            validation: Rule => Rule.required(),
           },
           {
             name: 'description',
             title: 'Course Description',
             type: 'text',
             rows: 4,
-            validation: (Rule) => Rule.required(),
+            validation: Rule => Rule.required(),
           },
           {
             name: 'shortDescription',
@@ -230,7 +237,7 @@ export default defineConfig({
             name: 'instructor',
             title: 'Instructor',
             type: 'string',
-            validation: (Rule) => Rule.required(),
+            validation: Rule => Rule.required(),
           },
           {
             name: 'instructorBio',
@@ -265,9 +272,9 @@ export default defineConfig({
             type: 'string',
             options: {
               list: [
-                {title: 'Beginner', value: 'beginner'},
-                {title: 'Intermediate', value: 'intermediate'},
-                {title: 'Advanced', value: 'advanced'},
+                { title: 'Beginner', value: 'beginner' },
+                { title: 'Intermediate', value: 'intermediate' },
+                { title: 'Advanced', value: 'advanced' },
               ],
             },
           },
@@ -284,9 +291,9 @@ export default defineConfig({
             initialValue: 'USD',
             options: {
               list: [
-                {title: 'USD', value: 'USD'},
-                {title: 'EUR', value: 'EUR'},
-                {title: 'GBP', value: 'GBP'},
+                { title: 'USD', value: 'USD' },
+                { title: 'EUR', value: 'EUR' },
+                { title: 'GBP', value: 'GBP' },
               ],
             },
           },
@@ -294,13 +301,13 @@ export default defineConfig({
             name: 'categories',
             title: 'Categories',
             type: 'array',
-            of: [{type: 'string'}],
+            of: [{ type: 'string' }],
           },
           {
             name: 'tags',
             title: 'Tags',
             type: 'array',
-            of: [{type: 'string'}],
+            of: [{ type: 'string' }],
           },
           {
             name: 'lessons',
@@ -314,7 +321,7 @@ export default defineConfig({
                     name: 'title',
                     title: 'Lesson Title',
                     type: 'string',
-                    validation: (Rule) => Rule.required(),
+                    validation: Rule => Rule.required(),
                   },
                   {
                     name: 'description',
@@ -342,16 +349,16 @@ export default defineConfig({
                       {
                         type: 'block',
                         styles: [
-                          {title: 'Normal', value: 'normal'},
-                          {title: 'H3', value: 'h3'},
-                          {title: 'H4', value: 'h4'},
-                          {title: 'Quote', value: 'blockquote'},
+                          { title: 'Normal', value: 'normal' },
+                          { title: 'H3', value: 'h3' },
+                          { title: 'H4', value: 'h4' },
+                          { title: 'Quote', value: 'blockquote' },
                         ],
                         marks: {
                           decorators: [
-                            {title: 'Strong', value: 'strong'},
-                            {title: 'Emphasis', value: 'em'},
-                            {title: 'Code', value: 'code'},
+                            { title: 'Strong', value: 'strong' },
+                            { title: 'Emphasis', value: 'em' },
+                            { title: 'Code', value: 'code' },
                           ],
                           annotations: [
                             {
@@ -395,9 +402,9 @@ export default defineConfig({
                             type: 'string',
                             options: {
                               list: [
-                                {title: 'PDF', value: 'pdf'},
-                                {title: 'Link', value: 'link'},
-                                {title: 'Download', value: 'download'},
+                                { title: 'PDF', value: 'pdf' },
+                                { title: 'Link', value: 'link' },
+                                { title: 'Download', value: 'download' },
                               ],
                             },
                           },
@@ -418,10 +425,12 @@ export default defineConfig({
                     duration: 'duration',
                   },
                   prepare(selection) {
-                    const {title, duration} = selection
+                    const { title, duration } = selection
                     return {
                       title,
-                      subtitle: duration ? `Duration: ${duration}` : 'No duration set',
+                      subtitle: duration
+                        ? `Duration: ${duration}`
+                        : 'No duration set',
                     }
                   },
                 },
@@ -432,14 +441,14 @@ export default defineConfig({
             name: 'prerequisites',
             title: 'Prerequisites',
             type: 'array',
-            of: [{type: 'string'}],
+            of: [{ type: 'string' }],
             description: 'What students should know before taking this course',
           },
           {
             name: 'learningOutcomes',
             title: 'Learning Outcomes',
             type: 'array',
-            of: [{type: 'string'}],
+            of: [{ type: 'string' }],
             description: 'What students will learn from this course',
           },
           {
@@ -494,7 +503,7 @@ export default defineConfig({
             price: 'price',
           },
           prepare(selection) {
-            const {title, instructor, price} = selection
+            const { title, instructor, price } = selection
             return Object.assign({}, selection, {
               subtitle: `${instructor} ${price ? `• $${price}` : '• Free'}`,
             })

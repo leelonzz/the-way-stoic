@@ -1,4 +1,4 @@
-import {groq} from 'next-sanity'
+import { groq } from 'next-sanity'
 
 export const blogPostQuery = groq`*[_type == "blogPost" && slug.current == $slug][0]{
   _id,
@@ -24,7 +24,7 @@ export const blogPostQuery = groq`*[_type == "blogPost" && slug.current == $slug
   }
 }`
 
-export const blogPostsQuery = groq`*[_type == "blogPost"] | order(publishedAt desc) {
+export const blogPostsQuery = groq`*[_type == "blogPost" && published == true] | order(publishedAt desc) {
   _id,
   title,
   slug,
@@ -43,7 +43,7 @@ export const blogPostsQuery = groq`*[_type == "blogPost"] | order(publishedAt de
   featured
 }`
 
-export const featuredBlogPostsQuery = groq`*[_type == "blogPost" && featured == true] | order(publishedAt desc) {
+export const featuredBlogPostsQuery = groq`*[_type == "blogPost" && published == true && featured == true] | order(publishedAt desc) {
   _id,
   title,
   slug,
@@ -61,7 +61,7 @@ export const featuredBlogPostsQuery = groq`*[_type == "blogPost" && featured == 
   publishedAt
 }`
 
-export const blogPostsByCategoryQuery = groq`*[_type == "blogPost" && $category in categories] | order(publishedAt desc) {
+export const blogPostsByCategoryQuery = groq`*[_type == "blogPost" && published == true && $category in categories] | order(publishedAt desc) {
   _id,
   title,
   slug,
