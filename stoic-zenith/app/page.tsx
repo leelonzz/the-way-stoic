@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuthContext } from "@/components/auth/AuthProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -8,7 +9,7 @@ import { NavigationOptimizedCachedPage } from "@/components/layout/NavigationOpt
 import HomePage from "@/components/HomePage";
 import LandingPage from "@/components/LandingPage";
 import LoginScreen from "@/components/auth/LoginScreen";
-
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 function HomeSkeleton(): JSX.Element {
   return (
@@ -49,7 +50,8 @@ function HomeSkeleton(): JSX.Element {
   );
 }
 
-function AppContent(): JSX.Element {
+function AppContent() {
+  const searchParams = useSearchParams();
   const [showAuth, setShowAuth] = useState(false);
   const { isAuthenticated, isLoading } = useAuthContext();
 
@@ -60,6 +62,14 @@ function AppContent(): JSX.Element {
     }
     return false;
   }, []);
+
+  // Check for auth parameter in URL and show login screen
+  useEffect(() => {
+    const authParam = searchParams.get('auth');
+    if (authParam === 'true' && !isAuthenticated) {
+      setShowAuth(true);
+    }
+  }, [searchParams, isAuthenticated]);
 
   // Memoize the fallback to prevent unnecessary re-renders
   const fallback = useMemo(() => {
@@ -92,8 +102,8 @@ function AppContent(): JSX.Element {
           fallback={<HomeSkeleton />}
           preserveOnNavigation={true}
           refreshOnlyWhenStale={true}
-          maxAge={5 * 60 * 1000} // 5 minutes - shorter cache to prevent stale daily quotes
-          navigationRefreshThreshold={2 * 60 * 1000} // 2 minutes for quote content
+          maxAge={10 * 60 * 1000} // 10 minutes - longer cache for better navigation
+          navigationRefreshThreshold={3 * 60 * 1000} // 3 minutes for quote content
         >
           <HomePage />
         </NavigationOptimizedCachedPage>
@@ -102,6 +112,6 @@ function AppContent(): JSX.Element {
   );
 }
 
-export default function App(): JSX.Element {
+export default function App() {
   return <AppContent />;
 }

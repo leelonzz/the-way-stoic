@@ -1,0 +1,436 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Line clamp utilities */
+@layer utilities {
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+}
+
+/* View Transitions for instant navigation */
+@view-transition {
+  navigation: auto;
+}
+
+/* Smooth transitions between pages */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: ease-in-out;
+}
+
+::view-transition-old(root) {
+  animation-name: slide-out-left;
+}
+
+::view-transition-new(root) {
+  animation-name: slide-in-right;
+}
+
+@keyframes slide-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Fallback for browsers without view transitions */
+@supports not (view-transition-name: none) {
+  .page-transition-enter {
+    animation: fade-in 200ms ease-in-out;
+  }
+  
+  .page-transition-exit {
+    animation: fade-out 200ms ease-in-out;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Progress bar animation for loading states */
+@keyframes progress-bar {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(-25%); }
+  100% { transform: translateX(0%); }
+}
+
+.animate-progress-bar {
+  animation: progress-bar 800ms ease-in-out;
+}
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Terra Cotta Theme - Warm Stoic Palette */
+    --background: 39 46% 95%; /* #F4F3EE - Pampas background (60%) */
+    --foreground: 30 20% 24%; /* #3D3929 - Main typography color */
+
+    --muted: 32 7% 69%; /* #B1ADA1 - Cloudy neutral */
+    --muted-foreground: 30 20% 24% / 0.7; /* Typography with opacity */
+    --muted-foreground-light: 30 20% 24% / 0.5;
+    --muted-foreground-dark: 30 20% 24% / 0.6;
+
+    --card: 0 0% 100% / 0.9; /* White cards with slight transparency */
+    --card-foreground: 30 20% 24%; /* #3D3929 */
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 30 20% 24%;
+
+    /* Primary Accent Colors - Terra Cotta */
+    --primary: 15 46% 60%; /* #DA7756 - Terra Cotta primary */
+    --primary-foreground: 0 0% 100%; /* White text on terra cotta */
+    --primary-dark: 15 52% 49%; /* #BD5D3A - Chat/Button accent */
+    --primary-light: 15 46% 75%; /* Lighter terra cotta shade */
+
+    /* Secondary Accent Colors */
+    --secondary: 39 33% 93%; /* #EEECE2 - Website light background (30%) */
+    --secondary-foreground: 30 20% 24%;
+
+    --accent: 15 52% 49%; /* #BD5D3A - Chat/Button accent */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 32 7% 69% / 0.3; /* Cloudy with opacity */
+    --border-light: 32 7% 69% / 0.2;
+    --border-dark: 32 7% 69% / 0.4;
+    --input: 39 33% 93%; /* Light background */
+
+    --ring: 15 46% 60%; /* Terra cotta focus ring */
+
+    --radius: 0.5rem;
+
+    /* Custom Stoic Colors - Updated to Terra Cotta palette */
+    --cta: 15 52% 49%; /* #BD5D3A - Chat/Button accent */
+    --hero: 39 46% 95%; /* #F4F3EE - Pampas background */
+    --sage: 32 7% 69%; /* #B1ADA1 - Cloudy neutral */
+    --stone: 30 20% 24%; /* #3D3929 - Main typography */
+    --parchment: 39 33% 93%; /* #EEECE2 - Website light background */
+    --ink: 0 0% 0%; /* #000000 - Pure black accent */
+    --crail: 18 55% 49%; /* #C15F3C - Craíl neutral */
+    --peach: 16 58% 60%; /* #DE7356 - Peach alternative brand accent */
+  }
+
+  .dark {
+    /* Dark mode using deeper terra cotta tones */
+    --background: 30 20% 12%; /* Dark background */
+    --foreground: 39 46% 95%; /* Light text */
+
+    --card: 30 20% 15%;
+    --card-foreground: 39 46% 95%;
+
+    --popover: 30 20% 12%;
+    --popover-foreground: 39 46% 95%;
+
+    --primary: 15 46% 60%; /* Terra cotta */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 30 20% 18%;
+    --secondary-foreground: 39 46% 95%;
+
+    --muted: 30 20% 20%;
+    --muted-foreground: 32 7% 69%;
+
+    --accent: 15 52% 49%; /* Chat/Button accent */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 30 20% 25%;
+    --input: 30 20% 18%;
+    --ring: 15 46% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background-color: hsl(var(--hero));
+    color: hsl(var(--stone));
+  }
+
+  /* Enhanced scrolling for journal - NON-INTRUSIVE APPROACH */
+  /* This approach enhances existing scrolling without breaking functionality */
+
+  /* Improve scrolling behavior for entry list */
+  .journal-entry-list-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+
+  .journal-entry-list-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .journal-entry-list-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .journal-entry-list-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+
+  .journal-entry-list-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.3);
+  }
+
+  /* Improve scrolling behavior for editor */
+  .journal-editor-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+  }
+
+  .journal-editor-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .journal-editor-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .journal-editor-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+  }
+
+  .journal-editor-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-serif;
+  }
+
+  .font-inknut {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Course Navigation Styles */
+  .course-card-clean {
+    background: linear-gradient(145deg, 
+      hsl(var(--parchment)) 0%, 
+      hsl(var(--secondary)) 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .course-card-clean:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Conditional font utilities for typography-contentEditable conflict resolution */
+  .font-conditional {
+    font-family:
+      system-ui,
+      -apple-system,
+      sans-serif;
+    transition: font-family 0.15s ease-out;
+  }
+
+  .font-conditional.display-mode {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  .font-conditional.editing-mode {
+    font-family:
+      system-ui,
+      -apple-system,
+      sans-serif;
+  }
+
+  /* Inknut loaded state */
+  html.inknut-loaded .font-conditional:not(.editing-mode) {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Fix for empty content typography - maintain Inknut Antiqua even in editing mode when content is empty */
+  html.inknut-loaded .font-conditional.editing-mode:empty {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Also apply to blocks that only contain zero-width space (used for empty blocks) */
+  html.inknut-loaded .font-conditional.editing-mode:has(> :only-child):has(> :empty) {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Fallback for blocks with minimal content (just whitespace or zero-width characters) */
+  html.inknut-loaded .block-element.editing-mode[data-placeholder] {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Specific fix for contentEditable containers that are empty or contain only whitespace */
+  html.inknut-loaded [contenteditable].font-conditional.editing-mode:empty,
+  html.inknut-loaded [contenteditable] .font-conditional.editing-mode:empty {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Handle the case where contentEditable contains only zero-width space or minimal content */
+  html.inknut-loaded [contenteditable].font-conditional.editing-mode:not(:has(> *:not(:empty))),
+  html.inknut-loaded [contenteditable] .font-conditional.editing-mode:not(:has(> *:not(:empty))) {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Force Inknut Antiqua for empty journal editor */
+  html.inknut-loaded [contenteditable]:empty {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Ensure placeholder text also uses Inknut Antiqua */
+  html.inknut-loaded .font-conditional.editing-mode[data-placeholder]:empty::before {
+    font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Force Inknut Antiqua font class for empty content */
+  html.inknut-loaded .force-inknut-font {
+    font-family: var(--font-inknut-antiqua), serif !important;
+  }
+
+  /* Smaller, more refined text cursor */
+  [contenteditable] {
+    caret-color: #3d3929;
+  }
+
+  .block-element {
+    caret-color: #3d3929;
+  }
+
+  /* Custom cursor size using CSS custom properties */
+  .block-element.editing-mode {
+    caret-color: #3d3929;
+  }
+
+  .block-element.display-mode {
+    caret-color: #3d3929;
+  }
+
+  /* Remove all input outlines */
+  input:focus,
+  input:focus-visible,
+  input:active {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  input {
+    outline: none !important;
+  }
+}
+
+@layer utilities {
+  .text-cta {
+    color: hsl(var(--cta));
+  }
+
+  .bg-cta {
+    background-color: hsl(var(--cta));
+  }
+
+  .text-sage {
+    color: hsl(var(--sage));
+  }
+
+  .bg-sage {
+    background-color: hsl(var(--sage));
+  }
+
+  .text-stone {
+    color: hsl(var(--stone));
+  }
+
+  .bg-stone {
+    background-color: hsl(var(--stone));
+  }
+
+  .bg-hero {
+    background-color: hsl(var(--hero));
+  }
+
+  .text-hero {
+    color: hsl(var(--hero));
+  }
+
+  .bg-parchment {
+    background-color: hsl(var(--parchment));
+  }
+
+  .text-ink {
+    color: hsl(var(--ink));
+  }
+
+  .text-crail {
+    color: hsl(var(--crail));
+  }
+
+  .bg-crail {
+    background-color: hsl(var(--crail));
+  }
+
+  .text-peach {
+    color: hsl(var(--peach));
+  }
+
+  .bg-peach {
+    background-color: hsl(var(--peach));
+  }
+
+  .text-terra-cotta {
+    color: hsl(var(--primary));
+  }
+
+  .bg-terra-cotta {
+    background-color: hsl(var(--primary));
+  }
+}

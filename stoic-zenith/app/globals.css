@@ -2,6 +2,97 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Line clamp utilities */
+@layer utilities {
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+}
+
+/* View Transitions for instant navigation */
+@view-transition {
+  navigation: auto;
+}
+
+/* Smooth transitions between pages */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: ease-in-out;
+}
+
+::view-transition-old(root) {
+  animation-name: slide-out-left;
+}
+
+::view-transition-new(root) {
+  animation-name: slide-in-right;
+}
+
+@keyframes slide-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Fallback for browsers without view transitions */
+@supports not (view-transition-name: none) {
+  .page-transition-enter {
+    animation: fade-in 200ms ease-in-out;
+  }
+  
+  .page-transition-exit {
+    animation: fade-out 200ms ease-in-out;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Progress bar animation for loading states */
+@keyframes progress-bar {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(-25%); }
+  100% { transform: translateX(0%); }
+}
+
+.animate-progress-bar {
+  animation: progress-bar 800ms ease-in-out;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
@@ -166,6 +257,18 @@ All colors MUST be HSL.
 
   .font-inknut {
     font-family: var(--font-inknut-antiqua), serif;
+  }
+
+  /* Course Navigation Styles */
+  .course-card-clean {
+    background: linear-gradient(145deg, 
+      hsl(var(--parchment)) 0%, 
+      hsl(var(--secondary)) 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .course-card-clean:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
 
   /* Conditional font utilities for typography-contentEditable conflict resolution */

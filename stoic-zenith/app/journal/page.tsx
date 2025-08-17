@@ -3,9 +3,20 @@ export const dynamic = 'force-dynamic'
 
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import Journal from '@/components/pages-components/Journal'
-import { ErrorBoundary } from 'react-error-boundary'
+import { JournalPasswordGate } from '@/components/journal/JournalPasswordGate'
+import dynamicImport from 'next/dynamic'
+import { BrandedLoadingScreen } from '@/components/ui/loading-spinner'
 
+// Dynamically import heavy journal component with TipTap editor
+const Journal = dynamicImport(() => import('@/components/pages-components/Journal'), {
+  loading: () => <BrandedLoadingScreen message="Loading your journal..." />,
+  ssr: false, // Journal editor needs client-side rendering
+})
+import { ErrorBoundary } from 'react-error-boundary'
+import { prefetchJournal } from '@/lib/prefetch'
+import { useAuthContext } from '@/components/auth/AuthProvider'
+import { useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 
 function ErrorFallback({
   resetErrorBoundary,
@@ -16,29 +27,17 @@ function ErrorFallback({
 }): JSX.Element {
   console.error('🚨 Journal Error Boundary triggered:', error)
 
-  // Don't log authentication-related errors as critical failures
-  const isAuthError = error?.message?.includes('auth') || error?.message?.includes('session') || error?.message?.includes('unauthorized')
-
-  if (isAuthError) {
-    console.log('📝 Journal error appears to be auth-related, showing gentle fallback')
-  }
-
   return (
     <div className="h-full flex items-center justify-center bg-stone-50">
-      <div className="text-center p-8 max-w-md mx-auto">
+      <div className="text-center p-8">
         <h2 className="text-2xl font-semibold text-stone-700 mb-4">
-          {isAuthError ? 'Loading Your Journal' : 'Something went wrong with the Journal'}
+          Something went wrong with the Journal
         </h2>
         <p className="text-stone-600 mb-6">
-          {isAuthError
-            ? 'Please wait while we set up your journal...'
-            : 'Don\'t worry, your data is safe. Please try refreshing the page.'
-          }
+          Don&apos;t worry, your data is safe. Please try refreshing the page.
         </p>
-
-        {/* Only show error details for non-auth errors in development */}
-        {process.env.NODE_ENV === 'development' && error && !isAuthError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-left">
+        {process.env.NODE_ENV === 'development' && error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-left max-w-md mx-auto">
             <p className="text-sm font-mono text-red-800 break-all">
               {error.message}
             </p>
@@ -52,35 +51,52 @@ function ErrorFallback({
             )}
           </div>
         )}
-
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={resetErrorBoundary}
-            className="px-6 py-3 bg-stone-800 text-white rounded-lg hover:bg-stone-700 transition-colors"
-          >
-            {isAuthError ? 'Continue' : 'Try Again'}
-          </button>
-
-          {!isAuthError && (
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-stone-200 text-stone-700 rounded-lg hover:bg-stone-300 transition-colors"
-            >
-              Reload Page
-            </button>
-          )}
-        </div>
+        <button
+          onClick={resetErrorBoundary}
+          className="px-6 py-3 bg-stone-800 text-white rounded-lg hover:bg-stone-700 transition-colors"
+        >
+          Try Again
+        </button>
       </div>
     </div>
   )
 }
 
+// Simple test component to isolate the issue
+function SimpleJournalTest(): JSX.Element {
+  const { user } = useAuthContext()
 
+  // Debug logging removed - use debug utility if needed
 
-// Simplified journal component without redundant prefetching
-function JournalComponent(): JSX.Element {
-  // Remove prefetching - let useCachedJournal handle all data loading
+  if (!user) {
+    return <div className="p-8">Loading user...</div>
+  }
+
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-4">Journal Test</h1>
+      <p>User ID: {user.id}</p>
+      <p>User Email: {user.email}</p>
+      <p>If you see this, the basic journal page is working!</p>
+    </div>
+  )
+}
+
+// Component to handle prefetching
+function JournalWithPrefetch(): JSX.Element {
+  const { user } = useAuthContext()
+  const queryClient = useQueryClient()
+
+  // Prefetch journal data when component mounts
+  useEffect(() => {
+    if (user?.id) {
+      prefetchJournal(queryClient, user.id).catch(_error => {})
+    }
+  }, [user?.id, queryClient])
+
+  // Try the actual Journal component
   return <Journal />
+  // return <SimpleJournalTest />
 }
 
 export default function JournalPage(): JSX.Element {
@@ -91,7 +107,9 @@ export default function JournalPage(): JSX.Element {
           FallbackComponent={ErrorFallback}
           onReset={() => window.location.reload()}
         >
-          <JournalComponent />
+          <JournalPasswordGate>
+            <JournalWithPrefetch />
+          </JournalPasswordGate>
         </ErrorBoundary>
       </AppLayout>
     </ProtectedRoute>

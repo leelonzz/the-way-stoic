@@ -1,18 +1,62 @@
 import type { NextConfig } from 'next'
 
+type BundleAnalyzerPlugin = (config: NextConfig) => NextConfig;
+
 // Conditional bundle analyzer import to avoid TypeScript issues
-let withBundleAnalyzer: any = (config: NextConfig) => config;
+let withBundleAnalyzer: BundleAnalyzerPlugin = (config: NextConfig) => config;
 if (process.env.ANALYZE === 'true') {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     withBundleAnalyzer = require('@next/bundle-analyzer')({
       enabled: true,
-    });
+    }) as BundleAnalyzerPlugin;
   } catch (e) {
     console.warn('Bundle analyzer not available:', e);
   }
 }
 
 const nextConfig: NextConfig = {
+  // Image configuration for external domains
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 's3-alpha.figma.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.sanity.io',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
   // Experimental features for better navigation performance
   experimental: {
     // Configure router cache behavior for Next.js 15
@@ -33,29 +77,53 @@ const nextConfig: NextConfig = {
     dirs: ['src'],
     ignoreDuringBuilds: true,
   },
+  // Exclude landing page demo files from build
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   typescript: {
     ignoreBuildErrors: false,
   },
+  // Disable source maps in production for security
+  productionBrowserSourceMaps: false,
   // Performance optimizations
   compiler: {
-    // Keep console statements in production for authentication debugging
-    // TODO: Re-enable removeConsole after authentication issues are resolved
-    removeConsole: false,
+    // Remove console statements in production
+    removeConsole: process.env.NODE_ENV === 'production',
   },
   // Bundle optimization
-  webpack: (config: any, { dev, isServer }: { dev: boolean; isServer: boolean }) => {
+  webpack: (config: NextConfig & { optimization?: { splitChunks?: { cacheGroups?: Record<string, unknown> } } }, { dev, isServer }: { dev: boolean; isServer: boolean }) => {
     // Optimize bundle splitting
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         ...config.optimization.splitChunks,
         cacheGroups: {
           ...config.optimization.splitChunks.cacheGroups,
+          // Separate heavy vendor chunks
+          tiptap: {
+            test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
+            name: 'tiptap',
+            chunks: 'all',
+            priority: 25,
+          },
+          supabase: {
+            test: /[\\/]node_modules[\\/]@supabase[\\/]/,
+            name: 'supabase',
+            chunks: 'all',
+            priority: 24,
+          },
+          radixui: {
+            test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
+            name: 'radix-ui',
+            chunks: 'all',
+            priority: 23,
+          },
           // Separate vendor chunks
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'all',
             priority: 10,
+            minSize: 20000,
+            maxSize: 200000,
           },
           // Separate journal-specific chunks
           journal: {
@@ -107,7 +175,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://accounts.google.com https://vercel.live https://*.vercel.app; style-src 'self' 'unsafe-inline' https://accounts.google.com https://*.vercel.app https://fonts.googleapis.com https://*.gstatic.com; img-src 'self' data: https: *.googleusercontent.com *.supabase.co; font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com https://*.gstatic.com; connect-src 'self' https://*.supabase.co https://accounts.google.com https://oauth2.googleapis.com https://generativelanguage.googleapis.com https://*.vercel.app wss://*.supabase.co; frame-src https://accounts.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; worker-src 'self' blob:; manifest-src 'self'",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://accounts.google.com https://vercel.live https://*.vercel.app; style-src 'self' 'unsafe-inline' https://accounts.google.com https://*.vercel.app; img-src 'self' data: https: *.googleusercontent.com *.supabase.co *.sanity.io; font-src 'self' data: https://accounts.google.com; connect-src 'self' https://*.supabase.co https://accounts.google.com https://oauth2.googleapis.com https://generativelanguage.googleapis.com https://*.vercel.app https://*.sanity.io; frame-src https://accounts.google.com https://www.youtube.com https://youtube.com https://*.sanity.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
           },
         ],
       },

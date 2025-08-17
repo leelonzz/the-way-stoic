@@ -71,8 +71,8 @@
       ],
       "timestamp": "2025-08-02T13:06:32.945Z",
       "context": "Journal editor fixes completed",
-      "accessCount": 3,
-      "lastAccessed": "2025-08-07T09:00:54.737Z",
+      "accessCount": 4,
+      "lastAccessed": "2025-08-16T08:19:24.862Z",
       "lastVerified": "2025-08-02T13:06:32.945Z",
       "status": "fresh"
     },
@@ -121,8 +121,8 @@
         "debugging"
       ],
       "timestamp": "2025-08-02T13:25:01.084Z",
-      "accessCount": 2,
-      "lastAccessed": "2025-08-07T09:00:54.737Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-08-16T08:02:35.842Z",
       "lastVerified": "2025-08-02T13:25:01.084Z",
       "status": "fresh"
     },
@@ -139,8 +139,8 @@
         "solution"
       ],
       "timestamp": "2025-08-02T13:27:21.611Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-02T13:27:21.611Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-16T08:02:35.842Z",
       "lastVerified": "2025-08-02T13:27:21.611Z",
       "status": "fresh"
     },
@@ -157,8 +157,8 @@
         "positioning"
       ],
       "timestamp": "2025-08-02T13:27:47.411Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-02T13:27:47.411Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-16T08:19:24.862Z",
       "lastVerified": "2025-08-02T13:27:47.411Z",
       "status": "fresh"
     },
@@ -193,8 +193,8 @@
         "complete"
       ],
       "timestamp": "2025-08-02T13:40:06.422Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-02T13:40:06.422Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-16T08:02:35.842Z",
       "lastVerified": "2025-08-02T13:40:06.422Z",
       "status": "fresh"
     },
@@ -272,8 +272,8 @@
       ],
       "timestamp": "2025-08-07T08:33:15.264Z",
       "context": "Journal bug fixes completed in Stoic Zenith",
-      "accessCount": 3,
-      "lastAccessed": "2025-08-07T09:00:54.737Z",
+      "accessCount": 4,
+      "lastAccessed": "2025-08-16T08:19:24.862Z",
       "lastVerified": "2025-08-07T08:33:15.264Z",
       "status": "fresh"
     },
@@ -313,8 +313,8 @@
         "fastsync"
       ],
       "timestamp": "2025-08-07T08:46:17.181Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-07T08:48:21.227Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-08-16T08:42:17.363Z",
       "lastVerified": "2025-08-07T08:46:17.181Z",
       "status": "fresh"
     },
@@ -412,7 +412,350 @@
       "lastAccessed": "2025-08-07T09:07:40.616Z",
       "lastVerified": "2025-08-07T09:07:40.616Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1754733057233_9klj9oxo0",
+      "content": "Production Google OAuth issue analysis:\n- Site: www.thewaystoic.site\n- Errors: CSP violations blocking Google fonts and accounts.google.com\n- Auth flow: Shows \"SIGNED_IN\" but session not found\n- Environment: Works locally, fails in production\n- Root cause likely: CSP blocking critical OAuth resources",
+      "type": "config",
+      "tags": [
+        "config",
+        "oauth",
+        "csp",
+        "production-bug",
+        "google-auth"
+      ],
+      "timestamp": "2025-08-09T09:50:57.233Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-16T04:01:42.765Z",
+      "lastVerified": "2025-08-09T09:50:57.233Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754733122094_mh6jgq0d7",
+      "content": "Analysis of production Google OAuth issue:\n\nROOT CAUSE: CSP conflicts between next.config.ts CSP headers and Google Fonts/OAuth\n1. CSP in next.config.ts line 114 allows accounts.google.com for fonts but conflicts occur\n2. Layout.tsx uses preload links for Google Fonts (lines 40-49) which get blocked by CSP \n3. Next.js Google Font optimization (Inknut_Antiqua, Inika imports) conflicts with manual preload links\n4. OAuth flow: Auth code exchange works but session not properly established due to timing issues\n\nSPECIFIC PROBLEMS:\n1. Duplicate font loading methods causing CSP violations\n2. CSP doesn't include fonts.gstatic.com for font files themselves\n3. CSP missing googleapis.com for font CSS files\n4. Race condition between auth callback and session establishment\n\nENVIRONMENT: Production at www.thewaystoic.site, NEXT_PUBLIC_APP_URL set correctly",
+      "type": "config",
+      "tags": [
+        "config",
+        "optimization",
+        "oauth-analysis",
+        "csp-issue",
+        "google-fonts",
+        "production-bug"
+      ],
+      "timestamp": "2025-08-09T09:52:02.094Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-16T04:01:42.765Z",
+      "lastVerified": "2025-08-09T09:52:02.094Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754733187800_kea9s898f",
+      "content": "Production Google OAuth Authentication Issue Analysis:\n\n## Problem\n- Production site www.thewaystoic.site fails Google OAuth login\n- After Google login, redirects back but doesn't complete authentication\n- Console shows CSP violations blocking Google resources\n- Works fine on localhost\n\n## Root Causes Identified\n1. **CSP Configuration Issues** (next.config.ts line 114):\n   - Missing `fonts.gstatic.com` in font-src (only has fonts.googleapis.com in style-src)\n   - Missing `fonts.googleapis.com` in style-src directive\n   - Current font-src: 'self' data: https://accounts.google.com\n   - Needs: fonts.gstatic.com added for actual font files\n\n2. **Duplicate Font Loading** (app/layout.tsx lines 40-49):\n   - Manual preload links conflict with Next.js font optimization\n   - Using both next/font/google AND manual preload links\n   - Causes CSP violations and loading conflicts\n\n3. **Auth Callback Timing**:\n   - Code exchange succeeds but session establishment has race condition\n   - Need to add small delay after exchangeCodeForSession\n\n## Fix Required\n1. Update CSP font-src to include fonts.gstatic.com\n2. Add fonts.googleapis.com to style-src\n3. Remove manual font preload links (lines 40-49 in layout.tsx)\n4. Add session verification delay in auth callback",
+      "type": "config",
+      "tags": [
+        "config",
+        "authentication",
+        "optimization",
+        "google-oauth",
+        "csp",
+        "production-bug",
+        "stoic-zenith"
+      ],
+      "timestamp": "2025-08-09T09:53:07.800Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-16T08:02:35.842Z",
+      "lastVerified": "2025-08-09T09:53:07.800Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1754733413411_wsqaad7sk",
+      "content": "Production Auth State Bug - Real Issue Found:\n\n## Actual Problem\nNot a CSP issue. The auth is working (SIGNED_IN event fires with user email), but the React state isn't updating properly.\n\n## Console Evidence\n- \"Auth state change: SIGNED_IN leenhatlong210@gmail.com\" (line 485)\n- \"User session found, updating auth state\" (line 494) \n- BUT the state shows: hasUser: false, isAuthenticated: false, userId: undefined\n\n## Root Cause in useAuth.ts\nLine 509-515: The setAuthState call in onAuthStateChange listener is using a function updater pattern but it's not properly merging/updating the state. The state update is being lost or overridden.\n\n## Key Issue\nThe auth state change listener (lines 491-579) calls setAuthState with a function updater:\n```\nsetAuthState(() => ({\n  user: session.user,\n  session,\n  profile: cachedProfile,\n  loading: false,\n  error: null,\n}))\n```\n\nBut this might be getting overridden by other state updates or React batching issues in production mode.\n\n## Solution Needed\n1. Remove function updater pattern, use direct object\n2. Add proper state logging to debug\n3. Ensure state updates aren't being batched/lost\n4. May need to force a re-render or use a different state management approach",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "react",
+        "authentication",
+        "react-state",
+        "production-bug",
+        "stoic-zenith",
+        "useAuth"
+      ],
+      "timestamp": "2025-08-09T09:56:53.411Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-09T09:56:53.411Z",
+      "lastVerified": "2025-08-09T09:56:53.411Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755316296137_j154w6c81",
+      "content": "Setting up Sanity.io for stoic-zenith Next.js project. User wants blog posting capability. Current stack: Next.js 15.3.5, React 18, TypeScript, Tailwind. Need to install next-sanity toolkit, configure studio, and set up blog schema.",
+      "type": "config",
+      "tags": [
+        "config",
+        "typescript",
+        "react",
+        "sanity",
+        "blog",
+        "cms",
+        "setup"
+      ],
+      "timestamp": "2025-08-16T03:51:36.137Z",
+      "context": "Sanity.io setup for blog posting",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-16T08:42:17.363Z",
+      "lastVerified": "2025-08-16T03:51:36.137Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755316652168_zkgc6pxd4",
+      "content": "Successfully set up Sanity.io for blog posting in stoic-zenith project. Created complete configuration including: dependencies installed, client setup, blog post schema with rich content fields, Studio route at /studio, draft mode API routes, GROQ queries, and image URL builder. User needs to get actual project credentials from Sanity.io website and update environment variables.",
+      "type": "config",
+      "tags": [
+        "config",
+        "api",
+        "sanity",
+        "blog",
+        "cms",
+        "setup",
+        "completed"
+      ],
+      "timestamp": "2025-08-16T03:57:32.168Z",
+      "context": "Sanity.io setup completion",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-16T08:02:35.842Z",
+      "lastVerified": "2025-08-16T03:57:32.168Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755318168761_4xojsieoo",
+      "content": "User wants to create two document types in Sanity: blog (already exists) and course. Need to add course schema with fields like title, description, lessons, pricing, instructor, etc.",
+      "type": "general",
+      "tags": [
+        "general",
+        "sanity",
+        "schema",
+        "course",
+        "document-types"
+      ],
+      "timestamp": "2025-08-16T04:22:48.761Z",
+      "context": "Sanity schema expansion",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T04:22:48.761Z",
+      "lastVerified": "2025-08-16T04:22:48.761Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755319822571_nm0si6gd7",
+      "content": "Created complete n8n workflow for Google Docs to Sanity blog automation. Includes: webhook trigger, Google Docs content extraction, OpenAI SEO generation (title, meta description, categories, tags), Sanity API integration, and comprehensive setup documentation. Workflow transforms raw Google Docs into SEO-optimized blog posts automatically.",
+      "type": "config",
+      "tags": [
+        "config",
+        "api",
+        "n8n",
+        "automation",
+        "google-docs",
+        "sanity",
+        "openai",
+        "seo",
+        "workflow"
+      ],
+      "timestamp": "2025-08-16T04:50:22.571Z",
+      "context": "n8n automation workflow completion",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-16T08:02:35.842Z",
+      "lastVerified": "2025-08-16T04:50:22.571Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755320807875_6g8vn1p3f",
+      "content": "Fixed n8n workflow Sanity API mutation error by changing from bodyParameters to direct JSON body format. Changed \"bodyParameters\": {\"parameters\": [{\"name\": \"mutations\", \"value\": \"=[{ \\\"create\\\": $json }]\"}]} to \"body\": \"={ \\\"mutations\\\": [{ \\\"create\\\": $json }] }\". This ensures proper JSON structure for Sanity mutations API instead of malformed parameter structure.",
+      "type": "error",
+      "tags": [
+        "error",
+        "api",
+        "n8n",
+        "sanity",
+        "fix",
+        "mutations",
+        "json",
+        "workflow"
+      ],
+      "timestamp": "2025-08-16T05:06:47.875Z",
+      "context": "Fixing n8n workflow error for Google Docs to Sanity automation",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-16T08:02:35.842Z",
+      "lastVerified": "2025-08-16T05:06:47.875Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755331491489_fvoo3vsdl",
+      "content": "Sanity Markdown to Portable Text Conversion Solution:\n\nUser wants to convert markdown syntax (# for h1, ## for h2, etc.) to Sanity's Portable Text format in the body field.\n\nKey findings:\n1. @sanity/block-tools is now @portabletext/block-tools\n2. No direct markdown-to-portable-text function exists\n3. Need two-step process: Markdown → HTML → Portable Text\n4. Use 'marked' or 'markdown-it' for markdown parsing\n5. Use htmlToBlocks from @portabletext/block-tools for HTML to Portable Text conversion\n\nImplementation approach:\n- Install @portabletext/block-tools, marked/markdown-it, @sanity/schema\n- Create conversion utility function\n- Can implement as custom input component or migration script\n- Sanity body field already configured with proper block styles (h1-h4, normal, blockquote)\n\nProject: stoic-zenith\nLocation: /Users/lee_nhat_long/Documents/Project/the-way-stoic/stoic-zenith",
+      "type": "config",
+      "tags": [
+        "config",
+        "sanity",
+        "markdown",
+        "portable-text",
+        "conversion",
+        "block-tools",
+        "stoic-zenith"
+      ],
+      "timestamp": "2025-08-16T08:04:51.489Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T08:04:51.489Z",
+      "lastVerified": "2025-08-16T08:04:51.489Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755332186713_28fx8iiou",
+      "content": "Successfully implemented markdown to Sanity Portable Text conversion for stoic-zenith project:\n\n✅ COMPLETED:\n1. Installed @portabletext/block-tools, marked, @types/marked packages\n2. Created /src/lib/markdownToPortableText.ts utility with conversion functions\n3. Built custom Sanity input component /src/components/sanity/MarkdownBodyInput.tsx with:\n   - Tabbed interface (Markdown Editor + Preview)\n   - Real-time markdown validation\n   - Convert button to transform markdown to Portable Text\n   - Rich preview using PortableText renderer\n   - Error handling and status indicators\n4. Updated sanity.config.ts to use custom input component for body field\n5. Dev server runs successfully on port 3001\n\nFEATURES:\n- Converts # ## ### #### to h1, h2, h3, h4 headings\n- Supports **bold**, *italic*, `code`, [links](url), > blockquotes\n- Handles lists and code blocks\n- Real-time validation of markdown syntax\n- Clean tabbed UI with preview\n- Integrated into Sanity Studio body field\n\nThe solution allows content editors to write in familiar markdown syntax while maintaining Sanity's structured content format. Ready for production use.",
+      "type": "config",
+      "tags": [
+        "config",
+        "sanity",
+        "markdown",
+        "portable-text",
+        "conversion",
+        "implementation",
+        "completed",
+        "stoic-zenith"
+      ],
+      "timestamp": "2025-08-16T08:16:26.713Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T08:16:26.713Z",
+      "lastVerified": "2025-08-16T08:16:26.713Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755332426205_7viroq0hj",
+      "content": "Build Error Fix: @jridgewell/gen-mapping module not found\n\nError occurs in Next.js 15.3.5 build with Tailwind CSS. The error:\n\"Cannot find module '@jridgewell/gen-mapping'\"\n\nRoot cause: Known issue with @jridgewell/gen-mapping@0.3.6 that was used by sucrase (dependency of tailwindcss). The broken version has been unpublished from npm.\n\nSolutions identified:\n1. Clear and reinstall (most effective)\n2. Pin to working version 0.3.5 using overrides\n3. Ensure tailwindcss is properly installed as devDependency\n4. Check for config files in parent directories\n\nProject: stoic-zenith\nPath: /Users/lee_nhat_long/Documents/Project/the-way-stoic/stoic-zenith",
+      "type": "config",
+      "tags": [
+        "config",
+        "error",
+        "build",
+        "next.js",
+        "tailwindcss",
+        "@jridgewell/gen-mapping",
+        "node_modules",
+        "stoic-zenith"
+      ],
+      "timestamp": "2025-08-16T08:20:26.205Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T08:20:26.205Z",
+      "lastVerified": "2025-08-16T08:20:26.205Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755333978209_kesglejce",
+      "content": "Successfully implemented HTML to Portable Text conversion for Sanity Studio:\n\n✅ **Build Success**: Fixed all TypeScript and dependency issues\n✅ **HTML Conversion**: Updated from markdown to HTML processing \n✅ **Component Integration**: HtmlBodyInput component working with direct import\n✅ **Key Fixes**:\n- Fixed draftMode() async issues in draft-mode API routes and sanity.fetch.ts\n- Added try/catch for draftMode() to handle build-time context\n- Fixed PortableText value prop TypeScript error with 'as any'\n- Used direct import instead of dynamic import for Sanity component\n\n**Working Features**:\n- Custom HTML editor tab in Sanity Studio body field\n- Real-time HTML validation and conversion to Portable Text\n- Preview tab showing rendered content\n- Supports HTML tags: h1-h4, p, strong, em, code, blockquote, links\n- Error handling and loading states\n\n**Files Updated**:\n- `/src/lib/markdownToPortableText.ts` → HTML processing\n- `/src/components/sanity/MarkdownBodyInput.tsx` → HtmlBodyInput component  \n- `/sanity.config.ts` → Component configuration\n- `/src/lib/sanity.fetch.ts` → draftMode context handling\n- Draft mode API routes → async/await fixes\n\n**Test Ready**: Server running at localhost:3001, Sanity Studio at /studio",
+      "type": "config",
+      "tags": [
+        "config",
+        "typescript",
+        "api",
+        "sanity",
+        "html",
+        "portable-text",
+        "conversion",
+        "build-success",
+        "cms"
+      ],
+      "timestamp": "2025-08-16T08:46:18.209Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T08:46:18.209Z",
+      "lastVerified": "2025-08-16T08:46:18.209Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755334753430_gkg9f88xc",
+      "content": "Fixed HTML to Portable Text conversion errors in Sanity Studio:\n\n🔧 **Root Issues Fixed**:\n- Schema reference was pointing to container object instead of block type\n- HTML parsing needed better error handling and wrapping\n- Users didn't know Preview tab was read-only\n\n✅ **Solutions Applied**:\n1. **Schema Fix**: Changed `.get('blockContent')` to `.get('block')` and restructured schema to get actual block type\n2. **HTML Parser**: Added HTML wrapping, parser error detection, better fallbacks\n3. **Error Handling**: More specific error messages, console logging for debugging\n4. **UI Improvements**: Added clarification that Preview is read-only, better empty state message\n\n🧪 **Test Ready**: \n- Server running at localhost:3001/studio\n- Should now convert HTML like `<p>content</p>` successfully  \n- Console logs show conversion process for debugging\n- Preview tab clearly marked as read-only\n\n**Fixed Error**: \"Failed to convert HTML to portable text\" → Now provides specific error messages\n**User's HTML**: `<p>In today's fast-paced world...</p>` should now convert properly",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "sanity",
+        "html",
+        "portable-text",
+        "bug-fix",
+        "conversion-error",
+        "schema",
+        "debugging"
+      ],
+      "timestamp": "2025-08-16T08:59:13.430Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T08:59:13.430Z",
+      "lastVerified": "2025-08-16T08:59:13.430Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755334851210_2aaeh3y22",
+      "content": "HTML Editor Component Analysis:\n- Located in: /src/components/sanity/MarkdownBodyInput.tsx\n- Current behavior: Requires converting HTML to PortableText before preview\n- User wants: Live HTML preview as they type, without conversion\n- Key change needed: Add direct HTML rendering in preview tab using dangerouslySetInnerHTML or iframe\n- Component uses Tabs with 'edit' and 'preview' modes\n- Has htmlText state that stores the raw HTML input",
+      "type": "general",
+      "tags": [
+        "general",
+        "html-editor",
+        "live-preview",
+        "sanity",
+        "component"
+      ],
+      "timestamp": "2025-08-16T09:00:51.210Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T09:00:51.210Z",
+      "lastVerified": "2025-08-16T09:00:51.210Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755335045727_q2l9c4uab",
+      "content": "HTML Live Preview Implementation Complete:\n- Modified MarkdownBodyInput.tsx to show live HTML preview\n- Preview now uses dangerouslySetInnerHTML to render HTML as you type\n- No conversion needed - preview updates automatically\n- Added safety styling with prose classes and contained layout\n- Preserved existing conversion functionality for PortableText\n- Development server confirms the changes work properly",
+      "type": "general",
+      "tags": [
+        "general",
+        "html-editor",
+        "live-preview",
+        "implementation",
+        "complete"
+      ],
+      "timestamp": "2025-08-16T09:04:05.727Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T09:04:05.727Z",
+      "lastVerified": "2025-08-16T09:04:05.727Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755335128256_k53eira83",
+      "content": "Sanity Invalid List Values Error Analysis:\n- Error: \"Invalid list values - Some items in this list are not objects\"\n- Cause: User is trying to add raw JSON data (with transactionId and results fields) instead of Portable Text blocks\n- Issue: The htmlToPortableText function expects HTML strings, not JSON objects\n- The body field expects an array of Portable Text block objects with specific structure (_type, children, style, etc.)\n- Solution needed: Either convert JSON to HTML first, or create a JSON-to-PortableText converter",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "sanity",
+        "error",
+        "portable-text",
+        "json-conversion"
+      ],
+      "timestamp": "2025-08-16T09:05:28.256Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T09:05:28.256Z",
+      "lastVerified": "2025-08-16T09:05:28.256Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755335265544_okqjrjlk8",
+      "content": "Sanity Invalid List Values Fix Complete:\n- Added JSON detection function isJsonString() \n- Created jsonToPortableText() to convert JSON to proper Portable Text blocks\n- Updated htmlToPortableText() to detect and handle JSON input\n- Modified isValidHtml() to accept JSON as valid input\n- JSON data will now be converted to formatted code blocks with proper _type, _key structure\n- Fixed the error where raw JSON was causing \"Invalid list values\" in Sanity Studio",
+      "type": "troubleshooting",
+      "tags": [
+        "troubleshooting",
+        "sanity",
+        "json-conversion",
+        "portable-text",
+        "fix",
+        "complete"
+      ],
+      "timestamp": "2025-08-16T09:07:45.543Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-16T09:07:45.543Z",
+      "lastVerified": "2025-08-16T09:07:45.543Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-07T09:07:40.616Z"
+  "lastUpdated": "2025-08-16T09:07:45.543Z"
 }

@@ -3,6 +3,8 @@ import DodoPayments from 'dodopayments'
 import { withCSRF } from '@/lib/csrf'
 import { paymentRateLimit } from '@/lib/rateLimiting'
 import { z } from 'zod'
+import { createClient } from '@supabase/supabase-js'
+import { getEffectiveSubscriptionPlan } from '@/utils/subscription'
 
 const CreatePaymentSchema = z.object({
   productId: z.string().min(1, 'Product ID is required').max(100),
@@ -69,6 +71,39 @@ export const POST = paymentRateLimit(withCSRF(async (request: NextRequest): Prom
       environment
     })
 
+    // Check if user is already on trial - prevent trial users from making payments
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('subscription_plan, subscription_status, trial_expires_at, dodo_customer_id, has_used_trial')
+      .eq('id', userId)
+      .single()
+
+    if (profileError || !profile) {
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 404 }
+      )
+    }
+
+    // Get effective plan to check if user is on trial
+    const effectivePlan = getEffectiveSubscriptionPlan(profile)
+    
+    // Prevent trial users from making payments while on trial
+    if (effectivePlan === 'philosopher' && profile.subscription_status !== 'active') {
+      return NextResponse.json(
+        { 
+          error: 'Trial users cannot make payments while on trial',
+          details: 'Please wait for your trial to expire before making a purchase, or contact support to convert your trial to a paid subscription.'
+        },
+        { status: 409 }
+      )
+    }
+
     // Create payment using Dodo Payments SDK
     const payment = await dodoClient.payments.create({
       payment_link: true,
@@ -82,8 +117,7 @@ export const POST = paymentRateLimit(withCSRF(async (request: NextRequest): Prom
       customer: {
         email: customerData.email,
         name: customerData.name,
-        create_new_customer: true,
-      },
+      } as any, // Type assertion for Dodo API compatibility
       product_cart: [{
         product_id: productId,
         quantity: 1,

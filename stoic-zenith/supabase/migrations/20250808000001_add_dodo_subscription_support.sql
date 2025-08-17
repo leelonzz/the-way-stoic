@@ -51,26 +51,28 @@ RETURNS TRIGGER AS $$
 BEGIN
     -- Update the profile with DodoPayments subscription information
     UPDATE public.profiles
-    SET 
-        subscription_status = CASE 
+    SET
+        subscription_status = CASE
             WHEN NEW.status = 'active' THEN 'active'
             WHEN NEW.status = 'canceled' THEN 'cancelled'
+            WHEN NEW.status = 'cancelled' THEN 'cancelled'
             WHEN NEW.status = 'past_due' THEN 'past_due'
             WHEN NEW.status = 'unpaid' THEN 'unpaid'
             ELSE 'free'
         END,
-        subscription_plan = CASE 
+        subscription_plan = CASE
             WHEN NEW.status = 'active' THEN NEW.plan_type
+            -- ALWAYS downgrade to seeker plan when subscription is not active
             ELSE 'seeker'
         END,
         subscription_id = NEW.dodo_subscription_id,
-        subscription_expires_at = CASE 
+        subscription_expires_at = CASE
             WHEN NEW.status = 'active' THEN NEW.current_period_end
             ELSE NULL
         END,
         updated_at = NOW()
     WHERE id = NEW.user_id;
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

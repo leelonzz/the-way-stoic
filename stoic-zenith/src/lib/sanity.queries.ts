@@ -1,0 +1,174 @@
+import { groq } from 'next-sanity'
+
+export const blogPostQuery = groq`*[_type == "blogPost" && slug.current == $slug][0]{
+  _id,
+  title,
+  slug,
+  author,
+  excerpt,
+  mainImage{
+    asset->{
+      _id,
+      url
+    },
+    alt
+  },
+  categories,
+  tags,
+  publishedAt,
+  body,
+  featured,
+  seo{
+    metaTitle,
+    metaDescription
+  }
+}`
+
+export const blogPostsQuery = groq`*[_type == "blogPost" && (published == true || published == null)] | order(publishedAt desc) {
+  _id,
+  title,
+  slug,
+  author,
+  excerpt,
+  mainImage{
+    asset->{
+      _id,
+      url
+    },
+    alt
+  },
+  categories,
+  tags,
+  publishedAt,
+  body,
+  featured
+}`
+
+export const featuredBlogPostsQuery = groq`*[_type == "blogPost" && (published == true || published == null) && featured == true] | order(publishedAt desc) {
+  _id,
+  title,
+  slug,
+  author,
+  excerpt,
+  mainImage{
+    asset->{
+      _id,
+      url
+    },
+    alt
+  },
+  categories,
+  tags,
+  publishedAt
+}`
+
+export const blogPostsByCategoryQuery = groq`*[_type == "blogPost" && (published == true || published == null) && $category in categories] | order(publishedAt desc) {
+  _id,
+  title,
+  slug,
+  author,
+  excerpt,
+  mainImage{
+    asset->{
+      _id,
+      url
+    },
+    alt
+  },
+  categories,
+  tags,
+  publishedAt
+}`
+
+export const relatedBlogPostsQuery = groq`*[_type == "blogPost" && (published == true || published == null) && _id != $currentId && (count((categories[])[@ in $categories]) > 0 || count((tags[])[@ in $tags]) > 0)] | order(publishedAt desc)[0...3] {
+  _id,
+  title,
+  slug,
+  author,
+  excerpt,
+  mainImage{
+    asset->{
+      _id,
+      url
+    },
+    alt
+  },
+  categories,
+  tags,
+  publishedAt
+}`
+
+export const courseQuery = groq`*[_type == "course" && slug.current == $slug][0]{
+  _id,
+  title,
+  slug,
+  description,
+  shortDescription,
+  featuredImage{
+    asset->{
+      _id,
+      url
+    },
+    alt
+  },
+  instructor,
+  instructorBio,
+  instructorImage{
+    asset->{
+      _id,
+      url
+    },
+    alt
+  },
+  duration,
+  difficulty,
+  price,
+  currency,
+  categories,
+  tags,
+  lessons[]{
+    title,
+    description,
+    duration,
+    videoUrl,
+    content,
+    resources[]{
+      title,
+      url,
+      type
+    },
+    isFree
+  },
+  prerequisites,
+  learningOutcomes,
+  featured,
+  published,
+  publishedAt,
+  enrollmentCount,
+  seo{
+    metaTitle,
+    metaDescription
+  }
+}`
+
+export const coursesQuery = groq`*[_type == "course" && published == true] | order(publishedAt desc) {
+  _id,
+  title,
+  slug,
+  shortDescription,
+  featuredImage{
+    asset->{
+      _id,
+      url
+    },
+    alt
+  },
+  instructor,
+  duration,
+  difficulty,
+  price,
+  currency,
+  categories,
+  featured,
+  enrollmentCount
+}`

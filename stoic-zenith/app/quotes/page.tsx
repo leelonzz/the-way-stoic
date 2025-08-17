@@ -2,9 +2,7 @@
 
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { NavigationOptimizedCachedPage } from '@/components/layout/NavigationOptimizedCachedPage'
 import { DailyStoicWisdom } from '@/components/quotes/DailyStoicWisdom'
-
 
 function QuotesSkeleton(): JSX.Element {
   return (
@@ -60,17 +58,9 @@ export default function QuotesPage(): JSX.Element {
   return (
     <ProtectedRoute>
       <AppLayout fullWidth>
-        <NavigationOptimizedCachedPage
-          pageKey="quotes"
-          fallback={<QuotesSkeleton />}
-          preserveOnNavigation={true}
-          refreshOnlyWhenStale={true}
-          maxAge={2 * 60 * 1000} // 2 minutes - shorter cache for quote pages to prevent stale quotes
-          navigationRefreshThreshold={1 * 60 * 1000} // 1 minute for quote content
-        >
-          <DailyStoicWisdom />
-        </NavigationOptimizedCachedPage>
+        <DailyStoicWisdom />
       </AppLayout>
     </ProtectedRoute>
   )
 }
+

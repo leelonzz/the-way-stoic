@@ -1,3 +1,6 @@
+# Ignore scratch output JSONs in icons
+icons/output*.json
+
 # Dependencies
 node_modules/
 .pnp

@@ -24,6 +24,7 @@ export default {
 				'serif': ['Crimson Text', 'Georgia', 'serif'],
 				'inknut': ['var(--font-inknut-antiqua)', 'serif'],
 				'inika': ['var(--font-inika)', 'serif'],
+				'poppins': ['var(--font-poppins)', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -92,20 +93,44 @@ export default {
 				'fade-in': {
 					from: {
 						opacity: '0',
+						transform: 'translateY(10px)'
+					},
+					to: {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
+				},
+				'fade-in-up': {
+					from: {
+						opacity: '0',
 						transform: 'translateY(20px)'
 					},
 					to: {
 						opacity: '1',
 						transform: 'translateY(0)'
 					}
+				},
+				'fade': {
+					from: {
+						opacity: '0'
+					},
+					to: {
+						opacity: '1'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				'fade-in': 'fade-in 0.5s ease-out'
+				'fade-in': 'fade-in 0.3s ease-out',
+				'fade-in-up': 'fade-in-up 0.5s ease-out',
+				'fade': 'fade 0.2s ease-in-out'
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	// eslint-disable-next-line @typescript-eslint/no-require-imports
+	plugins: [
+		require("tailwindcss-animate"),
+		require("@tailwindcss/typography"),
+	],
 } satisfies Config;
