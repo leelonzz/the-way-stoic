@@ -1,0 +1,204 @@
+import { NextRequest, NextResponse } from 'next/server'
+import DodoPayments from 'dodopayments'
+import { withCSRF } from '@/lib/csrf'
+import { paymentRateLimit } from '@/lib/rateLimiting'
+import { z } from 'zod'
+import { createClient } from '@supabase/supabase-js'
+import { getEffectiveSubscriptionPlan } from '@/utils/subscription'
+
+const CreatePaymentSchema = z.object({
+  productId: z.string().min(1, 'Product ID is required').max(100),
+  userId: z.string().min(1, 'User ID is required').max(100),
+  customerData: z.object({
+    email: z.string().email('Invalid email format').max(255),
+    name: z.string().min(1, 'Name is required').max(255),
+    phone: z.string().max(20).optional(),
+    billingAddress: z.object({
+      street: z.string().min(1, 'Street is required').max(255),
+      city: z.string().min(1, 'City is required').max(100),
+      state: z.string().min(1, 'State is required').max(100),
+      zipcode: z.string().min(1, 'Zipcode is required').max(20),
+      country: z.string().min(2, 'Country is required').max(2),
+    }),
+  }),
+  returnUrl: z.string().url('Invalid return URL').optional(),
+  cancelUrl: z.string().url('Invalid cancel URL').optional(),
+})
+
+type CreatePaymentRequest = z.infer<typeof CreatePaymentSchema>
+
+// Initialize Dodo client with correct configuration
+const environment = process.env.NEXT_PUBLIC_DODO_ENVIRONMENT || 'test'
+
+const dodoClient = new DodoPayments({
+  bearerToken: process.env.NEXT_PUBLIC_DODO_API_KEY || '',
+  // Note: DodoPayments SDK uses the same base URL for both test and live environments
+  // The environment is determined by the API key used
+})
+
+export const POST = paymentRateLimit(
+  withCSRF(async (request: NextRequest): Promise<NextResponse> => {
+    try {
+      const rawBody = await request.json()
+
+      // Validate input with zod
+      const parseResult = CreatePaymentSchema.safeParse(rawBody)
+      if (!parseResult.success) {
+        return NextResponse.json(
+          {
+            error: 'Invalid input data',
+            details: parseResult.error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message,
+            })),
+          },
+          { status: 400 }
+        )
+      }
+
+      const { productId, userId, customerData, returnUrl } = parseResult.data
+
+      if (!process.env.NEXT_PUBLIC_DODO_API_KEY) {
+        console.error('NEXT_PUBLIC_DODO_API_KEY is not configured')
+        return NextResponse.json(
+          { error: 'Payment service not configured' },
+          { status: 500 }
+        )
+      }
+
+      console.log('Creating payment with Dodo SDK:', {
+        productId,
+        userId,
+        environment,
+      })
+
+      // Check if user is already on trial - prevent trial users from making payments
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select(
+          'subscription_plan, subscription_status, trial_expires_at, dodo_customer_id, has_used_trial'
+        )
+        .eq('id', userId)
+        .single()
+
+      if (profileError || !profile) {
+        return NextResponse.json(
+          { error: 'User profile not found' },
+          { status: 404 }
+        )
+      }
+
+      // Get effective plan to check if user is on trial
+      const effectivePlan = getEffectiveSubscriptionPlan(profile)
+
+      // Prevent trial users from making payments while on trial
+      if (
+        effectivePlan === 'philosopher' &&
+        profile.subscription_status !== 'active'
+      ) {
+        return NextResponse.json(
+          {
+            error: 'Trial users cannot make payments while on trial',
+            details:
+              'Please wait for your trial to expire before making a purchase, or contact support to convert your trial to a paid subscription.',
+          },
+          { status: 409 }
+        )
+      }
+
+      // Create payment using Dodo Payments SDK
+      const payment = await dodoClient.payments.create({
+        payment_link: true,
+        billing: {
+          city: customerData.billingAddress.city,
+          country: customerData.billingAddress.country as any, // Dodo uses specific country codes
+          state: customerData.billingAddress.state,
+          street: customerData.billingAddress.street,
+          zipcode: customerData.billingAddress.zipcode,
+        },
+        customer: {
+          email: customerData.email,
+          name: customerData.name,
+        } as any, // Type assertion for Dodo API compatibility
+        product_cart: [
+          {
+            product_id: productId,
+            quantity: 1,
+          },
+        ],
+        return_url:
+          returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/payment/success`,
+        metadata: {
+          user_id: userId,
+        },
+      })
+
+      return NextResponse.json({
+        paymentId: payment.payment_id,
+        checkoutUrl: payment.payment_link || '',
+        status: 'pending',
+      })
+    } catch (error) {
+      console.error('Dodo payment creation error:', error)
+
+      // Handle authentication errors specifically
+      if (error instanceof Error && error.message.includes('401')) {
+        return NextResponse.json(
+          {
+            error: 'Dodo Payments authentication failed',
+            details: 'Please verify your API keys and account setup',
+            troubleshooting: {
+              step1: 'Check NEXT_PUBLIC_DODO_API_KEY in environment variables',
+              step2: 'Verify account is activated in Dodo dashboard',
+              step3: 'Ensure product exists in your Dodo account',
+            },
+          },
+          { status: 401 }
+        )
+      }
+
+      return NextResponse.json(
+        {
+          error: 'Failed to create payment',
+          details: error instanceof Error ? error.message : 'Unknown error',
+        },
+        { status: 500 }
+      )
+    }
+  })
+)
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  try {
+    const { searchParams } = new URL(request.url)
+    const paymentId = searchParams.get('paymentId')
+
+    if (paymentId) {
+      // Return mock payment details for now
+      const mockPayment = {
+        payment: {
+          id: paymentId,
+          status: 'completed',
+          amount: 1499,
+          currency: 'usd',
+          created_at: new Date().toISOString(),
+        },
+      }
+      return NextResponse.json(mockPayment)
+    }
+
+    // Return empty list for now
+    return NextResponse.json({ payments: [] })
+  } catch (error) {
+    console.error('Dodo payment fetch error:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch payments' },
+      { status: 500 }
+    )
+  }
+}

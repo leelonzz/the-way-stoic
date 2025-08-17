@@ -12,26 +12,43 @@ const client = createClient({
 async function findInvalidImageReferences() {
   try {
     console.log('🔍 Searching for documents with invalid image URLs...')
-    
+
     // Find all documents where mainImage is a string (URL) instead of an image object
+    // This checks for mainImage that exists but doesn't have the _type field (which proper image objects have)
     const documentsWithInvalidImages = await client.fetch(`
-      *[_type == "blogPost" && typeof(mainImage) == "string"]{
+      *[_type == "blogPost" && mainImage != null && !defined(mainImage._type) && mainImage != ""]{
         _id,
         title,
         mainImage,
         _type
       }
     `)
-    
-    console.log(`Found ${documentsWithInvalidImages.length} documents with invalid image URLs:`)
-    
-    documentsWithInvalidImages.forEach((doc, index) => {
+
+    // Also check for mainImage that is explicitly a string starting with http
+    const documentsWithStringImages = await client.fetch(`
+      *[_type == "blogPost" && mainImage match "http*"]{
+        _id,
+        title,
+        mainImage,
+        _type
+      }
+    `)
+
+    // Combine and deduplicate results
+    const allInvalidDocs = [...documentsWithInvalidImages, ...documentsWithStringImages]
+    const uniqueDocs = allInvalidDocs.filter((doc, index, self) =>
+      index === self.findIndex(d => d._id === doc._id)
+    )
+
+    console.log(`Found ${uniqueDocs.length} documents with invalid image URLs:`)
+
+    uniqueDocs.forEach((doc, index) => {
       console.log(`\n${index + 1}. Document: ${doc.title}`)
       console.log(`   ID: ${doc._id}`)
       console.log(`   Invalid mainImage: ${doc.mainImage}`)
     })
-    
-    return documentsWithInvalidImages
+
+    return uniqueDocs
   } catch (error) {
     console.error('❌ Error finding invalid image references:', error)
     return []
@@ -51,7 +68,7 @@ async function fixInvalidImageReferences(documents) {
       console.log(`\n📝 Fixing document: ${doc.title}`)
       
       // Remove the invalid mainImage field by setting it to null
-      const result = await client
+      await client
         .patch(doc._id)
         .unset(['mainImage'])
         .commit()
@@ -70,25 +87,41 @@ async function findOtherInvalidImageFields() {
     
     // Check for featuredImage fields that might be strings
     const documentsWithInvalidFeaturedImages = await client.fetch(`
-      *[_type == "course" && typeof(featuredImage) == "string"]{
+      *[_type == "course" && featuredImage != null && !defined(featuredImage._type) && featuredImage != ""]{
         _id,
         title,
         featuredImage,
         _type
       }
     `)
-    
-    if (documentsWithInvalidFeaturedImages.length > 0) {
-      console.log(`Found ${documentsWithInvalidFeaturedImages.length} courses with invalid featuredImage URLs:`)
-      
-      documentsWithInvalidFeaturedImages.forEach((doc, index) => {
+
+    // Also check for featuredImage that is explicitly a string starting with http
+    const coursesWithStringImages = await client.fetch(`
+      *[_type == "course" && featuredImage match "http*"]{
+        _id,
+        title,
+        featuredImage,
+        _type
+      }
+    `)
+
+    // Combine and deduplicate results
+    const allInvalidCourses = [...documentsWithInvalidFeaturedImages, ...coursesWithStringImages]
+    const uniqueCourses = allInvalidCourses.filter((doc, index, self) =>
+      index === self.findIndex(d => d._id === doc._id)
+    )
+
+    if (uniqueCourses.length > 0) {
+      console.log(`Found ${uniqueCourses.length} courses with invalid featuredImage URLs:`)
+
+      uniqueCourses.forEach((doc, index) => {
         console.log(`\n${index + 1}. Course: ${doc.title}`)
         console.log(`   ID: ${doc._id}`)
         console.log(`   Invalid featuredImage: ${doc.featuredImage}`)
       })
-      
+
       // Fix these as well
-      for (const doc of documentsWithInvalidFeaturedImages) {
+      for (const doc of uniqueCourses) {
         try {
           console.log(`\n📝 Fixing course: ${doc.title}`)
           

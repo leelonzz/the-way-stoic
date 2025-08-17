@@ -1,0 +1,11 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bookGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFA84C;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M8 6C8 4.89543 8.89543 4 10 4H38C39.1046 4 40 4.89543 40 6V42C40 43.1046 39.1046 44 38 44H10C8.89543 44 8 43.1046 8 42V6Z" fill="url(#bookGradient)"/>
+  <path d="M12 10H36V38H12V10Z" fill="white" fill-opacity="0.3"/>
+  <path d="M16 16H32M16 22H32M16 28H28" stroke="white" stroke-width="2" stroke-linecap="round"/>
+</svg>
