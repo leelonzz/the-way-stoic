@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getAllEvents, getEventBySlug, getRelatedEvents } from '@/lib/eventData'
 import { EventCard } from '@/components/events/EventCard'
+import { EventSpecificFAQ } from '@/components/events/EventSpecificFAQ'
+import { generateEventFAQStructuredData } from '@/lib/eventSpecificFAQ'
 
 interface EventPageProps {
   params: Promise<{ slug: string }>
@@ -99,6 +101,7 @@ export default async function EventPage({ params }: EventPageProps) {
   }
 
   const relatedEvents = getRelatedEvents(event.id, 3)
+  const faqStructuredData = generateEventFAQStructuredData(event.id)
 
   const formatDateRange = (dateRange: string) => {
     return dateRange.replace(/BCE/g, 'BCE').replace(/CE/g, 'CE')
@@ -159,6 +162,22 @@ export default async function EventPage({ params }: EventPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {faqStructuredData && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(faqStructuredData),
+          }}
+        />
+      )}
+      {faqStructuredData && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(faqStructuredData),
+          }}
+        />
+      )}
 
       <div
         className="mx-auto max-w-4xl px-6 py-10"
@@ -402,6 +421,9 @@ export default async function EventPage({ params }: EventPageProps) {
               </div>
             </section>
           )}
+
+          {/* Event-Specific FAQ Section */}
+          <EventSpecificFAQ eventId={event.id} />
 
           {/* Navigation */}
           <div className="bg-gray-50 rounded-lg p-6 text-center">
