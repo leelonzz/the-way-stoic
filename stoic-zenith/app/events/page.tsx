@@ -120,16 +120,10 @@ export default async function EventsPage() {
 
         {/* Header */}
         <div className="text-center mb-12">
-          <h1
-            className="text-4xl md:text-5xl font-bold text-gray-900 mb-6"
-            style={{ fontFamily: 'Inknut Antiqua, serif' }}
-          >
+          <h1 className="text-4xl md:text-5xl font-bold font-inknut text-gray-900 mb-6">
             Historical Events That Shaped Stoicism
           </h1>
-          <p
-            className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-6"
-            style={{ fontFamily: 'Inknut Antiqua, serif' }}
-          >
+          <p className="text-xl font-inknut text-gray-600 max-w-4xl mx-auto leading-relaxed mb-6">
             Discover the pivotal moments in ancient history that directly
             influenced the development of Stoic philosophy. From the political
             chaos following Alexander the Great's death to Marcus Aurelius's
@@ -169,10 +163,7 @@ export default async function EventsPage() {
 
         {/* Period Overview */}
         <div className="mb-16">
-          <h2
-            className="text-3xl font-bold text-gray-900 mb-8 text-center"
-            style={{ fontFamily: 'Inknut Antiqua, serif' }}
-          >
+          <h2 className="text-3xl font-bold font-inknut text-gray-900 mb-8 text-center">
             Three Defining Periods
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -182,30 +173,21 @@ export default async function EventsPage() {
                 className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
               >
                 <div className="mb-4">
-                  <h3
-                    className="text-xl font-bold text-gray-900 mb-2"
-                    style={{ fontFamily: 'Inknut Antiqua, serif' }}
-                  >
+                  <h3 className="text-xl font-bold font-inknut text-gray-900 mb-2">
                     {period.name}
                   </h3>
                   <p className="text-sm font-medium text-gray-600">
                     {period.dateRange}
                   </p>
                 </div>
-                <p
-                  className="text-gray-700 text-sm leading-relaxed mb-4"
-                  style={{ fontFamily: 'Inknut Antiqua, serif' }}
-                >
+                <p className="font-inknut text-gray-700 text-sm leading-relaxed mb-4">
                   {period.description}
                 </p>
                 <div className="mb-4">
                   <h4 className="text-sm font-semibold text-gray-900 mb-1">
                     Significance:
                   </h4>
-                  <p
-                    className="text-gray-600 text-sm"
-                    style={{ fontFamily: 'Inknut Antiqua, serif' }}
-                  >
+                  <p className="font-inknut text-gray-600 text-sm">
                     {period.significance}
                   </p>
                 </div>
@@ -236,16 +218,10 @@ export default async function EventsPage() {
         {/* Featured Events */}
         <div className="mb-16">
           <div className="text-center mb-8">
-            <h2
-              className="text-3xl font-bold text-gray-900 mb-4"
-              style={{ fontFamily: 'Inknut Antiqua, serif' }}
-            >
+            <h2 className="text-3xl font-bold font-inknut text-gray-900 mb-4">
               Key Historical Events
             </h2>
-            <p
-              className="text-lg text-gray-600 max-w-2xl mx-auto"
-              style={{ fontFamily: 'Inknut Antiqua, serif' }}
-            >
+            <p className="text-lg font-inknut text-gray-600 max-w-2xl mx-auto">
               Explore the most significant events that shaped Stoic philosophy
               and influenced its greatest practitioners.
             </p>
@@ -260,16 +236,10 @@ export default async function EventsPage() {
 
         {/* Timeline Navigation */}
         <div className="bg-gray-50 rounded-xl p-8 text-center">
-          <h2
-            className="text-2xl font-bold text-gray-900 mb-4"
-            style={{ fontFamily: 'Inknut Antiqua, serif' }}
-          >
+          <h2 className="text-2xl font-bold font-inknut text-gray-900 mb-4">
             Explore by Time Period
           </h2>
-          <p
-            className="text-gray-600 mb-6"
-            style={{ fontFamily: 'Inknut Antiqua, serif' }}
-          >
+          <p className="font-inknut text-gray-600 mb-6">
             Navigate through the chronological development of Stoic philosophy
           </p>
           <div className="flex flex-wrap justify-center gap-4">

@@ -7506,7 +7506,129 @@
       "lastAccessed": "2025-08-18T07:39:19.555Z",
       "lastVerified": "2025-08-18T07:39:19.555Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1755522155554_j7irmb28h",
+      "content": "Internal linking system analysis for The Way Stoic project:\n\nThe project has a sophisticated internal linking system implemented in:\n- /stoic-zenith/src/lib/internalLinking.ts - Main linking logic\n- /stoic-zenith/src/lib/linkConfig.ts - Link configuration and keywords\n- /stoic-zenith/src/components/PortableText.tsx - Portable text renderer with link support\n- /stoic-zenith/app/blog/[slug]/page.tsx - Blog post page component\n\nCurrent state:\n- Internal linking works by detecting keywords in text and automatically creating links\n- The PortableText component has enableInternalLinking flag but it's not being used in the blog post page\n- Need to add Goodreads links for book recommendations\n- The blog post \"stoicism-complete-guide\" should have internal links enabled",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "the-way-stoic",
+        "internal-linking",
+        "blog-system",
+        "portabletext"
+      ],
+      "timestamp": "2025-08-18T13:02:35.553Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T13:02:35.553Z",
+      "lastVerified": "2025-08-18T13:02:35.553Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755523495957_fzmsg5mv8",
+      "content": "Successfully implemented internal linking system for The Way Stoic blog:\n\n✅ COMPLETED TASKS:\n1. Enabled internal linking in blog post page (/stoic-zenith/app/blog/[slug]/page.tsx)\n   - Added enableInternalLinking={true}\n   - Added linkingContext with type 'blog-to-biography'\n   - Added pageId using the slug\n   - Added topics for contextual linking\n\n2. Created bookLinks.ts configuration (/stoic-zenith/src/lib/bookLinks.ts)\n   - Added Goodreads URLs for essential Stoic books\n   - Created helper functions for book linking\n\n3. Updated PortableText component (/stoic-zenith/src/components/PortableText.tsx)\n   - Extended props to support internal linking\n   - Added processBookLinks function for Goodreads links\n   - Enhanced renderBlock to process both internal and external links\n   - Added book pattern matching for \"Title\" by Author format\n\n4. Updated linkConfig.ts to include A Guide to the Good Life\n\nIMPLEMENTATION DETAILS:\n- Internal links target philosopher biographies from blog posts\n- Book titles in quotes followed by \"by Author\" get Goodreads links\n- System tracks links per page to avoid over-linking\n- Works for these books: Letters from a Stoic, Enchiridion, A Guide to the Good Life, Meditations, Discourses\n\nTESTING STATUS:\n- Build compiles successfully\n- Development server runs without errors\n- Ready for user testing on stoicism-complete-guide blog post",
+      "type": "warning",
+      "tags": [
+        "warning",
+        "testing",
+        "the-way-stoic",
+        "internal-linking",
+        "goodreads-links",
+        "completed"
+      ],
+      "timestamp": "2025-08-18T13:24:55.956Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T13:24:55.956Z",
+      "lastVerified": "2025-08-18T13:24:55.956Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755523834200_dogqkhij6",
+      "content": "User shared 3 images: \n1. A headshot photo of an Asian man (presumably Lee, the blog author)\n2. A duplicate of the same headshot\n3. A blog interface showing Stoicism articles with Lee as the author, featuring articles about ancient philosophy and Stoicism guides",
+      "type": "general",
+      "tags": [
+        "general",
+        "stoicism-blog",
+        "author-branding",
+        "ui-design",
+        "lee-author"
+      ],
+      "timestamp": "2025-08-18T13:30:34.200Z",
+      "context": "The-way-stoic project - user showing blog interface and author photo for branding purposes",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T13:30:34.200Z",
+      "lastVerified": "2025-08-18T13:30:34.200Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755523944532_oerwh81oy",
+      "content": "User wants to replace placeholder author image with the actual photo of Lee in the blog interface. Need to find where author images are displayed and update the placeholder.",
+      "type": "general",
+      "tags": [
+        "general",
+        "author-image",
+        "placeholder-replacement",
+        "blog-ui"
+      ],
+      "timestamp": "2025-08-18T13:32:24.532Z",
+      "context": "The-way-stoic project - replacing author placeholder with real photo",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T13:32:24.532Z",
+      "lastVerified": "2025-08-18T13:32:24.532Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755524160515_wmv0r9lxv",
+      "content": "Successfully replaced author placeholder in blog post component. Updated BlogCard component in stoic-zenith/app/blog/page.tsx to use Lee's actual photo (/images/avatars/lee.png) instead of the gradient circle with initials. The change is on lines 155-162.",
+      "type": "general",
+      "tags": [
+        "general",
+        "blog-author-image",
+        "ui-update",
+        "completed"
+      ],
+      "timestamp": "2025-08-18T13:36:00.515Z",
+      "context": "The-way-stoic project - blog author image replacement completed",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T13:36:00.515Z",
+      "lastVerified": "2025-08-18T13:36:00.515Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755524436837_a3yxfe15w",
+      "content": "User wants to use \"Input Antiqua\" font as main font for blog page interface. Found that Inknut Antiqua font is already configured in layout.tsx and globals.css. Font variable is --font-inknut-antiqua and font-inknut utility class exists. Blog page currently uses generic font classes like font-bold, font-semibold. Need to apply font-inknut class to blog elements.",
+      "type": "code",
+      "tags": [
+        "code",
+        "general",
+        "font",
+        "css",
+        "blog",
+        "design"
+      ],
+      "timestamp": "2025-08-18T13:40:36.836Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T13:40:36.836Z",
+      "lastVerified": "2025-08-18T13:40:36.836Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755524800116_8u7efyv11",
+      "content": "User wants to apply Inknut Antiqua font to the /event route as well, similar to what was done for the blog page.",
+      "type": "general",
+      "tags": [
+        "general",
+        "font",
+        "css",
+        "events",
+        "inknut-antiqua"
+      ],
+      "timestamp": "2025-08-18T13:46:40.116Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T13:46:40.116Z",
+      "lastVerified": "2025-08-18T13:46:40.116Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-18T07:39:19.555Z"
+  "lastUpdated": "2025-08-18T13:46:40.116Z"
 }
