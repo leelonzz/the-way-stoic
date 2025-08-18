@@ -53,19 +53,28 @@ export const Header: React.FC = () => {
 
               {/* App Name */}
               <div className="hidden sm:block">
-                <span className="text-xl font-semibold text-white" style={{ fontFamily: 'var(--font-inknut-antiqua)' }}>
+                <span
+                  className="text-xl font-semibold text-white"
+                  style={{ fontFamily: 'var(--font-inknut-antiqua)' }}
+                >
                   The Stoic Way
                 </span>
               </div>
             </Link>
 
-            {/* Blog Navigation */}
+            {/* Main Navigation */}
             <nav className="hidden md:flex items-center space-x-1">
               <Link
                 href="/blog"
                 className="text-white hover:bg-white/10 px-4 py-2 rounded-md font-medium transition-all duration-200 text-sm"
               >
                 Blog
+              </Link>
+              <Link
+                href="/events"
+                className="text-white hover:bg-white/10 px-4 py-2 rounded-md font-medium transition-all duration-200 text-sm"
+              >
+                Events
               </Link>
               <Link
                 href="/blog/philosophy"
