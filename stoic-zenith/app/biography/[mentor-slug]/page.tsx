@@ -4,6 +4,8 @@ import Image from 'next/image'
 import { getAllPhilosophers, getPhilosopherBiography, generatePhilosopherStructuredData } from '@/lib/philosopherData'
 import { formatLastUpdatedWithPrefix } from '@/lib/dateUtils'
 import { YouTubeEmbed } from '@/components/ui/youtube-embed'
+import { BiographyFAQ } from '@/components/biography/BiographyFAQ'
+import { generateFAQStructuredData } from '@/lib/philosopherFAQData'
 
 // Helper function to render markdown-style bold text
 function renderBoldText(text: string): JSX.Element {
@@ -169,6 +171,7 @@ export default async function BiographyPage({
   }
 
   const structuredData = generatePhilosopherStructuredData(biography)
+  const faqStructuredData = generateFAQStructuredData(biography.slug, biography.fullName)
 
   const formatDate = (dateStr: string) => {
     if (!dateStr || dateStr.startsWith('0000') || dateStr.startsWith('1950')) return dateStr
@@ -196,6 +199,14 @@ export default async function BiographyPage({
           __html: JSON.stringify(structuredData),
         }}
       />
+      {faqStructuredData && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(faqStructuredData),
+          }}
+        />
+      )}
       
       <div className="mx-auto max-w-6xl px-6 py-10">
         {/* Breadcrumb */}
@@ -476,6 +487,14 @@ export default async function BiographyPage({
               </div>
             )}
           </aside>
+        </div>
+
+        {/* FAQ Section */}
+        <div className="mt-16">
+          <BiographyFAQ
+            philosopherSlug={biography.slug}
+            philosopherName={biography.fullName}
+          />
         </div>
 
         {/* Call to Action Section - Wider Layout */}
