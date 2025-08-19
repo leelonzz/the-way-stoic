@@ -28,7 +28,6 @@ const poppins = Poppins({
   display: 'swap',
 })
 
-
 export const metadata: Metadata = {
   metadataBase: new URL('https://thewaystoic.site'),
   title: 'The Stoic Way - Philosophy for Daily Life',
@@ -46,7 +45,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'The Stoic Way - Philosophy for Daily Life',
-    description: 'Transform your daily practice with ancient Stoic wisdom. Build resilience, find clarity, and cultivate inner strength through guided reflection and timeless teachings.',
+    description:
+      'Transform your daily practice with ancient Stoic wisdom. Build resilience, find clarity, and cultivate inner strength through guided reflection and timeless teachings.',
     url: 'https://thewaystoic.site',
     siteName: 'The Stoic Way',
     images: [
@@ -63,7 +63,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'The Stoic Way - Philosophy for Daily Life',
-    description: 'Transform your daily practice with ancient Stoic wisdom. Build resilience, find clarity, and cultivate inner strength through guided reflection and timeless teachings.',
+    description:
+      'Transform your daily practice with ancient Stoic wisdom. Build resilience, find clarity, and cultivate inner strength through guided reflection and timeless teachings.',
     images: ['/apple-touch-icon.png'],
   },
   robots: {
@@ -95,10 +96,15 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/logo-icon.png" />
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="alternate" type="application/rss+xml" title="The Stoic Way - Blog RSS Feed" href="/api/rss" />
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title="The Stoic Way - Blog RSS Feed"
+          href="/api/rss"
+        />
         <style>{`
 html {
-  font-family: ${GeistSans.style.fontFamily};
+  font-family: ${inknutAntiqua.style.fontFamily}, serif;
   --font-sans: ${GeistSans.variable};
   --font-mono: ${GeistMono.variable};
   --font-inknut-antiqua: ${inknutAntiqua.style.fontFamily};
@@ -113,36 +119,94 @@ html {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              "name": "The Stoic Way",
-              "description": "Transform your daily practice with ancient Stoic wisdom. Build resilience, find clarity, and cultivate inner strength through guided reflection and timeless teachings.",
-              "url": "https://thewaystoic.site",
-              "potentialAction": {
-                "@type": "SearchAction",
-                "target": {
-                  "@type": "EntryPoint",
-                  "urlTemplate": "https://thewaystoic.site/search?q={search_term_string}"
+            __html: JSON.stringify([
+              {
+                '@context': 'https://schema.org',
+                '@type': 'Organization',
+                '@id': 'https://thewaystoic.site/#organization',
+                name: 'The Stoic Way',
+                url: 'https://thewaystoic.site',
+                logo: {
+                  '@type': 'ImageObject',
+                  '@id': 'https://thewaystoic.site/#logo',
+                  url: 'https://thewaystoic.site/logo-icon.png',
+                  contentUrl: 'https://thewaystoic.site/logo-icon.png',
+                  width: 512,
+                  height: 512,
+                  caption: 'The Stoic Way Logo',
                 },
-                "query-input": "required name=search_term_string"
+                image: {
+                  '@type': 'ImageObject',
+                  url: 'https://thewaystoic.site/apple-touch-icon.png',
+                  width: 180,
+                  height: 180,
+                },
+                description:
+                  'Transform your daily practice with ancient Stoic wisdom. Build resilience, find clarity, and cultivate inner strength through guided reflection and timeless teachings.',
+                foundingDate: '2024',
+                sameAs: [],
+                contactPoint: {
+                  '@type': 'ContactPoint',
+                  contactType: 'customer support',
+                  url: 'https://thewaystoic.site/support',
+                },
               },
-              "publisher": {
-                "@type": "Organization",
-                "name": "The Stoic Way",
-                "logo": {
-                  "@type": "ImageObject",
-                  "url": "https://thewaystoic.site/apple-touch-icon.png"
-                }
-              }
-            })
+              {
+                '@context': 'https://schema.org',
+                '@type': 'WebSite',
+                '@id': 'https://thewaystoic.site/#website',
+                url: 'https://thewaystoic.site',
+                name: 'The Stoic Way',
+                description:
+                  'Transform your daily practice with ancient Stoic wisdom. Build resilience, find clarity, and cultivate inner strength through guided reflection and timeless teachings.',
+                publisher: {
+                  '@id': 'https://thewaystoic.site/#organization',
+                },
+                inLanguage: 'en-US',
+                potentialAction: [
+                  {
+                    '@type': 'SearchAction',
+                    target: {
+                      '@type': 'EntryPoint',
+                      urlTemplate:
+                        'https://thewaystoic.site/quotes?search={search_term_string}',
+                    },
+                    'query-input': 'required name=search_term_string',
+                  },
+                ],
+              },
+              {
+                '@context': 'https://schema.org',
+                '@type': 'WebApplication',
+                '@id': 'https://thewaystoic.site/#webapp',
+                name: 'The Stoic Way',
+                url: 'https://thewaystoic.site',
+                description:
+                  'A comprehensive Stoic philosophy app for daily practice, journaling, and wisdom cultivation.',
+                applicationCategory: 'LifestyleApplication',
+                operatingSystem: 'Web Browser',
+                offers: {
+                  '@type': 'Offer',
+                  price: '0',
+                  priceCurrency: 'USD',
+                },
+                publisher: {
+                  '@id': 'https://thewaystoic.site/#organization',
+                },
+                featureList: [
+                  'Daily Stoic quotes and wisdom',
+                  'Personal journaling with Stoic prompts',
+                  'Life calendar and memento mori visualization',
+                  'Learn from ancient Stoic mentors',
+                  'Track personal growth and insights',
+                ],
+              },
+            ]),
           }}
         />
         <ClientProviders>
           <ConditionalHeader />
-          <MainContent>
-            {children}
-          </MainContent>
+          <MainContent>{children}</MainContent>
         </ClientProviders>
       </body>
     </html>

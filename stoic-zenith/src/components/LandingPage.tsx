@@ -1,6 +1,7 @@
 import { HeroSection } from './hero-section'
-import { FeaturesSection } from './features-section'
+import { AceternityFeaturesSection } from './AceternityFeaturesSection'
 import { PhilosophySection } from './philosophy-section'
+import { TestimonialsSection } from './testimonials-section'
 import { PricingSection } from './pricing-section'
 import { AboutSection } from './about-section'
 import { FAQSection } from './faq-section'
@@ -18,11 +19,12 @@ export default function LandingPage({
     <div className="min-h-screen bg-background">
       <main>
         <HeroSection onGetStarted={onGetStarted} />
-        <FeaturesSection />
+        <AceternityFeaturesSection />
         <PhilosophySection />
-        <PricingSection onGetStarted={onGetStarted} />
+        <TestimonialsSection />
         <AboutSection />
         <CTASection onGetStarted={onGetStarted} />
+        <PricingSection onGetStarted={onGetStarted} />
         <FAQSection />
       </main>
       <Footer />

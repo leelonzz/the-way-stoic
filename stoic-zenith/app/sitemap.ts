@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next'
 import { getAllPosts } from '@/lib/blogData'
 import { getAllPhilosophers } from '@/lib/philosopherData'
 import { getAllEvents } from '@/lib/eventData'
+import { getAllPlaces } from '@/lib/placeData'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   try {
@@ -34,10 +35,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
       events = []
     }
 
+    // Get places with error handling
+    let places: any[] = []
+    try {
+      places = getAllPlaces()
+    } catch (error) {
+      console.warn('Failed to load places for sitemap:', error)
+      places = []
+    }
+
     const baseEntries: MetadataRoute.Sitemap = [
       { url: `${baseUrl}/`, changeFrequency: 'weekly', priority: 1 },
       { url: `${baseUrl}/blog`, changeFrequency: 'daily', priority: 0.9 },
       { url: `${baseUrl}/events`, changeFrequency: 'weekly', priority: 0.9 },
+      { url: `${baseUrl}/places`, changeFrequency: 'weekly', priority: 0.9 },
       { url: `${baseUrl}/quotes`, changeFrequency: 'weekly', priority: 0.8 },
       { url: `${baseUrl}/mentors`, changeFrequency: 'weekly', priority: 0.8 },
       { url: `${baseUrl}/journal`, changeFrequency: 'daily', priority: 0.7 },
@@ -45,6 +56,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       { url: `${baseUrl}/settings`, changeFrequency: 'monthly', priority: 0.6 },
       { url: `${baseUrl}/profile`, changeFrequency: 'monthly', priority: 0.6 },
       { url: `${baseUrl}/contact`, changeFrequency: 'monthly', priority: 0.5 },
+      { url: `${baseUrl}/support`, changeFrequency: 'monthly', priority: 0.5 },
       { url: `${baseUrl}/privacy`, changeFrequency: 'yearly', priority: 0.3 },
       { url: `${baseUrl}/terms`, changeFrequency: 'yearly', priority: 0.3 },
     ]
@@ -68,11 +80,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     }))
 
+    const placeEntries: MetadataRoute.Sitemap = places.map(p => ({
+      url: `${baseUrl}/places/${p.slug}`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    }))
+
     return [
       ...baseEntries,
       ...postEntries,
       ...philosopherEntries,
       ...eventEntries,
+      ...placeEntries,
     ]
   } catch (error) {
     console.error('Error generating sitemap:', error)

@@ -10,7 +10,7 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
-  
+
   .line-clamp-3 {
     overflow: hidden;
     display: -webkit-box;
@@ -66,27 +66,41 @@
   .page-transition-enter {
     animation: fade-in 200ms ease-in-out;
   }
-  
+
   .page-transition-exit {
     animation: fade-out 200ms ease-in-out;
   }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 /* Progress bar animation for loading states */
 @keyframes progress-bar {
-  0% { transform: translateX(-100%); }
-  50% { transform: translateX(-25%); }
-  100% { transform: translateX(0%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(-25%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
 }
 
 .animate-progress-bar {
@@ -192,7 +206,7 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-inknut antialiased;
     background-color: hsl(var(--hero));
     color: hsl(var(--stone));
   }
@@ -261,9 +275,11 @@ All colors MUST be HSL.
 
   /* Course Navigation Styles */
   .course-card-clean {
-    background: linear-gradient(145deg, 
-      hsl(var(--parchment)) 0%, 
-      hsl(var(--secondary)) 100%);
+    background: linear-gradient(
+      145deg,
+      hsl(var(--parchment)) 0%,
+      hsl(var(--secondary)) 100%
+    );
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
 
@@ -302,7 +318,8 @@ All colors MUST be HSL.
   }
 
   /* Also apply to blocks that only contain zero-width space (used for empty blocks) */
-  html.inknut-loaded .font-conditional.editing-mode:has(> :only-child):has(> :empty) {
+  html.inknut-loaded
+    .font-conditional.editing-mode:has(> :only-child):has(> :empty) {
     font-family: var(--font-inknut-antiqua), serif;
   }
 
@@ -318,8 +335,11 @@ All colors MUST be HSL.
   }
 
   /* Handle the case where contentEditable contains only zero-width space or minimal content */
-  html.inknut-loaded [contenteditable].font-conditional.editing-mode:not(:has(> *:not(:empty))),
-  html.inknut-loaded [contenteditable] .font-conditional.editing-mode:not(:has(> *:not(:empty))) {
+  html.inknut-loaded
+    [contenteditable].font-conditional.editing-mode:not(:has(> *:not(:empty))),
+  html.inknut-loaded
+    [contenteditable]
+    .font-conditional.editing-mode:not(:has(> *:not(:empty))) {
     font-family: var(--font-inknut-antiqua), serif;
   }
 
@@ -329,7 +349,8 @@ All colors MUST be HSL.
   }
 
   /* Ensure placeholder text also uses Inknut Antiqua */
-  html.inknut-loaded .font-conditional.editing-mode[data-placeholder]:empty::before {
+  html.inknut-loaded
+    .font-conditional.editing-mode[data-placeholder]:empty::before {
     font-family: var(--font-inknut-antiqua), serif;
   }
 
@@ -337,8 +358,6 @@ All colors MUST be HSL.
   html.inknut-loaded .force-inknut-font {
     font-family: var(--font-inknut-antiqua), serif !important;
   }
-
-
 
   /* Smaller, more refined text cursor */
   [contenteditable] {

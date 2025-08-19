@@ -37,7 +37,7 @@ export function AboutSection(): JSX.Element {
     >
       <div className="container px-4">
         <div className="mx-auto max-w-2xl text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-ink md:text-4xl lg:text-5xl mb-4">
+          <h2 className="text-3xl font-inknut font-bold tracking-tight text-ink md:text-4xl lg:text-5xl mb-4">
             About <span className="text-primary">The Stoic Way</span>
           </h2>
           <p className="text-lg text-stone leading-relaxed">
@@ -57,7 +57,7 @@ export function AboutSection(): JSX.Element {
                     <Badge variant="outline" className="mb-4">
                       Our Story
                     </Badge>
-                    <h3 className="text-2xl font-bold text-ink mb-4">
+                    <h3 className="text-2xl font-inknut font-bold text-ink mb-4">
                       Born from Personal Transformation
                     </h3>
                     <p className="text-stone leading-relaxed mb-4">
@@ -114,7 +114,7 @@ export function AboutSection(): JSX.Element {
         {/* Our Values */}
         <div>
           <div className="text-center mb-12">
-            <h3 className="text-2xl font-bold text-ink mb-4">
+            <h3 className="text-2xl font-inknut font-bold text-ink mb-4">
               Our Core Values
             </h3>
             <p className="text-stone max-w-2xl mx-auto">
@@ -133,14 +133,14 @@ export function AboutSection(): JSX.Element {
                 >
                   <CardContent className="p-6 text-center">
                     <div className="flex justify-center mb-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                      <div className="flex h-12 w-12 items-center justify-center">
                         <IconComponent
                           className="h-6 w-6"
                           style={{ color: '#da7756' }}
                         />
                       </div>
                     </div>
-                    <h4 className="text-lg font-semibold text-ink mb-3 group-hover:text-primary transition-colors">
+                    <h4 className="text-lg font-inknut font-semibold text-ink mb-3 group-hover:text-primary transition-colors">
                       {value.title}
                     </h4>
                     <p className="text-sm text-stone leading-relaxed">

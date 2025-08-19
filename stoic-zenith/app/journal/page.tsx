@@ -8,10 +8,12 @@ import dynamicImport from 'next/dynamic'
 import { BrandedLoadingScreen } from '@/components/ui/loading-spinner'
 
 // Dynamically import heavy journal component with TipTap editor
-const Journal = dynamicImport(() => import('@/components/pages-components/Journal'), {
-  loading: () => <BrandedLoadingScreen message="Loading your journal..." />,
-  ssr: false, // Journal editor needs client-side rendering
-})
+const Journal = dynamicImport(
+  () => import('@/components/pages-components/Journal'),
+  {
+    loading: () => <BrandedLoadingScreen message="Loading your journal..." />,
+  }
+)
 import { ErrorBoundary } from 'react-error-boundary'
 import { prefetchJournal } from '@/lib/prefetch'
 import { useAuthContext } from '@/components/auth/AuthProvider'
@@ -43,7 +45,9 @@ function ErrorFallback({
             </p>
             {error.stack && (
               <details className="mt-2">
-                <summary className="text-xs text-red-600 cursor-pointer">Stack trace</summary>
+                <summary className="text-xs text-red-600 cursor-pointer">
+                  Stack trace
+                </summary>
                 <pre className="text-xs text-red-600 mt-1 whitespace-pre-wrap">
                   {error.stack}
                 </pre>

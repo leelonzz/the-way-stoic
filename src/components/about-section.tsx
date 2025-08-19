@@ -133,7 +133,7 @@ export function AboutSection(): JSX.Element {
                 >
                   <CardContent className="p-6 text-center">
                     <div className="flex justify-center mb-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                      <div className="flex h-12 w-12 items-center justify-center">
                         <IconComponent
                           className="h-6 w-6"
                           style={{ color: '#da7756' }}

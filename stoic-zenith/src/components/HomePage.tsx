@@ -10,9 +10,14 @@ import { useCachedJournalStats } from '@/hooks/useCachedJournalStats'
 function HomePage(): JSX.Element {
   const router = useRouter()
   const { user } = useAuthContext()
-  const { getDailyQuote, loading, error, forceRefresh, quotes, isCached } = useCachedQuotes(user)
-  const { stats: journalStats, loading: journalLoading, isCached: journalCached } = useCachedJournalStats()
-  
+  const { getDailyQuote, loading, error, forceRefresh, quotes, isCached } =
+    useCachedQuotes(user)
+  const {
+    stats: journalStats,
+    loading: journalLoading,
+    isCached: journalCached,
+  } = useCachedJournalStats()
+
   const currentHour = new Date().getHours()
   const greeting =
     currentHour < 12
@@ -23,9 +28,9 @@ function HomePage(): JSX.Element {
 
   // Fallback quote for instant display
   const fallbackQuote = {
-    text: "The impediment to action advances action. What stands in the way becomes the way.",
-    author: "Marcus Aurelius",
-    source: "Meditations"
+    text: 'The impediment to action advances action. What stands in the way becomes the way.',
+    author: 'Marcus Aurelius',
+    source: 'Meditations',
   }
 
   const dailyQuote = getDailyQuote() || fallbackQuote
@@ -35,9 +40,11 @@ function HomePage(): JSX.Element {
     return (
       <div className="min-h-screen p-6 flex items-center justify-center">
         <div className="text-center space-y-4">
-          <h1 className="text-2xl font-inknut text-ink">Unable to load quotes</h1>
+          <h1 className="text-2xl font-inknut text-ink">
+            Unable to load quotes
+          </h1>
           <p className="text-red-600">{error}</p>
-          <Button 
+          <Button
             onClick={forceRefresh}
             className="bg-stone text-white hover:bg-stone/80"
           >
@@ -60,7 +67,6 @@ function HomePage(): JSX.Element {
           >
             {greeting}
           </h1>
-          
         </div>
 
         {/* Quote Section */}
@@ -85,7 +91,9 @@ function HomePage(): JSX.Element {
                 >
                   — {dailyQuote.author}
                   {dailyQuote.source && (
-                    <span className="text-base opacity-75 ml-2">({dailyQuote.source})</span>
+                    <span className="text-base opacity-75 ml-2">
+                      ({dailyQuote.source})
+                    </span>
                   )}
                 </p>
                 {loading && quotes.length === 0 && (
@@ -97,7 +105,9 @@ function HomePage(): JSX.Element {
             ) : loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone"></div>
-                <span className="ml-3 text-stone">Loading your daily wisdom...</span>
+                <span className="ml-3 text-stone">
+                  Loading your daily wisdom...
+                </span>
               </div>
             ) : (
               <div className="py-8 text-stone/70">
@@ -122,7 +132,7 @@ function HomePage(): JSX.Element {
               <div className="flex justify-start items-start mb-6">
                 <Image
                   src="/images/book-icon.svg"
-                  alt="Book icon"
+                  alt="Journal and writing icon representing daily reflection practice"
                   width={40}
                   height={40}
                 />
@@ -142,12 +152,26 @@ function HomePage(): JSX.Element {
                 {/* Weekly progress */}
                 <div className="flex gap-3">
                   {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
-                    <div key={index} className="flex flex-col items-center gap-2">
+                    <div
+                      key={index}
+                      className="flex flex-col items-center gap-2"
+                    >
                       <div className="w-8 h-8 flex items-center justify-center">
                         {journalStats.weeklyProgress[index] ? (
-                          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                            <circle cx="16" cy="16" r="14" fill="#4CAF50"/>
-                            <path d="M10 16L14 20L22 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <svg
+                            width="32"
+                            height="32"
+                            viewBox="0 0 32 32"
+                            fill="none"
+                          >
+                            <circle cx="16" cy="16" r="14" fill="#4CAF50" />
+                            <path
+                              d="M10 16L14 20L22 12"
+                              stroke="white"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
                           </svg>
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gray-200"></div>
@@ -185,7 +209,7 @@ function HomePage(): JSX.Element {
                 <div className="w-48 h-56 relative transition-transform duration-300 hover:scale-110">
                   <Image
                     src="/images/philosopher-image.png"
-                    alt="Ancient philosopher"
+                    alt="Portrait of an ancient Stoic philosopher representing wisdom and guidance"
                     fill
                     sizes="(max-width: 768px) 100vw, 192px"
                     className="object-cover rounded-2xl"
@@ -221,7 +245,7 @@ function HomePage(): JSX.Element {
               <div className="w-16 h-16 flex items-center justify-center mb-4 transition-transform duration-300 hover:rotate-12">
                 <Image
                   src="/images/feather-icon.svg"
-                  alt="Feather icon"
+                  alt="Quill feather representing wisdom and philosophical writing"
                   width={64}
                   height={64}
                   className="w-full h-full object-contain"

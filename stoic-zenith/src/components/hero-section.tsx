@@ -27,7 +27,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps): JSX.Element {
       <div className="absolute inset-0 z-0">
         <Image
           src="/images/hero-background-9f3f79.png"
-          alt="Hero background"
+          alt="Ancient columns and architecture representing Stoic philosophy and wisdom"
           fill
           className="object-cover"
           style={{
@@ -52,7 +52,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps): JSX.Element {
           <div className="relative h-8 w-8 md:h-12 md:w-12">
             <Image
               src="/images/logo-icon.png"
-              alt="Logo"
+              alt="The Stoic Way - Philosophy for daily life"
               fill
               className="object-contain"
             />

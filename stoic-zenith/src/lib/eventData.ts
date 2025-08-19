@@ -28,8 +28,8 @@ export const historicalEvents: HistoricalEvent[] = [
     ],
     relatedEvents: [
       'seleucid-empire-decline',
-      'ptolemaic-egypt-rise',
-      'battle-of-ipsus',
+      'catiline-conspiracy',
+      'marian-sullan-wars',
     ],
     sources: [
       'Diodorus Siculus - Bibliotheca Historica',
@@ -122,7 +122,11 @@ export const historicalEvents: HistoricalEvent[] = [
     stoicConnection:
       'Diogenes of Babylon, a key Stoic philosopher, came from Seleucia on the Tigris, demonstrating how Stoicism spread throughout the Hellenistic world.',
     keyFigures: ['Diogenes of Babylon', 'Antiochus III', 'Seleucus I Nicator'],
-    relatedEvents: ['diadochi-wars', 'ptolemaic-egypt'],
+    relatedEvents: [
+      'diadochi-wars',
+      'julio-claudian-dynasty',
+      'antonine-dynasty',
+    ],
     sources: ['Appian', 'Josephus', 'Diogenes Laertius'],
     tags: [
       'seleucid-empire',
@@ -197,7 +201,7 @@ export const historicalEvents: HistoricalEvent[] = [
     stoicConnection:
       'The civil wars showed the importance of personal virtue over political success, a core Stoic teaching that would influence later Roman Stoics.',
     keyFigures: ['Gaius Marius', 'Lucius Cornelius Sulla', 'Cato the Elder'],
-    relatedEvents: ['catiline-conspiracy', 'caesar-gallic-wars'],
+    relatedEvents: ['catiline-conspiracy', 'julio-claudian-dynasty'],
     sources: ['Plutarch', 'Appian', 'Velleius Paterculus'],
     tags: [
       'civil-war',
@@ -276,8 +280,8 @@ export const historicalEvents: HistoricalEvent[] = [
     ],
     relatedEvents: [
       'marian-sullan-wars',
-      'caesar-gallic-wars',
-      'first-triumvirate',
+      'julio-claudian-dynasty',
+      'diadochi-wars',
     ],
     sources: [
       'Cicero - Catiline Orations (In Catilinam)',
@@ -380,7 +384,12 @@ export const historicalEvents: HistoricalEvent[] = [
       'Seneca',
       'Thrasea Paetus',
     ],
-    relatedEvents: ['flavian-dynasty', 'antonine-dynasty'],
+    relatedEvents: [
+      'flavian-dynasty',
+      'antonine-dynasty',
+      'marian-sullan-wars',
+      'catiline-conspiracy',
+    ],
     sources: ['Tacitus', 'Suetonius', 'Dio Cassius'],
     tags: ['julio-claudian', 'seneca', 'imperial-stoicism', 'stoic-opposition'],
     seo: {
@@ -605,13 +614,32 @@ export function getRelatedEvents(
   const event = historicalEvents.find(e => e.id === eventId)
   if (!event) return []
 
-  const related = historicalEvents.filter(
+  // First, find directly related events
+  const directlyRelated = historicalEvents.filter(
     e =>
       e.id !== eventId &&
-      (e.relatedEvents.includes(eventId) ||
-        event.relatedEvents.includes(e.id) ||
-        e.period === event.period)
+      (e.relatedEvents.includes(eventId) || event.relatedEvents.includes(e.id))
   )
+
+  // Then find events from the same period
+  const samePeriod = historicalEvents.filter(
+    e =>
+      e.id !== eventId &&
+      e.period === event.period &&
+      !directlyRelated.some(dr => dr.id === e.id)
+  )
+
+  // Finally, get events from other periods as fallback
+  const otherEvents = historicalEvents.filter(
+    e =>
+      e.id !== eventId &&
+      e.period !== event.period &&
+      !directlyRelated.some(dr => dr.id === e.id) &&
+      !samePeriod.some(sp => sp.id === e.id)
+  )
+
+  // Combine all events in order of relevance
+  const related = [...directlyRelated, ...samePeriod, ...otherEvents]
 
   return related.slice(0, limit)
 }

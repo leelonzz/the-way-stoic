@@ -57,7 +57,7 @@ export function PricingSection({
     <section id="pricing" className="py-24 bg-background">
       <div className="container px-4">
         <div className="mx-auto max-w-2xl text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-ink md:text-4xl lg:text-5xl mb-4">
+          <h2 className="text-3xl font-inknut font-bold tracking-tight text-ink md:text-4xl lg:text-5xl mb-4">
             Choose Your <span className="text-cta">Philosophical Path</span>
           </h2>
           <p className="text-lg text-stone leading-relaxed">
@@ -94,7 +94,7 @@ export function PricingSection({
                     {plan.name}
                   </CardTitle>
                   <div className="flex items-baseline justify-center space-x-1">
-                    <span className="text-4xl font-bold text-ink">
+                    <span className="text-4xl font-inknut font-bold text-ink">
                       {plan.price}
                     </span>
                     {plan.period && (

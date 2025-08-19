@@ -12,7 +12,6 @@ const Journal = dynamicImport(
   () => import('@/components/pages-components/Journal'),
   {
     loading: () => <BrandedLoadingScreen message="Loading your journal..." />,
-    ssr: false, // Journal editor needs client-side rendering
   }
 )
 import { ErrorBoundary } from 'react-error-boundary'
