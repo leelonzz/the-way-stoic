@@ -65,10 +65,10 @@ export default async function BlogPage() {
   return (
     <div className="mx-auto max-w-7xl px-6 py-12">
       <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+        <h1 className="text-4xl md:text-5xl font-bold font-inknut text-gray-900 mb-4">
           Blog
         </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+        <p className="text-xl font-inknut text-gray-600 max-w-2xl mx-auto">
           Discover ancient wisdom for modern living through Stoic philosophy, practical exercises, and timeless insights.
         </p>
       </div>
@@ -87,8 +87,8 @@ export default async function BlogPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
             </div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Blog Coming Soon</h2>
-            <p className="text-gray-600 mb-6">
+            <h2 className="text-2xl font-semibold font-inknut text-gray-900 mb-2">Blog Coming Soon</h2>
+            <p className="font-inknut text-gray-600 mb-6">
               Our blog content is being managed through Sanity CMS. Blog posts will appear here once they've been created in the studio.
             </p>
             <div className="space-y-4">
@@ -152,10 +152,14 @@ function BlogCard({ post }: { post: BlogPost }) {
         <div className="p-6">
           <div className="flex items-center gap-2 mb-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-semibold">
-                  {post.author.charAt(0).toUpperCase()}
-                </span>
+              <div className="w-8 h-8 rounded-full overflow-hidden">
+                <Image
+                  src={post.author.toLowerCase() === 'lee' ? '/images/avatars/Lee.png' : '/images/avatars/Lee.png'}
+                  alt={`${post.author} avatar`}
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <span className="text-sm font-medium text-gray-700">{post.author}</span>
             </div>
@@ -165,12 +169,12 @@ function BlogCard({ post }: { post: BlogPost }) {
             <span className="text-sm text-gray-500">{readingTime.text}</span>
           </div>
 
-          <h2 className="text-xl font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
+          <h2 className="text-xl font-semibold font-inknut text-gray-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
             {post.title}
           </h2>
 
           {post.excerpt && (
-            <p className="text-gray-600 text-sm leading-relaxed line-clamp-3 mb-4">
+            <p className="font-inknut text-gray-600 text-sm leading-relaxed line-clamp-3 mb-4">
               {post.excerpt}
             </p>
           )}

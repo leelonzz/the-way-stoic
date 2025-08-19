@@ -157,6 +157,12 @@ const STOICISM_KEYWORDS: LinkKeyword[] = [
     url: '/biography/seneca',
     priority: 75,
     wholeWordOnly: true
+  },
+  {
+    keyword: 'A Guide to the Good Life',
+    url: 'https://www.goodreads.com/book/show/5617966-a-guide-to-the-good-life',
+    priority: 70,
+    wholeWordOnly: true
   }
 ]
 

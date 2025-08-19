@@ -31,6 +31,14 @@ const FAQItemComponent = ({ question, answer, category, isOpen, onToggle }: FAQI
     >
       <div className="w-full px-6 py-5 pr-4 flex justify-between items-start gap-5 text-left transition-all duration-300 ease-out">
         <div className="flex-1">
+          {/* Category badge hidden but data structure preserved for future use */}
+          {/* {category && (
+            <div className="mb-2">
+              <span className="inline-block px-2 py-1 text-xs font-medium uppercase tracking-wider bg-amber-100 text-amber-800 rounded-full">
+                {category}
+              </span>
+            </div>
+          )} */}
           <div className="text-gray-900 text-lg font-semibold leading-7 break-words font-inknut">
             {question}
           </div>
@@ -95,7 +103,7 @@ export function BiographyFAQ({ philosopherSlug, philosopherName }: BiographyFAQP
           Common questions about {philosopherName} and their philosophical teachings, answered with historical context and practical insights.
         </p>
       </div>
-      
+
       <div className="space-y-4">
         {faqItems.map((faq, index) => (
           <FAQItemComponent

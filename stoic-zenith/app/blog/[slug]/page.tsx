@@ -225,7 +225,16 @@ export default async function BlogPostPage({
         <main className="min-w-0 overflow-hidden">
           {post.body && post.body.length > 0 ? (
             <article>
-              <PortableText value={post.body} />
+              <PortableText 
+                value={post.body} 
+                enableInternalLinking={true}
+                linkingContext={{
+                  type: 'blog-to-biography',
+                  maxLinksPerPage: 10,
+                  topics: ['emotions', 'leadership', 'adversity', 'mindfulness']
+                }}
+                pageId={resolvedParams.slug}
+              />
             </article>
           ) : (
             <div className="prose prose-lg prose-gray max-w-none">

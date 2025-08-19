@@ -1,103 +1,46 @@
-<<<<<<<
 "use client"
 
 import React, { useState } from 'react'
-import { Clock, Users, ChevronDown } from 'lucide-react'
-import { getAllHistoricalFAQ, getHistoricalFAQByCategory, type HistoricalFAQItem } from '@/lib/historicalStoicismFAQ'
-import { SmoothFAQ, type FAQItem } from '@/components/ui/smooth-faq'
-
-interface HistoricalStoicismFAQProps {
-  showCategoryFilter?: boolean
-  initialCategory?: HistoricalFAQItem['category'] | 'all'
-}
-
-export function HistoricalStoicismFAQ({
-  showCategoryFilter = true,
-  initialCategory = 'all'
-}: HistoricalStoicismFAQProps) {
-  const [selectedCategory, setSelectedCategory] = useState<HistoricalFAQItem['category'] | 'all'>(initialCategory)
-
-  const allFAQs = getAllHistoricalFAQ()
-  const displayedFAQs = selectedCategory === 'all'
-    ? allFAQs
-    : getHistoricalFAQByCategory(selectedCategory)
-
-  // Convert HistoricalFAQItem to FAQItem format
-  const faqItems: FAQItem[] = displayedFAQs.map(item => ({
-    question: item.question,
-    answer: item.answer,
-    category: item.category,
-    period: item.period,
-    keyFigures: item.keyFigures,
-    relatedEvents: item.relatedEvents
-  }))
-
-  const getCategoryLabel = (category: string) => {
-    switch (category) {
-      case 'hellenistic':
-        return 'Hellenistic Period'
-      case 'roman-republic':
-        return 'Roman Republic Crisis'
-      case 'roman-empire':
-        return 'Roman Empire'
-      case 'general':
-        return 'General History'
-      default:
-        return 'All Periods'
-    }
-  }
-
-  const getCategoryCount = (category: HistoricalFAQItem['category'] | 'all') => {
-    if (category === 'all') return allFAQs.length
-    return getHistoricalFAQByCategory(category).length
-  }
-
-  return (
-    <div>
-      {/* Category Filter */}
-      {showCategoryFilter && (
-        <div className="flex flex-wrap justify-center gap-2 mb-8">
-          {(['all', 'hellenistic', 'roman-republic', 'roman-empire', 'general'] as const).map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                selectedCategory === category
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {getCategoryLabel(category)} ({getCategoryCount(category)})
-            </button>
-          ))}
-        </div>
-      )}
-
-      <SmoothFAQ
-        items={faqItems}
-        title="Frequently Asked Questions"
-        description="Common questions about the historical events and periods that shaped Stoic philosophy, answered with academic accuracy and historical context."
-        showMetadata={true}
-        maxWidth="800px"
-        showBackground={false}
-      />
-    </div>
-  )
-}
-=======
-"use client"
-
-import React, { useState } from 'react'
-import { ChevronDown, Clock, Users, MapPin } from 'lucide-react'
-import { getAllHistoricalFAQ, getHistoricalFAQByCategory, type HistoricalFAQItem } from '@/lib/historicalStoicismFAQ'
+import { ChevronDown, MapPin, Users, Clock, BookOpen } from 'lucide-react'
+import { getAllAncientAthensFAQ, getAncientAthensFAQByCategory, type AncientAthensFAQItem } from '@/lib/ancientAthensFAQ'
 
 interface FAQItemProps {
-  item: HistoricalFAQItem
+  item: AncientAthensFAQItem
   isOpen: boolean
   onToggle: () => void
 }
 
 const FAQItem = ({ item, isOpen, onToggle }: FAQItemProps) => {
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'stoicism':
+        return 'bg-blue-50 text-blue-700'
+      case 'schools':
+        return 'bg-purple-50 text-purple-700'
+      case 'locations':
+        return 'bg-green-50 text-green-700'
+      case 'visiting':
+        return 'bg-orange-50 text-orange-700'
+      default:
+        return 'bg-gray-50 text-gray-700'
+    }
+  }
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'stoicism':
+        return <BookOpen className="w-3 h-3" />
+      case 'schools':
+        return <Users className="w-3 h-3" />
+      case 'locations':
+        return <MapPin className="w-3 h-3" />
+      case 'visiting':
+        return <Clock className="w-3 h-3" />
+      default:
+        return <BookOpen className="w-3 h-3" />
+    }
+  }
+
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
       <button
@@ -106,21 +49,33 @@ const FAQItem = ({ item, isOpen, onToggle }: FAQItemProps) => {
         aria-expanded={isOpen}
       >
         <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${getCategoryColor(item.category)}`}>
+              {getCategoryIcon(item.category)}
+              {item.category.charAt(0).toUpperCase() + item.category.slice(1)}
+            </span>
+            {item.period && (
+              <span className="text-xs text-gray-500">
+                {item.period}
+              </span>
+            )}
+          </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2" style={{ fontFamily: 'Inknut Antiqua, serif' }}>
             {item.question}
           </h3>
           <div className="flex flex-wrap gap-2 text-sm text-gray-600">
-            {item.period && (
-              <span className="inline-flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {item.period}
-              </span>
-            )}
             {item.keyFigures && item.keyFigures.length > 0 && (
               <span className="inline-flex items-center gap-1">
                 <Users className="w-3 h-3" />
                 {item.keyFigures.slice(0, 2).join(', ')}
                 {item.keyFigures.length > 2 && ` +${item.keyFigures.length - 2} more`}
+              </span>
+            )}
+            {item.relatedSites && item.relatedSites.length > 0 && (
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                {item.relatedSites.slice(0, 2).join(', ')}
+                {item.relatedSites.length > 2 && ` +${item.relatedSites.length - 2} more`}
               </span>
             )}
           </div>
@@ -157,16 +112,16 @@ const FAQItem = ({ item, isOpen, onToggle }: FAQItemProps) => {
                 </div>
               )}
               
-              {item.relatedEvents && item.relatedEvents.length > 0 && (
+              {item.relatedSites && item.relatedSites.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-1">Related Events:</h4>
+                  <h4 className="font-medium text-gray-900 mb-1">Related Sites:</h4>
                   <div className="flex flex-wrap gap-1">
-                    {item.relatedEvents.map((event, index) => (
+                    {item.relatedSites.map((site, index) => (
                       <span 
                         key={index}
-                        className="inline-block bg-amber-50 text-amber-700 px-2 py-1 rounded text-xs"
+                        className="inline-block bg-green-50 text-green-700 px-2 py-1 rounded text-xs"
                       >
-                        {event}
+                        {site}
                       </span>
                     ))}
                   </div>
@@ -180,22 +135,22 @@ const FAQItem = ({ item, isOpen, onToggle }: FAQItemProps) => {
   )
 }
 
-interface HistoricalStoicismFAQProps {
+interface AncientAthensFAQProps {
   showCategoryFilter?: boolean
-  initialCategory?: HistoricalFAQItem['category'] | 'all'
+  initialCategory?: AncientAthensFAQItem['category'] | 'all'
 }
 
-export function HistoricalStoicismFAQ({ 
+export function AncientAthensFAQ({ 
   showCategoryFilter = true, 
   initialCategory = 'all' 
-}: HistoricalStoicismFAQProps) {
-  const [selectedCategory, setSelectedCategory] = useState<HistoricalFAQItem['category'] | 'all'>(initialCategory)
+}: AncientAthensFAQProps) {
+  const [selectedCategory, setSelectedCategory] = useState<AncientAthensFAQItem['category'] | 'all'>(initialCategory)
   const [openItems, setOpenItems] = useState<Set<number>>(new Set())
 
-  const allFAQs = getAllHistoricalFAQ()
+  const allFAQs = getAllAncientAthensFAQ()
   const displayedFAQs = selectedCategory === 'all' 
     ? allFAQs 
-    : getHistoricalFAQByCategory(selectedCategory)
+    : getAncientAthensFAQByCategory(selectedCategory)
 
   const toggleItem = (index: number) => {
     const newOpenItems = new Set(openItems)
@@ -208,11 +163,12 @@ export function HistoricalStoicismFAQ({
   }
 
   const categories = [
-    { id: 'all' as const, name: 'All Periods', count: allFAQs.length },
-    { id: 'hellenistic' as const, name: 'Hellenistic Period', count: getHistoricalFAQByCategory('hellenistic').length },
-    { id: 'roman-republic' as const, name: 'Roman Republic Crisis', count: getHistoricalFAQByCategory('roman-republic').length },
-    { id: 'roman-empire' as const, name: 'Roman Empire', count: getHistoricalFAQByCategory('roman-empire').length },
-    { id: 'general' as const, name: 'General History', count: getHistoricalFAQByCategory('general').length },
+    { id: 'all' as const, name: 'All Topics', count: allFAQs.length },
+    { id: 'general' as const, name: 'General History', count: getAncientAthensFAQByCategory('general').length },
+    { id: 'stoicism' as const, name: 'Stoicism', count: getAncientAthensFAQByCategory('stoicism').length },
+    { id: 'schools' as const, name: 'Philosophical Schools', count: getAncientAthensFAQByCategory('schools').length },
+    { id: 'locations' as const, name: 'Locations & Sites', count: getAncientAthensFAQByCategory('locations').length },
+    { id: 'visiting' as const, name: 'Visiting Today', count: getAncientAthensFAQByCategory('visiting').length },
   ]
 
   return (
@@ -224,8 +180,7 @@ export function HistoricalStoicismFAQ({
             Frequently Asked Questions
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto font-light" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            Common questions about the historical events and periods that shaped Stoic philosophy, 
-            answered with academic accuracy and historical context.
+            Common questions about Athens' philosophical heritage, answered with historical context and practical information for modern visitors.
           </p>
         </div>
 
@@ -273,4 +228,3 @@ export function HistoricalStoicismFAQ({
     </section>
   )
 }
->>>>>>>

@@ -38,10 +38,7 @@ export function EventCard({ event }: EventCardProps) {
 
           {/* Title and Date */}
           <div className="mb-4">
-            <h3
-              className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2"
-              style={{ fontFamily: 'Inknut Antiqua, serif' }}
-            >
+            <h3 className="text-xl font-bold font-inknut text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
               {event.title}
             </h3>
             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -54,10 +51,7 @@ export function EventCard({ event }: EventCardProps) {
           </div>
 
           {/* Description */}
-          <p
-            className="text-gray-700 text-sm leading-relaxed line-clamp-3 mb-4"
-            style={{ fontFamily: 'Inknut Antiqua, serif' }}
-          >
+          <p className="font-inknut text-gray-700 text-sm leading-relaxed line-clamp-3 mb-4">
             {event.description}
           </p>
 
@@ -66,10 +60,7 @@ export function EventCard({ event }: EventCardProps) {
             <h4 className="text-sm font-semibold text-gray-900 mb-1">
               Stoic Connection:
             </h4>
-            <p
-              className="text-gray-600 text-sm line-clamp-2"
-              style={{ fontFamily: 'Inknut Antiqua, serif' }}
-            >
+            <p className="font-inknut text-gray-600 text-sm line-clamp-2">
               {event.stoicConnection}
             </p>
           </div>
@@ -98,24 +89,7 @@ export function EventCard({ event }: EventCardProps) {
             </div>
           )}
 
-          {/* Tags */}
-          {event.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {event.tags.slice(0, 3).map((tag, index) => (
-                <span
-                  key={index}
-                  className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
-                >
-                  #{tag}
-                </span>
-              ))}
-              {event.tags.length > 3 && (
-                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                  +{event.tags.length - 3}
-                </span>
-              )}
-            </div>
-          )}
+
 
           {/* Read More Indicator */}
           <div className="mt-4 pt-4 border-t border-gray-100">

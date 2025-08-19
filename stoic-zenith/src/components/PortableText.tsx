@@ -1,6 +1,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { urlFor } from '@/lib/sanity.image'
+import { processPortableTextSpan } from '@/lib/internalLinking'
+import { LinkContext } from '@/types/linking'
+import { findBookByTitle } from '@/lib/bookLinks'
 
 // Simple Portable Text renderer without external dependencies
 interface Block {
@@ -27,9 +30,18 @@ interface ImageBlock {
 interface PortableTextProps {
   value: Array<Block | ImageBlock>
   className?: string
+  enableInternalLinking?: boolean
+  linkingContext?: LinkContext
+  pageId?: string
 }
 
-export function PortableText({ value, className = '' }: PortableTextProps) {
+export function PortableText({
+  value,
+  className = '',
+  enableInternalLinking = false,
+  linkingContext,
+  pageId
+}: PortableTextProps) {
   if (!value || !Array.isArray(value)) {
     return null
   }
@@ -61,7 +73,7 @@ export function PortableText({ value, className = '' }: PortableTextProps) {
 
         if (block._type === 'block') {
           const textBlock = block as Block
-          return renderBlock(textBlock)
+          return <div key={block._key}>{renderBlock(textBlock, enableInternalLinking, linkingContext, pageId)}</div>
         }
 
         return null
@@ -70,13 +82,27 @@ export function PortableText({ value, className = '' }: PortableTextProps) {
   )
 }
 
-function renderBlock(block: Block) {
+function renderBlock(
+  block: Block,
+  enableInternalLinking: boolean = false,
+  linkingContext?: LinkContext,
+  pageId?: string
+) {
   const { style = 'normal', children = [] } = block
 
   const text = children.map((child, index) => {
     if (!child.text) return null
 
-    let element = <span key={index}>{child.text}</span>
+    // Process text for internal links and book links if enabled
+    let textContent: React.ReactNode = child.text
+    if (enableInternalLinking && linkingContext && child.text && pageId) {
+      textContent = processPortableTextSpan(child.text, linkingContext, pageId, index)
+    } else {
+      // Still process for book links even if internal linking is disabled
+      textContent = processBookLinks(child.text)
+    }
+
+    let element = <span key={index}>{textContent}</span>
 
     if (child.marks) {
       child.marks.forEach((mark) => {
@@ -122,4 +148,78 @@ function renderBlock(block: Block) {
     default:
       return <p key={block._key} className="text-lg leading-relaxed text-gray-700 mb-6">{text}</p>
   }
+}
+
+// Function to process book titles and convert them to Goodreads links
+function processBookLinks(text: string): React.ReactNode {
+  if (typeof text !== 'string') {
+    return text
+  }
+
+  // Book titles to look for with simple pattern matching
+  const bookTitles = [
+    { title: 'Letters from a Stoic', url: 'https://www.goodreads.com/book/show/97411.Letters_from_a_Stoic' },
+    { title: 'Enchiridion', url: 'https://www.goodreads.com/book/show/24615.The_Enchiridion' },
+    { title: 'A Guide to the Good Life', url: 'https://www.goodreads.com/book/show/5617966-a-guide-to-the-good-life' },
+    { title: 'Meditations', url: 'https://www.goodreads.com/book/show/30659.Meditations' },
+    { title: 'Discourses', url: 'https://www.goodreads.com/book/show/17407.Discourses' }
+  ]
+
+  // Look for quoted book titles followed by "by Author"
+  let processedText = text
+  const parts: React.ReactNode[] = []
+  let hasReplacements = false
+
+  // Pattern to match "Book Title" by Author
+  const quotedBookPattern = /"([^"]+)"\s+by\s+([^,\n\.]+)/gi
+  let match
+  let lastIndex = 0
+
+  while ((match = quotedBookPattern.exec(text)) !== null) {
+    const fullMatch = match[0]
+    const bookTitle = match[1].trim()
+    const author = match[2].trim()
+    
+    // Find matching book
+    const book = bookTitles.find(b => 
+      b.title.toLowerCase().includes(bookTitle.toLowerCase()) ||
+      bookTitle.toLowerCase().includes(b.title.toLowerCase())
+    )
+    
+    if (book) {
+      // Add text before the match
+      const beforeText = text.slice(lastIndex, match.index)
+      if (beforeText) {
+        parts.push(beforeText)
+      }
+      
+      // Add the Goodreads link
+      parts.push(
+        <a
+          key={`book-${match.index}`}
+          href={book.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:text-blue-800 underline font-medium transition-colors"
+          title={`View ${book.title} on Goodreads`}
+        >
+          {fullMatch}
+        </a>
+      )
+      
+      lastIndex = match.index + fullMatch.length
+      hasReplacements = true
+    }
+  }
+
+  // If we made replacements, return the React elements
+  if (hasReplacements) {
+    const remainingText = text.slice(lastIndex)
+    if (remainingText) {
+      parts.push(remainingText)
+    }
+    return <>{parts}</>
+  }
+
+  return text
 }

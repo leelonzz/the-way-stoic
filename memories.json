@@ -202,8 +202,8 @@
       ],
       "timestamp": "2025-07-31T13:46:36.273Z",
       "context": "Complete authentication implementation summary",
-      "accessCount": 53,
-      "lastAccessed": "2025-08-18T07:36:59.701Z",
+      "accessCount": 54,
+      "lastAccessed": "2025-08-18T14:20:31.601Z",
       "lastVerified": "2025-07-31T13:46:36.273Z",
       "status": "fresh"
     },
@@ -900,8 +900,8 @@
       ],
       "timestamp": "2025-08-01T07:16:18.989Z",
       "context": "Complete fix for authentication and loading screen issues",
-      "accessCount": 31,
-      "lastAccessed": "2025-08-14T23:44:02.329Z",
+      "accessCount": 32,
+      "lastAccessed": "2025-08-18T14:20:31.601Z",
       "lastVerified": "2025-08-01T07:16:18.989Z",
       "status": "fresh"
     },
@@ -1006,8 +1006,8 @@
       ],
       "timestamp": "2025-08-01T11:01:49.897Z",
       "context": "Analyzing authentication routing issues in stoic-zenith app",
-      "accessCount": 4,
-      "lastAccessed": "2025-08-06T12:47:29.236Z",
+      "accessCount": 5,
+      "lastAccessed": "2025-08-18T14:20:31.601Z",
       "lastVerified": "2025-08-01T11:01:49.897Z",
       "status": "fresh"
     },
@@ -1306,8 +1306,8 @@
       ],
       "timestamp": "2025-08-02T01:23:20.050Z",
       "context": "Calendar loading failure investigation",
-      "accessCount": 2,
-      "lastAccessed": "2025-08-02T11:02:51.404Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-08-18T14:20:31.601Z",
       "lastVerified": "2025-08-02T01:23:20.050Z",
       "status": "fresh"
     },
@@ -1347,8 +1347,8 @@
       ],
       "timestamp": "2025-08-02T01:27:36.114Z",
       "context": "Calendar loading bug fix implementation",
-      "accessCount": 2,
-      "lastAccessed": "2025-08-02T11:02:51.404Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-08-18T14:20:31.601Z",
       "lastVerified": "2025-08-02T01:27:36.114Z",
       "status": "fresh"
     },
@@ -3714,8 +3714,8 @@
       ],
       "timestamp": "2025-08-05T06:54:40.288Z",
       "context": "User reported Dodo payments not working on Vercel production",
-      "accessCount": 5,
-      "lastAccessed": "2025-08-18T07:32:46.843Z",
+      "accessCount": 6,
+      "lastAccessed": "2025-08-18T14:20:31.601Z",
       "lastVerified": "2025-08-05T06:54:40.288Z",
       "status": "fresh"
     },
@@ -5265,8 +5265,8 @@
         "fixed"
       ],
       "timestamp": "2025-08-09T03:58:04.285Z",
-      "accessCount": 3,
-      "lastAccessed": "2025-08-11T01:45:38.231Z",
+      "accessCount": 4,
+      "lastAccessed": "2025-08-18T14:20:31.601Z",
       "lastVerified": "2025-08-09T03:58:04.285Z",
       "status": "fresh"
     },
@@ -7442,8 +7442,8 @@
         "implementation-complete"
       ],
       "timestamp": "2025-08-17T10:19:52.362Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-17T10:19:52.362Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-18T14:20:31.601Z",
       "lastVerified": "2025-08-17T10:19:52.362Z",
       "status": "fresh"
     },
@@ -7519,8 +7519,8 @@
         "portabletext"
       ],
       "timestamp": "2025-08-18T13:02:35.553Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-18T13:02:35.553Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-18T14:20:31.601Z",
       "lastVerified": "2025-08-18T13:02:35.553Z",
       "status": "fresh"
     },
@@ -7537,8 +7537,8 @@
         "completed"
       ],
       "timestamp": "2025-08-18T13:24:55.956Z",
-      "accessCount": 0,
-      "lastAccessed": "2025-08-18T13:24:55.956Z",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-18T14:20:31.601Z",
       "lastVerified": "2025-08-18T13:24:55.956Z",
       "status": "fresh"
     },
@@ -7628,7 +7628,175 @@
       "lastAccessed": "2025-08-18T13:46:40.116Z",
       "lastVerified": "2025-08-18T13:46:40.116Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1755525519147_plrmcjavr",
+      "content": "stoic-zenith is a Next.js app with TypeScript, using Supabase for backend, DodoPayments for payments, Sanity for CMS. Has proper package.json with build/start scripts. Ready for Vercel deployment.",
+      "type": "general",
+      "tags": [
+        "general",
+        "typescript",
+        "deployment",
+        "vercel",
+        "stoic-zenith",
+        "nextjs"
+      ],
+      "timestamp": "2025-08-18T13:58:39.147Z",
+      "context": "Deploying stoic-zenith to Vercel - checked project structure and package.json",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T13:58:39.147Z",
+      "lastVerified": "2025-08-18T13:58:39.147Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755525672953_nkl7tfhlx",
+      "content": "Successfully deployed stoic-zenith to Vercel. Build completed successfully with warnings about unable to find source files for pages (normal for Next.js), but no critical errors. Production URL: https://stoic-zenith-m137vnzt7-leenhatlong210-3046s-projects.vercel.app",
+      "type": "general",
+      "tags": [
+        "general",
+        "deployment",
+        "vercel",
+        "success",
+        "stoic-zenith",
+        "production"
+      ],
+      "timestamp": "2025-08-18T14:01:12.953Z",
+      "context": "Vercel deployment completion for stoic-zenith project",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T14:01:12.953Z",
+      "lastVerified": "2025-08-18T14:01:12.953Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755526791947_dr874gp3y",
+      "content": "User showing blog page with Lee's profile image appearing as a broken/default image icon instead of proper avatar photo",
+      "type": "general",
+      "tags": [
+        "general",
+        "ui-bug",
+        "images",
+        "profile",
+        "blog"
+      ],
+      "timestamp": "2025-08-18T14:19:51.947Z",
+      "context": "UI bug investigation - author profile images not displaying correctly",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T14:19:51.947Z",
+      "lastVerified": "2025-08-18T14:19:51.947Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755527247443_qzgqh00c8",
+      "content": "Successfully restored internal linking and Goodreads book links for The Way Stoic blog:\n\n✅ ALL COMPONENTS RESTORED:\n\n1. BLOG POST PAGE (/stoic-zenith/app/blog/[slug]/page.tsx):\n   - Added enableInternalLinking={true}\n   - Added linkingContext with type 'blog-to-biography'\n   - Added pageId using resolvedParams.slug\n   - Added topics: ['emotions', 'leadership', 'adversity', 'mindfulness']\n\n2. BOOK LINKS CONFIG (/stoic-zenith/src/lib/bookLinks.ts):\n   - Recreated with all essential Stoic books\n   - Includes Goodreads URLs for: Letters from a Stoic, Enchiridion, A Guide to the Good Life, Meditations, Discourses\n   - Added helper functions: findBookByTitle, getAllBookTitles, createGoodreadsLink\n\n3. PORTABLE TEXT COMPONENT (/stoic-zenith/src/components/PortableText.tsx):\n   - Added imports for internal linking and book links\n   - Extended PortableTextProps with linking options\n   - Enhanced renderBlock function to process both internal and external links\n   - Added processBookLinks function for Goodreads links\n   - Pattern matching for \"Book Title\" by Author format\n\n4. LINK CONFIG (/stoic-zenith/src/lib/linkConfig.ts):\n   - Added A Guide to the Good Life with Goodreads URL\n   - Maintains all Stoic philosopher and concept keywords\n\nTECHNICAL DETAILS:\n- Server runs successfully on port 3004\n- No compilation errors in main components\n- Internal links target biography pages\n- Book links open in new tabs with proper SEO attributes\n- Links are tracked per page to prevent over-linking\n\nREADY FOR TESTING: Visit http://localhost:3004/blog/stoicism-complete-guide to see internal linking and Goodreads book links in action.",
+      "type": "config",
+      "tags": [
+        "config",
+        "testing",
+        "the-way-stoic",
+        "internal-linking",
+        "goodreads",
+        "restoration-complete",
+        "success"
+      ],
+      "timestamp": "2025-08-18T14:27:27.443Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T14:27:27.443Z",
+      "lastVerified": "2025-08-18T14:27:27.443Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755527738868_umzyx2ivr",
+      "content": "Successfully replaced custom Athens FAQ with beautiful Shadcn SmoothFAQ component:\n\n✅ IMPLEMENTATION COMPLETE:\n\n1. REPLACED COMPONENTS:\n   - Removed: AncientAthensFAQ custom component\n   - Added: SmoothFAQ from @/components/ui/smooth-faq\n   - Imported: FAQItem type and getAllAncientAthensFAQ data\n\n2. DATA TRANSFORMATION:\n   - Mapped existing FAQ data structure to SmoothFAQ format\n   - Converted relatedSites → relatedEvents for compatibility\n   - Preserved all metadata: keyFigures, period, category\n\n3. ENHANCED UI FEATURES:\n   - showMetadata={true} - displays historical context\n   - showBackground={true} - adds beautiful background blur\n   - maxWidth=\"800px\" - optimal reading width\n   - Smooth animations on expand/collapse\n   - Consistent styling with landing page\n\n4. PRESERVED FUNCTIONALITY:\n   - All FAQ content maintained\n   - Historical metadata still displayed\n   - Category filtering available through SmoothFAQ\n   - Table of Contents link still works (#faq)\n\nTECHNICAL DETAILS:\n- File: /stoic-zenith/app/places/ancient-athens/page.tsx\n- Server runs successfully on port 3004\n- No TypeScript errors\n- All existing functionality preserved with enhanced styling\n\nRESULT: Athens places page now has the same beautiful FAQ styling as the landing page while maintaining all historical context and information.",
+      "type": "general",
+      "tags": [
+        "general",
+        "typescript",
+        "the-way-stoic",
+        "athens",
+        "faq",
+        "shadcn",
+        "ui-improvement",
+        "success"
+      ],
+      "timestamp": "2025-08-18T14:35:38.868Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T14:35:38.868Z",
+      "lastVerified": "2025-08-18T14:35:38.868Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755527968613_58md5ynf8",
+      "content": "Successfully made the sticky table of contents bar smaller and more compact:\n\n✅ SIZE REDUCTION CHANGES:\n\n1. CONTAINER SIZING:\n   - Reduced padding: p-4 → p-2\n   - Smaller max width: max-w-xs → max-w-[240px] \n   - Changed shadow: shadow-lg → shadow-md\n   - Smaller border radius: rounded-lg → rounded-md\n\n2. HEADER SECTION:\n   - Reduced icon size: w-4 h-4 → w-3 h-3\n   - Smaller font: text-sm → text-xs\n   - Tighter spacing: gap-2 → gap-1.5\n   - Less margin: mb-3 pb-2 → mb-2 pb-1.5\n\n3. NAVIGATION ITEMS:\n   - Smaller font: text-sm → text-xs\n   - Tighter vertical spacing: space-y-1 → space-y-0.5\n   - Reduced padding: py-1 px-2 → py-1 px-1.5\n   - Smaller gaps: gap-2 → gap-1.5\n   - Less indentation: ml-4 → ml-3\n\n4. ICON IMPROVEMENTS:\n   - Smaller chevron icons: w-3 h-3 → w-2.5 h-2.5\n   - Added flex-shrink-0 to prevent icon distortion\n\nRESULT: \n- The sticky TOC bar is now significantly more compact\n- Maintains all functionality and readability\n- Takes up less screen real estate\n- Still clearly visible and accessible\n\nFile: /stoic-zenith/src/components/places/StickyTableOfContents.tsx",
+      "type": "general",
+      "tags": [
+        "general",
+        "ui-improvement",
+        "sticky-toc",
+        "size-reduction",
+        "athens-page",
+        "success"
+      ],
+      "timestamp": "2025-08-18T14:39:28.613Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T14:39:28.613Z",
+      "lastVerified": "2025-08-18T14:39:28.613Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755561266207_k6wz6v7rd",
+      "content": "Successfully improved Athens page navigation by removing redundant table of contents and fixing sticky bar behavior:\n\n✅ CHANGES COMPLETED:\n\n1. REMOVED STATIC TABLE OF CONTENTS:\n   - Deleted the large blue table of contents section from Athens page\n   - Eliminated redundancy since sticky bar provides same functionality\n   - Cleaner page layout with more focus on content\n\n2. IMPROVED STICKY BAR BEHAVIOR:\n   - Modified scroll logic to keep sticky bar visible once shown\n   - Reduced hero section threshold from 400px to 300px for earlier appearance\n   - Changed from setIsVisible(window.scrollY > heroHeight) to conditional logic\n   - Once visible, sticky bar stays visible regardless of scroll direction\n\n3. ENHANCED USER EXPERIENCE:\n   - No more confusing duplicate navigation\n   - Sticky bar doesn't disappear when scrolling up\n   - More streamlined and professional appearance\n   - Better use of screen real estate\n\nTECHNICAL CHANGES:\n- File 1: /stoic-zenith/app/places/ancient-athens/page.tsx (removed static TOC)\n- File 2: /stoic-zenith/src/components/places/StickyTableOfContents.tsx (improved scroll behavior)\n- Server running on port 3002\n\nRESULT: Athens page now has a single, persistent navigation system that stays visible during all scrolling, providing better UX and cleaner design.",
+      "type": "general",
+      "tags": [
+        "general",
+        "athens-page",
+        "navigation",
+        "sticky-bar",
+        "ui-improvement",
+        "ux-enhancement"
+      ],
+      "timestamp": "2025-08-18T23:54:26.206Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-18T23:54:26.206Z",
+      "lastVerified": "2025-08-18T23:54:26.206Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755561812569_vj83cn6vj",
+      "content": "Successfully integrated white background sections with page background on Athens places page:\n\n✅ BACKGROUND INTEGRATION COMPLETED:\n\n1. IDENTIFIED PROBLEMATIC SECTIONS:\n   - Additional Resources section had bg-gray-50 background creating visual separation\n   - FAQ section was fine - using SmoothFAQ with transparent background\n   - Found sections that stood out from page background\n\n2. REMOVED CONFLICTING BACKGROUNDS:\n   - Removed bg-gray-50 from Additional Resources section\n   - Removed rounded-lg and p-8 styling that created box appearance\n   - Simplified to clean className=\"mb-12\" for seamless integration\n\n3. PRESERVED FUNCTIONALITY:\n   - All content and links remain functional\n   - Typography and spacing maintained\n   - External link icons and formatting preserved\n   - Grid layout for Primary/Modern Resources kept intact\n\n4. VISUAL IMPROVEMENTS:\n   - Sections now blend seamlessly with page background\n   - No more jarring white/gray boxes breaking visual flow\n   - Cleaner, more cohesive page appearance\n   - Better reading experience with consistent backgrounds\n\nTECHNICAL CHANGES:\n- File: /stoic-zenith/app/places/ancient-athens/page.tsx\n- Changed: section className=\"mb-12 bg-gray-50 rounded-lg p-8\" → className=\"mb-12\"\n- FAQ section already had proper transparent background via SmoothFAQ\n\nRESULT: Athens page now has seamless background integration with no distracting white/gray boxes, creating a more cohesive visual experience.",
+      "type": "general",
+      "tags": [
+        "general",
+        "athens-page",
+        "background-integration",
+        "ui-improvement",
+        "visual-consistency",
+        "success"
+      ],
+      "timestamp": "2025-08-19T00:03:32.569Z",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-19T00:03:32.569Z",
+      "lastVerified": "2025-08-19T00:03:32.569Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755562169319_hrcvzcbjd",
+      "content": "User wants to add Early Roman Empire (27 BCE-180 CE) event covering Julio-Claudian, Flavian, and Antonine dynasties with comprehensive content about Stoic connections including Seneca, Epictetus, and Marcus Aurelius. Plan approved - need to add event data, FAQs, and ensure SEO optimization.",
+      "type": "general",
+      "tags": [
+        "general",
+        "optimization",
+        "stoic-events",
+        "roman-empire",
+        "content-creation",
+        "seo"
+      ],
+      "timestamp": "2025-08-19T00:09:29.318Z",
+      "context": "Adding new historical event to existing events system",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-19T00:09:29.318Z",
+      "lastVerified": "2025-08-19T00:09:29.318Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-18T13:46:40.116Z"
+  "lastUpdated": "2025-08-19T00:09:29.318Z"
 }
