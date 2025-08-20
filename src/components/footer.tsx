@@ -40,7 +40,7 @@ export function Footer(): JSX.Element {
       { name: 'Roadmap', href: '#' },
     ],
     resources: [
-      { name: 'Blog', href: '#' },
+      { name: 'Blog', href: '/blog' },
       { name: 'Stoic Library', href: '#' },
       { name: 'Community', href: '#' },
       { name: 'Help Center', href: '#' },

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Menu, X, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import Image from 'next/image'
 
 interface HeroSectionProps {
@@ -8,13 +8,7 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ onGetStarted }: HeroSectionProps): JSX.Element {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrollButtonVisible, setIsScrollButtonVisible] = useState(true)
-
-  const scrollToSection = (sectionId: string): void => {
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' })
-    setIsMobileMenuOpen(false) // Close mobile menu after clicking
-  }
 
   const handleScrollToFeatures = (): void => {
     document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
@@ -22,7 +16,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps): JSX.Element {
   }
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-white">
+    <section className="relative min-h-screen overflow-hidden bg-white pt-20 md:pt-24">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image
@@ -44,134 +38,6 @@ export function HeroSection({ onGetStarted }: HeroSectionProps): JSX.Element {
           }}
         />
       </div>
-
-      {/* Navigation */}
-      <nav className="relative z-20 flex items-center justify-between px-4 md:px-16 py-6 md:py-8">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="relative h-8 w-8 md:h-12 md:w-12">
-            <Image
-              src="/images/logo-icon.png"
-              alt="The Stoic Way - Philosophy for daily life"
-              fill
-              className="object-contain"
-            />
-          </div>
-        </div>
-
-        {/* Navigation Items - Hidden on mobile */}
-        <div className="hidden lg:flex items-center gap-8 xl:gap-16">
-          <a
-            href="#features"
-            onClick={e => {
-              e.preventDefault()
-              document
-                .getElementById('features')
-                ?.scrollIntoView({ behavior: 'smooth' })
-            }}
-            className="text-white font-inknut text-base xl:text-lg hover:opacity-80 transition-opacity cursor-pointer"
-          >
-            Features
-          </a>
-          <a
-            href="#philosophy"
-            onClick={e => {
-              e.preventDefault()
-              document
-                .getElementById('philosophy')
-                ?.scrollIntoView({ behavior: 'smooth' })
-            }}
-            className="text-white font-inknut text-base xl:text-lg hover:opacity-80 transition-opacity cursor-pointer"
-          >
-            Philosophy
-          </a>
-          <a
-            href="#pricing"
-            onClick={e => {
-              e.preventDefault()
-              document
-                .getElementById('pricing')
-                ?.scrollIntoView({ behavior: 'smooth' })
-            }}
-            className="text-white font-inknut text-base xl:text-lg hover:opacity-80 transition-opacity cursor-pointer"
-          >
-            Pricing
-          </a>
-          <a
-            href="#about"
-            onClick={e => {
-              e.preventDefault()
-              document
-                .getElementById('about')
-                ?.scrollIntoView({ behavior: 'smooth' })
-            }}
-            className="text-white font-inknut text-base xl:text-lg hover:opacity-80 transition-opacity cursor-pointer"
-          >
-            About
-          </a>
-        </div>
-
-        {/* Mobile Menu Button - Visible on mobile */}
-        <div className="lg:hidden flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="text-white hover:bg-white/10"
-          >
-            {isMobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
-          </Button>
-        </div>
-
-        {/* Login Button - Desktop */}
-        <Button className="hidden lg:block bg-primary hover:bg-primary/90 text-white font-inknut text-sm md:text-base xl:text-lg px-4 md:px-8 py-2 md:py-3 transition-colors">
-          Log in
-        </Button>
-      </nav>
-
-      {/* Mobile Menu - Dropdown */}
-      {isMobileMenuOpen && (
-        <div className="lg:hidden relative z-20 bg-black/90 backdrop-blur-sm border-t border-white/20">
-          <div className="px-4 py-6 space-y-4">
-            <button
-              onClick={() => scrollToSection('features')}
-              className="block w-full text-left text-white font-inknut text-lg hover:opacity-80 transition-opacity py-2"
-            >
-              Features
-            </button>
-            <button
-              onClick={() => scrollToSection('philosophy')}
-              className="block w-full text-left text-white font-inknut text-lg hover:opacity-80 transition-opacity py-2"
-            >
-              Philosophy
-            </button>
-            <button
-              onClick={() => scrollToSection('pricing')}
-              className="block w-full text-left text-white font-inknut text-lg hover:opacity-80 transition-opacity py-2"
-            >
-              Pricing
-            </button>
-            <button
-              onClick={() => scrollToSection('about')}
-              className="block w-full text-left text-white font-inknut text-lg hover:opacity-80 transition-opacity py-2"
-            >
-              About
-            </button>
-            <div className="pt-4 border-t border-white/20">
-              <Button
-                onClick={onGetStarted}
-                className="w-full bg-primary hover:bg-primary/90 text-white font-inknut text-base px-6 py-3"
-              >
-                Log in
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main Content */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-[25vh] md:min-h-[30vh] px-4 md:px-16 text-center mt-8 md:mt-12">

@@ -73,7 +73,7 @@ export function AceternityFeaturesSection() {
                 <Grid size={20} />
 
                 {/* Icon */}
-                <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 mb-4 relative z-20">
+                <div className="flex items-center justify-center w-12 h-12 mb-4 relative z-20">
                   <IconComponent className="h-6 w-6 text-primary" />
                 </div>
 

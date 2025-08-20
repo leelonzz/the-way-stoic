@@ -82,7 +82,7 @@ export function CTASection({ onGetStarted }: CTASectionProps) {
                   </div>
 
                   <p className="text-sm text-sage">
-                    Free for 14 days, then $9/month. Cancel anytime.
+                    Free for 3 days, then $14/month. Cancel anytime.
                   </p>
                 </div>
 

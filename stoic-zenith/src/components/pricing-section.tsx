@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+
 import { Check, Star } from 'lucide-react'
 
 interface PricingSectionProps {
@@ -140,50 +140,6 @@ export function PricingSection({
               </CardContent>
             </Card>
           ))}
-        </div>
-
-        {/* Trust Indicator */}
-        <div className="mt-16 text-center">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="flex items-center space-x-2">
-              <div className="flex -space-x-2">
-                <Avatar className="h-8 w-8 border-2 border-white">
-                  <AvatarImage src="/images/avatars/user1.jpg" alt="User 1" />
-                  <AvatarFallback className="bg-cta text-white text-xs">
-                    JD
-                  </AvatarFallback>
-                </Avatar>
-                <Avatar className="h-8 w-8 border-2 border-white">
-                  <AvatarImage src="/images/avatars/user2.jpg" alt="User 2" />
-                  <AvatarFallback className="bg-stone text-white text-xs">
-                    SM
-                  </AvatarFallback>
-                </Avatar>
-                <Avatar className="h-8 w-8 border-2 border-white">
-                  <AvatarImage src="/images/avatars/user3.jpg" alt="User 3" />
-                  <AvatarFallback className="bg-primary text-white text-xs">
-                    AL
-                  </AvatarFallback>
-                </Avatar>
-                <Avatar className="h-8 w-8 border-2 border-white">
-                  <AvatarImage src="/images/avatars/user4.jpg" alt="User 4" />
-                  <AvatarFallback className="bg-secondary text-white text-xs">
-                    MR
-                  </AvatarFallback>
-                </Avatar>
-                <Avatar className="h-8 w-8 border-2 border-white">
-                  <AvatarImage src="/images/avatars/user5.jpg" alt="User 5" />
-                  <AvatarFallback className="bg-cta/80 text-white text-xs">
-                    KL
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-            </div>
-            <p className="text-stone text-sm font-medium">
-              Trusted by{' '}
-              <span className="text-ink font-semibold">10K+ developers</span>
-            </p>
-          </div>
         </div>
       </div>
     </section>

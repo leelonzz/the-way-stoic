@@ -1,3 +1,4 @@
+import { Header } from './header'
 import { HeroSection } from './hero-section'
 import { AceternityFeaturesSection } from './AceternityFeaturesSection'
 import { PhilosophySection } from './philosophy-section'
@@ -17,6 +18,7 @@ export default function LandingPage({
 }: LandingPageProps): JSX.Element {
   return (
     <div className="min-h-screen bg-background">
+      <Header onGetStarted={onGetStarted} />
       <main>
         <HeroSection onGetStarted={onGetStarted} />
         <AceternityFeaturesSection />

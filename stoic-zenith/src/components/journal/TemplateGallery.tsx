@@ -50,7 +50,8 @@ const SYSTEM_TEMPLATES: JournalTemplate[] = [
   {
     id: 'daily-gratitude',
     name: 'Daily Gratitude',
-    description: 'Start your day with gratitude and positive reflection',
+    description:
+      'Cultivate appreciation and positive mindset with structured gratitude practice',
     category: 'getting_started',
     icon: 'heart',
     template_content: {
@@ -58,24 +59,78 @@ const SYSTEM_TEMPLATES: JournalTemplate[] = [
         {
           id: '1',
           type: 'heading',
-          level: 2,
-          text: 'Daily Gratitude',
-          richText: '<h2>Daily Gratitude</h2>',
+          level: 1,
+          text: 'Daily Gratitude Practice',
+          richText: '<h1>Daily Gratitude Practice</h1>',
           createdAt: new Date(),
         },
         {
           id: '2',
-          type: 'heading',
-          level: 2,
-          text: 'TODAY I AM GRATEFUL FOR:',
-          richText: '<h2>TODAY I AM GRATEFUL FOR:</h2>',
+          type: 'paragraph',
+          text: 'Take a moment to reflect on the positive aspects of your life and express genuine appreciation.',
+          richText:
+            '<p><em>Take a moment to reflect on the positive aspects of your life and express genuine appreciation.</em></p>',
           createdAt: new Date(),
         },
         {
           id: '3',
+          type: 'heading',
+          level: 3,
+          text: "🙏 Three Things I'm Grateful For Today:",
+          richText: "<h3>🙏 Three Things I'm Grateful For Today:</h3>",
+          createdAt: new Date(),
+        },
+        {
+          id: '4',
           type: 'bullet-list',
-          text: '• ',
-          richText: '<ul><li></li></ul>',
+          text: '• Something small that brought me joy:',
+          richText: '<ul><li>Something small that brought me joy:</li></ul>',
+          createdAt: new Date(),
+        },
+        {
+          id: '5',
+          type: 'bullet-list',
+          text: '• A person who made a positive impact:',
+          richText: '<ul><li>A person who made a positive impact:</li></ul>',
+          createdAt: new Date(),
+        },
+        {
+          id: '6',
+          type: 'bullet-list',
+          text: '• An opportunity or experience I appreciate:',
+          richText:
+            '<ul><li>An opportunity or experience I appreciate:</li></ul>',
+          createdAt: new Date(),
+        },
+        {
+          id: '7',
+          type: 'heading',
+          level: 3,
+          text: "💫 Why I'm Grateful:",
+          richText: "<h3>💫 Why I'm Grateful:</h3>",
+          createdAt: new Date(),
+        },
+        {
+          id: '8',
+          type: 'paragraph',
+          text: 'Reflect on why these things matter to you and how they contribute to your well-being...',
+          richText:
+            '<p>Reflect on why these things matter to you and how they contribute to your well-being...</p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '9',
+          type: 'heading',
+          level: 3,
+          text: '🌟 Gratitude Intention:',
+          richText: '<h3>🌟 Gratitude Intention:</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '10',
+          type: 'paragraph',
+          text: 'How can I express or share this gratitude today?',
+          richText: '<p>How can I express or share this gratitude today?</p>',
           createdAt: new Date(),
         },
       ] as JournalBlock[],
@@ -87,7 +142,8 @@ const SYSTEM_TEMPLATES: JournalTemplate[] = [
   {
     id: '5-minutes-am',
     name: '5 minutes A.M.',
-    description: 'Quick morning reflection to set intentions for the day',
+    description:
+      'Quick morning check-in to center yourself and set positive intentions for the day ahead',
     category: 'getting_started',
     icon: 'sunrise',
     template_content: {
@@ -95,23 +151,77 @@ const SYSTEM_TEMPLATES: JournalTemplate[] = [
         {
           id: '1',
           type: 'heading',
-          level: 2,
-          text: 'Morning Reflection (5 minutes)',
-          richText: '<h2>Morning Reflection (5 minutes)</h2>',
+          level: 1,
+          text: '🌅 Morning Check-In (5 minutes)',
+          richText: '<h1>🌅 Morning Check-In (5 minutes)</h1>',
           createdAt: new Date(),
         },
         {
           id: '2',
           type: 'paragraph',
-          text: 'How am I feeling right now?',
-          richText: '<p><strong>How am I feeling right now?</strong></p>',
+          text: 'Take a few deep breaths and tune into this moment.',
+          richText:
+            '<p><em>Take a few deep breaths and tune into this moment.</em></p>',
           createdAt: new Date(),
         },
         {
           id: '3',
+          type: 'heading',
+          level: 3,
+          text: '💭 How am I feeling right now?',
+          richText: '<h3>💭 How am I feeling right now?</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '4',
           type: 'paragraph',
-          text: '',
-          richText: '<p></p>',
+          text: 'Physically, mentally, emotionally...',
+          richText: '<p>Physically, mentally, emotionally...</p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '5',
+          type: 'heading',
+          level: 3,
+          text: '🎯 What do I want to focus on today?',
+          richText: '<h3>🎯 What do I want to focus on today?</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '6',
+          type: 'paragraph',
+          text: 'One main priority or intention...',
+          richText: '<p>One main priority or intention...</p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '7',
+          type: 'heading',
+          level: 3,
+          text: '✨ What energy do I want to bring to today?',
+          richText: '<h3>✨ What energy do I want to bring to today?</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '8',
+          type: 'paragraph',
+          text: 'Calm, focused, joyful, curious...',
+          richText: '<p>Calm, focused, joyful, curious...</p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '9',
+          type: 'heading',
+          level: 3,
+          text: '🌱 One small step I can take:',
+          richText: '<h3>🌱 One small step I can take:</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '10',
+          type: 'paragraph',
+          text: "What's one small action that will move me forward?",
+          richText: "<p>What's one small action that will move me forward?</p>",
           createdAt: new Date(),
         },
       ] as JournalBlock[],
@@ -123,7 +233,8 @@ const SYSTEM_TEMPLATES: JournalTemplate[] = [
   {
     id: 'daily-goal-plan',
     name: 'Daily Goal Plan',
-    description: 'Structure your day with clear goals and action steps',
+    description:
+      'Structure your day with clear priorities, actionable steps, and focused execution',
     category: 'getting_started',
     icon: 'target',
     template_content: {
@@ -131,23 +242,121 @@ const SYSTEM_TEMPLATES: JournalTemplate[] = [
         {
           id: '1',
           type: 'heading',
-          level: 2,
-          text: 'Daily Goal Plan',
-          richText: '<h2>Daily Goal Plan</h2>',
+          level: 1,
+          text: '🎯 Daily Goal Plan',
+          richText: '<h1>🎯 Daily Goal Plan</h1>',
           createdAt: new Date(),
         },
         {
           id: '2',
           type: 'paragraph',
-          text: 'Main Goal for Today:',
-          richText: '<p><strong>Main Goal for Today:</strong></p>',
+          text: 'Plan your day with intention and clarity.',
+          richText: '<p><em>Plan your day with intention and clarity.</em></p>',
           createdAt: new Date(),
         },
         {
           id: '3',
+          type: 'heading',
+          level: 3,
+          text: '🌟 Main Goal for Today:',
+          richText: '<h3>🌟 Main Goal for Today:</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '4',
           type: 'paragraph',
-          text: '',
-          richText: '<p></p>',
+          text: 'What is the ONE most important thing I want to accomplish?',
+          richText:
+            '<p>What is the ONE most important thing I want to accomplish?</p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '5',
+          type: 'heading',
+          level: 3,
+          text: '📋 Action Steps:',
+          richText: '<h3>📋 Action Steps:</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '6',
+          type: 'bullet-list',
+          text: '• Step 1:',
+          richText: '<ul><li>Step 1:</li></ul>',
+          createdAt: new Date(),
+        },
+        {
+          id: '7',
+          type: 'bullet-list',
+          text: '• Step 2:',
+          richText: '<ul><li>Step 2:</li></ul>',
+          createdAt: new Date(),
+        },
+        {
+          id: '8',
+          type: 'bullet-list',
+          text: '• Step 3:',
+          richText: '<ul><li>Step 3:</li></ul>',
+          createdAt: new Date(),
+        },
+        {
+          id: '9',
+          type: 'heading',
+          level: 3,
+          text: '⚡ Top 3 Priorities:',
+          richText: '<h3>⚡ Top 3 Priorities:</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '10',
+          type: 'numbered-list',
+          text: '1. ',
+          richText: '<ol><li></li></ol>',
+          createdAt: new Date(),
+        },
+        {
+          id: '11',
+          type: 'numbered-list',
+          text: '2. ',
+          richText: '<ol><li></li></ol>',
+          createdAt: new Date(),
+        },
+        {
+          id: '12',
+          type: 'numbered-list',
+          text: '3. ',
+          richText: '<ol><li></li></ol>',
+          createdAt: new Date(),
+        },
+        {
+          id: '13',
+          type: 'heading',
+          level: 3,
+          text: '⏰ Time Blocks:',
+          richText: '<h3>⏰ Time Blocks:</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '14',
+          type: 'paragraph',
+          text: 'Morning (9-12): \nAfternoon (1-5): \nEvening (6-9): ',
+          richText:
+            '<p>Morning (9-12): <br>Afternoon (1-5): <br>Evening (6-9): </p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '15',
+          type: 'heading',
+          level: 3,
+          text: '🚧 Potential Obstacles:',
+          richText: '<h3>🚧 Potential Obstacles:</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '16',
+          type: 'paragraph',
+          text: 'What might get in my way, and how can I prepare?',
+          richText: '<p>What might get in my way, and how can I prepare?</p>',
           createdAt: new Date(),
         },
       ] as JournalBlock[],
@@ -159,7 +368,8 @@ const SYSTEM_TEMPLATES: JournalTemplate[] = [
   {
     id: 'evening-reflection',
     name: 'Evening',
-    description: 'End your day with thoughtful reflection',
+    description:
+      "Wind down with meaningful reflection on your day's experiences and lessons",
     category: 'reflections',
     icon: 'moon',
     template_content: {
@@ -167,23 +377,109 @@ const SYSTEM_TEMPLATES: JournalTemplate[] = [
         {
           id: '1',
           type: 'heading',
-          level: 2,
-          text: 'Evening Reflection',
-          richText: '<h2>Evening Reflection</h2>',
+          level: 1,
+          text: '🌙 Evening Reflection',
+          richText: '<h1>🌙 Evening Reflection</h1>',
           createdAt: new Date(),
         },
         {
           id: '2',
           type: 'paragraph',
-          text: 'What went well today?',
-          richText: '<p><strong>What went well today?</strong></p>',
+          text: 'Take a moment to pause and reflect on your day.',
+          richText:
+            '<p><em>Take a moment to pause and reflect on your day.</em></p>',
           createdAt: new Date(),
         },
         {
           id: '3',
+          type: 'heading',
+          level: 3,
+          text: '✨ What went well today?',
+          richText: '<h3>✨ What went well today?</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '4',
           type: 'paragraph',
-          text: '',
-          richText: '<p></p>',
+          text: 'Celebrate your wins, both big and small...',
+          richText: '<p>Celebrate your wins, both big and small...</p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '5',
+          type: 'heading',
+          level: 3,
+          text: '🎯 Did I accomplish my main goal?',
+          richText: '<h3>🎯 Did I accomplish my main goal?</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '6',
+          type: 'paragraph',
+          text: 'Reflect on your progress and what you learned...',
+          richText: '<p>Reflect on your progress and what you learned...</p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '7',
+          type: 'heading',
+          level: 3,
+          text: '🌱 What challenged me today?',
+          richText: '<h3>🌱 What challenged me today?</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '8',
+          type: 'paragraph',
+          text: 'How did I handle difficulties? What can I learn?',
+          richText: '<p>How did I handle difficulties? What can I learn?</p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '9',
+          type: 'heading',
+          level: 3,
+          text: '💭 Key insights or realizations:',
+          richText: '<h3>💭 Key insights or realizations:</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '10',
+          type: 'paragraph',
+          text: 'What did I discover about myself or the world today?',
+          richText:
+            '<p>What did I discover about myself or the world today?</p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '11',
+          type: 'heading',
+          level: 3,
+          text: '🙏 Gratitude moment:',
+          richText: '<h3>🙏 Gratitude moment:</h3>',
+          createdAt: new Date(),
+        },
+        {
+          id: '12',
+          type: 'paragraph',
+          text: "One thing I'm especially grateful for from today...",
+          richText:
+            "<p>One thing I'm especially grateful for from today...</p>",
+          createdAt: new Date(),
+        },
+        {
+          id: '13',
+          type: 'heading',
+          level: 3,
+          text: "🌅 Tomorrow's intention:",
+          richText: "<h3>🌅 Tomorrow's intention:</h3>",
+          createdAt: new Date(),
+        },
+        {
+          id: '14',
+          type: 'paragraph',
+          text: 'How do I want to approach tomorrow?',
+          richText: '<p>How do I want to approach tomorrow?</p>',
           createdAt: new Date(),
         },
       ] as JournalBlock[],
@@ -195,7 +491,8 @@ const SYSTEM_TEMPLATES: JournalTemplate[] = [
   {
     id: 'weekly-review',
     name: 'Weekly',
-    description: 'Comprehensive weekly reflection and planning ahead',
+    description:
+      'Comprehensive weekly reflection, learning, and strategic planning for continuous growth',
     category: 'reflections',
     icon: 'calendar-week',
     template_content: {
@@ -204,23 +501,170 @@ const SYSTEM_TEMPLATES: JournalTemplate[] = [
           id: '1',
           type: 'heading',
           level: 1,
-          text: 'Weekly Review',
-          richText: '<h1>Weekly Review</h1>',
+          text: '📅 Weekly Review & Planning',
+          richText: '<h1>📅 Weekly Review & Planning</h1>',
           createdAt: new Date(),
         },
         {
           id: '2',
-          type: 'heading',
-          level: 3,
-          text: 'Wins & Accomplishments',
-          richText: '<h3>Wins & Accomplishments</h3>',
+          type: 'paragraph',
+          text: 'Take time to reflect on the week that was and plan for the week ahead.',
+          richText:
+            '<p><em>Take time to reflect on the week that was and plan for the week ahead.</em></p>',
           createdAt: new Date(),
         },
         {
           id: '3',
+          type: 'heading',
+          level: 2,
+          text: '🏆 Wins & Accomplishments',
+          richText: '<h2>🏆 Wins & Accomplishments</h2>',
+          createdAt: new Date(),
+        },
+        {
+          id: '4',
           type: 'bullet-list',
-          text: '• ',
-          richText: '<ul><li></li></ul>',
+          text: '• Major achievement:',
+          richText: '<ul><li>Major achievement:</li></ul>',
+          createdAt: new Date(),
+        },
+        {
+          id: '5',
+          type: 'bullet-list',
+          text: '• Personal growth moment:',
+          richText: '<ul><li>Personal growth moment:</li></ul>',
+          createdAt: new Date(),
+        },
+        {
+          id: '6',
+          type: 'bullet-list',
+          text: "• Small win I'm proud of:",
+          richText: "<ul><li>Small win I'm proud of:</li></ul>",
+          createdAt: new Date(),
+        },
+        {
+          id: '7',
+          type: 'heading',
+          level: 2,
+          text: '🌱 Challenges & Lessons',
+          richText: '<h2>🌱 Challenges & Lessons</h2>',
+          createdAt: new Date(),
+        },
+        {
+          id: '8',
+          type: 'paragraph',
+          text: 'What was difficult this week?',
+          richText: '<p><strong>What was difficult this week?</strong></p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '9',
+          type: 'paragraph',
+          text: 'Describe the challenges you faced...',
+          richText: '<p>Describe the challenges you faced...</p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '10',
+          type: 'paragraph',
+          text: 'What did I learn from these experiences?',
+          richText:
+            '<p><strong>What did I learn from these experiences?</strong></p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '11',
+          type: 'paragraph',
+          text: 'Key insights and lessons learned...',
+          richText: '<p>Key insights and lessons learned...</p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '12',
+          type: 'heading',
+          level: 2,
+          text: '📊 Goal Progress Review',
+          richText: '<h2>📊 Goal Progress Review</h2>',
+          createdAt: new Date(),
+        },
+        {
+          id: '13',
+          type: 'bullet-list',
+          text: '• Goal 1 progress:',
+          richText: '<ul><li>Goal 1 progress:</li></ul>',
+          createdAt: new Date(),
+        },
+        {
+          id: '14',
+          type: 'bullet-list',
+          text: '• Goal 2 progress:',
+          richText: '<ul><li>Goal 2 progress:</li></ul>',
+          createdAt: new Date(),
+        },
+        {
+          id: '15',
+          type: 'bullet-list',
+          text: '• Goal 3 progress:',
+          richText: '<ul><li>Goal 3 progress:</li></ul>',
+          createdAt: new Date(),
+        },
+        {
+          id: '16',
+          type: 'heading',
+          level: 2,
+          text: '🎯 Focus Areas for Next Week',
+          richText: '<h2>🎯 Focus Areas for Next Week</h2>',
+          createdAt: new Date(),
+        },
+        {
+          id: '17',
+          type: 'numbered-list',
+          text: '1. Priority 1:',
+          richText: '<ol><li>Priority 1:</li></ol>',
+          createdAt: new Date(),
+        },
+        {
+          id: '18',
+          type: 'numbered-list',
+          text: '2. Priority 2:',
+          richText: '<ol><li>Priority 2:</li></ol>',
+          createdAt: new Date(),
+        },
+        {
+          id: '19',
+          type: 'numbered-list',
+          text: '3. Priority 3:',
+          richText: '<ol><li>Priority 3:</li></ol>',
+          createdAt: new Date(),
+        },
+        {
+          id: '20',
+          type: 'heading',
+          level: 2,
+          text: '💡 Improvements & Adjustments',
+          richText: '<h2>💡 Improvements & Adjustments</h2>',
+          createdAt: new Date(),
+        },
+        {
+          id: '21',
+          type: 'paragraph',
+          text: 'What will I do differently next week?',
+          richText: '<p>What will I do differently next week?</p>',
+          createdAt: new Date(),
+        },
+        {
+          id: '22',
+          type: 'heading',
+          level: 2,
+          text: '🙏 Gratitude & Appreciation',
+          richText: '<h2>🙏 Gratitude & Appreciation</h2>',
+          createdAt: new Date(),
+        },
+        {
+          id: '23',
+          type: 'paragraph',
+          text: 'What am I most grateful for from this week?',
+          richText: '<p>What am I most grateful for from this week?</p>',
           createdAt: new Date(),
         },
       ] as JournalBlock[],
@@ -442,10 +886,33 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
 
   // Auto-select first template when templates load
   useEffect(() => {
-    if (systemTemplates.length > 0 && !selectedTemplate) {
+    if (
+      systemTemplates.length > 0 &&
+      !selectedTemplate &&
+      activeTab === 'gallery'
+    ) {
       setSelectedTemplate(systemTemplates[0])
     }
-  }, [systemTemplates, selectedTemplate])
+  }, [systemTemplates, selectedTemplate, activeTab])
+
+  // Handle tab switching and template selection
+  useEffect(() => {
+    if (
+      activeTab === 'gallery' &&
+      systemTemplates.length > 0 &&
+      !selectedTemplate
+    ) {
+      // Auto-select first template when switching to Gallery tab
+      setSelectedTemplate(systemTemplates[0])
+    } else if (
+      activeTab === 'my-templates' &&
+      userTemplates.length > 0 &&
+      !selectedTemplate
+    ) {
+      // Auto-select first user template when switching to My Templates tab (if any exist)
+      setSelectedTemplate(userTemplates[0])
+    }
+  }, [activeTab, systemTemplates, userTemplates, selectedTemplate])
 
   const loadTemplates = async () => {
     setLoading(true)
@@ -683,12 +1150,6 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
               Daily Gratitude
             </h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-          >
-            <X className="h-5 w-5 text-gray-500" />
-          </button>
         </div>
 
         {/* Split Panel Layout */}
@@ -704,7 +1165,14 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
-                  onClick={() => setActiveTab('gallery')}
+                  onClick={() => {
+                    setActiveTab('gallery')
+                    setIsCreatingNew(false)
+                    // Auto-select first template if none selected
+                    if (!selectedTemplate && systemTemplates.length > 0) {
+                      setSelectedTemplate(systemTemplates[0])
+                    }
+                  }}
                 >
                   Gallery
                 </button>
