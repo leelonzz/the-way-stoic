@@ -29,6 +29,14 @@ export interface HistoricalSite {
   }
 }
 
+export interface PlaceImage {
+  src: string
+  alt: string
+  width: number
+  height: number
+  caption?: string
+}
+
 export interface PhilosophicalPlace {
   id: string
   name: string
@@ -53,6 +61,10 @@ export interface PhilosophicalPlace {
   keyFigures: string[]
   relatedPlaces: string[]
   modernRelevance: string
+  images: {
+    hero: PlaceImage
+    og: PlaceImage
+  }
   visitingInfo: {
     accessible: boolean
     bestTimeToVisit: string

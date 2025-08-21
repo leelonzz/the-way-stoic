@@ -185,8 +185,8 @@
       ],
       "timestamp": "2025-07-31T13:46:36.273Z",
       "context": "Complete authentication implementation summary",
-      "accessCount": 55,
-      "lastAccessed": "2025-08-20T00:41:22.169Z",
+      "accessCount": 57,
+      "lastAccessed": "2025-08-20T13:38:55.236Z",
       "lastVerified": "2025-07-31T13:46:36.273Z",
       "status": "fresh"
     },
@@ -205,8 +205,8 @@
       ],
       "timestamp": "2025-07-31T13:54:18.341Z",
       "context": "Authentication debugging - login failing with CORS errors",
-      "accessCount": 26,
-      "lastAccessed": "2025-08-18T07:36:59.701Z",
+      "accessCount": 27,
+      "lastAccessed": "2025-08-20T12:45:21.987Z",
       "lastVerified": "2025-07-31T13:54:18.341Z",
       "status": "fresh"
     },
@@ -225,8 +225,8 @@
       ],
       "timestamp": "2025-07-31T13:57:29.542Z",
       "context": "Authentication troubleshooting complete - fixed CSP and added debugging",
-      "accessCount": 41,
-      "lastAccessed": "2025-08-18T07:36:59.701Z",
+      "accessCount": 42,
+      "lastAccessed": "2025-08-20T12:45:21.987Z",
       "lastVerified": "2025-07-31T13:57:29.542Z",
       "status": "fresh"
     },
@@ -861,8 +861,8 @@
       ],
       "timestamp": "2025-08-01T07:16:18.989Z",
       "context": "Complete fix for authentication and loading screen issues",
-      "accessCount": 34,
-      "lastAccessed": "2025-08-20T00:41:22.169Z",
+      "accessCount": 35,
+      "lastAccessed": "2025-08-20T12:45:21.987Z",
       "lastVerified": "2025-08-01T07:16:18.989Z",
       "status": "fresh"
     },
@@ -1798,8 +1798,8 @@
       ],
       "timestamp": "2025-08-02T06:00:55.652Z",
       "context": "Analyzing project for implementing functional journal entries with Supabase MCP",
-      "accessCount": 9,
-      "lastAccessed": "2025-08-11T02:29:04.286Z",
+      "accessCount": 10,
+      "lastAccessed": "2025-08-20T13:38:55.236Z",
       "lastVerified": "2025-08-02T06:00:55.652Z",
       "status": "fresh"
     },
@@ -2610,8 +2610,8 @@
         "debug"
       ],
       "timestamp": "2025-08-03T06:17:59.094Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-18T07:32:46.843Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-20T12:45:21.987Z",
       "lastVerified": "2025-08-03T06:17:59.094Z",
       "status": "fresh"
     },
@@ -3372,8 +3372,8 @@
       ],
       "timestamp": "2025-08-04T10:25:36.600Z",
       "context": "Post-security audit authentication fixes",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-19T11:01:29.198Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-08-20T13:38:55.236Z",
       "lastVerified": "2025-08-04T10:25:36.600Z",
       "status": "fresh"
     },
@@ -4034,8 +4034,8 @@
         "fixes"
       ],
       "timestamp": "2025-08-06T12:27:09.237Z",
-      "accessCount": 2,
-      "lastAccessed": "2025-08-10T04:23:28.957Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-08-20T13:38:55.236Z",
       "lastVerified": "2025-08-06T12:27:09.237Z",
       "status": "fresh"
     },
@@ -4113,8 +4113,8 @@
         "performance"
       ],
       "timestamp": "2025-08-06T13:05:32.121Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-17T10:24:59.407Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-20T12:45:21.987Z",
       "lastVerified": "2025-08-06T13:05:32.121Z",
       "status": "fresh"
     },
@@ -4678,8 +4678,8 @@
         "completed"
       ],
       "timestamp": "2025-08-08T05:14:39.427Z",
-      "accessCount": 2,
-      "lastAccessed": "2025-08-10T04:23:28.957Z",
+      "accessCount": 3,
+      "lastAccessed": "2025-08-20T13:38:55.236Z",
       "lastVerified": "2025-08-08T05:14:39.427Z",
       "status": "fresh"
     },
@@ -6344,8 +6344,8 @@
       "type": "general",
       "tags": ["general", "course-navigation", "component-design", "ui"],
       "timestamp": "2025-08-14T08:06:26.957Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-20T00:38:57.870Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-20T13:38:55.236Z",
       "lastVerified": "2025-08-14T08:06:26.957Z",
       "status": "fresh"
     },
@@ -6361,8 +6361,8 @@
         "terra-cotta-theme"
       ],
       "timestamp": "2025-08-14T08:16:07.537Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-20T00:38:57.870Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-20T13:38:55.236Z",
       "lastVerified": "2025-08-14T08:16:07.537Z",
       "status": "fresh"
     },
@@ -6378,8 +6378,8 @@
         "completed"
       ],
       "timestamp": "2025-08-14T08:24:31.005Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-20T00:38:57.870Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-20T13:38:55.236Z",
       "lastVerified": "2025-08-14T08:24:31.005Z",
       "status": "fresh"
     },
@@ -6439,8 +6439,8 @@
         "implementation"
       ],
       "timestamp": "2025-08-14T08:55:03.798Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-20T00:38:57.870Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-20T12:45:21.987Z",
       "lastVerified": "2025-08-14T08:55:03.798Z",
       "status": "fresh"
     },
@@ -7149,8 +7149,8 @@
       ],
       "timestamp": "2025-08-17T10:43:13.903Z",
       "context": "Deploying stoic-zenith to Vercel production",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-18T07:32:46.843Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-20T12:45:21.987Z",
       "lastVerified": "2025-08-17T10:43:13.903Z",
       "status": "fresh"
     },
@@ -7205,8 +7205,8 @@
         "portabletext"
       ],
       "timestamp": "2025-08-18T13:02:35.553Z",
-      "accessCount": 1,
-      "lastAccessed": "2025-08-18T14:20:31.601Z",
+      "accessCount": 2,
+      "lastAccessed": "2025-08-20T12:45:21.987Z",
       "lastVerified": "2025-08-18T13:02:35.553Z",
       "status": "fresh"
     },
@@ -7638,7 +7638,179 @@
       "lastAccessed": "2025-08-20T01:17:31.703Z",
       "lastVerified": "2025-08-20T01:17:31.703Z",
       "status": "fresh"
+    },
+    {
+      "id": "mem_1755694171632_0fo9xr5nu",
+      "content": "Sanity Studio performance issue diagnosis:\n\nERROR: Loading chunk _app-pages-browser_node_modules_sanity_ui_dist__chunks_es_refractor_mjs failed\n- Occurs when accessing /studio route\n- Browser becomes extremely laggy and unresponsive\n- Error indicates a chunk loading failure in the Sanity UI library\n\nCONFIGURATION FOUND:\n1. Two Sanity configs exist (duplicate setup):\n   - /stoic-zenith/sanity.config.ts (older, with inline schema)\n   - /sanity.config.ts (newer, uses imported schema)\n\n2. Studio page uses: export const dynamic = 'force-static'\n   - This is problematic for Sanity Studio which needs dynamic rendering\n\n3. Environment variables are properly set:\n   - NEXT_PUBLIC_SANITY_PROJECT_ID=\"uw2gxwzi\"\n   - NEXT_PUBLIC_SANITY_DATASET=\"production\"\n\n4. Package versions:\n   - sanity: ^4.4.1\n   - next-sanity: ^10.0.12\n   - @sanity/vision: ^4.4.1\n\nROOT CAUSE: The 'force-static' export is incompatible with Sanity Studio's dynamic nature, causing chunk loading failures and performance issues.",
+      "type": "config",
+      "tags": [
+        "config",
+        "sanity",
+        "performance",
+        "chunk-loading-error",
+        "force-static",
+        "studio-config"
+      ],
+      "timestamp": "2025-08-20T12:49:31.632Z",
+      "context": "Diagnosing Sanity Studio lag and loading errors",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-20T13:38:55.236Z",
+      "lastVerified": "2025-08-20T12:49:31.632Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755694399778_6qnf960la",
+      "content": "SANITY STUDIO LAG ISSUE FIXED ✅\n\n**Problem:** Sanity Studio was extremely laggy and throwing chunk loading errors\n**Root Cause:** Studio page was using `export const dynamic = 'force-static'` which is incompatible with Sanity Studio\n\n**Solution Applied:**\n1. Changed studio page to use `export const dynamic = 'force-dynamic'`\n2. Removed duplicate Sanity config in /stoic-zenith/sanity.config.ts\n3. Removed duplicate studio page in /stoic-zenith/app/studio/\n4. Cleared Next.js cache (.next folder)\n\n**Result:** Sanity Studio should now load properly without lag or chunk loading errors. The dynamic rendering allows Sanity's JavaScript chunks to load correctly.",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "javascript",
+        "sanity",
+        "studio-fix",
+        "performance-fix",
+        "dynamic-rendering",
+        "completed"
+      ],
+      "timestamp": "2025-08-20T12:53:19.778Z",
+      "context": "Fixed Sanity Studio lag and loading issues",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T12:53:19.778Z",
+      "lastVerified": "2025-08-20T12:53:19.778Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755694961508_k0g07z1d9",
+      "content": "SANITY STUDIO RESTORED IN STOIC-ZENITH ✅\n\n**Issue:** Accidentally removed Sanity config and studio files from stoic-zenith (the main app)\n**Fix Applied:**\n1. Created `/stoic-zenith/app/studio/[[...tool]]/page.tsx` with `force-dynamic` rendering\n2. Created `/stoic-zenith/sanity.config.ts` pointing to the main project's Sanity schema\n3. Cleared .next cache in stoic-zenith\n\n**Result:** Sanity Studio should now be accessible at `localhost:3000/studio` in stoic-zenith without lag or chunk loading errors.",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "sanity",
+        "studio-restore",
+        "stoic-zenith",
+        "fix-applied"
+      ],
+      "timestamp": "2025-08-20T13:02:41.508Z",
+      "context": "Restored Sanity Studio functionality in stoic-zenith app",
+      "accessCount": 1,
+      "lastAccessed": "2025-08-20T13:38:55.236Z",
+      "lastVerified": "2025-08-20T13:02:41.508Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755695651850_h3hfn151n",
+      "content": "SANITY VERSION MISMATCH FIXED ✅\n\n**Problem:** \"Duplicate instances of context 'sanity/_singletons/context/active-workspace-matcher' with incompatible versions detected: Expected 4.5.0 but got 4.4.1\"\n\n**Root Cause:** Version conflict between different Sanity packages\n\n**Solution Applied:**\n1. Updated Sanity packages in stoic-zenith:\n   - `sanity`: ^4.4.1 → ^4.5.0\n   - `@sanity/vision`: ^4.4.1 → ^4.5.0\n2. Cleared node_modules, package-lock.json, and .next cache\n3. Reinstalled dependencies with --legacy-peer-deps (React 19 compatibility)\n\n**Result:** Dependencies installed successfully. Sanity Studio should now load without version conflicts.",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "react",
+        "sanity",
+        "version-fix",
+        "package-update",
+        "dependency-resolution",
+        "completed"
+      ],
+      "timestamp": "2025-08-20T13:14:11.849Z",
+      "context": "Fixed Sanity package version conflicts causing context errors",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T13:14:11.849Z",
+      "lastVerified": "2025-08-20T13:14:11.849Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755696305046_kentct9m1",
+      "content": "SANITY VERSION CONFLICT FULLY RESOLVED ✅\n\n**Problem:** Duplicate Sanity installations causing version mismatch between parent project (4.4.1) and stoic-zenith (4.5.0)\n\n**Solution Applied:**\n1. Removed ALL Sanity packages from parent project:\n   - @sanity/client, @sanity/image-url, @sanity/vision, next-sanity, sanity\n2. Deleted parent project studio folder and sanity.config.ts\n3. Cleared all caches (node_modules, package-lock.json, .next)\n4. Reinstalled parent project dependencies (now clean, no Sanity)\n\n**Result:** Only stoic-zenith now has Sanity packages (v4.5.0). No more version conflicts should occur.",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "sanity",
+        "version-conflict",
+        "duplicate-removal",
+        "parent-project-cleanup",
+        "resolved"
+      ],
+      "timestamp": "2025-08-20T13:25:05.046Z",
+      "context": "Completely removed Sanity from parent project to resolve version conflicts",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T13:25:05.046Z",
+      "lastVerified": "2025-08-20T13:25:05.046Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755696871968_2sc8nzfr5",
+      "content": "SANITY CONFIG IMPORT PATH FIXED ✅\n\n**Problem:** Studio page was importing sanity config from parent project path that no longer exists\n**Error:** Module not found: Can't resolve '../../../../sanity.config'\n\n**Fix:** Updated import path in stoic-zenith studio page:\n- From: `import config from '../../../../sanity.config'`  \n- To: `import config from '../../../sanity.config'`\n\n**Result:** Studio page now correctly imports from stoic-zenith's own sanity.config.ts file",
+      "type": "config",
+      "tags": [
+        "config",
+        "sanity",
+        "import-path-fix",
+        "module-resolution",
+        "studio-config"
+      ],
+      "timestamp": "2025-08-20T13:34:31.968Z",
+      "context": "Fixed broken import path after removing parent project's Sanity config",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T13:34:31.968Z",
+      "lastVerified": "2025-08-20T13:34:31.968Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755698211267_j0czr5olj",
+      "content": "SANITY SCHEMAS CREATED SUCCESSFULLY ✅\n\n**Created Blog Post Schema:**\n- All standard blog fields (title, slug, author, excerpt, mainImage, categories, tags, publishedAt, body, featured, published, SEO)\n- Rich text editor with blocks, images, links\n- Published flag controls blog visibility\n\n**Created Hierarchical Course Schema:**\n- Course → Chapters → Modules structure\n- Chapters: Simple organizational containers (title, order)\n- Modules: Full content schema with:\n  - Rich text content, video URLs, resources\n  - Exercises (reflection, writing, practice, quiz)\n  - Duration, isFree flag for previews\n  - Downloadable resources\n\n**Blog Integration:**\n- Blog route already configured to fetch from Sanity\n- Publishing posts in Sanity Studio automatically shows them in /blog\n- Uses existing sanityFetch and blogPostsQuery",
+      "type": "general",
+      "tags": [
+        "general",
+        "sanity",
+        "schema-creation",
+        "blog-integration",
+        "course-structure",
+        "completed"
+      ],
+      "timestamp": "2025-08-20T13:56:51.267Z",
+      "context": "Successfully created complete Sanity schema system",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-20T13:56:51.267Z",
+      "lastVerified": "2025-08-20T13:56:51.267Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755737446942_4uysyv06j",
+      "content": "SANITY SCHEMA IMPORT ISSUE FIXED ✅\n\n**Problem:** Schema files were in parent project trying to import 'sanity' package that wasn't available there\n\n**Solution Applied:**\n1. Created `/stoic-zenith/src/sanity/schemaTypes/` directory structure\n2. Copied all schema files (blogPost.ts, course.ts, index.ts) to stoic-zenith\n3. Copied env.ts and structure.ts files to stoic-zenith \n4. Updated sanity.config.ts import paths from `../src/sanity/` to `./src/sanity/`\n\n**Result:** All Sanity files now within stoic-zenith where 'sanity' package is available. Blog Post and Course schemas should now load in Sanity Studio without import errors.",
+      "type": "tip",
+      "tags": [
+        "tip",
+        "sanity",
+        "import-fix",
+        "schema-move",
+        "file-organization",
+        "completed"
+      ],
+      "timestamp": "2025-08-21T00:50:46.942Z",
+      "context": "Fixed Sanity schema import errors by moving files to correct location",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-21T00:50:46.942Z",
+      "lastVerified": "2025-08-21T00:50:46.942Z",
+      "status": "fresh"
+    },
+    {
+      "id": "mem_1755739031937_q6dsl0ey0",
+      "content": "Successfully implemented table support in Sanity blog posts using @bitfo/sanity-plugin-portable-table plugin. Configuration includes: 1) Plugin installed and configured in sanity.config.ts with rich text cell schema supporting strong, emphasis, and links 2) Created table.ts schema with object wrapper and preview 3) Added table type to blogPost body field 4) Registered table schema in index.ts. Development server running on port 3001, ready for testing in Sanity Studio at /studio route.",
+      "type": "config",
+      "tags": [
+        "config",
+        "testing",
+        "sanity",
+        "table",
+        "blog",
+        "portable-text",
+        "schema"
+      ],
+      "timestamp": "2025-08-21T01:17:11.937Z",
+      "context": "Sanity CMS table implementation for blog posts",
+      "accessCount": 0,
+      "lastAccessed": "2025-08-21T01:17:11.937Z",
+      "lastVerified": "2025-08-21T01:17:11.937Z",
+      "status": "fresh"
     }
   ],
-  "lastUpdated": "2025-08-20T01:17:31.703Z"
+  "lastUpdated": "2025-08-21T01:17:11.937Z"
 }

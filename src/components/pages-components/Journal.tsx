@@ -20,6 +20,8 @@ import { JournalSkeleton } from '@/components/journal/JournalSkeleton'
 import { useCachedJournal } from '@/hooks/useCachedJournal'
 import { TemplateGallery } from '@/components/journal/TemplateGallery'
 import { TemplateEditor } from '@/components/journal/TemplateEditor'
+import { OnboardingSurveyModal } from '@/components/onboarding/OnboardingSurveyModal'
+import { useOnboardingSurvey } from '@/hooks/useOnboardingSurvey'
 
 // Lazy load the heavy JournalNavigation component (rich text editor)
 const JournalNavigation = lazy(() =>
@@ -41,6 +43,10 @@ export default function Journal(): JSX.Element {
     // Template system state
     const [showTemplateGallery, setShowTemplateGallery] = useState(false)
     const [showTemplateEditor, setShowTemplateEditor] = useState(false)
+
+    // Survey modal state
+    const [showSurveyModal, setShowSurveyModal] = useState(false)
+    const [currentUser, setCurrentUser] = useState<any>(null)
 
     // Use cache-aware journal hook
     const {
@@ -137,6 +143,7 @@ export default function Journal(): JSX.Element {
           } = await supabase.auth.getUser()
           if (user) {
             setUserId(user.id)
+            setCurrentUser(user)
             // Clean up old access times to prevent localStorage bloat
             cleanupOldAccessTimes()
           }

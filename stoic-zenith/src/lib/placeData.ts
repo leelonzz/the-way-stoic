@@ -5,6 +5,7 @@ import {
   PlaceCategory,
   PlacesPageData,
 } from '@/types/place'
+import { placeImages } from './imageData'
 
 // Philosophical Schools Data
 export const philosophicalSchools: PhilosophicalSchool[] = [
@@ -216,6 +217,7 @@ export const ancientAthens: PhilosophicalPlace = {
   relatedPlaces: ['ancient-rome', 'alexandria', 'rhodes'],
   modernRelevance:
     'Modern Athens preserves many archaeological sites where ancient philosophy was taught, offering visitors a direct connection to the birthplace of Western thought.',
+  images: placeImages['ancient-athens'],
   visitingInfo: {
     accessible: true,
     bestTimeToVisit: 'April-June, September-October',
@@ -335,6 +337,7 @@ export const rhodes: PhilosophicalPlace = {
   relatedPlaces: ['ancient-athens', 'ancient-rome', 'alexandria'],
   modernRelevance:
     'Modern Rhodes preserves significant archaeological remains and continues to attract visitors interested in ancient philosophy and rhetoric.',
+  images: placeImages['rhodes'],
   visitingInfo: {
     accessible: true,
     bestTimeToVisit: 'April-June, September-October',
@@ -415,6 +418,7 @@ export const ancientRome: PhilosophicalPlace = {
   relatedPlaces: ['ancient-athens', 'rhodes', 'cordoba'],
   modernRelevance:
     'Modern Rome preserves extensive archaeological remains where ancient Stoics lived and worked, offering visitors direct connection to imperial Stoic philosophy.',
+  images: placeImages['ancient-rome'],
   visitingInfo: {
     accessible: true,
     bestTimeToVisit: 'April-June, September-November',
@@ -485,6 +489,7 @@ export const citium: PhilosophicalPlace = {
   relatedPlaces: ['ancient-athens', 'rhodes', 'ancient-rome'],
   modernRelevance:
     'Modern Larnaca preserves archaeological remains of ancient Citium and celebrates its connection to Stoic philosophy.',
+  images: placeImages['citium'],
   visitingInfo: {
     accessible: true,
     bestTimeToVisit: 'March-May, September-November',
@@ -545,6 +550,7 @@ export const seleuciaTigris: PhilosophicalPlace = {
   relatedPlaces: ['ancient-athens', 'rhodes', 'ancient-rome'],
   modernRelevance:
     'Archaeological excavations at Tell Umar continue to reveal the grandeur of this ancient cosmopolitan center.',
+  images: placeImages['seleucia-tigris'],
   visitingInfo: {
     accessible: false,
     bestTimeToVisit: 'Currently not accessible due to regional conditions',
@@ -605,6 +611,7 @@ export const hierapolis: PhilosophicalPlace = {
   relatedPlaces: ['ancient-athens', 'ancient-rome', 'rhodes'],
   modernRelevance:
     'Modern Pamukkale preserves the spectacular ruins of Hierapolis and continues to attract visitors to its famous travertine terraces and ancient sites.',
+  images: placeImages['hierapolis'],
   visitingInfo: {
     accessible: true,
     bestTimeToVisit: 'April-June, September-October',
@@ -670,6 +677,7 @@ export const cordoba: PhilosophicalPlace = {
   relatedPlaces: ['ancient-rome', 'ancient-athens', 'rhodes'],
   modernRelevance:
     'Modern Córdoba preserves significant Roman remains and celebrates its connection to Seneca and classical literature.',
+  images: placeImages['cordoba'],
   visitingInfo: {
     accessible: true,
     bestTimeToVisit: 'March-May, September-November',

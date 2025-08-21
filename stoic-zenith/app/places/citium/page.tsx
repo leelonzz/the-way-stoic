@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getPlaceBySlug } from '@/lib/placeData'
 import { SmoothFAQ, type FAQItem } from '@/components/ui/smooth-faq'
 import { getAllCitiumFAQ } from '@/lib/citiumFAQ'
 import { StickyTableOfContents } from '@/components/places/StickyTableOfContents'
 import { generateCitiumFAQStructuredData } from '@/lib/citiumFAQ'
+import { PlaceHero } from '@/components/places/PlaceHero'
 import { MapPin, Clock, Users, BookOpen, ExternalLink } from 'lucide-react'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -29,7 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: 'The Stoic Way',
       images: [
         {
-          url: 'https://thewaystoic.site/images/citium-og.jpg',
+          url: place.images.og.src,
           width: 1200,
           height: 630,
           alt: 'Citium, Cyprus - Birthplace of Zeno and Stoic Philosophy',
@@ -40,7 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: 'summary_large_image',
       title: place.seo.metaTitle,
       description: place.seo.metaDescription,
-      images: ['https://thewaystoic.site/images/citium-og.jpg'],
+      images: [place.images.og.src],
       creator: '@thestoicway',
     },
     alternates: {
@@ -178,48 +180,37 @@ export default function CitiumPage() {
         </nav>
 
         {/* Hero Section */}
-        <header className="mb-16">
-          <div className="text-center mb-8">
-            <h1
-              className="text-4xl md:text-5xl font-bold text-gray-900 mb-6"
-              style={{ fontFamily: 'Inknut Antiqua, serif' }}
-            >
-              Citium: Birthplace of Stoic Philosophy
-            </h1>
-            <p
-              className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed"
-              style={{ fontFamily: 'Poppins, sans-serif' }}
-            >
-              {place.description}
+        <PlaceHero
+          title="Citium: Birthplace of Stoic Philosophy"
+          description={place.description}
+          heroImage={place.images.hero}
+        />
+
+        {/* Key Information Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-16">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
+            <MapPin className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+            <h3 className="font-semibold text-gray-900 mb-2">Location</h3>
+            <p className="text-gray-600 text-sm">
+              {place.city}, {place.country}
             </p>
+            <p className="text-gray-500 text-xs mt-1">{place.region}</p>
           </div>
 
-          {/* Key Information Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
-              <MapPin className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-              <h3 className="font-semibold text-gray-900 mb-2">Location</h3>
-              <p className="text-gray-600 text-sm">
-                {place.city}, {place.country}
-              </p>
-              <p className="text-gray-500 text-xs mt-1">{place.region}</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
-              <Clock className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-              <h3 className="font-semibold text-gray-900 mb-2">Period</h3>
-              <p className="text-gray-600 text-sm">{place.periodName}</p>
-              <p className="text-gray-500 text-xs mt-1">{place.dateRange}</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
-              <Users className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-              <h3 className="font-semibold text-gray-900 mb-2">Key Figure</h3>
-              <p className="text-gray-600 text-sm">Zeno of Citium</p>
-              <p className="text-gray-500 text-xs mt-1">Founder of Stoicism</p>
-            </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
+            <Clock className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+            <h3 className="font-semibold text-gray-900 mb-2">Period</h3>
+            <p className="text-gray-600 text-sm">{place.periodName}</p>
+            <p className="text-gray-500 text-xs mt-1">{place.dateRange}</p>
           </div>
-        </header>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
+            <Users className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+            <h3 className="font-semibold text-gray-900 mb-2">Key Figure</h3>
+            <p className="text-gray-600 text-sm">Zeno of Citium</p>
+            <p className="text-gray-500 text-xs mt-1">Founder of Stoicism</p>
+          </div>
+        </div>
 
         {/* Main Content */}
         <div className="max-w-4xl mx-auto">

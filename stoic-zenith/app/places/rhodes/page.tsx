@@ -1,10 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getPlaceBySlug } from '@/lib/placeData'
 import { SmoothFAQ, type FAQItem } from '@/components/ui/smooth-faq'
 import { getAllRhodesFAQ } from '@/lib/rhodesFAQ'
 import { StickyTableOfContents } from '@/components/places/StickyTableOfContents'
 import { generateRhodesFAQStructuredData } from '@/lib/rhodesFAQ'
+import { PlaceHero } from '@/components/places/PlaceHero'
+import { SectionImage } from '@/components/places/SectionImage'
 import { MapPin, Clock, Users, BookOpen, ExternalLink } from 'lucide-react'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -29,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: 'The Stoic Way',
       images: [
         {
-          url: 'https://thewaystoic.site/images/rhodes-og.jpg',
+          url: place.images.og.src,
           width: 1200,
           height: 630,
           alt: 'Rhodes - Island of Philosophers and Ancient Learning',
@@ -40,7 +43,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: 'summary_large_image',
       title: place.seo.metaTitle,
       description: place.seo.metaDescription,
-      images: ['https://thewaystoic.site/images/rhodes-og.jpg'],
+      images: [place.images.og.src],
       creator: '@thestoicway',
     },
     alternates: {

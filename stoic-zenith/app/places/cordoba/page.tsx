@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getPlaceBySlug } from '@/lib/placeData'
+import { PlaceHero } from '@/components/places/PlaceHero'
 import { MapPin, Clock, Users, BookOpen } from 'lucide-react'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -23,11 +25,20 @@ export async function generateMetadata(): Promise<Metadata> {
       type: 'website',
       url: 'https://thewaystoic.site/places/cordoba',
       siteName: 'The Stoic Way',
+      images: [
+        {
+          url: place.images.og.src,
+          width: place.images.og.width,
+          height: place.images.og.height,
+          alt: place.images.og.alt,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
       title: place.seo.metaTitle,
       description: place.seo.metaDescription,
+      images: [place.images.og.src],
       creator: '@thestoicway',
     },
     alternates: {
