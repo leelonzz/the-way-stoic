@@ -20,6 +20,7 @@ import { JournalSkeleton } from '@/components/journal/JournalSkeleton'
 import { useCachedJournal } from '@/hooks/useCachedJournal'
 import { TemplateGallery } from '@/components/journal/TemplateGallery'
 import { TemplateEditor } from '@/components/journal/TemplateEditor'
+import { PromptJournal } from '@/components/journal/PromptJournal'
 
 // Lazy load the heavy JournalNavigation component (rich text editor)
 const JournalNavigation = lazy(() =>
@@ -41,6 +42,9 @@ export default function Journal(): JSX.Element {
     // Template system state
     const [showTemplateGallery, setShowTemplateGallery] = useState(false)
     const [showTemplateEditor, setShowTemplateEditor] = useState(false)
+
+    // Prompt journal state
+    const [showPromptJournal, setShowPromptJournal] = useState(false)
 
     // Use cache-aware journal hook
     const {
@@ -184,6 +188,24 @@ export default function Journal(): JSX.Element {
     const handleCloseTemplates = useCallback(() => {
       setShowTemplateGallery(false)
     }, [])
+
+    // Prompt journal handlers
+    const handleOpenPrompts = useCallback(() => {
+      setShowPromptJournal(true)
+    }, [])
+
+    const handleClosePrompts = useCallback(() => {
+      setShowPromptJournal(false)
+    }, [])
+
+    const handlePromptSelect = useCallback((promptText: string) => {
+      // If there's a selected entry, we'll let the PromptJournal component handle insertion
+      // This is a fallback in case direct insertion fails
+      if (selectedEntry) {
+        // The prompt will be inserted by the PromptJournal component using insertTextAtCursor
+        console.log('Prompt selected:', promptText)
+      }
+    }, [selectedEntry])
 
     const handleOpenTemplateEditor = useCallback(() => {
       setShowTemplateGallery(false)
@@ -434,6 +456,7 @@ export default function Journal(): JSX.Element {
                 journalManager={journalManager}
                 hasOtherEntries={entries && entries.length > 1}
                 onOpenTemplates={handleOpenTemplates}
+                onOpenPrompts={handleOpenPrompts}
               />
             </Suspense>
           ) : (
@@ -478,6 +501,13 @@ export default function Journal(): JSX.Element {
           isOpen={showTemplateEditor}
           onClose={handleCloseTemplateEditor}
           onSaveTemplate={handleSaveTemplate}
+        />
+
+        {/* Prompt Journal Modal */}
+        <PromptJournal
+          isOpen={showPromptJournal}
+          onClose={handleClosePrompts}
+          onPromptSelect={handlePromptSelect}
         />
       </div>
     )
