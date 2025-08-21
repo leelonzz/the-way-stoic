@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal, Plus, Trash2, Save, AlertCircle, CheckCircle, BookTemplate } from 'lucide-react';
+import { MoreHorizontal, Plus, Trash2, Save, AlertCircle, CheckCircle, BookTemplate, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import {
@@ -39,6 +39,7 @@ interface JournalNavigationProps {
   journalManager: RealTimeJournalManager;
   hasOtherEntries?: boolean;
   onOpenTemplates?: () => void;
+  onOpenPrompts?: () => void;
 }
 
 export const JournalNavigation = React.memo(function JournalNavigation({
@@ -52,7 +53,8 @@ export const JournalNavigation = React.memo(function JournalNavigation({
   syncStatus = 'synced',
   journalManager,
   hasOtherEntries = false,
-  onOpenTemplates
+  onOpenTemplates,
+  onOpenPrompts
 }: JournalNavigationProps): JSX.Element {
   const [currentEntry, setCurrentEntry] = useState<JournalEntry>(entry);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -221,14 +223,27 @@ export const JournalNavigation = React.memo(function JournalNavigation({
         <div className="flex items-center gap-2">
           {/* Templates Button */}
           {onOpenTemplates && (
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               onClick={onOpenTemplates}
               className="flex items-center gap-2"
             >
               <BookTemplate className="h-4 w-4" />
               Templates
+            </Button>
+          )}
+
+          {/* Prompt Journal Button */}
+          {onOpenPrompts && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onOpenPrompts}
+              className="flex items-center justify-center"
+              title="Daily Writing Prompts"
+            >
+              <Lightbulb className="h-4 w-4" />
             </Button>
           )}
 
