@@ -1920,7 +1920,7 @@ export const EnhancedRichTextEditor = React.memo(
     }, [blocks])
 
     return (
-      <div className="relative bg-white h-full">
+      <div className="relative bg-white h-full flex flex-col">
         <style>{`
         .font-conditional.editing-mode {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
@@ -2018,12 +2018,13 @@ export const EnhancedRichTextEditor = React.memo(
 
         <div
           ref={editorRef}
-          className="flex-1 p-6 bg-white focus:ring-0 outline-none overflow-y-auto transition-all duration-200 min-h-full journal-editor-scroll"
+          className="flex-1 p-6 bg-white focus:ring-0 outline-none overflow-y-auto transition-all duration-200 journal-editor-scroll"
           style={{
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
             userSelect: 'text',
             backgroundColor: '#ffffff',
+            minHeight: '100%',
           }}
           onClick={e => {
             // Handle clicks on the editor container itself (empty areas)
@@ -2034,9 +2035,17 @@ export const EnhancedRichTextEditor = React.memo(
         >
           {blocks.map((block, index) => renderBlock(block, index))}
 
+          {/* Debug: Add lots of content to test scrolling */}
+          {Array.from({ length: 20 }, (_, i) => (
+            <div key={`debug-${i}`} className="p-4 border-b border-stone-100">
+              Debug content line {i + 1} - This is a test to see if scrolling
+              works properly in the journal editor.
+            </div>
+          ))}
+
           {/* Add some padding at the bottom to make it easier to click after the last block */}
           <div
-            className="h-32 w-full"
+            className="h-96 w-full"
             onClick={e => {
               e.preventDefault()
               if (blocks.length > 0) {
